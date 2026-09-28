@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   BackHandler,
   FlatList,
@@ -13,14 +13,25 @@ import {
 } from "react-native";
 import { AppShell } from "@/components/layout/AppShell";
 import { Shimmer } from "@/components/ai-elements/shimmer";
+import { AvaMascot } from "@/components/kit";
 import { APP } from "@/config/app";
 import { useAva } from "@/state/ava-provider";
 import { useSessions } from "@/state/queries";
 import { useChat } from "@/state/use-chat";
 import { ChatMessageView } from "@/components/chat/message-parts";
 import { Composer } from "@/components/chat/composer";
-import { ChevronDown, Clock, Play, X } from "lucide-react-native";
+import {
+  ChevronDown,
+  Clock,
+  Layers,
+  Play,
+  Sparkles,
+  Square,
+  Terminal as TerminalSquare,
+  X,
+} from "lucide-react-native";
 import { COLORS } from "@/theme/colors";
+import { font, mono } from "@/theme/fonts";
 
 export function SessionScreen({
   route,
@@ -35,7 +46,7 @@ export function SessionScreen({
   };
   navigation?: any;
 }) {
-  const { activeSessionId, setActiveSessionId } = useAva();
+  const { activeSessionId, setActiveSessionId, modelId, workingCwd, defaultCwd } = useAva();
   const sessionId = route?.params?.sessionId || activeSessionId || "";
   const initialPrompt = route?.params?.initialPrompt;
   const scrollToMessageId = route?.params?.scrollToMessageId;
@@ -202,7 +213,35 @@ export function SessionScreen({
   const activeSession = sessions?.find((s) => s.id === sessionId);
   const title = activeSession?.title ?? "Session";
 
+  const currentPath = workingCwd || defaultCwd || APP.defaultCwd;
+  const pathSnippet = useMemo(() => {
+    if (!currentPath) return "";
+    const segments = currentPath.split("/").filter(Boolean);
+    return segments.length > 2 ? segments.slice(-2).join("/") : currentPath;
+  }, [currentPath]);
+
+  const modelNameDisplay = useMemo(() => {
+    const raw = activeSession?.model || modelId || "Auto";
+    if (raw.includes("/")) {
+      return raw.split("/").pop() || raw;
+    }
+    return raw;
+  }, [activeSession?.model, modelId]);
+
+  const toolCallsCount = useMemo(() => {
+    let count = 0;
+    for (const m of messages) {
+      if (m.parts) {
+        for (const p of m.parts) {
+          if (p.kind === "tool" || p.kind === "plan") count++;
+        }
+      }
+    }
+    return count;
+  }, [messages]);
+
   const handleSubmit = (text: string) => {
+    if (!text.trim()) return;
     setDraft("");
     send(text);
     requestAnimationFrame(() => {
@@ -210,10 +249,19 @@ export function SessionScreen({
     });
   };
 
+  const quickStarters = [
+    { label: "Codebase architecture", prompt: "Explain the architecture and main modules of this project." },
+    { label: "Git status & diff", prompt: "Check git status and summarize recent changes." },
+    { label: "Run typecheck & tests", prompt: "Run typecheck and tests to see if everything compiles cleanly." },
+    { label: "Find and fix bugs", prompt: "Review recent code changes and check for any edge cases or bugs." },
+  ];
+
   return (
     <AppShell
       title={title}
       chatMessages={messages}
+      showBack={true}
+      onBack={handleBack}
       onNewSession={() => {
         setActiveSessionId(null);
         navigation?.navigate("Main", { screen: "Chat" });
@@ -226,6 +274,67 @@ export function SessionScreen({
         onTouchStart={handleTouchStart}
         onTouchEnd={handleTouchEnd}
       >
+        {/* ── Smart Session Sub-header Bar ── */}
+        <View style={styles.topBarContainer}>
+          <View style={styles.sessionMetaPill}>
+            <Sparkles size={11} color={COLORS.primary} />
+            <Text style={[styles.sessionMetaText, font("semibold")]} numberOfLines={1}>
+              {modelNameDisplay}
+            </Text>
+            {pathSnippet ? (
+              <>
+                <Text style={styles.metaDot}>•</Text>
+                <Text style={[styles.sessionPathText, mono("regular")]} numberOfLines={1}>
+                  {pathSnippet}
+                </Text>
+              </>
+            ) : null}
+          </View>
+
+          <View style={styles.topActionsRow}>
+            <TouchableOpacity
+              style={[
+                styles.shortcutPill,
+                toolCallsCount > 0 && styles.shortcutPillActive,
+              ]}
+              onPress={() => navigation?.navigate("Timeline", { sessionId })}
+              activeOpacity={0.75}
+              accessibilityRole="button"
+              accessibilityLabel="View Timeline"
+            >
+              <Layers
+                size={12}
+                color={toolCallsCount > 0 ? COLORS.primary : COLORS.mutedForeground}
+              />
+              <Text
+                style={[
+                  styles.shortcutPillText,
+                  font("semibold"),
+                  toolCallsCount > 0 && { color: COLORS.foreground },
+                ]}
+              >
+                Timeline
+              </Text>
+              {toolCallsCount > 0 ? (
+                <View style={styles.badgeCount}>
+                  <Text style={styles.badgeCountText}>{toolCallsCount}</Text>
+                </View>
+              ) : null}
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.shortcutPill}
+              onPress={() => navigation?.navigate("Main", { screen: "Terminal" })}
+              activeOpacity={0.75}
+              accessibilityRole="button"
+              accessibilityLabel="Open Terminal"
+            >
+              <TerminalSquare size={12} color={COLORS.mutedForeground} />
+              <Text style={[styles.shortcutPillText, font("medium")]}>Terminal</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+
         <FlatList
           ref={flatListRef}
           data={messages}
@@ -241,32 +350,44 @@ export function SessionScreen({
           keyboardDismissMode="on-drag"
           ListEmptyComponent={
             loadingHistory ? null : (
-              <View
-                style={{
-                  flex: 1,
-                  alignItems: "center",
-                  justifyContent: "center",
-                  paddingVertical: 80,
-                  gap: 12,
-                }}
-              >
-                <Text style={{ fontSize: 15, fontWeight: "600", color: COLORS.foreground }}>
+              <View style={styles.emptyContainer}>
+                <View style={styles.emptyMascotWrapper}>
+                  <AvaMascot state={isStreaming ? "working" : "idle"} size="lg" />
+                </View>
+
+                <Text style={[styles.emptyTitle, font("bold")]}>
                   {status === "submitted" || status === "streaming"
-                    ? "Agent is processing…"
-                    : "Start a conversation"}
+                    ? "Agent is working…"
+                    : "Session Ready"}
                 </Text>
-                <Text
-                  style={{
-                    fontSize: 13,
-                    color: COLORS.mutedForeground,
-                    textAlign: "center",
-                    paddingHorizontal: 40,
-                  }}
-                >
+
+                <Text style={[styles.emptySubtitle, font("regular")]}>
                   {status === "submitted" || status === "streaming"
-                    ? "Your prompt has been sent. The agent's response will appear here."
-                    : "Type a message below to begin coding with AvA."}
+                    ? "Executing tools and generating solution. Output will stream here."
+                    : `Active in ${pathSnippet || "workspace"}. Ask a question or run a task to begin.`}
                 </Text>
+
+                {!isStreaming && (
+                  <View style={styles.startersWrap}>
+                    <Text style={[styles.startersHeader, font("semibold")]}>
+                      Quick Starters
+                    </Text>
+                    <View style={styles.startersGrid}>
+                      {quickStarters.map((starter, idx) => (
+                        <TouchableOpacity
+                          key={idx}
+                          style={styles.starterCard}
+                          onPress={() => handleSubmit(starter.prompt)}
+                          activeOpacity={0.7}
+                        >
+                          <Text style={[styles.starterCardText, font("medium")]}>
+                            {starter.label}
+                          </Text>
+                        </TouchableOpacity>
+                      ))}
+                    </View>
+                  </View>
+                )}
               </View>
             )
           }
@@ -325,6 +446,7 @@ export function SessionScreen({
             accessibilityLabel="Scroll to bottom"
           >
             <ChevronDown size={18} color={COLORS.foreground} />
+            {isStreaming && <View style={styles.scrollBtnDot} />}
           </TouchableOpacity>
         )}
 
@@ -376,6 +498,30 @@ export function SessionScreen({
           </View>
         ) : null}
 
+        {/* Live streaming / processing banner */}
+        {isStreaming ? (
+          <View style={styles.liveStatusBar}>
+            <View style={styles.liveStatusLeft}>
+              <View style={styles.livePulseDot} />
+              <Shimmer style={styles.liveStatusText}>
+                {status === "submitted"
+                  ? "AvA is preparing response…"
+                  : "AvA is executing tools & generating response…"}
+              </Shimmer>
+            </View>
+            <TouchableOpacity
+              onPress={stop}
+              style={styles.liveStopBtn}
+              activeOpacity={0.7}
+              accessibilityRole="button"
+              accessibilityLabel="Stop agent response"
+            >
+              <Square size={10} color={COLORS.destructive} fill={COLORS.destructive} />
+              <Text style={styles.liveStopText}>Stop</Text>
+            </TouchableOpacity>
+          </View>
+        ) : null}
+
         {/* Stopping indicator banner */}
         {status === "stopping" ? (
           <View style={styles.stoppingContainer}>
@@ -406,9 +552,79 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
+  topBarContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.border,
+    backgroundColor: COLORS.glassBg,
+    gap: 8,
+  },
+  sessionMetaPill: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    flex: 1,
+    marginRight: 4,
+  },
+  sessionMetaText: {
+    fontSize: 12,
+    color: COLORS.foreground,
+    maxWidth: 110,
+  },
+  metaDot: {
+    fontSize: 11,
+    color: COLORS.mutedForeground,
+  },
+  sessionPathText: {
+    fontSize: 11,
+    color: COLORS.mutedForeground,
+    flexShrink: 1,
+  },
+  topActionsRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+  },
+  shortcutPill: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
+    paddingHorizontal: 9,
+    paddingVertical: 5,
+    borderRadius: 999,
+    backgroundColor: COLORS.secondary,
+    borderWidth: 1,
+    borderColor: COLORS.glassBorder,
+  },
+  shortcutPillActive: {
+    backgroundColor: COLORS.glassBg,
+    borderColor: COLORS.primary,
+  },
+  shortcutPillText: {
+    fontSize: 11,
+    color: COLORS.mutedForeground,
+  },
+  badgeCount: {
+    backgroundColor: COLORS.primary,
+    borderRadius: 8,
+    paddingHorizontal: 5,
+    paddingVertical: 1,
+    minWidth: 16,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  badgeCountText: {
+    fontSize: 9,
+    fontWeight: "700",
+    color: COLORS.primaryForeground,
+  },
   listContent: {
     paddingHorizontal: 14,
-    paddingVertical: 16,
+    paddingVertical: 14,
     gap: 16,
   },
   historyLoader: {
@@ -433,6 +649,128 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: COLORS.mutedForeground,
     fontWeight: "500",
+  },
+  emptyContainer: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 40,
+    paddingHorizontal: 20,
+  },
+  emptyMascotWrapper: {
+    marginBottom: 16,
+    padding: 10,
+    borderRadius: 999,
+    backgroundColor: COLORS.glassBg,
+    borderWidth: 1,
+    borderColor: COLORS.glassBorder,
+    shadowColor: COLORS.glassShadow,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 10,
+    elevation: 3,
+  },
+  emptyTitle: {
+    fontSize: 18,
+    color: COLORS.foreground,
+    textAlign: "center",
+    marginBottom: 6,
+  },
+  emptySubtitle: {
+    fontSize: 13,
+    color: COLORS.mutedForeground,
+    textAlign: "center",
+    lineHeight: 18,
+    maxWidth: 300,
+    marginBottom: 24,
+  },
+  startersWrap: {
+    width: "100%",
+    maxWidth: 340,
+    gap: 8,
+  },
+  startersHeader: {
+    fontSize: 11,
+    color: COLORS.mutedForeground,
+    textTransform: "uppercase",
+    letterSpacing: 0.5,
+    marginBottom: 2,
+    textAlign: "center",
+  },
+  startersGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+    justifyContent: "center",
+  },
+  starterCard: {
+    paddingHorizontal: 13,
+    paddingVertical: 8,
+    borderRadius: 999,
+    backgroundColor: COLORS.glassBg,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    shadowColor: COLORS.glassShadow,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 3,
+    elevation: 1,
+  },
+  starterCardText: {
+    fontSize: 12,
+    color: COLORS.foreground,
+  },
+  liveStatusBar: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginHorizontal: 12,
+    marginBottom: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 12,
+    backgroundColor: COLORS.glassBg,
+    borderWidth: 1,
+    borderColor: COLORS.primary,
+    shadowColor: COLORS.primary,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 6,
+    elevation: 2,
+  },
+  liveStatusLeft: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    flex: 1,
+  },
+  livePulseDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: "#10B981",
+  },
+  liveStatusText: {
+    fontSize: 12,
+    color: COLORS.foreground,
+    fontWeight: "500",
+    flex: 1,
+  },
+  liveStopBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
+    backgroundColor: "rgba(239, 68, 68, 0.12)",
+    borderWidth: 1,
+    borderColor: "rgba(239, 68, 68, 0.25)",
+  },
+  liveStopText: {
+    fontSize: 11,
+    fontWeight: "600",
+    color: COLORS.destructive,
   },
   errorContainer: {
     paddingHorizontal: 16,
@@ -462,7 +800,7 @@ const styles = StyleSheet.create({
     marginHorizontal: 12,
     marginBottom: 6,
     padding: 10,
-    borderRadius: 10,
+    borderRadius: 12,
     backgroundColor: COLORS.card,
     borderWidth: 1,
     borderColor: COLORS.border,
@@ -534,19 +872,28 @@ const styles = StyleSheet.create({
     position: "absolute",
     bottom: 95,
     right: 16,
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    width: 38,
+    height: 38,
+    borderRadius: 19,
     backgroundColor: COLORS.card,
     borderWidth: 1,
     borderColor: COLORS.glassBorder,
     alignItems: "center",
     justifyContent: "center",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.15,
-    shadowRadius: 5,
+    shadowColor: COLORS.glassShadow,
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.18,
+    shadowRadius: 6,
     elevation: 4,
     zIndex: 99,
+  },
+  scrollBtnDot: {
+    position: "absolute",
+    top: 6,
+    right: 6,
+    width: 7,
+    height: 7,
+    borderRadius: 3.5,
+    backgroundColor: COLORS.primary,
   },
 });

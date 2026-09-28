@@ -64,7 +64,7 @@ export function SessionScreen({
     if (navigation?.canGoBack()) {
       navigation.goBack();
     } else {
-      navigation?.navigate("Chat");
+      navigation?.navigate("Main", { screen: "Chat" });
     }
   }, [navigation]);
 
@@ -100,8 +100,31 @@ export function SessionScreen({
     }
   }, [scrollToMessageId, messages]);
 
-  // Swipe left → open Timeline (lightweight, no back-swipe interference)
-  const lastSwipeStart = useRef<{ x: number; time: number } | null>(null);
+  // Swipe Right to Left → Open Timeline Screen
+  const touchStartRef = useRef<{ x: number; y: number; time: number } | null>(null);
+
+  const handleTouchStart = (e: any) => {
+    touchStartRef.current = {
+      x: e.nativeEvent.pageX,
+      y: e.nativeEvent.pageY,
+      time: Date.now(),
+    };
+  };
+
+  const handleTouchEnd = (e: any) => {
+    if (!touchStartRef.current) return;
+    const dx = e.nativeEvent.pageX - touchStartRef.current.x;
+    const dy = e.nativeEvent.pageY - touchStartRef.current.y;
+    const dt = Date.now() - touchStartRef.current.time;
+    touchStartRef.current = null;
+
+    // Swiped from right to left (negative dx) with minimal vertical deflection
+    if (dx < -75 && Math.abs(dy) < 65 && dt < 450) {
+      navigation?.navigate("Timeline", {
+        sessionId,
+      });
+    }
+  };
 
   useEffect(() => {
     if (sessionId) {
@@ -121,12 +144,12 @@ export function SessionScreen({
 
   const isNearBottomRef = useRef(true);
   const [showScrollBottomBtn, setShowScrollBottomBtn] = useState(false);
-  const prevLengthRef = useRef(messages.length);
 
   // Auto-scroll when messages arrive or stream live tokens
   const isStreaming = status === "submitted" || status === "streaming";
   const lastMsg = messages.length > 0 ? messages[messages.length - 1] : null;
-  const lastMsgTokenCount = lastMsg?.parts?.reduce((acc, p) => acc + (p.text?.length || 0), 0) || 0;
+  const lastMsgTokenCount =
+    lastMsg?.parts?.reduce((acc, p) => acc + (p.text?.length || 0), 0) || 0;
 
   useEffect(() => {
     if (isNearBottomRef.current) {
@@ -168,13 +191,15 @@ export function SessionScreen({
       chatMessages={messages}
       onNewSession={() => {
         setActiveSessionId(null);
-        navigation?.navigate("Chat");
+        navigation?.navigate("Main", { screen: "Chat" });
       }}
     >
       <KeyboardAvoidingView
         style={styles.container}
         behavior={Platform.OS === "ios" ? "padding" : undefined}
         keyboardVerticalOffset={Platform.OS === "ios" ? 10 : 0}
+        onTouchStart={handleTouchStart}
+        onTouchEnd={handleTouchEnd}
       >
         <FlatList
           ref={flatListRef}
@@ -186,11 +211,28 @@ export function SessionScreen({
           keyboardDismissMode="on-drag"
           ListEmptyComponent={
             loadingHistory ? null : (
-              <View style={{ flex: 1, alignItems: "center", justifyContent: "center", paddingVertical: 80, gap: 12 }}>
+              <View
+                style={{
+                  flex: 1,
+                  alignItems: "center",
+                  justifyContent: "center",
+                  paddingVertical: 80,
+                  gap: 12,
+                }}
+              >
                 <Text style={{ fontSize: 15, fontWeight: "600", color: COLORS.foreground }}>
-                  {status === "submitted" || status === "streaming" ? "Agent is processing…" : "Start a conversation"}
+                  {status === "submitted" || status === "streaming"
+                    ? "Agent is processing…"
+                    : "Start a conversation"}
                 </Text>
-                <Text style={{ fontSize: 13, color: COLORS.mutedForeground, textAlign: "center", paddingHorizontal: 40 }}>
+                <Text
+                  style={{
+                    fontSize: 13,
+                    color: COLORS.mutedForeground,
+                    textAlign: "center",
+                    paddingHorizontal: 40,
+                  }}
+                >
                   {status === "submitted" || status === "streaming"
                     ? "Your prompt has been sent. The agent's response will appear here."
                     : "Type a message below to begin coding with AvA."}
@@ -228,9 +270,7 @@ export function SessionScreen({
           ListHeaderComponent={
             loadingHistory ? (
               <View style={styles.historyLoader}>
-                <Shimmer style={styles.historyLoaderText}>
-                  Loading session…
-                </Shimmer>
+                <Shimmer style={styles.historyLoaderText}>Loading session…</Shimmer>
               </View>
             ) : hasOlder ? (
               <TouchableOpacity
@@ -240,9 +280,7 @@ export function SessionScreen({
                 accessibilityRole="button"
                 accessibilityLabel="Load earlier messages"
               >
-                <Text style={styles.loadOlderText}>
-                  Load earlier messages
-                </Text>
+                <Text style={styles.loadOlderText}>Load earlier messages</Text>
               </TouchableOpacity>
             ) : null
           }
@@ -256,7 +294,7 @@ export function SessionScreen({
             accessibilityRole="button"
             accessibilityLabel="Scroll to bottom"
           >
-            <ChevronDown size={19} color={COLORS.foreground} />
+            <ChevronDown size={18} color={COLORS.foreground} />
           </TouchableOpacity>
         )}
 
@@ -273,7 +311,8 @@ export function SessionScreen({
               <View style={styles.queueHeaderLeft}>
                 <Clock size={13} color={COLORS.primary} />
                 <Text style={styles.queueTitle}>
-                  {queuedPrompts.length} queued {queuedPrompts.length === 1 ? "prompt" : "prompts"}
+                  {queuedPrompts.length} queued{" "}
+                  {queuedPrompts.length === 1 ? "prompt" : "prompts"}
                 </Text>
               </View>
               {status === "ready" ? (
@@ -463,21 +502,21 @@ const styles = StyleSheet.create({
   },
   floatingScrollBtn: {
     position: "absolute",
-    bottom: 120,
-    right: 18,
-    width: 38,
-    height: 38,
-    borderRadius: 19,
+    bottom: 95,
+    right: 16,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     backgroundColor: COLORS.card,
     borderWidth: 1,
     borderColor: COLORS.glassBorder,
     alignItems: "center",
     justifyContent: "center",
     shadowColor: "#000",
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.14,
-    shadowRadius: 6,
-    elevation: 5,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 5,
+    elevation: 4,
     zIndex: 99,
   },
 });

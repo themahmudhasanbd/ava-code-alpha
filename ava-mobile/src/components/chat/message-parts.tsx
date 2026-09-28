@@ -119,9 +119,19 @@ function AssistantTurn({
   const hasError = message.parts.some(
     (part) => part.status === "error" || part.meta?.tone === "error"
   );
+  const isInterrupted = message.parts.some(
+    (p) =>
+      p.kind === "notice" &&
+      (p.text === "Stopped" ||
+        p.text?.toLowerCase().includes("interrupted") ||
+        p.text?.toLowerCase().includes("stopped by user") ||
+        p.meta?.tone === "warning")
+  );
 
   const activityLabel = hasError
     ? "Needs attention"
+    : isInterrupted
+    ? "Interrupted"
     : live
     ? steps > 0
       ? `Working${elapsed ? ` · ${formatDuration(elapsed)}` : ""}`
@@ -180,6 +190,10 @@ function AssistantTurn({
           <Text style={[styles.turnSubText, font("regular")]}>
             {hasError
               ? "Core reported an issue"
+              : isInterrupted
+              ? duration
+                ? `Interrupted after ${formatDuration(duration)}`
+                : "Interrupted by user"
               : live
               ? hasWorkflowSteps
                 ? `${steps ? `${steps} tool step${steps === 1 ? "" : "s"}` : "Executing steps"} · live`

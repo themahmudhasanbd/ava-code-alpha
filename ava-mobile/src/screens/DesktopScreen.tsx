@@ -1,191 +1,59 @@
-import React, { useState } from "react";
-import {
-  Image,
-  Platform,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
-} from "react-native";
+import React from "react";
+import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { useNavigation } from "@react-navigation/native";
-import { openAppDrawer } from "@/navigation/drawer";
-import { Camera, Keyboard, Menu, Monitor, RefreshCw } from "lucide-react-native";
+import { Monitor, ArrowRight, Cpu, ScreenShare } from "lucide-react-native";
 import { AppShell } from "@/components/layout/AppShell";
-import {
-  Badge,
-  EmptyState,
-  GlassIconButton,
-  SkeletonRows,
-  Surface,
-} from "@/components/kit";
-import {
-  useCaptureScreen,
-  useDesktopInput,
-  useDesktopStatus,
-} from "@/state/queries";
+import { Badge, Surface } from "@/components/kit";
 import { COLORS } from "@/theme/colors";
-
-const KEYS = ["Return", "Escape", "Tab", "BackSpace", "ctrl+c", "ctrl+v"];
+import { font } from "@/theme/fonts";
 
 export function DesktopScreen() {
   const navigation = useNavigation<any>();
-  const { data: status, isLoading, error, refetch, isFetching } = useDesktopStatus();
-  const capture = useCaptureScreen();
-  const desktopInput = useDesktopInput();
-
-  const [screenshot, setScreenshot] = useState<string | null>(null);
-  const [text, setText] = useState("");
-  const display = status?.display ?? null;
-
-  const handleCapture = async () => {
-    if (!display || !status) return;
-    try {
-      const res = await capture.mutateAsync({
-        display,
-        width: status.width,
-        height: status.height,
-      });
-      setScreenshot(res);
-    } catch (err) {
-      console.warn("Capture error:", err);
-    }
-  };
-
-  const handleSendKey = (k: string) => {
-    if (!display) return;
-    desktopInput.mutate({ display, input: { key: k } });
-  };
-
-  const handleSendText = () => {
-    if (!display || !text) return;
-    desktopInput.mutate({ display, input: { text } });
-    setText("");
-  };
-
-  // Dedicated Customized Header for Remote Desktop
-  const customDesktopHeader = (
-    <Surface style={styles.customHeaderSurface}>
-      <View style={styles.headerLeft}>
-        <GlassIconButton
-          icon={Menu}
-          size={18}
-          onPress={() => openAppDrawer(navigation)}
-        />
-        <View style={styles.headerTextGroup}>
-          <View style={styles.headerTitleRow}>
-            <Monitor size={14} color={COLORS.primary} />
-            <Text style={styles.headerTitleText}>Remote Desktop</Text>
-          </View>
-          <Text style={styles.headerSubtitleText} numberOfLines={1}>
-            {display ? `Display :${display} · ${status?.vncRunning ? "VNC Active" : "No VNC"}` : "Xvfb / VNC Server"}
-          </Text>
-        </View>
-      </View>
-
-      <View style={styles.headerRight}>
-        {display ? (
-          <GlassIconButton
-            icon={Camera}
-            size={17}
-            onPress={handleCapture}
-            disabled={capture.isPending}
-          />
-        ) : null}
-        <GlassIconButton
-          icon={RefreshCw}
-          size={17}
-          disabled={isFetching}
-          onPress={() => refetch()}
-        />
-      </View>
-    </Surface>
-  );
 
   return (
-    <AppShell customHeader={customDesktopHeader}>
-      <ScrollView
-        style={styles.container}
-        contentContainerStyle={styles.content}
-        showsVerticalScrollIndicator={false}
-      >
-        {isLoading && <SkeletonRows count={2} />}
+    <AppShell title="Remote Desktop">
+      <View style={styles.container}>
+        <Surface style={styles.card}>
+          <View style={styles.iconCircle}>
+            <Monitor size={36} color={COLORS.primary} />
+          </View>
 
-        {error && (
-          <EmptyState
-            icon={Monitor}
-            title="Could not check desktop"
-            description={(error as Error).message}
-          />
-        )}
+          <View style={styles.badgeRow}>
+            <Badge variant="secondary">Coming Soon</Badge>
+            <Badge variant="outline">In Active Development</Badge>
+          </View>
 
-        {status && !display && (
-          <EmptyState
-            icon={Monitor}
-            title="No desktop running"
-            description="Start a desktop session (Xvfb/VNC) on your server, then refresh."
-          />
-        )}
+          <Text style={[styles.title, font("semibold")]}>Remote Desktop & VNC</Text>
 
-        {status && display && (
-          <>
-            <View style={styles.badgeRow}>
-              <Badge variant="secondary">Display :{display}</Badge>
-              <Badge variant={status.vncRunning ? "default" : "secondary"}>
-                {status.vncRunning ? "VNC running" : "VNC off"}
-              </Badge>
+          <Text style={[styles.description, font("regular")]}>
+            The interactive remote desktop visual environment is currently under development. This feature will bring full Xvfb display management, real-time VNC streaming, and GUI automation directly into AvA.
+          </Text>
+
+          <View style={styles.featuresList}>
+            <View style={styles.featureItem}>
+              <Cpu size={14} color={COLORS.primary} />
+              <Text style={[styles.featureText, font("regular")]}>
+                Live Xvfb / virtual display frame buffer streaming
+              </Text>
             </View>
-
-            <Surface style={styles.screenshotBox}>
-              {screenshot ? (
-                <Image
-                  source={{ uri: screenshot }}
-                  style={styles.screenImage}
-                  resizeMode="contain"
-                />
-              ) : (
-                <TouchableOpacity
-                  style={styles.capturePlaceholder}
-                  onPress={handleCapture}
-                >
-                  <Text style={styles.captureText}>
-                    {capture.isPending
-                      ? "Capturing screen…"
-                      : "Tap to capture screen"}
-                  </Text>
-                </TouchableOpacity>
-              )}
-            </Surface>
-
-            {/* Keyboard input */}
-            <Surface style={styles.keyInputRow}>
-              <Keyboard size={16} color={COLORS.mutedForeground} />
-              <TextInput
-                style={styles.input}
-                value={text}
-                onChangeText={setText}
-                onSubmitEditing={handleSendText}
-                placeholder="Type text and press Return…"
-                placeholderTextColor={COLORS.mutedForeground}
-              />
-            </Surface>
-
-            <View style={styles.keysRow}>
-              {KEYS.map((k) => (
-                <TouchableOpacity
-                  key={k}
-                  style={styles.keyBtn}
-                  onPress={() => handleSendKey(k)}
-                  activeOpacity={0.7}
-                >
-                  <Text style={styles.keyText}>{k}</Text>
-                </TouchableOpacity>
-              ))}
+            <View style={styles.featureItem}>
+              <ScreenShare size={14} color={COLORS.primary} />
+              <Text style={[styles.featureText, font("regular")]}>
+                Interactive mouse, keyboard, and window management
+              </Text>
             </View>
-          </>
-        )}
-      </ScrollView>
+          </View>
+
+          <TouchableOpacity
+            style={styles.actionBtn}
+            onPress={() => navigation.navigate("Main", { screen: "Chat" })}
+            activeOpacity={0.8}
+          >
+            <Text style={[styles.actionBtnText, font("medium")]}>Return to Chat</Text>
+            <ArrowRight size={15} color="#FFFFFF" />
+          </TouchableOpacity>
+        </Surface>
+      </View>
     </AppShell>
   );
 }
@@ -193,105 +61,79 @@ export function DesktopScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-  },
-  customHeaderSurface: {
-    marginHorizontal: 12,
-    marginTop: Platform.OS === "android" ? 8 : 4,
-    marginBottom: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    borderRadius: 18,
-    height: 56,
-  },
-  headerLeft: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 10,
-    flex: 1,
-  },
-  headerTextGroup: {
-    justifyContent: "center",
-    flex: 1,
-  },
-  headerTitleRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-  },
-  headerTitleText: {
-    fontSize: 14,
-    fontWeight: "700",
-    color: COLORS.foreground,
-  },
-  headerSubtitleText: {
-    fontSize: 10.5,
-    color: COLORS.mutedForeground,
-    marginTop: 1,
-  },
-  headerRight: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-  },
-  content: {
     padding: 16,
-    gap: 12,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  card: {
+    width: "100%",
+    maxWidth: 440,
+    padding: 24,
+    borderRadius: 20,
+    alignItems: "center",
+    gap: 14,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+  },
+  iconCircle: {
+    width: 72,
+    height: 72,
+    borderRadius: 36,
+    backgroundColor: "rgba(66, 64, 225, 0.08)",
+    borderWidth: 1,
+    borderColor: "rgba(66, 64, 225, 0.2)",
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 4,
   },
   badgeRow: {
     flexDirection: "row",
     gap: 8,
   },
-  screenshotBox: {
-    borderRadius: 16,
-    overflow: "hidden",
-    minHeight: 200,
+  title: {
+    fontSize: 20,
+    color: COLORS.foreground,
+    textAlign: "center",
   },
-  screenImage: {
-    width: "100%",
-    aspectRatio: 16 / 9,
-  },
-  capturePlaceholder: {
-    height: 200,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: COLORS.muted,
-  },
-  captureText: {
-    fontSize: 13,
+  description: {
+    fontSize: 13.5,
     color: COLORS.mutedForeground,
+    textAlign: "center",
+    lineHeight: 20,
+    paddingHorizontal: 8,
   },
-  keyInputRow: {
+  featuresList: {
+    width: "100%",
+    backgroundColor: COLORS.secondary,
+    borderRadius: 12,
+    padding: 12,
+    gap: 8,
+    marginVertical: 4,
+  },
+  featureItem: {
     flexDirection: "row",
     alignItems: "center",
-    paddingHorizontal: 12,
-    height: 44,
-    borderRadius: 14,
     gap: 8,
   },
-  input: {
+  featureText: {
+    fontSize: 12.5,
+    color: COLORS.foreground,
     flex: 1,
-    fontSize: 13,
-    color: COLORS.foreground,
   },
-  keysRow: {
+  actionBtn: {
     flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 6,
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    backgroundColor: COLORS.primary,
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderRadius: 12,
+    width: "100%",
+    marginTop: 6,
   },
-  keyBtn: {
-    backgroundColor: COLORS.glassBg,
-    borderWidth: 1,
-    borderColor: COLORS.glassBorder,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 999,
-  },
-  keyText: {
-    fontSize: 11,
-    fontFamily: Platform.OS === "ios" ? "Menlo" : "monospace",
-    color: COLORS.foreground,
+  actionBtnText: {
+    fontSize: 14,
+    color: "#FFFFFF",
   },
 });

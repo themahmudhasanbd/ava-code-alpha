@@ -69,6 +69,12 @@ export function useChat(explicitSessionId?: string | null) {
   const activeAidRef = useRef<string | null>(initialStore?.activeAid ?? null);
   const currentSessionRef = useRef(currentSessionId);
   const turnStartedAtRef = useRef<number>(0);
+  const isSendingRef = useRef<boolean>(false);
+  const lastSentRef = useRef<{ text: string; time: number; threadId: string | null }>({
+    text: "",
+    time: 0,
+    threadId: null,
+  });
   const safetyTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Helper to fetch server queue items
@@ -534,17 +540,18 @@ export function useChat(explicitSessionId?: string | null) {
     }
   }, [history.data, currentSessionId, visibleCount, rpc, createHandlers, setSessionRunning]);
 
-  // Periodic Watchdog: If streaming state has had no updates for > 15s, poll history to prevent stuck state
+  // Robust Fast Stream Synchronizer: Continuously reconciles server turns and transcript state
   useEffect(() => {
     if (!currentSessionId || (status !== "streaming" && status !== "submitted")) return;
     const interval = setInterval(() => {
       const store = chatStore.getState(currentSessionId);
-      if (store.isStreaming && Date.now() - store.lastUpdated > 12000) {
+      if (store.isStreaming && Date.now() - store.lastUpdated > 4000) {
         void history.refetch();
+        void refreshQueue(currentSessionId);
       }
-    }, 5000);
+    }, 2500);
     return () => clearInterval(interval);
-  }, [currentSessionId, history, status]);
+  }, [currentSessionId, history, status, refreshQueue]);
 
   const loadOlder = useCallback(() => {
     if (!currentSessionId) return;
@@ -561,102 +568,161 @@ export function useChat(explicitSessionId?: string | null) {
 
   const send = useCallback(
     async (text: string, cwd?: string, overrideThreadId?: string) => {
-      if (!rpc || !text.trim()) return null;
+      const trimmed = text.trim();
+      if (!rpc || !trimmed) return null;
 
       const threadId = overrideThreadId || currentSessionId;
+      const now = Date.now();
 
-      // QUEUE CHECK: If turn is currently streaming/submitted, queue the prompt rather than breaking turn
-      if (threadId && (isStreamingRef.current || statusRef.current === "streaming" || statusRef.current === "submitted")) {
-        try {
-          const queued = await addPromptToQueue(rpc, threadId, text);
-          if (queued) {
-            await refreshQueue(threadId);
-            chatStore.patchAssistant(threadId, activeAidRef.current || makeUniqueId("live"), (parts) => [
-              ...parts,
-              {
-                id: makeUniqueId("queued"),
-                kind: "notice",
-                text: "Prompt added to queue. It will run automatically when current task finishes.",
-                status: "done",
-                meta: { tone: "info" },
-              },
-            ]);
-            return threadId;
+      // SAFETY GUARD 1: Prevent rapid duplicate prompt submissions (<1.5s identical text for same thread)
+      if (
+        isSendingRef.current ||
+        (lastSentRef.current.text === trimmed &&
+          lastSentRef.current.threadId === threadId &&
+          now - lastSentRef.current.time < 1500)
+      ) {
+        console.warn("[useChat.send] Dropping duplicate prompt submission:", trimmed);
+        return threadId;
+      }
+
+      isSendingRef.current = true;
+      lastSentRef.current = { text: trimmed, time: now, threadId };
+
+      try {
+        // SAFETY GUARD 2: If turn is currently streaming/submitted, queue prompt on the server
+        if (
+          threadId &&
+          (isStreamingRef.current ||
+            statusRef.current === "streaming" ||
+            statusRef.current === "submitted")
+        ) {
+          try {
+            const queued = await addPromptToQueue(rpc, threadId, trimmed);
+            if (queued) {
+              await refreshQueue(threadId);
+              chatStore.patchAssistant(
+                threadId,
+                activeAidRef.current || makeUniqueId("live"),
+                (parts) => [
+                  ...parts,
+                  {
+                    id: makeUniqueId("queued"),
+                    kind: "notice",
+                    text: "Prompt added to queue. It will run automatically when current task finishes.",
+                    status: "done",
+                    meta: { tone: "info" },
+                  },
+                ]
+              );
+              return threadId;
+            }
+          } catch (e) {
+            console.warn("[useChat.send] failed to queue prompt:", e);
           }
-        } catch (e) {
-          console.warn("[useChat.send] failed to queue prompt:", e);
         }
-      }
 
-      // 1. Clean up any existing listeners if starting a fresh turn
-      if (offRef.current) {
-        try {
-          offRef.current();
-        } catch {}
-        offRef.current = null;
-      }
+        // Clean up any existing listeners for fresh turn
+        if (offRef.current) {
+          try {
+            offRef.current();
+          } catch {}
+          offRef.current = null;
+        }
 
-      setError(null);
-      isStreamingRef.current = true;
-      statusRef.current = "submitted";
-      turnStartedAtRef.current = Date.now();
+        setError(null);
+        isStreamingRef.current = true;
+        statusRef.current = "submitted";
+        turnStartedAtRef.current = Date.now();
 
-      const targetCwd = cwd || workingCwd || defaultCwd || APP.defaultCwd;
-      let targetThreadId = threadId;
+        const targetCwd = cwd || workingCwd || defaultCwd || APP.defaultCwd;
+        let targetThreadId = threadId;
 
-      if (!targetThreadId) {
-        try {
-          targetThreadId = await startSession(rpc, {
-            cwd: targetCwd,
-            sandbox,
-            ...(modelId ? { model: modelId } : {}),
-          });
+        // Start new session if needed
+        if (!targetThreadId) {
+          try {
+            targetThreadId = await startSession(rpc, {
+              cwd: targetCwd,
+              sandbox,
+              ...(modelId ? { model: modelId } : {}),
+            });
+            setActiveSessionId(targetThreadId);
+          } catch (e) {
+            isStreamingRef.current = false;
+            statusRef.current = "error";
+            const errStr = formatCoreError(e);
+            setError(errStr);
+            return null;
+          }
+        }
+
+        setSessionRunning(targetThreadId, true);
+        if (targetThreadId !== activeSessionId) {
           setActiveSessionId(targetThreadId);
-        } catch (e) {
+        }
+
+        const aid = makeUniqueId("live");
+        activeAidRef.current = aid;
+
+        const userMsgId = makeUniqueId("u");
+        const userPartId = makeUniqueId("u_part");
+
+        chatStore.setState(targetThreadId, (prev) => ({
+          ...prev,
+          status: "submitted",
+          isStreaming: true,
+          isStopping: false,
+          activeAid: aid,
+          error: null,
+          messages: [
+            ...prev.messages,
+            {
+              id: userMsgId,
+              role: "user",
+              parts: [{ id: userPartId, kind: "text", text: trimmed, status: "done" }],
+            },
+            { id: aid, role: "assistant", parts: [], stats: { startedAt: Date.now() } },
+          ],
+        }));
+
+        try {
+          offRef.current = await runTurn(
+            rpc,
+            targetThreadId,
+            trimmed,
+            { ...(modelId ? { model: modelId } : {}), effort },
+            createHandlers(aid, targetThreadId)
+          );
+        } catch (turnErr) {
+          const formattedErr = formatCoreError(turnErr);
           isStreamingRef.current = false;
           statusRef.current = "error";
-          setError(formatCoreError(e));
-          return null;
+          setError(formattedErr);
+          setSessionRunning(targetThreadId, false);
+
+          chatStore.patchAssistant(targetThreadId, aid, (parts) => [
+            ...parts,
+            {
+              id: makeUniqueId("err"),
+              kind: "notice",
+              text: `Failed to send prompt: ${formattedErr}`,
+              status: "error",
+              meta: { tone: "error" },
+            },
+          ]);
+
+          chatStore.setState(targetThreadId, (prev) => ({
+            ...prev,
+            status: "error",
+            error: formattedErr,
+            isStreaming: false,
+            isStopping: false,
+          }));
         }
+
+        return targetThreadId;
+      } finally {
+        isSendingRef.current = false;
       }
-
-      setSessionRunning(targetThreadId, true);
-      if (targetThreadId !== activeSessionId) {
-        setActiveSessionId(targetThreadId);
-      }
-
-      const aid = makeUniqueId("live");
-      activeAidRef.current = aid;
-
-      const userMsgId = makeUniqueId("u");
-      const userPartId = makeUniqueId("u_part");
-
-      chatStore.setState(targetThreadId, (prev) => ({
-        ...prev,
-        status: "submitted",
-        isStreaming: true,
-        isStopping: false,
-        activeAid: aid,
-        error: null,
-        messages: [
-          ...prev.messages,
-          {
-            id: userMsgId,
-            role: "user",
-            parts: [{ id: userPartId, kind: "text", text, status: "done" }],
-          },
-          { id: aid, role: "assistant", parts: [], stats: { startedAt: Date.now() } },
-        ],
-      }));
-
-      offRef.current = await runTurn(
-        rpc,
-        targetThreadId,
-        text,
-        { ...(modelId ? { model: modelId } : {}), effort },
-        createHandlers(aid, targetThreadId)
-      );
-      return targetThreadId;
     },
     [
       rpc,

@@ -1,4 +1,4 @@
-import React, { forwardRef, useEffect, useRef, useState } from "react";
+import React, { forwardRef, useEffect, useMemo, useRef, useState } from "react";
 import { BlurView } from "expo-blur";
 import {
   ActivityIndicator,
@@ -20,34 +20,58 @@ import { File } from "expo-file-system";
 import {
   ArrowLeft,
   ArrowUp,
+  AtSign,
   Bot,
+  Brain,
   Check,
   ChevronDown,
   ChevronRight,
+  ChevronUp,
+  Clock,
+  Code2,
   Cpu,
+  Database,
+  Eye,
   FileCode,
   FileText,
   FileVideo,
+  Folder,
+  FolderGit2,
   FolderOpen,
+  GitBranch,
+  GitCommit,
+  Globe,
+  Layers,
+  ListTodo,
   Mic,
+  Minimize2,
   Play,
   Plug,
   Plus,
   PlusCircle,
+  Radio,
+  RefreshCw,
   Search,
+  Server,
   ShieldCheck,
+  Slash,
+  Sparkles,
   Square,
+  Target,
   Terminal as TerminalSquare,
   Trash2,
+  Wrench,
   X,
+  Zap,
   type LucideIcon,
 } from "lucide-react-native";
 import { REASONING_EFFORTS, SANDBOX_MODES } from "@/config/models";
 import { useAva } from "@/state/ava-provider";
-import { useModels } from "@/state/queries";
+import { useDirectory, useMcpServers, useModels } from "@/state/queries";
 import type { ChatStatus } from "@/state/use-chat";
 import { MediaSelectorModal, type SelectedMedia } from "@/components/media/MediaSelectorModal";
 import { COLORS } from "@/theme/colors";
+import { font, mono } from "@/theme/fonts";
 
 function getAudioModule(): any {
   try {
@@ -86,6 +110,232 @@ export interface AttachedItem {
 }
 
 type Panel = "tools" | "model" | "sandbox" | null;
+
+export interface SlashCommandItem {
+  command: string;
+  label: string;
+  description: string;
+  category: "model" | "session" | "tools" | "workflow";
+  icon: LucideIcon;
+  action?: "direct" | "panel" | "navigate";
+  target?: string;
+}
+
+export interface MentionItem {
+  id: string;
+  name: string;
+  insertText: string;
+  description: string;
+  category: "file" | "folder" | "mcp" | "context" | "symbol";
+  icon: LucideIcon;
+}
+
+const BUILTIN_SLASH_COMMANDS: SlashCommandItem[] = [
+  {
+    command: "model",
+    label: "/model",
+    description: "Switch AI model & reasoning depth",
+    category: "model",
+    icon: Cpu,
+    action: "panel",
+    target: "model",
+  },
+  {
+    command: "compact",
+    label: "/compact",
+    description: "Summarize conversation to free up context window",
+    category: "session",
+    icon: Minimize2,
+  },
+  {
+    command: "clear",
+    label: "/clear",
+    description: "Clear transcript & reset screen",
+    category: "session",
+    icon: Trash2,
+    action: "direct",
+    target: "clear",
+  },
+  {
+    command: "new",
+    label: "/new",
+    description: "Start a fresh session",
+    category: "session",
+    icon: PlusCircle,
+    action: "direct",
+    target: "new",
+  },
+  {
+    command: "review",
+    label: "/review",
+    description: "Review current changes and find potential bugs",
+    category: "workflow",
+    icon: Code2,
+  },
+  {
+    command: "diff",
+    label: "/diff",
+    description: "Inspect git diff & modified workspace files",
+    category: "workflow",
+    icon: GitCommit,
+  },
+  {
+    command: "plan",
+    label: "/plan",
+    description: "Switch to autonomous Plan & Architect mode",
+    category: "workflow",
+    icon: ListTodo,
+  },
+  {
+    command: "goal",
+    label: "/goal",
+    description: "Set or inspect a persistent long-running task goal",
+    category: "workflow",
+    icon: Target,
+  },
+  {
+    command: "mcp",
+    label: "/mcp",
+    description: "Inspect MCP servers & connected tools",
+    category: "tools",
+    icon: Plug,
+    action: "navigate",
+    target: "Mcp",
+  },
+  {
+    command: "skills",
+    label: "/skills",
+    description: "Invoke and manage specialized agent skills",
+    category: "tools",
+    icon: Sparkles,
+  },
+  {
+    command: "sandbox",
+    label: "/sandbox",
+    description: "Adjust execution & workspace write permissions",
+    category: "tools",
+    icon: ShieldCheck,
+    action: "panel",
+    target: "sandbox",
+  },
+  {
+    command: "files",
+    label: "/files",
+    description: "Open workspace file tree and code editor",
+    category: "tools",
+    icon: FolderOpen,
+    action: "navigate",
+    target: "Files",
+  },
+  {
+    command: "terminal",
+    label: "/terminal",
+    description: "Launch interactive server terminal",
+    category: "tools",
+    icon: TerminalSquare,
+    action: "navigate",
+    target: "Terminal",
+  },
+  {
+    command: "status",
+    label: "/status",
+    description: "Show session token usage & system health",
+    category: "session",
+    icon: Radio,
+  },
+  {
+    command: "stop",
+    label: "/stop",
+    description: "Stop currently running agent execution",
+    category: "session",
+    icon: Square,
+    action: "direct",
+    target: "stop",
+  },
+];
+
+const STATIC_CONTEXT_MENTIONS: MentionItem[] = [
+  {
+    id: "git",
+    name: "git",
+    insertText: "@git",
+    description: "Current git branch, commit status & uncommitted changes",
+    category: "context",
+    icon: GitBranch,
+  },
+  {
+    id: "diff",
+    name: "diff",
+    insertText: "@diff",
+    description: "Full git diff across workspace",
+    category: "context",
+    icon: GitCommit,
+  },
+  {
+    id: "workspace",
+    name: "workspace",
+    insertText: "@workspace",
+    description: "Current workspace root & active project tree",
+    category: "context",
+    icon: FolderGit2,
+  },
+  {
+    id: "diagnostics",
+    name: "diagnostics",
+    insertText: "@diagnostics",
+    description: "Server CPU, resident memory & runtime diagnostics",
+    category: "context",
+    icon: Cpu,
+  },
+  {
+    id: "memory",
+    name: "memory",
+    insertText: "@memory",
+    description: "Persistent project memory & architectural context",
+    category: "mcp",
+    icon: Brain,
+  },
+  {
+    id: "cloudflare",
+    name: "cloudflare",
+    insertText: "@cloudflare",
+    description: "Cloudflare DNS, zones, cache & security MCP tools",
+    category: "mcp",
+    icon: Globe,
+  },
+  {
+    id: "cpanel",
+    name: "cpanel",
+    insertText: "@cpanel",
+    description: "cPanel hosting, domains & MySQL MCP tools",
+    category: "mcp",
+    icon: Server,
+  },
+  {
+    id: "mysql",
+    name: "mysql",
+    insertText: "@mysql",
+    description: "VPS MySQL database schema, tables & query execution",
+    category: "mcp",
+    icon: Database,
+  },
+  {
+    id: "github",
+    name: "github",
+    insertText: "@github",
+    description: "GitHub repositories, issues, branches & PR tools",
+    category: "mcp",
+    icon: Code2,
+  },
+  {
+    id: "puppeteer",
+    name: "puppeteer",
+    insertText: "@puppeteer",
+    description: "Headless browser automation & live screenshots",
+    category: "mcp",
+    icon: Eye,
+  },
+];
 
 function FloatingOptionRow({
   icon: Icon,
@@ -138,6 +388,7 @@ function FloatingOptionRow({
               styles.optionTitle,
               active && styles.optionTitleActive,
               destructive && styles.optionTitleDestructive,
+              font("semibold"),
             ]}
             numberOfLines={1}
           >
@@ -145,12 +396,12 @@ function FloatingOptionRow({
           </Text>
           {badge && (
             <View style={styles.optionBadge}>
-              <Text style={styles.optionBadgeText}>{badge}</Text>
+              <Text style={[styles.optionBadgeText, font("medium")]}>{badge}</Text>
             </View>
           )}
         </View>
         {subtitle && (
-          <Text style={styles.optionSubtitle} numberOfLines={1}>
+          <Text style={[styles.optionSubtitle, font("regular")]} numberOfLines={1}>
             {subtitle}
           </Text>
         )}
@@ -194,10 +445,8 @@ function FloatingPopupModal({
           <BlurView intensity={85} tint="dark" style={StyleSheet.absoluteFill} />
           <TouchableWithoutFeedback onPress={() => {}}>
             <View style={styles.bottomSheetCard}>
-              {/* Sheet Top Handle Bar */}
               <View style={styles.sheetHandleBar} />
 
-              {/* Header */}
               <View style={styles.popupHeader}>
                 {onBack ? (
                   <TouchableOpacity
@@ -211,7 +460,7 @@ function FloatingPopupModal({
                 ) : (
                   <View style={{ width: 28 }} />
                 )}
-                <Text style={styles.popupTitle} numberOfLines={1}>
+                <Text style={[styles.popupTitle, font("bold")]} numberOfLines={1}>
                   {title}
                 </Text>
                 <TouchableOpacity
@@ -224,12 +473,11 @@ function FloatingPopupModal({
                 </TouchableOpacity>
               </View>
 
-              {/* Optional Search Bar */}
               {onSearchChange !== undefined && (
                 <View style={styles.searchBar}>
                   <Search size={14} color={COLORS.mutedForeground} />
                   <TextInput
-                    style={styles.searchInput}
+                    style={[styles.searchInput, font("regular")]}
                     value={searchQuery}
                     onChangeText={onSearchChange}
                     placeholder="Search…"
@@ -292,8 +540,11 @@ export const Composer = forwardRef<TextInput, Props>(
       sandbox,
       setSandbox,
       setActiveSessionId,
+      workingCwd,
     } = useAva();
     const { data: models = [] } = useModels();
+    const { data: mcpServers = [] } = useMcpServers();
+    const { data: workspaceFiles = [] } = useDirectory(workingCwd || "/");
 
     const [panel, setPanel] = useState<Panel>(null);
     const [mediaModalOpen, setMediaModalOpen] = useState(false);
@@ -301,11 +552,50 @@ export const Composer = forwardRef<TextInput, Props>(
     const [uploading, setUploading] = useState(false);
     const [searchQuery, setSearchQuery] = useState("");
 
-    // Real Voice Recording with expo-av (with graceful fallback)
+    // Autocomplete State for / and @
+    const [selection, setSelection] = useState<{ start: number; end: number }>({ start: 0, end: 0 });
+    const [showSlashPopup, setShowSlashPopup] = useState(false);
+    const [showMentionPopup, setShowMentionPopup] = useState(false);
+    const [slashQuery, setSlashQuery] = useState("");
+    const [mentionQuery, setMentionQuery] = useState("");
+
+    // Voice recording state
     const [isRecording, setIsRecording] = useState(false);
     const [recordDuration, setRecordDuration] = useState(0);
     const recordingRef = useRef<any>(null);
     const pulseAnim = useRef(new Animated.Value(1)).current;
+
+    // Detect / and @ triggers on text change
+    useEffect(() => {
+      const cursor = selection.start;
+      const textBeforeCursor = value.slice(0, cursor);
+
+      // Check Slash Command trigger (start of line or starts with /)
+      const lastSlashIndex = textBeforeCursor.lastIndexOf("/");
+      if (lastSlashIndex !== -1 && (lastSlashIndex === 0 || textBeforeCursor[lastSlashIndex - 1] === "\n" || textBeforeCursor[lastSlashIndex - 1] === " ")) {
+        const query = textBeforeCursor.slice(lastSlashIndex + 1);
+        if (!query.includes(" ")) {
+          setSlashQuery(query.toLowerCase());
+          setShowSlashPopup(true);
+          setShowMentionPopup(false);
+          return;
+        }
+      }
+      setShowSlashPopup(false);
+
+      // Check @ Mention trigger
+      const lastAtIndex = textBeforeCursor.lastIndexOf("@");
+      if (lastAtIndex !== -1 && (lastAtIndex === 0 || textBeforeCursor[lastAtIndex - 1] === " " || textBeforeCursor[lastAtIndex - 1] === "\n")) {
+        const query = textBeforeCursor.slice(lastAtIndex + 1);
+        if (!query.includes(" ")) {
+          setMentionQuery(query.toLowerCase());
+          setShowMentionPopup(true);
+          setShowSlashPopup(false);
+          return;
+        }
+      }
+      setShowMentionPopup(false);
+    }, [value, selection]);
 
     useEffect(() => {
       let timer: any = null;
@@ -503,6 +793,116 @@ export const Composer = forwardRef<TextInput, Props>(
       }
     };
 
+    // ── Slash Command Handling ──
+    const filteredSlashCommands = useMemo(() => {
+      if (!slashQuery) return BUILTIN_SLASH_COMMANDS;
+      return BUILTIN_SLASH_COMMANDS.filter(
+        (c) =>
+          c.command.includes(slashQuery) ||
+          c.label.includes(slashQuery) ||
+          c.description.toLowerCase().includes(slashQuery)
+      );
+    }, [slashQuery]);
+
+    const handleSelectSlashCommand = (cmd: SlashCommandItem) => {
+      setShowSlashPopup(false);
+
+      if (cmd.action === "panel" && cmd.target === "model") {
+        setPanel("model");
+        onChange("");
+        return;
+      }
+      if (cmd.action === "panel" && cmd.target === "sandbox") {
+        setPanel("sandbox");
+        onChange("");
+        return;
+      }
+      if (cmd.action === "navigate") {
+        if (cmd.target === "Files") navigation.navigate("Files");
+        else if (cmd.target === "Terminal") navigation.navigate("Terminal");
+        else if (cmd.target === "Mcp") navigation.navigate("Mcp");
+        onChange("");
+        return;
+      }
+      if (cmd.action === "direct") {
+        if (cmd.target === "clear") {
+          onClear();
+          onChange("");
+          return;
+        }
+        if (cmd.target === "new") {
+          setActiveSessionId(null);
+          navigation.navigate("Chat");
+          onChange("");
+          return;
+        }
+        if (cmd.target === "stop") {
+          onStop();
+          onChange("");
+          return;
+        }
+      }
+
+      // Default: replace slash query with chosen command
+      const cursor = selection.start;
+      const before = value.slice(0, cursor);
+      const after = value.slice(cursor);
+      const lastSlash = before.lastIndexOf("/");
+      if (lastSlash !== -1) {
+        const newText = before.slice(0, lastSlash) + cmd.label + " " + after;
+        onChange(newText);
+      } else {
+        onChange(cmd.label + " ");
+      }
+    };
+
+    // ── Mention Handling ──
+    const allMentions = useMemo<MentionItem[]>(() => {
+      const fileMentions: MentionItem[] = workspaceFiles.slice(0, 30).map((f) => ({
+        id: `file_${f.path}`,
+        name: f.name,
+        insertText: `@${f.name}`,
+        description: f.path,
+        category: f.isDirectory ? "folder" : "file",
+        icon: f.isDirectory ? Folder : FileCode,
+      }));
+
+      const mcpMentions: MentionItem[] = mcpServers.map((s) => ({
+        id: `mcp_${s.name}`,
+        name: s.name,
+        insertText: `@${s.name}`,
+        description: `MCP Server (${s.tools?.length || 0} tools)`,
+        category: "mcp",
+        icon: Plug,
+      }));
+
+      return [...STATIC_CONTEXT_MENTIONS, ...fileMentions, ...mcpMentions];
+    }, [workspaceFiles, mcpServers]);
+
+    const filteredMentions = useMemo(() => {
+      if (!mentionQuery) return allMentions;
+      return allMentions.filter(
+        (m) =>
+          m.name.toLowerCase().includes(mentionQuery) ||
+          m.insertText.toLowerCase().includes(mentionQuery) ||
+          m.description.toLowerCase().includes(mentionQuery)
+      );
+    }, [allMentions, mentionQuery]);
+
+    const handleSelectMention = (item: MentionItem) => {
+      setShowMentionPopup(false);
+      const cursor = selection.start;
+      const before = value.slice(0, cursor);
+      const after = value.slice(cursor);
+      const lastAt = before.lastIndexOf("@");
+      if (lastAt !== -1) {
+        const newText = before.slice(0, lastAt) + item.insertText + " " + after;
+        onChange(newText);
+      } else {
+        onChange((value ? value + " " : "") + item.insertText + " ");
+      }
+    };
+
     // Filter models
     const filteredModels = models.filter(
       (m) =>
@@ -515,19 +915,119 @@ export const Composer = forwardRef<TextInput, Props>(
 
     return (
       <View style={styles.container}>
-        {/* Floating Top Bar: Model pill */}
+        {/* Floating Top Bar: Model pill & Quick Triggers */}
         <View style={styles.topPillRow}>
           <TouchableOpacity
             style={styles.floatingPill}
             onPress={() => setPanel("model")}
             activeOpacity={0.8}
           >
-            <Text style={styles.floatingPillText} numberOfLines={1}>
+            <Text style={[styles.floatingPillText, font("semibold")]} numberOfLines={1}>
               {model?.name ?? "Model"} · {effort}
             </Text>
             <ChevronDown size={11} color={COLORS.mutedForeground} />
           </TouchableOpacity>
         </View>
+
+        {/* ── Floating Slash Commands Autocomplete Popover ── */}
+        {showSlashPopup && filteredSlashCommands.length > 0 && (
+          <View style={styles.autocompletePopover}>
+            <View style={styles.autocompleteHeader}>
+              <Slash size={13} color={COLORS.primary} />
+              <Text style={[styles.autocompleteTitle, font("semibold")]}>Slash Commands</Text>
+              <TouchableOpacity
+                onPress={() => setShowSlashPopup(false)}
+                hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
+                style={{ marginLeft: "auto" }}
+              >
+                <X size={12} color={COLORS.mutedForeground} />
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView
+              style={styles.autocompleteScroll}
+              keyboardShouldPersistTaps="handled"
+              showsVerticalScrollIndicator={false}
+            >
+              {filteredSlashCommands.map((cmd) => {
+                const Icon = cmd.icon;
+                return (
+                  <TouchableOpacity
+                    key={cmd.command}
+                    style={styles.autocompleteItem}
+                    onPress={() => handleSelectSlashCommand(cmd)}
+                    activeOpacity={0.7}
+                  >
+                    <View style={styles.autocompleteIconBox}>
+                      <Icon size={14} color={COLORS.primary} />
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+                        <Text style={[styles.autocompleteItemTitle, mono("bold")]}>{cmd.label}</Text>
+                        <View style={styles.catBadge}>
+                          <Text style={[styles.catBadgeText, font("medium")]}>{cmd.category}</Text>
+                        </View>
+                      </View>
+                      <Text style={[styles.autocompleteItemSub, font("regular")]} numberOfLines={1}>
+                        {cmd.description}
+                      </Text>
+                    </View>
+                  </TouchableOpacity>
+                );
+              })}
+            </ScrollView>
+          </View>
+        )}
+
+        {/* ── Floating @ Mention Autocomplete Popover ── */}
+        {showMentionPopup && filteredMentions.length > 0 && (
+          <View style={styles.autocompletePopover}>
+            <View style={styles.autocompleteHeader}>
+              <AtSign size={13} color={COLORS.primary} />
+              <Text style={[styles.autocompleteTitle, font("semibold")]}>Mention Context & Files</Text>
+              <TouchableOpacity
+                onPress={() => setShowMentionPopup(false)}
+                hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
+                style={{ marginLeft: "auto" }}
+              >
+                <X size={12} color={COLORS.mutedForeground} />
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView
+              style={styles.autocompleteScroll}
+              keyboardShouldPersistTaps="handled"
+              showsVerticalScrollIndicator={false}
+            >
+              {filteredMentions.map((item) => {
+                const Icon = item.icon;
+                return (
+                  <TouchableOpacity
+                    key={item.id}
+                    style={styles.autocompleteItem}
+                    onPress={() => handleSelectMention(item)}
+                    activeOpacity={0.7}
+                  >
+                    <View style={styles.autocompleteIconBox}>
+                      <Icon size={14} color={COLORS.primary} />
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+                        <Text style={[styles.autocompleteItemTitle, mono("bold")]}>{item.insertText}</Text>
+                        <View style={styles.catBadge}>
+                          <Text style={[styles.catBadgeText, font("medium")]}>{item.category}</Text>
+                        </View>
+                      </View>
+                      <Text style={[styles.autocompleteItemSub, font("regular")]} numberOfLines={1}>
+                        {item.description}
+                      </Text>
+                    </View>
+                  </TouchableOpacity>
+                );
+              })}
+            </ScrollView>
+          </View>
+        )}
 
         {/* Glassy Input Surface Card */}
         <View style={styles.composerCard}>
@@ -551,28 +1051,28 @@ export const Composer = forwardRef<TextInput, Props>(
                   ) : att.kind === "audio" ? (
                     <View style={styles.audioChipBox}>
                       <Mic size={13} color={COLORS.primary} />
-                      <Text style={styles.fileChipText} numberOfLines={1}>
+                      <Text style={[styles.fileChipText, font("medium")]} numberOfLines={1}>
                         {att.name}
                       </Text>
                     </View>
                   ) : att.kind === "video" ? (
                     <View style={styles.fileChipBox}>
                       <FileVideo size={13} color="#a855f7" />
-                      <Text style={styles.fileChipText} numberOfLines={1}>
+                      <Text style={[styles.fileChipText, font("medium")]} numberOfLines={1}>
                         {att.name}
                       </Text>
                     </View>
                   ) : att.kind === "code" ? (
                     <View style={styles.fileChipBox}>
                       <FileCode size={13} color="#3b82f6" />
-                      <Text style={styles.fileChipText} numberOfLines={1}>
+                      <Text style={[styles.fileChipText, font("medium")]} numberOfLines={1}>
                         {att.name}
                       </Text>
                     </View>
                   ) : (
                     <View style={styles.fileChipBox}>
                       <FileText size={13} color={COLORS.primary} />
-                      <Text style={styles.fileChipText} numberOfLines={1}>
+                      <Text style={[styles.fileChipText, font("medium")]} numberOfLines={1}>
                         {att.name}
                       </Text>
                     </View>
@@ -592,7 +1092,7 @@ export const Composer = forwardRef<TextInput, Props>(
           {uploading && (
             <View style={styles.uploadingNotice}>
               <ActivityIndicator size="small" color={COLORS.primary} />
-              <Text style={styles.uploadingText}>Transferring asset to VPS…</Text>
+              <Text style={[styles.uploadingText, font("regular")]}>Transferring asset to VPS…</Text>
             </View>
           )}
 
@@ -606,7 +1106,7 @@ export const Composer = forwardRef<TextInput, Props>(
                     { transform: [{ scale: pulseAnim }] },
                   ]}
                 />
-                <Text style={styles.liveRecordingTimer}>
+                <Text style={[styles.liveRecordingTimer, font("semibold")]}>
                   {formatTime(recordDuration)} · Recording voice note…
                 </Text>
               </View>
@@ -629,15 +1129,16 @@ export const Composer = forwardRef<TextInput, Props>(
             /* Multi-line Text Input */
             <TextInput
               ref={ref}
-              style={styles.input}
+              style={[styles.input, font("regular")]}
               placeholder={
                 isLive
                   ? "Type follow-up to queue or steer…"
-                  : "Ask anything or request changes…"
+                  : "Type a message, /command, or @mention…"
               }
               placeholderTextColor={COLORS.mutedForeground}
               value={value}
               onChangeText={onChange}
+              onSelectionChange={(e) => setSelection(e.nativeEvent.selection)}
               multiline
               autoCapitalize="sentences"
             />
@@ -659,6 +1160,40 @@ export const Composer = forwardRef<TextInput, Props>(
                 <Plus size={16} color={COLORS.foreground} />
               </TouchableOpacity>
 
+              {/* Quick / Slash Commands Button */}
+              <TouchableOpacity
+                style={[styles.quickTriggerChip, showSlashPopup && styles.quickTriggerChipActive]}
+                onPress={() => {
+                  if (showSlashPopup) {
+                    setShowSlashPopup(false);
+                  } else {
+                    onChange(value ? value + " /" : "/");
+                    setShowSlashPopup(true);
+                  }
+                }}
+                activeOpacity={0.7}
+              >
+                <Slash size={13} color={showSlashPopup ? COLORS.primary : COLORS.foreground} />
+                <Text style={[styles.quickTriggerText, font("semibold")]}>Commands</Text>
+              </TouchableOpacity>
+
+              {/* Quick @ Mention Button */}
+              <TouchableOpacity
+                style={[styles.quickTriggerChip, showMentionPopup && styles.quickTriggerChipActive]}
+                onPress={() => {
+                  if (showMentionPopup) {
+                    setShowMentionPopup(false);
+                  } else {
+                    onChange(value ? value + " @" : "@");
+                    setShowMentionPopup(true);
+                  }
+                }}
+                activeOpacity={0.7}
+              >
+                <AtSign size={13} color={showMentionPopup ? COLORS.primary : COLORS.foreground} />
+                <Text style={[styles.quickTriggerText, font("semibold")]}>Mention</Text>
+              </TouchableOpacity>
+
               {/* Tools Pill Button */}
               <TouchableOpacity
                 style={styles.toolPill}
@@ -666,7 +1201,7 @@ export const Composer = forwardRef<TextInput, Props>(
                 activeOpacity={0.7}
               >
                 <Cpu size={13} color={COLORS.foreground} />
-                <Text style={styles.toolPillText}>Tools</Text>
+                <Text style={[styles.toolPillText, font("medium")]}>Tools</Text>
                 <ChevronDown size={11} color={COLORS.mutedForeground} />
               </TouchableOpacity>
 
@@ -677,7 +1212,7 @@ export const Composer = forwardRef<TextInput, Props>(
                 activeOpacity={0.7}
               >
                 <ShieldCheck size={13} color={COLORS.foreground} />
-                <Text style={styles.toolPillText}>{sandboxOpt.label}</Text>
+                <Text style={[styles.toolPillText, font("medium")]}>{sandboxOpt.label}</Text>
                 <ChevronDown size={11} color={COLORS.mutedForeground} />
               </TouchableOpacity>
             </ScrollView>
@@ -697,7 +1232,7 @@ export const Composer = forwardRef<TextInput, Props>(
                 />
               </TouchableOpacity>
 
-              {/* If agent is busy, ALWAYS provide Stop/Pause button */}
+              {/* If agent is busy, provide Stop/Pause button */}
               {busy ? (
                 <View style={styles.busyActionGroup}>
                   <TouchableOpacity
@@ -762,13 +1297,13 @@ export const Composer = forwardRef<TextInput, Props>(
           serverDirectory="/root/shared-media"
         />
 
-        {/* 2. Tools Menu (Pruned & Cleaned with Unified Design Tokens) */}
+        {/* 2. Tools Menu */}
         <FloatingPopupModal
           open={panel === "tools"}
           title="Prompt actions & tools"
           onClose={close}
         >
-          <Text style={styles.sectionHeader}>MODEL & REASONING</Text>
+          <Text style={[styles.sectionHeader, font("bold")]}>MODEL & REASONING</Text>
           <FloatingOptionRow
             icon={Cpu}
             iconColor={COLORS.primary}
@@ -788,7 +1323,7 @@ export const Composer = forwardRef<TextInput, Props>(
             onClick={() => setPanel("sandbox")}
           />
 
-          <Text style={styles.sectionHeader}>WORKSPACE TOOLS</Text>
+          <Text style={[styles.sectionHeader, font("bold")]}>WORKSPACE TOOLS</Text>
           <FloatingOptionRow
             icon={PlusCircle}
             iconColor={COLORS.foreground}
@@ -854,7 +1389,7 @@ export const Composer = forwardRef<TextInput, Props>(
           searchQuery={searchQuery}
           onSearchChange={setSearchQuery}
         >
-          <Text style={styles.sectionHeader}>THINKING DEPTH</Text>
+          <Text style={[styles.sectionHeader, font("bold")]}>THINKING DEPTH</Text>
           <View style={styles.effortRow}>
             {REASONING_EFFORTS.map((e) => (
               <TouchableOpacity
@@ -870,6 +1405,7 @@ export const Composer = forwardRef<TextInput, Props>(
                   style={[
                     styles.effortBtnText,
                     effort === e && styles.effortBtnTextActive,
+                    font("medium"),
                   ]}
                 >
                   {e}
@@ -878,7 +1414,7 @@ export const Composer = forwardRef<TextInput, Props>(
             ))}
           </View>
 
-          <Text style={styles.sectionHeader}>
+          <Text style={[styles.sectionHeader, font("bold")]}>
             MODELS ({filteredModels.length})
           </Text>
           {filteredModels.map((m) => (
@@ -915,7 +1451,7 @@ export const Composer = forwardRef<TextInput, Props>(
               }}
             />
           ))}
-          <Text style={styles.sandboxHintText}>
+          <Text style={[styles.sandboxHintText, font("regular")]}>
             Applies to newly started sessions.
           </Text>
         </FloatingPopupModal>
@@ -959,10 +1495,84 @@ const styles = StyleSheet.create({
   },
   floatingPillText: {
     fontSize: 11,
-    fontWeight: "600",
     color: COLORS.mutedForeground,
     maxWidth: 160,
   },
+
+  // Autocomplete Popover
+  autocompletePopover: {
+    position: "absolute",
+    bottom: "100%",
+    left: 0,
+    right: 0,
+    marginBottom: 8,
+    backgroundColor: COLORS.card,
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: COLORS.glassBorder,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: -4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 16,
+    elevation: 10,
+    maxHeight: 260,
+    overflow: "hidden",
+    zIndex: 999,
+  },
+  autocompleteHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    paddingHorizontal: 14,
+    paddingVertical: 9,
+    borderBottomWidth: 1,
+    borderBottomColor: "rgba(255, 255, 255, 0.06)",
+  },
+  autocompleteTitle: {
+    fontSize: 12,
+    color: COLORS.foreground,
+  },
+  autocompleteScroll: {
+    maxHeight: 215,
+  },
+  autocompleteItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 9,
+    borderBottomWidth: 1,
+    borderBottomColor: "rgba(255, 255, 255, 0.04)",
+  },
+  autocompleteIconBox: {
+    width: 28,
+    height: 28,
+    borderRadius: 8,
+    backgroundColor: "rgba(66, 64, 225, 0.12)",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  autocompleteItemTitle: {
+    fontSize: 12.5,
+    color: COLORS.foreground,
+  },
+  autocompleteItemSub: {
+    fontSize: 11,
+    color: COLORS.mutedForeground,
+    marginTop: 1,
+  },
+  catBadge: {
+    paddingHorizontal: 6,
+    paddingVertical: 1,
+    borderRadius: 4,
+    backgroundColor: COLORS.secondary,
+  },
+  catBadgeText: {
+    fontSize: 9.5,
+    color: COLORS.mutedForeground,
+    textTransform: "uppercase",
+  },
+
   composerCard: {
     borderRadius: 26,
     paddingHorizontal: 14,
@@ -1026,7 +1636,6 @@ const styles = StyleSheet.create({
   },
   fileChipText: {
     fontSize: 12,
-    fontWeight: "500",
     color: COLORS.foreground,
   },
   removeAttBtn: {
@@ -1084,7 +1693,6 @@ const styles = StyleSheet.create({
   },
   liveRecordingTimer: {
     fontSize: 13,
-    fontWeight: "600",
     color: COLORS.destructive,
   },
   liveRecordingActions: {
@@ -1130,6 +1738,25 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     backgroundColor: COLORS.secondary,
   },
+  quickTriggerChip: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    height: 32,
+    paddingHorizontal: 9,
+    borderRadius: 16,
+    backgroundColor: COLORS.secondary,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+  },
+  quickTriggerChipActive: {
+    backgroundColor: "rgba(66, 64, 225, 0.12)",
+    borderColor: COLORS.primary,
+  },
+  quickTriggerText: {
+    fontSize: 11.5,
+    color: COLORS.foreground,
+  },
   toolPill: {
     flexDirection: "row",
     alignItems: "center",
@@ -1141,7 +1768,6 @@ const styles = StyleSheet.create({
   },
   toolPillText: {
     fontSize: 12,
-    fontWeight: "500",
     color: COLORS.foreground,
   },
   submitBtnWrapper: {
@@ -1233,7 +1859,6 @@ const styles = StyleSheet.create({
   },
   popupTitle: {
     fontSize: 15,
-    fontWeight: "700",
     color: COLORS.foreground,
     flex: 1,
     textAlign: "center",
@@ -1301,7 +1926,6 @@ const styles = StyleSheet.create({
   },
   optionTitle: {
     fontSize: 13.5,
-    fontWeight: "600",
     color: COLORS.foreground,
   },
   optionTitleActive: {
@@ -1318,7 +1942,6 @@ const styles = StyleSheet.create({
   },
   optionBadgeText: {
     fontSize: 10,
-    fontWeight: "600",
     color: COLORS.foreground,
   },
   optionSubtitle: {
@@ -1328,7 +1951,6 @@ const styles = StyleSheet.create({
   },
   sectionHeader: {
     fontSize: 10.5,
-    fontWeight: "700",
     color: COLORS.mutedForeground,
     letterSpacing: 0.6,
     paddingHorizontal: 8,
@@ -1356,13 +1978,11 @@ const styles = StyleSheet.create({
   },
   effortBtnText: {
     fontSize: 12,
-    fontWeight: "500",
     color: COLORS.foreground,
     textTransform: "capitalize",
   },
   effortBtnTextActive: {
     color: COLORS.primaryForeground,
-    fontWeight: "600",
   },
   sandboxHintText: {
     fontSize: 11,

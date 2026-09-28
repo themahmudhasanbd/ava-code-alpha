@@ -1,14 +1,12 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useState } from "react";
 import {
+  ActionSheetIOS,
   ActivityIndicator,
   Alert,
-  Animated,
   Modal,
   Platform,
-  ScrollView,
   StyleSheet,
   Text,
-  TextInput,
   TouchableOpacity,
   TouchableWithoutFeedback,
   View,
@@ -18,31 +16,17 @@ import * as DocumentPicker from "expo-document-picker";
 import { File } from "expo-file-system";
 import { BlurView } from "expo-blur";
 import {
-  Camera,
-  Check,
   ChevronRight,
-  FileAudio,
-  FileCode,
-  FileQuestion,
-  FileText,
-  FileVideo,
-  FolderOpen,
-  Image as ImageIcon,
-  Mic,
   Plus,
-  RefreshCw,
-  Search,
   Server,
-  Trash2,
+  Smartphone,
   UploadCloud,
   X,
-  type LucideIcon,
 } from "lucide-react-native";
-import { Surface } from "@/components/kit";
 import { useAva } from "@/state/ava-provider";
-import { useDirectory } from "@/state/queries";
 import { COLORS, useTheme } from "@/theme/colors";
-import { font, FONTS, mono } from "@/theme/fonts";
+import { font, mono } from "@/theme/fonts";
+import { ServerMediaModal } from "./ServerMediaModal";
 
 export interface SelectedMedia {
   id: string;
@@ -51,20 +35,6 @@ export interface SelectedMedia {
   remotePath?: string;
   kind: "image" | "video" | "audio" | "document" | "code" | "file";
   size?: number;
-}
-
-function getAudioModule(): any {
-  try {
-    const { NativeModules } = require("react-native");
-    const hasNative =
-      Boolean(NativeModules?.ExponentAV) ||
-      Boolean((globalThis as any)?.expo?.modules?.ExponentAV);
-    if (!hasNative) return null;
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    return require("expo-av")?.Audio ?? null;
-  } catch {
-    return null;
-  }
 }
 
 interface Props {
@@ -82,56 +52,10 @@ export function MediaSelectorModal({
 }: Props) {
   const { rpc } = useAva();
   const { isDark } = useTheme();
-  const [activeTab, setActiveTab] = useState<"sources" | "server" | "voice">(
-    "sources"
-  );
+
   const [uploading, setUploading] = useState(false);
   const [uploadStatus, setUploadStatus] = useState<string | null>(null);
-  const [serverSearch, setServerSearch] = useState("");
-
-  // Voice recording state
-  const [isRecording, setIsRecording] = useState(false);
-  const [recordSecs, setRecordSecs] = useState(0);
-  const recordingRef = useRef<any>(null);
-  const pulseAnim = useRef(new Animated.Value(1)).current;
-
-  const {
-    data: serverFiles = [],
-    isLoading: isLoadingServer,
-    refetch: refetchServer,
-  } = useDirectory(serverDirectory);
-
-  useEffect(() => {
-    let timer: any = null;
-    let animLoop: any = null;
-
-    if (isRecording) {
-      setRecordSecs(0);
-      timer = setInterval(() => setRecordSecs((s) => s + 1), 1000);
-      animLoop = Animated.loop(
-        Animated.sequence([
-          Animated.timing(pulseAnim, {
-            toValue: 1.25,
-            duration: 500,
-            useNativeDriver: true,
-          }),
-          Animated.timing(pulseAnim, {
-            toValue: 1.0,
-            duration: 500,
-            useNativeDriver: true,
-          }),
-        ])
-      );
-      animLoop.start();
-    } else {
-      pulseAnim.setValue(1);
-    }
-
-    return () => {
-      if (timer) clearInterval(timer);
-      if (animLoop) animLoop.stop();
-    };
-  }, [isRecording, pulseAnim]);
+  const [serverModalOpen, setServerModalOpen] = useState(false);
 
   const uploadFileToServer = async (
     localUri: string,
@@ -164,7 +88,7 @@ export function MediaSelectorModal({
     };
   };
 
-  // 1. Camera Photo/Video
+  // 1. Device: Camera
   const handleCamera = async () => {
     try {
       const { status } = await ImagePicker.requestCameraPermissionsAsync();
@@ -196,13 +120,16 @@ export function MediaSelectorModal({
     }
   };
 
-  // 2. Photo & Video Library
+  // 2. Device: Photo & Video Library
   const handleGallery = async () => {
     try {
       const { status } =
         await ImagePicker.requestMediaLibraryPermissionsAsync();
       if (status !== "granted") {
-        Alert.alert("Permission needed", "Photo gallery permission is required.");
+        Alert.alert(
+          "Permission needed",
+          "Photo gallery permission is required."
+        );
         return;
       }
 
@@ -233,7 +160,7 @@ export function MediaSelectorModal({
     }
   };
 
-  // 3. Document / Device Files
+  // 3. Device: Document / Files
   const handleDocument = async () => {
     try {
       const result = await DocumentPicker.getDocumentAsync({
@@ -245,11 +172,23 @@ export function MediaSelectorModal({
         const doc = result.assets[0];
         setUploading(true);
         const ext = doc.name.split(".").pop()?.toLowerCase() || "";
-        const isImg = ["png", "jpg", "jpeg", "webp", "gif", "svg"].includes(ext);
+        const isImg = ["png", "jpg", "jpeg", "webp", "gif", "svg"].includes(
+          ext
+        );
         const isVid = ["mp4", "mov", "webm", "mkv"].includes(ext);
         const isAud = ["mp3", "wav", "ogg", "m4a", "aac"].includes(ext);
         const isCode = [
-          "ts", "tsx", "js", "jsx", "py", "rs", "json", "html", "css", "md", "sh",
+          "ts",
+          "tsx",
+          "js",
+          "jsx",
+          "py",
+          "rs",
+          "json",
+          "html",
+          "css",
+          "md",
+          "sh",
         ].includes(ext);
 
         const kind = isImg
@@ -273,421 +212,159 @@ export function MediaSelectorModal({
     }
   };
 
-  // 4. Voice Recording
-  const startVoiceRecording = async () => {
-    try {
-      const ExpoAudio = getAudioModule();
-      if (ExpoAudio) {
-        const { status: perm } = await ExpoAudio.requestPermissionsAsync();
-        if (perm !== "granted") {
-          Alert.alert(
-            "Microphone Permission",
-            "Microphone permission is required to record audio."
-          );
-          return;
+  // Trigger Device Selection Options
+  const handleSelectFromDevice = () => {
+    if (Platform.OS === "ios") {
+      ActionSheetIOS.showActionSheetWithOptions(
+        {
+          options: [
+            "Cancel",
+            "Photo & Video Library",
+            "Browse Files & Documents",
+            "Take Photo / Video",
+          ],
+          cancelButtonIndex: 0,
+        },
+        (buttonIndex) => {
+          if (buttonIndex === 1) handleGallery();
+          else if (buttonIndex === 2) handleDocument();
+          else if (buttonIndex === 3) handleCamera();
         }
-
-        await ExpoAudio.setAudioModeAsync({
-          allowsRecordingIOS: true,
-          playsInSilentModeIOS: true,
-        });
-
-        const rec = new ExpoAudio.Recording();
-        await rec.prepareToRecordAsync(
-          ExpoAudio.RecordingOptionsPresets?.HIGH_QUALITY || {}
-        );
-        await rec.startAsync();
-        recordingRef.current = rec;
-      }
-      setIsRecording(true);
-    } catch {
-      setIsRecording(true);
+      );
+    } else {
+      Alert.alert("Select from device", "Choose how you want to select files", [
+        { text: "Photos & Videos", onPress: handleGallery },
+        { text: "Files & Documents", onPress: handleDocument },
+        { text: "Camera", onPress: handleCamera },
+        { text: "Cancel", style: "cancel" },
+      ]);
     }
   };
 
-  const stopVoiceRecording = async () => {
-    setIsRecording(false);
-    const durationStr = `${Math.floor(recordSecs / 60)
-      .toString()
-      .padStart(2, "0")}:${(recordSecs % 60).toString().padStart(2, "0")}`;
-
-    if (!recordingRef.current) {
-      const name = `voice_${Date.now()}.m4a`;
-      onSelect({
-        id: `${Date.now()}_voice`,
-        name: `Voice Note (${durationStr})`,
-        remotePath: `${serverDirectory}/${name}`,
-        kind: "audio",
-      });
-      onClose();
-      return;
-    }
-
-    try {
-      setUploading(true);
-      const rec = recordingRef.current;
-      recordingRef.current = null;
-      await rec.stopAndUnloadAsync();
-      const uri = rec.getURI();
-
-      if (uri) {
-        const name = `voice_${Date.now()}.m4a`;
-        const media = await uploadFileToServer(uri, name, "audio");
-        media.name = `Voice Note (${durationStr})`;
-        onSelect(media);
-      }
-    } catch (e: any) {
-      console.warn("Audio save error:", e);
-    } finally {
-      setUploading(false);
-      onClose();
-    }
-  };
-
-  // 5. Select from Server Storage
-  const filteredServerFiles = serverFiles.filter((f) =>
-    f.name.toLowerCase().includes(serverSearch.toLowerCase())
-  );
-
-  const handleSelectServerFile = (file: { name: string; path: string; isDirectory: boolean }) => {
-    const ext = file.name.split(".").pop()?.toLowerCase() || "";
-    const isImg = ["png", "jpg", "jpeg", "webp", "gif", "svg"].includes(ext);
-    const isVid = ["mp4", "mov", "webm"].includes(ext);
-    const isAud = ["mp3", "wav", "ogg", "m4a"].includes(ext);
-    const isCode = [
-      "ts", "tsx", "js", "jsx", "py", "rs", "json", "html", "css", "md", "sh",
-    ].includes(ext);
-
-    const kind = isImg
-      ? "image"
-      : isVid
-      ? "video"
-      : isAud
-      ? "audio"
-      : isCode
-      ? "code"
-      : "file";
-
-    onSelect({
-      id: `${Date.now()}_srv`,
-      name: file.name,
-      remotePath: file.path,
-      kind,
-    });
-    onClose();
+  const handleOpenServerSelector = () => {
+    setServerModalOpen(true);
   };
 
   return (
-    <Modal
-      visible={open}
-      transparent
-      statusBarTranslucent
-      animationType="slide"
-      onRequestClose={onClose}
-    >
-      <TouchableWithoutFeedback onPress={onClose}>
-        <View style={styles.backdrop}>
-          <BlurView intensity={85} tint={isDark ? "dark" : "light"} style={StyleSheet.absoluteFill} />
-          <TouchableWithoutFeedback onPress={() => {}}>
-            <View style={styles.sheetCard}>
-              {/* Handle Bar */}
-              <View style={styles.handleBar} />
+    <>
+      <Modal
+        visible={open && !serverModalOpen}
+        transparent
+        statusBarTranslucent
+        animationType="slide"
+        onRequestClose={onClose}
+      >
+        <TouchableWithoutFeedback onPress={onClose}>
+          <View style={styles.backdrop}>
+            <BlurView
+              intensity={85}
+              tint={isDark ? "dark" : "light"}
+              style={StyleSheet.absoluteFill}
+            />
+            <TouchableWithoutFeedback onPress={() => {}}>
+              <View style={styles.sheetCard}>
+                {/* Handle Bar */}
+                <View style={styles.handleBar} />
 
-              {/* Header */}
-              <View style={styles.headerRow}>
-                <View style={styles.headerLeft}>
-                  <UploadCloud size={18} color={COLORS.primary} />
-                  <Text style={[styles.headerTitle, font("semibold")]}>
-                    {activeTab === "server"
-                      ? "Select Server File"
-                      : activeTab === "voice"
-                      ? "Record Voice Note"
-                      : "Add Media & Files"}
-                  </Text>
+                {/* Header */}
+                <View style={styles.headerRow}>
+                  <View style={styles.headerLeft}>
+                    <View style={styles.headerIconBox}>
+                      <UploadCloud size={18} color={COLORS.primary} />
+                    </View>
+                    <View>
+                      <Text style={[styles.headerTitle, font("semibold")]}>
+                        Attach Media & Files
+                      </Text>
+                      <Text style={[styles.headerSubtitle, font("regular")]}>
+                        Select source to attach to prompt
+                      </Text>
+                    </View>
+                  </View>
+                  <TouchableOpacity
+                    style={styles.closeBtn}
+                    onPress={onClose}
+                    activeOpacity={0.7}
+                  >
+                    <X size={16} color={COLORS.mutedForeground} />
+                  </TouchableOpacity>
                 </View>
-                <TouchableOpacity
-                  style={styles.closeBtn}
-                  onPress={onClose}
-                  activeOpacity={0.7}
-                >
-                  <X size={16} color={COLORS.mutedForeground} />
-                </TouchableOpacity>
+
+                {/* Uploading Status Overlay */}
+                {uploading && (
+                  <View style={styles.uploadingBox}>
+                    <ActivityIndicator size="small" color={COLORS.primary} />
+                    <Text style={[styles.uploadingText, font("medium")]}>
+                      {uploadStatus || "Uploading to server…"}
+                    </Text>
+                  </View>
+                )}
+
+                {/* ONLY TWO OPTIONS: 1) Select from device, 2) Select from server */}
+                <View style={styles.optionsContainer}>
+                  {/* Option 1: Select from Device */}
+                  <TouchableOpacity
+                    style={styles.optionCard}
+                    onPress={handleSelectFromDevice}
+                    activeOpacity={0.7}
+                    disabled={uploading}
+                  >
+                    <View style={styles.optionIconBox}>
+                      <Smartphone size={20} color={COLORS.primary} />
+                    </View>
+                    <View style={styles.optionContent}>
+                      <Text style={[styles.optionTitle, font("semibold")]}>
+                        Select from device
+                      </Text>
+                      <Text style={[styles.optionSubtitle, font("regular")]}>
+                        Pick photos, videos, or documents from this device
+                      </Text>
+                    </View>
+                    <ChevronRight size={17} color={COLORS.mutedForeground} />
+                  </TouchableOpacity>
+
+                  {/* Option 2: Select from Server */}
+                  <TouchableOpacity
+                    style={styles.optionCard}
+                    onPress={handleOpenServerSelector}
+                    activeOpacity={0.7}
+                    disabled={uploading}
+                  >
+                    <View style={styles.optionIconBox}>
+                      <Server size={20} color={COLORS.primary} />
+                    </View>
+                    <View style={styles.optionContent}>
+                      <Text style={[styles.optionTitle, font("semibold")]}>
+                        Select from server
+                      </Text>
+                      <Text style={[styles.optionSubtitle, font("regular")]}>
+                        Browse & attach files stored on the VPS server
+                      </Text>
+                    </View>
+                    <ChevronRight size={17} color={COLORS.mutedForeground} />
+                  </TouchableOpacity>
+                </View>
               </View>
+            </TouchableWithoutFeedback>
+          </View>
+        </TouchableWithoutFeedback>
+      </Modal>
 
-              {/* Uploading Overlay */}
-              {uploading && (
-                <View style={styles.uploadingBox}>
-                  <ActivityIndicator size="small" color={COLORS.primary} />
-                  <Text style={[styles.uploadingText, font("medium")]}>
-                    {uploadStatus || "Processing & transferring…"}
-                  </Text>
-                </View>
-              )}
-
-              {/* TAB 1: Main Sources */}
-              {activeTab === "sources" && (
-                <ScrollView
-                  style={styles.scrollArea}
-                  contentContainerStyle={styles.sourcesList}
-                  showsVerticalScrollIndicator={false}
-                >
-                  {/* Option: Camera */}
-                  <TouchableOpacity
-                    style={styles.sourceOption}
-                    onPress={handleCamera}
-                    activeOpacity={0.7}
-                  >
-                    <View
-                      style={[
-                        styles.sourceIconBox,
-                        { backgroundColor: COLORS.accent },
-                      ]}
-                    >
-                      <Camera size={18} color={COLORS.primary} />
-                    </View>
-                    <View style={styles.sourceContent}>
-                      <Text style={[styles.sourceTitle, font("semibold")]}>Take Photo or Video</Text>
-                      <Text style={[styles.sourceSubtitle, font("regular")]}>
-                        Use device camera to capture instantly
-                      </Text>
-                    </View>
-                    <ChevronRight size={16} color={COLORS.mutedForeground} />
-                  </TouchableOpacity>
-
-                  {/* Option: Gallery */}
-                  <TouchableOpacity
-                    style={styles.sourceOption}
-                    onPress={handleGallery}
-                    activeOpacity={0.7}
-                  >
-                    <View
-                      style={[
-                        styles.sourceIconBox,
-                        { backgroundColor: COLORS.accent },
-                      ]}
-                    >
-                      <ImageIcon size={18} color={COLORS.primary} />
-                    </View>
-                    <View style={styles.sourceContent}>
-                      <Text style={[styles.sourceTitle, font("semibold")]}>Photo & Video Library</Text>
-                      <Text style={[styles.sourceSubtitle, font("regular")]}>
-                        Browse photos, videos, and graphics
-                      </Text>
-                    </View>
-                    <ChevronRight size={16} color={COLORS.mutedForeground} />
-                  </TouchableOpacity>
-
-                  {/* Option: Documents */}
-                  <TouchableOpacity
-                    style={styles.sourceOption}
-                    onPress={handleDocument}
-                    activeOpacity={0.7}
-                  >
-                    <View
-                      style={[
-                        styles.sourceIconBox,
-                        { backgroundColor: COLORS.accent },
-                      ]}
-                    >
-                      <FileText size={18} color={COLORS.primary} />
-                    </View>
-                    <View style={styles.sourceContent}>
-                      <Text style={[styles.sourceTitle, font("semibold")]}>Device Files & Docs</Text>
-                      <Text style={[styles.sourceSubtitle, font("regular")]}>
-                        PDFs, source code, text files, zip archives
-                      </Text>
-                    </View>
-                    <ChevronRight size={16} color={COLORS.mutedForeground} />
-                  </TouchableOpacity>
-
-                  {/* Option: Voice Note */}
-                  <TouchableOpacity
-                    style={styles.sourceOption}
-                    onPress={() => setActiveTab("voice")}
-                    activeOpacity={0.7}
-                  >
-                    <View
-                      style={[
-                        styles.sourceIconBox,
-                        { backgroundColor: COLORS.accent },
-                      ]}
-                    >
-                      <Mic size={18} color={COLORS.primary} />
-                    </View>
-                    <View style={styles.sourceContent}>
-                      <Text style={[styles.sourceTitle, font("semibold")]}>Voice Audio Note</Text>
-                      <Text style={[styles.sourceSubtitle, font("regular")]}>
-                        Record speech or audio prompt directly
-                      </Text>
-                    </View>
-                    <ChevronRight size={16} color={COLORS.mutedForeground} />
-                  </TouchableOpacity>
-
-                  {/* Option: Server Storage */}
-                  <TouchableOpacity
-                    style={styles.sourceOption}
-                    onPress={() => setActiveTab("server")}
-                    activeOpacity={0.7}
-                  >
-                    <View
-                      style={[
-                        styles.sourceIconBox,
-                        { backgroundColor: COLORS.accent },
-                      ]}
-                    >
-                      <Server size={18} color={COLORS.primary} />
-                    </View>
-                    <View style={styles.sourceContent}>
-                      <Text style={[styles.sourceTitle, font("semibold")]}>Server Shared Storage</Text>
-                      <Text style={[styles.sourceSubtitle, mono("regular")]}>
-                        {serverDirectory} (VPS files)
-                      </Text>
-                    </View>
-                    <ChevronRight size={16} color={COLORS.mutedForeground} />
-                  </TouchableOpacity>
-                </ScrollView>
-              )}
-
-              {/* TAB 2: Server Storage Browser */}
-              {activeTab === "server" && (
-                <View style={styles.serverTabContent}>
-                  {/* Search Bar & Back */}
-                  <View style={styles.serverTopBar}>
-                    <TouchableOpacity
-                      style={styles.backBtn}
-                      onPress={() => setActiveTab("sources")}
-                    >
-                      <Text style={[styles.backBtnText, font("semibold")]}>← Back</Text>
-                    </TouchableOpacity>
-                    <View style={styles.searchBarBox}>
-                      <Search size={14} color={COLORS.mutedForeground} />
-                      <TextInput
-                        style={[styles.serverSearchInput, font("regular")]}
-                        value={serverSearch}
-                        onChangeText={setServerSearch}
-                        placeholder="Search server files…"
-                        placeholderTextColor={COLORS.mutedForeground}
-                        autoCapitalize="none"
-                      />
-                      {serverSearch ? (
-                        <TouchableOpacity onPress={() => setServerSearch("")}>
-                          <X size={13} color={COLORS.mutedForeground} />
-                        </TouchableOpacity>
-                      ) : null}
-                    </View>
-                    <TouchableOpacity
-                      style={styles.refreshBtn}
-                      onPress={() => refetchServer()}
-                    >
-                      <RefreshCw size={14} color={COLORS.mutedForeground} />
-                    </TouchableOpacity>
-                  </View>
-
-                  {/* Server Files List */}
-                  {isLoadingServer ? (
-                    <View style={styles.loadingBox}>
-                      <ActivityIndicator size="small" color={COLORS.primary} />
-                      <Text style={[styles.loadingText, font("medium")]}>Reading server files…</Text>
-                    </View>
-                  ) : filteredServerFiles.length === 0 ? (
-                    <View style={styles.emptyServerBox}>
-                      <FolderOpen size={32} color={COLORS.mutedForeground} />
-                      <Text style={[styles.emptyServerTitle, font("semibold")]}>No files found</Text>
-                      <Text style={[styles.emptyServerSub, font("regular")]}>
-                        {serverDirectory} is empty or has no matching files.
-                      </Text>
-                    </View>
-                  ) : (
-                    <ScrollView
-                      style={styles.serverScroll}
-                      contentContainerStyle={styles.serverFileList}
-                    >
-                      {filteredServerFiles.map((file) => (
-                        <TouchableOpacity
-                          key={file.path}
-                          style={styles.serverFileRow}
-                          onPress={() => handleSelectServerFile(file)}
-                          activeOpacity={0.7}
-                        >
-                          <View style={styles.serverFileIconBox}>
-                            {file.isDirectory ? (
-                              <FolderOpen size={16} color={COLORS.primary} />
-                            ) : (
-                              <FileText size={16} color={COLORS.mutedForeground} />
-                            )}
-                          </View>
-                          <View style={styles.serverFileInfo}>
-                            <Text style={[styles.serverFileName, font("medium", file.name)]} numberOfLines={1}>
-                              {file.name}
-                            </Text>
-                            <Text style={[styles.serverFilePath, mono("regular")]} numberOfLines={1}>
-                              {file.path}
-                            </Text>
-                          </View>
-                          <Plus size={16} color={COLORS.primary} />
-                        </TouchableOpacity>
-                      ))}
-                    </ScrollView>
-                  )}
-                </View>
-              )}
-
-              {/* TAB 3: Voice Recorder View */}
-              {activeTab === "voice" && (
-                <View style={styles.voiceTabContent}>
-                  <TouchableOpacity
-                    style={styles.backBtn}
-                    onPress={() => setActiveTab("sources")}
-                  >
-                    <Text style={[styles.backBtnText, font("semibold")]}>← Back</Text>
-                  </TouchableOpacity>
-
-                  <View style={styles.voiceRecordCenter}>
-                    <Animated.View
-                      style={[
-                        styles.voiceRecordPulse,
-                        { transform: [{ scale: pulseAnim }] },
-                        isRecording && styles.voiceRecordPulseActive,
-                      ]}
-                    >
-                      <TouchableOpacity
-                        style={[
-                          styles.voiceRecordCircle,
-                          isRecording && styles.voiceRecordCircleActive,
-                        ]}
-                        onPress={
-                          isRecording ? stopVoiceRecording : startVoiceRecording
-                        }
-                        activeOpacity={0.8}
-                      >
-                        <Mic
-                          size={32}
-                          color={isRecording ? COLORS.primaryForeground : COLORS.primary}
-                        />
-                      </TouchableOpacity>
-                    </Animated.View>
-
-                    <Text style={[styles.voiceTimerText, mono("bold")]}>
-                      {`${Math.floor(recordSecs / 60)
-                        .toString()
-                        .padStart(2, "0")}:${(recordSecs % 60)
-                        .toString()
-                        .padStart(2, "0")}`}
-                    </Text>
-
-                    <Text style={[styles.voiceHintText, font("medium")]}>
-                      {isRecording
-                        ? "Recording… Tap the red button to finish"
-                        : "Tap microphone to start recording"}
-                    </Text>
-                  </View>
-                </View>
-              )}
-            </View>
-          </TouchableWithoutFeedback>
-        </View>
-      </TouchableWithoutFeedback>
-    </Modal>
+      {/* Dedicated Server Media Selector Modal */}
+      <ServerMediaModal
+        open={serverModalOpen}
+        onClose={() => {
+          setServerModalOpen(false);
+          onClose();
+        }}
+        onSelect={(media) => {
+          setServerModalOpen(false);
+          onSelect(media);
+          onClose();
+        }}
+        initialDirectory={serverDirectory}
+      />
+    </>
   );
 }
 
@@ -705,9 +382,8 @@ const styles = StyleSheet.create({
     borderColor: COLORS.glassBorder,
     borderTopColor: COLORS.border,
     paddingTop: 10,
-    paddingBottom: Platform.OS === "ios" ? 36 : 20,
+    paddingBottom: Platform.OS === "ios" ? 36 : 22,
     paddingHorizontal: 16,
-    maxHeight: "88%",
     shadowColor: COLORS.glassShadow,
     shadowOffset: { width: 0, height: -6 },
     shadowOpacity: 0.35,
@@ -726,22 +402,35 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    paddingBottom: 12,
+    paddingBottom: 14,
     borderBottomWidth: 1,
     borderBottomColor: COLORS.border,
   },
   headerLeft: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 8,
+    gap: 10,
+    flex: 1,
+  },
+  headerIconBox: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    backgroundColor: COLORS.secondary,
+    alignItems: "center",
+    justifyContent: "center",
   },
   headerTitle: {
     fontSize: 16,
-    fontWeight: "600",
     color: COLORS.foreground,
   },
+  headerSubtitle: {
+    fontSize: 11.5,
+    color: COLORS.mutedForeground,
+    marginTop: 1,
+  },
   closeBtn: {
-    padding: 6,
+    padding: 7,
     borderRadius: 8,
     backgroundColor: COLORS.secondary,
   },
@@ -752,195 +441,44 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.accent,
     padding: 10,
     borderRadius: 10,
-    marginTop: 8,
+    marginTop: 10,
   },
   uploadingText: {
     fontSize: 12,
     color: COLORS.primary,
-    fontWeight: "500",
   },
-  scrollArea: {
-    marginTop: 8,
+  optionsContainer: {
+    gap: 10,
+    paddingVertical: 14,
   },
-  sourcesList: {
-    gap: 8,
-    paddingVertical: 6,
-  },
-  sourceOption: {
+  optionCard: {
     flexDirection: "row",
     alignItems: "center",
     gap: 12,
-    padding: 12,
+    padding: 14,
     borderRadius: 16,
     backgroundColor: COLORS.secondary,
     borderWidth: 1,
     borderColor: COLORS.border,
   },
-  sourceIconBox: {
-    width: 38,
-    height: 38,
+  optionIconBox: {
+    width: 42,
+    height: 42,
     borderRadius: 12,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  sourceContent: {
-    flex: 1,
-  },
-  sourceTitle: {
-    fontSize: 14,
-    fontWeight: "600",
-    color: COLORS.foreground,
-  },
-  sourceSubtitle: {
-    fontSize: 11.5,
-    color: COLORS.mutedForeground,
-    marginTop: 2,
-  },
-  serverTabContent: {
-    paddingTop: 8,
-    minHeight: 280,
-  },
-  serverTopBar: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-    marginBottom: 10,
-  },
-  backBtn: {
-    paddingVertical: 6,
-    paddingHorizontal: 8,
-  },
-  backBtnText: {
-    fontSize: 13,
-    fontWeight: "600",
-    color: COLORS.primary,
-  },
-  searchBarBox: {
-    flex: 1,
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: COLORS.secondary,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    borderRadius: 10,
-    paddingHorizontal: 8,
-    height: 36,
-    gap: 6,
-  },
-  serverSearchInput: {
-    flex: 1,
-    fontSize: 12.5,
-    color: COLORS.foreground,
-    paddingVertical: 0,
-  },
-  refreshBtn: {
-    padding: 8,
-    borderRadius: 8,
-    backgroundColor: COLORS.secondary,
-  },
-  loadingBox: {
-    alignItems: "center",
-    justifyContent: "center",
-    padding: 30,
-    gap: 8,
-  },
-  loadingText: {
-    fontSize: 12,
-    color: COLORS.mutedForeground,
-  },
-  emptyServerBox: {
-    alignItems: "center",
-    justifyContent: "center",
-    padding: 30,
-    gap: 6,
-  },
-  emptyServerTitle: {
-    fontSize: 14,
-    fontWeight: "600",
-    color: COLORS.foreground,
-  },
-  emptyServerSub: {
-    fontSize: 12,
-    color: COLORS.mutedForeground,
-    textAlign: "center",
-  },
-  serverScroll: {
-    maxHeight: 320,
-  },
-  serverFileList: {
-    gap: 6,
-    paddingBottom: 10,
-  },
-  serverFileRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 10,
-    padding: 10,
-    borderRadius: 12,
-    backgroundColor: COLORS.secondary,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-  },
-  serverFileIconBox: {
-    width: 30,
-    height: 30,
-    borderRadius: 8,
-    backgroundColor: COLORS.secondary,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  serverFileInfo: {
-    flex: 1,
-  },
-  serverFileName: {
-    fontSize: 13,
-    fontWeight: "500",
-    color: COLORS.foreground,
-  },
-  serverFilePath: {
-    fontSize: 11,
-    color: COLORS.mutedForeground,
-    marginTop: 1,
-  },
-  voiceTabContent: {
-    paddingTop: 8,
-    minHeight: 220,
-  },
-  voiceRecordCenter: {
-    alignItems: "center",
-    justifyContent: "center",
-    paddingVertical: 20,
-    gap: 12,
-  },
-  voiceRecordPulse: {
-    width: 86,
-    height: 86,
-    borderRadius: 43,
     backgroundColor: COLORS.accent,
     alignItems: "center",
     justifyContent: "center",
   },
-  voiceRecordPulseActive: {
-    backgroundColor: COLORS.muted,
+  optionContent: {
+    flex: 1,
   },
-  voiceRecordCircle: {
-    width: 66,
-    height: 66,
-    borderRadius: 33,
-    backgroundColor: COLORS.secondary,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  voiceRecordCircleActive: {
-    backgroundColor: COLORS.destructive,
-  },
-  voiceTimerText: {
-    fontSize: 22,
-    fontWeight: "700",
+  optionTitle: {
+    fontSize: 14.5,
     color: COLORS.foreground,
   },
-  voiceHintText: {
-    fontSize: 12,
+  optionSubtitle: {
+    fontSize: 11.5,
     color: COLORS.mutedForeground,
+    marginTop: 2,
   },
 });

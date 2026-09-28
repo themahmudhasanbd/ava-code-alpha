@@ -36,7 +36,6 @@ import {
   Terminal as TerminalSquare,
   Trash2,
   X,
-  Zap,
   type LucideIcon,
 } from "lucide-react-native";
 import { REASONING_EFFORTS, SANDBOX_MODES } from "@/config/models";
@@ -45,7 +44,7 @@ import { useDirectory, useMcpServers, useModels } from "@/state/queries";
 import type { ChatStatus } from "@/state/use-chat";
 import { MediaSelectorModal, type SelectedMedia } from "@/components/media/MediaSelectorModal";
 import { COLORS } from "@/theme/colors";
-import { font, mono } from "@/theme/fonts";
+import { font } from "@/theme/fonts";
 import { joinPath } from "@/core/api/files";
 import {
   filterSlashCommands,
@@ -544,37 +543,6 @@ export const Composer = forwardRef<TextInput, Props>(
 
     const handleSelectSlashCommand = (cmd: SlashCommandItem) => {
       setShowSlashPopup(false);
-
-      if (cmd.action === "panel" && cmd.target === "model") {
-        setPanel("model");
-        onChange("");
-        return;
-      }
-      if (cmd.action === "panel" && cmd.target === "sandbox") {
-        setPanel("sandbox");
-        onChange("");
-        return;
-      }
-      if (cmd.action === "direct") {
-        if (cmd.target === "clear") {
-          onClear();
-          onChange("");
-          return;
-        }
-        if (cmd.target === "new") {
-          setActiveSessionId(null);
-          if (navigation) navigation.navigate("Chat");
-          onChange("");
-          return;
-        }
-        if (cmd.target === "stop") {
-          onStop();
-          onChange("");
-          return;
-        }
-      }
-
-      // Default: replace slash query with chosen command
       const cursor = selection.start;
       const before = value.slice(0, cursor);
       const after = value.slice(cursor);
@@ -1069,7 +1037,7 @@ const styles = StyleSheet.create({
   topPillRow: {
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "flex-start",
+    justifyContent: "flex-end",
     marginBottom: 6,
     paddingHorizontal: 4,
   },
@@ -1083,6 +1051,7 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.secondary,
     borderWidth: 1,
     borderColor: COLORS.border,
+    marginLeft: "auto",
   },
   floatingPillText: {
     fontSize: 11,

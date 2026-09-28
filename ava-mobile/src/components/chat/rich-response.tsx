@@ -1,4 +1,5 @@
-import React, { memo, useMemo, useRef, useState } from "react";
+import React, { memo, useEffect, useMemo, useRef, useState } from "react";
+import { InteractionManager } from "react-native";
 import { BlurView } from "expo-blur";
 import {
   ActivityIndicator,
@@ -561,6 +562,26 @@ function buildMermaidHtml(diagramCode: string): string {
 </html>`;
 }
 
+// Defers heavy WebView mounting until the list has settled, and staggers
+// multiple diagrams so a message with many blocks doesn't spike memory.
+let deferredQueue = 0;
+function useDeferredMount(): boolean {
+  const [ready, setReady] = useState(false);
+  useEffect(() => {
+    const slot = deferredQueue++;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const task = InteractionManager.runAfterInteractions(() => {
+      timer = setTimeout(() => setReady(true), Math.min(slot, 6) * 120);
+    });
+    return () => {
+      task.cancel();
+      if (timer) clearTimeout(timer);
+      deferredQueue = Math.max(0, deferredQueue - 1);
+    };
+  }, []);
+  return ready;
+}
+
 function MermaidBlock({ code }: { code: string }) {
   const [viewMode, setViewMode] = useState<"diagram" | "code">("diagram");
   const [copied, setCopied] = useState(false);
@@ -568,6 +589,7 @@ function MermaidBlock({ code }: { code: string }) {
   const [isLoading, setIsLoading] = useState(true);
   const [hasError, setHasError] = useState(false);
   const [fullscreenOpen, setFullscreenOpen] = useState(false);
+  const mountReady = useDeferredMount();
   const [zoomLevel, setZoomLevel] = useState(100);
 
   const webViewRef = useRef<WebView>(null);
@@ -697,7 +719,7 @@ function MermaidBlock({ code }: { code: string }) {
               <ActivityIndicator size="small" color={COLORS.primary} />
             </View>
           )}
-          <WebView
+          {mountReady ? <WebView
             ref={webViewRef}
             originWhitelist={["*"]}
             source={{ html }}
@@ -710,7 +732,7 @@ function MermaidBlock({ code }: { code: string }) {
               setIsLoading(false);
               setHasError(true);
             }}
-          />
+          /> : null}
 
           {/* Floating HUD Zoom Controls */}
           <View style={styles.mermaidFloatingControls}>
@@ -898,6 +920,7 @@ function MathBlock({ formula }: { formula: string }) {
   const [height, setHeight] = useState(54);
   const [copied, setCopied] = useState(false);
   const html = useMemo(() => buildMathHtml(formula), [formula]);
+  const mountReady = useDeferredMount();
 
   const handleCopy = async () => {
     await Clipboard.setStringAsync(formula);
@@ -924,7 +947,7 @@ function MathBlock({ formula }: { formula: string }) {
         </TouchableOpacity>
       </View>
       <View style={[styles.mathWebViewBox, { height }]}>
-        <WebView
+        {mountReady ? <WebView
           originWhitelist={["*"]}
           source={{ html }}
           style={styles.mathWebView}
@@ -937,7 +960,7 @@ function MathBlock({ formula }: { formula: string }) {
                 setHeight(Math.max(44, Math.min(260, data.height + 10)));
             } catch {}
           }}
-        />
+        /> : null}
       </View>
     </Surface>
   );

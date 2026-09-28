@@ -373,7 +373,7 @@ function UserTurnView({ message }: { message: ChatMessage }) {
   );
 }
 
-export function ChatMessageView({
+function ChatMessageViewBase({
   message,
   live = false,
   sessionId,
@@ -397,6 +397,13 @@ export function ChatMessageView({
 
   return <UserTurnView message={message} />;
 }
+
+// Memoized: only re-render when this message object, its live flag or session changes.
+// Streaming deltas replace only the last message, so older turns stay untouched.
+export const ChatMessageView = React.memo(
+  ChatMessageViewBase,
+  (a, b) => a.message === b.message && a.live === b.live && a.sessionId === b.sessionId,
+);
 
 const styles = StyleSheet.create({
   assistantContainer: {

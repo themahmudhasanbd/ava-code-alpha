@@ -1,3 +1,4 @@
+import { AppState } from "react-native";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 
@@ -545,11 +546,13 @@ export function useChat(explicitSessionId?: string | null) {
     if (!currentSessionId || (status !== "streaming" && status !== "submitted")) return;
     const interval = setInterval(() => {
       const store = chatStore.getState(currentSessionId);
-      if (store.isStreaming && Date.now() - store.lastUpdated > 4000) {
+      // Only reconcile when the live stream has actually stalled and the app is foregrounded.
+      if (AppState.currentState !== "active") return;
+      if (store.isStreaming && Date.now() - store.lastUpdated > 8000) {
         void history.refetch();
         void refreshQueue(currentSessionId);
       }
-    }, 2500);
+    }, 6000);
     return () => clearInterval(interval);
   }, [currentSessionId, history, status, refreshQueue]);
 

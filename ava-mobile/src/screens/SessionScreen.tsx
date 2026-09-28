@@ -207,6 +207,11 @@ export function SessionScreen({
           onScroll={handleScroll}
           scrollEventThrottle={32}
           keyExtractor={(item) => item.id}
+          windowSize={7}
+          initialNumToRender={8}
+          maxToRenderPerBatch={6}
+          updateCellsBatchingPeriod={60}
+          removeClippedSubviews={Platform.OS === "android"}
           keyboardShouldPersistTaps="handled"
           keyboardDismissMode="on-drag"
           ListEmptyComponent={

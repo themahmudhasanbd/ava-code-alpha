@@ -629,19 +629,7 @@ export const Composer = forwardRef<TextInput, Props>(
 
     return (
       <View style={styles.container}>
-        {/* Floating Top Bar: Model pill */}
-        <View style={styles.topPillRow}>
-          <TouchableOpacity
-            style={styles.floatingPill}
-            onPress={() => setPanel("model")}
-            activeOpacity={0.8}
-          >
-            <Text style={[styles.floatingPillText, font("semibold")]} numberOfLines={1}>
-              {activeModel?.name ?? modelId ?? "Model"} · {effort}
-            </Text>
-            <ChevronDown size={11} color={COLORS.mutedForeground} />
-          </TouchableOpacity>
-        </View>
+
 
         {/* Floating Slash Commands Autocomplete Popover */}
         {showSlashPopup && (
@@ -794,6 +782,19 @@ export const Composer = forwardRef<TextInput, Props>(
                 activeOpacity={0.7}
               >
                 <Plus size={16} color={COLORS.foreground} />
+              </TouchableOpacity>
+
+              {/* Model & Reasoning Pill */}
+              <TouchableOpacity
+                style={styles.modelPill}
+                onPress={() => setPanel("model")}
+                activeOpacity={0.7}
+              >
+                <Bot size={13} color={COLORS.primary} />
+                <Text style={[styles.modelPillText, font("semibold")]} numberOfLines={1}>
+                  {activeModel?.name ?? modelId ?? "Model"} · {effort}
+                </Text>
+                <ChevronDown size={11} color={COLORS.mutedForeground} />
               </TouchableOpacity>
 
               {/* Tools Pill Button */}
@@ -1034,29 +1035,22 @@ const styles = StyleSheet.create({
     paddingBottom: Platform.OS === "ios" ? 22 : 12,
     backgroundColor: "transparent",
   },
-  topPillRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "flex-end",
-    marginBottom: 6,
-    paddingHorizontal: 4,
-  },
-  floatingPill: {
+  modelPill: {
     flexDirection: "row",
     alignItems: "center",
     gap: 5,
-    paddingHorizontal: 9,
-    paddingVertical: 3.5,
-    borderRadius: 12,
+    height: 30,
+    paddingHorizontal: 10,
+    borderRadius: 15,
     backgroundColor: COLORS.secondary,
     borderWidth: 1,
     borderColor: COLORS.border,
-    marginLeft: "auto",
-  },
-  floatingPillText: {
-    fontSize: 11,
-    color: COLORS.mutedForeground,
     maxWidth: 160,
+  },
+  modelPillText: {
+    fontSize: 12,
+    color: COLORS.foreground,
+    maxWidth: 110,
   },
 
   composerCard: {

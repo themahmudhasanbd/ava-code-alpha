@@ -5,6 +5,10 @@ import {
   TouchableOpacity,
   StyleSheet,
   LayoutAnimation,
+  Alert,
+  Modal,
+  TextInput,
+  TouchableWithoutFeedback,
 } from "react-native";
 import {
   Plus,
@@ -12,6 +16,7 @@ import {
   ChevronDown,
   ChevronRight,
   Trash2,
+  Edit2,
   Pin,
   PinOff,
 } from "lucide-react-native";
@@ -19,9 +24,10 @@ import { Button } from "@/components/ui/button";
 import { GlassCapsule, SkeletonRows } from "@/components/kit";
 import { storage } from "@/core/storage";
 import { useAva } from "@/state/ava-provider";
-import { useSessions, useDeleteSession } from "@/state/queries";
+import { useSessions, useDeleteSession, useRenameSession } from "@/state/queries";
 import type { Session } from "@/core/types";
 import { COLORS } from "@/theme/colors";
+import { font } from "@/theme/fonts";
 
 const PIN_KEY = "ava.workspace.pins";
 
@@ -51,8 +57,14 @@ export function SessionsList({
   } = useAva();
   const { data: sessions = [], isLoading, error } = useSessions();
   const del = useDeleteSession();
+  const rename = useRenameSession();
   const [pins, setPins] = useState<string[]>([]);
   const [expandedDirs, setExpandedDirs] = useState<string[]>([]);
+
+  // Rename modal state
+  const [renameOpen, setRenameOpen] = useState(false);
+  const [renamingSession, setRenamingSession] = useState<{ id: string; title: string } | null>(null);
+  const [newTitle, setNewTitle] = useState("");
 
   useEffect(() => {
     try {
@@ -114,6 +126,43 @@ export function SessionsList({
   const handlePick = (id: string | null) => {
     setActiveSessionId(id);
     onPick?.(id);
+  };
+
+  const handleDelete = (session: Session) => {
+    Alert.alert(
+      "Delete Session",
+      `Are you sure you want to delete "${session.title || "Untitled Session"}"?`,
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Delete",
+          style: "destructive",
+          onPress: () => {
+            if (activeSessionId === session.id) {
+              handlePick(null);
+            }
+            del.mutate(session.id);
+          },
+        },
+      ]
+    );
+  };
+
+  const handleOpenRename = (session: Session) => {
+    setRenamingSession({ id: session.id, title: session.title || "" });
+    setNewTitle(session.title || "");
+    setRenameOpen(true);
+  };
+
+  const handleSaveRename = () => {
+    if (!renamingSession) return;
+    const trimmed = newTitle.trim();
+    if (trimmed && trimmed !== renamingSession.title) {
+      rename.mutate({ id: renamingSession.id, name: trimmed });
+    }
+    setRenameOpen(false);
+    setRenamingSession(null);
+    setNewTitle("");
   };
 
   return (
@@ -281,18 +330,23 @@ export function SessionsList({
                             />
                           ) : null}
                         </TouchableOpacity>
+
                         <TouchableOpacity
                           activeOpacity={0.7}
-                          onPress={() => {
-                            if (activeSessionId === session.id) {
-                              handlePick(null);
-                            }
-                            del.mutate(session.id);
-                          }}
-                          style={styles.deleteButton}
-                          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                          onPress={() => handleOpenRename(session)}
+                          style={styles.actionButton}
+                          hitSlop={{ top: 8, bottom: 8, left: 6, right: 6 }}
                         >
-                          <Trash2 size={13} color={COLORS.mutedForeground} />
+                          <Edit2 size={12} color={COLORS.mutedForeground} />
+                        </TouchableOpacity>
+
+                        <TouchableOpacity
+                          activeOpacity={0.7}
+                          onPress={() => handleDelete(session)}
+                          style={styles.actionButton}
+                          hitSlop={{ top: 8, bottom: 8, left: 6, right: 6 }}
+                        >
+                          <Trash2 size={12.5} color={COLORS.mutedForeground} />
                         </TouchableOpacity>
                       </View>
                     );
@@ -303,6 +357,48 @@ export function SessionsList({
           );
         })}
       </View>
+
+      {/* Rename Modal */}
+      <Modal
+        visible={renameOpen}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setRenameOpen(false)}
+      >
+        <TouchableWithoutFeedback onPress={() => setRenameOpen(false)}>
+          <View style={styles.modalBackdrop}>
+            <TouchableWithoutFeedback onPress={() => {}}>
+              <View style={styles.renameCard}>
+                <Text style={[styles.renameTitle, font("bold")]}>Rename Session</Text>
+                <TextInput
+                  style={[styles.renameInput, font("regular")]}
+                  value={newTitle}
+                  onChangeText={setNewTitle}
+                  placeholder="New title…"
+                  placeholderTextColor={COLORS.mutedForeground}
+                  autoFocus
+                  returnKeyType="done"
+                  onSubmitEditing={handleSaveRename}
+                />
+                <View style={styles.renameRow}>
+                  <TouchableOpacity
+                    style={styles.renameCancel}
+                    onPress={() => setRenameOpen(false)}
+                  >
+                    <Text style={styles.renameCancelText}>Cancel</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={styles.renameSave}
+                    onPress={handleSaveRename}
+                  >
+                    <Text style={styles.renameSaveText}>Save</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            </TouchableWithoutFeedback>
+          </View>
+        </TouchableWithoutFeedback>
+      </Modal>
     </View>
   );
 }
@@ -396,7 +492,7 @@ const styles = StyleSheet.create({
   sessionRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 4,
+    gap: 2,
   },
   sessionButton: {
     flex: 1,
@@ -425,7 +521,65 @@ const styles = StyleSheet.create({
     color: COLORS.foreground,
     fontWeight: "600",
   },
-  deleteButton: {
+  actionButton: {
     padding: 6,
+    borderRadius: 6,
+  },
+  modalBackdrop: {
+    flex: 1,
+    backgroundColor: "rgba(0, 0, 0, 0.6)",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 24,
+  },
+  renameCard: {
+    width: "100%",
+    maxWidth: 360,
+    backgroundColor: COLORS.card,
+    borderRadius: 16,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+  },
+  renameTitle: {
+    fontSize: 15,
+    color: COLORS.foreground,
+    marginBottom: 12,
+  },
+  renameInput: {
+    height: 40,
+    backgroundColor: COLORS.secondary,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    borderRadius: 8,
+    paddingHorizontal: 10,
+    fontSize: 13,
+    color: COLORS.foreground,
+    marginBottom: 14,
+  },
+  renameRow: {
+    flexDirection: "row",
+    justifyContent: "flex-end",
+    gap: 8,
+  },
+  renameCancel: {
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    borderRadius: 6,
+    backgroundColor: COLORS.secondary,
+  },
+  renameCancelText: {
+    fontSize: 12.5,
+    color: COLORS.mutedForeground,
+  },
+  renameSave: {
+    paddingVertical: 6,
+    paddingHorizontal: 14,
+    borderRadius: 6,
+    backgroundColor: COLORS.primary,
+  },
+  renameSaveText: {
+    fontSize: 12.5,
+    color: "#FFFFFF",
   },
 });

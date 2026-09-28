@@ -458,43 +458,7 @@ export function SessionScreen({
           </View>
         ) : null}
 
-        {/* Live streaming / processing banner */}
-        {isStreaming ? (
-          <View
-            style={[
-              styles.liveStatusBar,
-              {
-                backgroundColor: isDark ? "rgba(99, 102, 241, 0.08)" : "rgba(66, 64, 225, 0.05)",
-                borderColor: colors.primary,
-              },
-            ]}
-          >
-            <View style={styles.liveStatusLeft}>
-              <View style={styles.livePulseDot} />
-              <Shimmer style={[styles.liveStatusText, { color: colors.foreground }]}>
-                {status === "submitted"
-                  ? "AvA is preparing response…"
-                  : "AvA is executing tools & generating response…"}
-              </Shimmer>
-            </View>
-            <TouchableOpacity
-              onPress={stop}
-              style={[
-                styles.liveStopBtn,
-                {
-                  backgroundColor: isDark ? "rgba(239, 68, 68, 0.18)" : "rgba(239, 68, 68, 0.1)",
-                  borderColor: isDark ? "rgba(239, 68, 68, 0.35)" : "rgba(239, 68, 68, 0.25)",
-                },
-              ]}
-              activeOpacity={0.7}
-              accessibilityRole="button"
-              accessibilityLabel="Stop agent response"
-            >
-              <Square size={10} color={colors.destructive} fill={colors.destructive} />
-              <Text style={[styles.liveStopText, { color: colors.destructive }]}>Stop</Text>
-            </TouchableOpacity>
-          </View>
-        ) : null}
+
 
         {/* Stopping indicator banner */}
         {status === "stopping" ? (

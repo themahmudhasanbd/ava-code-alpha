@@ -28,6 +28,29 @@ import {
 
 export type { ChatStatus, QueuedPromptItem };
 
+function mergeWithLocalMessages(localMsgs: ChatMessage[], serverMsgs: ChatMessage[], limit = 30): ChatMessage[] {
+  if (!serverMsgs || serverMsgs.length === 0) return localMsgs;
+  if (!localMsgs || localMsgs.length === 0) return serverMsgs.slice(-limit);
+
+  const serverUserTexts = new Set(
+    serverMsgs
+      .filter((m) => m.role === "user")
+      .map((m) => m.parts?.map((p) => p.text?.trim()).filter(Boolean).join(" ") || (m as any).text || "")
+  );
+
+  const pendingLocalUserMsgs = localMsgs.filter((lm) => {
+    if (lm.role !== "user") return false;
+    const localText = lm.parts?.map((p) => p.text?.trim()).filter(Boolean).join(" ") || (lm as any).text || "";
+    return !serverUserTexts.has(localText);
+  });
+
+  const liveAssistantMsgs = localMsgs.filter((m) => m.role === "assistant" && m.parts?.some((p) => p.status === "running"));
+
+  const combined = [...serverMsgs, ...pendingLocalUserMsgs, ...liveAssistantMsgs];
+  return combined.slice(-limit);
+}
+
+
 let idCounter = 0;
 export function makeUniqueId(prefix = "id"): string {
   idCounter = (idCounter + 1) % 1000000;
@@ -425,14 +448,15 @@ export function useChat(explicitSessionId?: string | null) {
       allHistoryRef.current = historyMessages;
 
       if (currentSessionId) {
-        const existingStore = chatStore.getState(currentSessionId);
-        if (!existingStore.isStreaming) {
-          chatStore.setState(currentSessionId, (prev) => ({
+        chatStore.setState(currentSessionId, (prev) => {
+          if (prev.isStreaming) return prev;
+          const merged = mergeWithLocalMessages(prev.messages, historyMessages, 30);
+          return {
             ...prev,
-            messages: historyMessages.slice(-30),
+            messages: merged,
             error: null,
-          }));
-        }
+          };
+        });
       }
 
       if (isTurnRunning && rpc && currentSessionId) {
@@ -522,19 +546,14 @@ export function useChat(explicitSessionId?: string | null) {
         return;
       }
 
-      // Regular idle history update: only update if not streaming or if history has more messages
+      // Regular idle history update: preserve pending user messages
       if (!currentStore.isStreaming && statusRef.current === "ready" && historyMessages.length > 0) {
         allHistoryRef.current = historyMessages;
         chatStore.setState(currentSessionId, (prev) => {
-          const localUserMsgs = prev.messages.filter((m) => m.role === "user" && m.id.startsWith("u_"));
-          const missingInHistory = localUserMsgs.filter((lm) => !historyMessages.some((hm) => hm.id === lm.id));
-          
-          if (missingInHistory.length > 0 && historyMessages.length <= prev.messages.length) {
-            return prev;
-          }
+          const merged = mergeWithLocalMessages(prev.messages, historyMessages, visibleCount);
           return {
             ...prev,
-            messages: historyMessages.slice(-visibleCount),
+            messages: merged,
           };
         });
       }

@@ -1,27 +1,33 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
+  Alert,
   Animated,
   Easing,
+  Image,
+  Modal,
   Platform,
   ScrollView,
   StyleSheet,
   Text,
+  TextInput,
   TouchableOpacity,
+  TouchableWithoutFeedback,
   View,
 } from "react-native";
 import type { DrawerContentComponentProps } from "@react-navigation/drawer";
-import { DrawerActions } from "@react-navigation/native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import {
   ChevronDown,
   ChevronRight,
+  Edit2,
   Folder,
   LogOut,
   Pin,
   PinOff,
   Plus,
   Trash2,
+  User,
   X,
 } from "lucide-react-native";
 import { StatusDot } from "@/components/kit";
@@ -30,10 +36,10 @@ import { APP } from "@/config/app";
 import { NAV_SECTIONS, type AppScreenName } from "@/config/navigation";
 import { storage } from "@/core/storage";
 import { useAva } from "@/state/ava-provider";
-import { useDeleteSession, useSessions } from "@/state/queries";
+import { useDeleteSession, useRenameSession, useSessions, useUserProfile } from "@/state/queries";
 import type { Session } from "@/core/types";
 import { COLORS } from "@/theme/colors";
-import { font, FONTS, mono } from "@/theme/fonts";
+import { font, mono } from "@/theme/fonts";
 
 const PIN_KEY = "ava.workspace.pins";
 
@@ -52,16 +58,32 @@ function groupByProject(sessions: Session[]) {
 export function AppDrawer(props: DrawerContentComponentProps) {
   const { navigation, state } = props;
   const insets = useSafeAreaInsets();
-  const { auth, status, signOut, activeSessionId, setActiveSessionId, runningSessions, workingSessionId, workingCwd, setWorkingCwd } =
-    useAva();
+  const {
+    auth,
+    status,
+    signOut,
+    activeSessionId,
+    setActiveSessionId,
+    runningSessions,
+    workingSessionId,
+    workingCwd,
+    setWorkingCwd,
+  } = useAva();
   const { data: sessions = [], isLoading } = useSessions();
+  const { data: userProfileData } = useUserProfile();
   const deleteSession = useDeleteSession();
+  const renameSession = useRenameSession();
 
   const [tab, setTab] = useState<"menu" | "sessions">("sessions");
   const [pins, setPins] = useState<string[]>([]);
   const [expandedDirs, setExpandedDirs] = useState<string[]>([]);
   const [tabWidth, setTabWidth] = useState(0);
   const [workspaceModalOpen, setWorkspaceModalOpen] = useState(false);
+
+  // Rename Session Modal State
+  const [renameModalOpen, setRenameModalOpen] = useState(false);
+  const [renamingSession, setRenamingSession] = useState<{ id: string; title: string } | null>(null);
+  const [newTitle, setNewTitle] = useState("");
 
   // Load pinned directories from storage
   useEffect(() => {
@@ -87,11 +109,8 @@ export function AppDrawer(props: DrawerContentComponentProps) {
 
   const currentRoute = state.routes[state.index];
   const currentRouteName = currentRoute?.name;
-  const currentParams = currentRoute?.params as
-    | { sessionId?: string }
-    | undefined;
-  const currentSessionId =
-    currentRouteName === "Session" ? currentParams?.sessionId : null;
+  const currentParams = currentRoute?.params as { sessionId?: string } | undefined;
+  const currentSessionId = currentRouteName === "Session" ? currentParams?.sessionId : null;
 
   const handleNav = (screenName: AppScreenName) => {
     navigation.closeDrawer();
@@ -138,9 +157,7 @@ export function AppDrawer(props: DrawerContentComponentProps) {
 
   const togglePin = (dir: string) => {
     setPins((prev) => {
-      const next = prev.includes(dir)
-        ? prev.filter((d) => d !== dir)
-        : [dir, ...prev];
+      const next = prev.includes(dir) ? prev.filter((d) => d !== dir) : [dir, ...prev];
       try {
         storage.set(PIN_KEY, JSON.stringify(next));
       } catch {}
@@ -149,9 +166,7 @@ export function AppDrawer(props: DrawerContentComponentProps) {
   };
 
   const activeDirectory = useMemo(() => {
-    const active = sessions.find(
-      (s) => s.id === (currentSessionId ?? activeSessionId)
-    );
+    const active = sessions.find((s) => s.id === (currentSessionId ?? activeSessionId));
     return active?.directory ?? workingCwd ?? (sessions.length > 0 ? sessions[0].directory : "/");
   }, [sessions, currentSessionId, activeSessionId, workingCwd]);
 
@@ -179,11 +194,54 @@ export function AppDrawer(props: DrawerContentComponentProps) {
     });
   }, [sessions, pins, activeDirectory]);
 
+  const handleDeleteSession = (s: Session) => {
+    Alert.alert(
+      "Delete Session",
+      `Are you sure you want to delete "${s.title || "Untitled Session"}"? This action cannot be undone.`,
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Delete",
+          style: "destructive",
+          onPress: () => {
+            if (activeSessionId === s.id || currentSessionId === s.id) {
+              handlePickSession(null);
+            }
+            deleteSession.mutate(s.id);
+          },
+        },
+      ]
+    );
+  };
+
+  const handleOpenRename = (s: Session) => {
+    setRenamingSession({ id: s.id, title: s.title || "" });
+    setNewTitle(s.title || "");
+    setRenameModalOpen(true);
+  };
+
+  const handleSaveRename = () => {
+    if (!renamingSession) return;
+    const trimmed = newTitle.trim();
+    if (trimmed && trimmed !== renamingSession.title) {
+      renameSession.mutate({ id: renamingSession.id, name: trimmed });
+    }
+    setRenameModalOpen(false);
+    setRenamingSession(null);
+    setNewTitle("");
+  };
+
   const singleTabWidth = tabWidth > 0 ? (tabWidth - 6) / 2 : 0;
   const indicatorTranslateX = tabAnim.interpolate({
     inputRange: [0, 1],
     outputRange: [0, singleTabWidth],
   });
+
+  const profile = userProfileData?.profile;
+  const userDisplayName =
+    profile?.name?.trim() || profile?.username?.trim() || auth?.username || "Developer";
+  const userInitials = userDisplayName.slice(0, 2).toUpperCase();
+  const userAvatar = profile?.avatar;
 
   return (
     <>
@@ -192,13 +250,9 @@ export function AppDrawer(props: DrawerContentComponentProps) {
           styles.outerContainer,
           {
             paddingTop:
-              Platform.OS === "android"
-                ? Math.max(insets.top, 14)
-                : insets.top + 8,
+              Platform.OS === "android" ? Math.max(insets.top, 14) : insets.top + 8,
             paddingBottom:
-              Platform.OS === "android"
-                ? Math.max(insets.bottom, 14)
-                : insets.bottom + 8,
+              Platform.OS === "android" ? Math.max(insets.bottom, 14) : insets.bottom + 8,
           },
         ]}
       >
@@ -286,24 +340,18 @@ export function AppDrawer(props: DrawerContentComponentProps) {
                       const Icon = item.icon;
                       const isActive =
                         (item.screen === "Chat" &&
-                          (currentRouteName === "Chat" ||
-                            currentRouteName === "Session")) ||
+                          (currentRouteName === "Chat" || currentRouteName === "Session")) ||
                         currentRouteName === item.screen;
                       return (
                         <TouchableOpacity
                           key={item.label}
-                          style={[
-                            styles.menuItem,
-                            isActive && styles.menuItemActive,
-                          ]}
+                          style={[styles.menuItem, isActive && styles.menuItemActive]}
                           onPress={() => handleNav(item.screen)}
                           activeOpacity={0.7}
                         >
                           <Icon
                             size={18}
-                            color={
-                              isActive ? COLORS.primary : COLORS.mutedForeground
-                            }
+                            color={isActive ? COLORS.primary : COLORS.mutedForeground}
                           />
                           <Text
                             style={[
@@ -394,30 +442,18 @@ export function AppDrawer(props: DrawerContentComponentProps) {
                           {isOpen ? (
                             <ChevronDown
                               size={14}
-                              color={
-                                isActiveWorkspace
-                                  ? COLORS.primary
-                                  : COLORS.mutedForeground
-                              }
+                              color={isActiveWorkspace ? COLORS.primary : COLORS.mutedForeground}
                             />
                           ) : (
                             <ChevronRight
                               size={14}
-                              color={
-                                isActiveWorkspace
-                                  ? COLORS.primary
-                                  : COLORS.mutedForeground
-                              }
+                              color={isActiveWorkspace ? COLORS.primary : COLORS.mutedForeground}
                             />
                           )}
 
                           <Folder
                             size={15}
-                            color={
-                              isActiveWorkspace
-                                ? COLORS.primary
-                                : COLORS.mutedForeground
-                            }
+                            color={isActiveWorkspace ? COLORS.primary : COLORS.mutedForeground}
                           />
 
                           <View style={styles.groupInfoCol}>
@@ -481,8 +517,7 @@ export function AppDrawer(props: DrawerContentComponentProps) {
                             {sList.map((s) => {
                               const isSelected =
                                 currentSessionId === s.id ||
-                                (activeSessionId === s.id &&
-                                  currentRouteName === "Session");
+                                (activeSessionId === s.id && currentRouteName === "Session");
                               const isRunning =
                                 s.active ||
                                 s.status === "active" ||
@@ -512,8 +547,7 @@ export function AppDrawer(props: DrawerContentComponentProps) {
                                       style={[
                                         styles.sessionBtnText,
                                         font("regular", s.title || "Untitled Session"),
-                                        isSelected &&
-                                          styles.sessionBtnTextActive,
+                                        isSelected && styles.sessionBtnTextActive,
                                       ]}
                                       numberOfLines={1}
                                     >
@@ -527,29 +561,27 @@ export function AppDrawer(props: DrawerContentComponentProps) {
                                       </View>
                                     )}
                                   </TouchableOpacity>
+
+                                  {/* Rename Session Action */}
                                   <TouchableOpacity
-                                    style={styles.deleteBtn}
-                                    onPress={() => {
-                                      if (
-                                        activeSessionId === s.id ||
-                                        currentSessionId === s.id
-                                      ) {
-                                        handlePickSession(null);
-                                      }
-                                      deleteSession.mutate(s.id);
-                                    }}
-                                    hitSlop={{
-                                      top: 8,
-                                      bottom: 8,
-                                      left: 8,
-                                      right: 8,
-                                    }}
+                                    style={styles.actionBtn}
+                                    onPress={() => handleOpenRename(s)}
+                                    hitSlop={{ top: 8, bottom: 8, left: 6, right: 6 }}
                                     activeOpacity={0.7}
+                                    accessibilityLabel="Rename session"
                                   >
-                                    <Trash2
-                                      size={13}
-                                      color={COLORS.mutedForeground}
-                                    />
+                                    <Edit2 size={12} color={COLORS.mutedForeground} />
+                                  </TouchableOpacity>
+
+                                  {/* Delete Session with Confirmation */}
+                                  <TouchableOpacity
+                                    style={styles.actionBtn}
+                                    onPress={() => handleDeleteSession(s)}
+                                    hitSlop={{ top: 8, bottom: 8, left: 6, right: 6 }}
+                                    activeOpacity={0.7}
+                                    accessibilityLabel="Delete session"
+                                  >
+                                    <Trash2 size={12.5} color={COLORS.mutedForeground} />
                                   </TouchableOpacity>
                                 </View>
                               );
@@ -564,28 +596,38 @@ export function AppDrawer(props: DrawerContentComponentProps) {
             )}
           </View>
 
-          {/* Footer */}
+          {/* Profile & User Meta Footer */}
           <View style={styles.footer}>
-            <View style={styles.avatarBox}>
-              <Text style={[styles.avatarText, font("bold")]}>
-                {(auth?.username || "A").slice(0, 2).toUpperCase()}
-              </Text>
-            </View>
-            <View style={styles.userMetaCol}>
-              <Text style={[styles.usernameText, font("semibold")]} numberOfLines={1}>
-                {auth?.username || "Guest"}
-              </Text>
-              <View style={styles.serverRow}>
-                <StatusDot status={status} size={6} />
-                <Text style={[styles.serverHostText, font("regular")]} numberOfLines={1}>
-                  {auth?.serverUrl.replace(/^https?:\/\//, "") || "offline"}
+            <TouchableOpacity
+              style={styles.profileClickArea}
+              onPress={() => handleNav("Profile")}
+              activeOpacity={0.7}
+            >
+              {userAvatar ? (
+                <Image source={{ uri: userAvatar }} style={styles.avatarImg} />
+              ) : (
+                <View style={styles.avatarBox}>
+                  <Text style={[styles.avatarText, font("bold")]}>{userInitials}</Text>
+                </View>
+              )}
+              <View style={styles.userMetaCol}>
+                <Text style={[styles.usernameText, font("semibold")]} numberOfLines={1}>
+                  {userDisplayName}
                 </Text>
+                <View style={styles.serverRow}>
+                  <StatusDot status={status} size={6} />
+                  <Text style={[styles.serverHostText, font("regular")]} numberOfLines={1}>
+                    {auth?.serverUrl.replace(/^https?:\/\//, "") || "offline"}
+                  </Text>
+                </View>
               </View>
-            </View>
+            </TouchableOpacity>
+
             <TouchableOpacity
               style={styles.logoutBtn}
               onPress={signOut}
               activeOpacity={0.7}
+              accessibilityLabel="Sign out"
             >
               <LogOut size={16} color={COLORS.foreground} />
             </TouchableOpacity>
@@ -600,6 +642,57 @@ export function AppDrawer(props: DrawerContentComponentProps) {
         currentPath={workingCwd}
         onSelectPath={handleWorkspaceSelect}
       />
+
+      {/* Session Rename Modal Dialog */}
+      <Modal
+        visible={renameModalOpen}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setRenameModalOpen(false)}
+      >
+        <TouchableWithoutFeedback onPress={() => setRenameModalOpen(false)}>
+          <View style={styles.modalBackdrop}>
+            <TouchableWithoutFeedback onPress={() => {}}>
+              <View style={styles.renameModalCard}>
+                <Text style={[styles.renameModalTitle, font("bold")]}>Rename Session</Text>
+                <Text style={[styles.renameModalSubtitle, font("regular")]}>
+                  Enter a new title for this conversation thread:
+                </Text>
+
+                <TextInput
+                  style={[styles.renameInput, font("regular")]}
+                  value={newTitle}
+                  onChangeText={setNewTitle}
+                  placeholder="Session Title…"
+                  placeholderTextColor={COLORS.mutedForeground}
+                  autoFocus
+                  selectTextOnFocus
+                  returnKeyType="done"
+                  onSubmitEditing={handleSaveRename}
+                />
+
+                <View style={styles.renameActionsRow}>
+                  <TouchableOpacity
+                    style={styles.renameCancelBtn}
+                    onPress={() => setRenameModalOpen(false)}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={[styles.renameCancelText, font("medium")]}>Cancel</Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    style={styles.renameSaveBtn}
+                    onPress={handleSaveRename}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={[styles.renameSaveText, font("semibold")]}>Save</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            </TouchableWithoutFeedback>
+          </View>
+        </TouchableWithoutFeedback>
+      </Modal>
     </>
   );
 }
@@ -858,7 +951,7 @@ const styles = StyleSheet.create({
   sessionRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 4,
+    gap: 3,
   },
   sessionBtn: {
     flex: 1,
@@ -887,8 +980,9 @@ const styles = StyleSheet.create({
     color: COLORS.foreground,
     fontWeight: "600",
   },
-  deleteBtn: {
+  actionBtn: {
     padding: 6,
+    borderRadius: 6,
   },
   runningBadge: {
     paddingHorizontal: 6,
@@ -905,20 +999,33 @@ const styles = StyleSheet.create({
   footer: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 10,
+    justifyContent: "space-between",
     paddingHorizontal: 14,
     paddingVertical: 12,
     borderTopWidth: 1,
     borderTopColor: COLORS.sidebarBorder,
     backgroundColor: COLORS.sidebar,
   },
+  profileClickArea: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+  },
   avatarBox: {
-    width: 34,
-    height: 34,
-    borderRadius: 8,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     backgroundColor: COLORS.primary,
     alignItems: "center",
     justifyContent: "center",
+  },
+  avatarImg: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    borderWidth: 1.5,
+    borderColor: COLORS.primary,
   },
   avatarText: {
     fontSize: 13,
@@ -945,11 +1052,80 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   logoutBtn: {
-    width: 32,
-    height: 32,
+    width: 34,
+    height: 34,
     alignItems: "center",
     justifyContent: "center",
+    borderRadius: 9,
+    backgroundColor: COLORS.secondary,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+  },
+  modalBackdrop: {
+    flex: 1,
+    backgroundColor: "rgba(0, 0, 0, 0.6)",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 24,
+  },
+  renameModalCard: {
+    width: "100%",
+    maxWidth: 380,
+    backgroundColor: COLORS.card,
+    borderRadius: 18,
+    padding: 18,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.25,
+    shadowRadius: 10,
+    elevation: 8,
+  },
+  renameModalTitle: {
+    fontSize: 16,
+    color: COLORS.foreground,
+    marginBottom: 4,
+  },
+  renameModalSubtitle: {
+    fontSize: 12.5,
+    color: COLORS.mutedForeground,
+    marginBottom: 14,
+  },
+  renameInput: {
+    height: 42,
+    backgroundColor: COLORS.secondary,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    fontSize: 13.5,
+    color: COLORS.foreground,
+    marginBottom: 16,
+  },
+  renameActionsRow: {
+    flexDirection: "row",
+    justifyContent: "flex-end",
+    gap: 10,
+  },
+  renameCancelBtn: {
+    paddingVertical: 8,
+    paddingHorizontal: 14,
     borderRadius: 8,
     backgroundColor: COLORS.secondary,
+  },
+  renameCancelText: {
+    fontSize: 13,
+    color: COLORS.mutedForeground,
+  },
+  renameSaveBtn: {
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    backgroundColor: COLORS.primary,
+  },
+  renameSaveText: {
+    fontSize: 13,
+    color: "#FFFFFF",
   },
 });

@@ -5,6 +5,7 @@ import { getMetadata, readDirectory, readTextFile } from "@/core/api/files";
 import { deleteSession, listSessions, readSession, renameSession, startSession } from "@/core/api/sessions";
 import { readDiagnostics, readServerConfig, writeServerConfig } from "@/core/api/system";
 import { runCommand } from "@/core/api/terminal";
+import { readUserProfile, writeUserProfile, type UserProfile } from "@/core/api/profile";
 import { useAva } from "./ava-provider";
 
 export const keys = {
@@ -16,6 +17,7 @@ export const keys = {
   file: (path: string) => ["file", path] as const,
   diagnostics: ["diagnostics"] as const,
   serverConfig: ["server-config"] as const,
+  userProfile: ["user-profile"] as const,
 };
 
 export function useDirectory(path: string) {
@@ -86,8 +88,6 @@ export function useSessionHistory(id: string | null) {
     queryKey: keys.session(id ?? ""),
     queryFn: () => readSession(rpc!, id!),
     enabled: !!rpc && !!id && status === "online",
-    // Live streaming is handled directly by chatStore via WebSocket RPC.
-    // Relaxed periodic sync (15s) avoids aggressive 1.5s polling while keeping state fresh.
     refetchInterval: status === "online" ? 15000 : false,
   });
 }
@@ -136,6 +136,27 @@ export function useRenameSession() {
   return useMutation({
     mutationFn: (v: { id: string; name: string }) => renameSession(rpc!, v.id, v.name),
     onSuccess: () => qc.invalidateQueries({ queryKey: keys.sessions }),
+  });
+}
+
+export function useUserProfile() {
+  const { rpc, status } = useAva();
+  return useQuery({
+    queryKey: keys.userProfile,
+    queryFn: () => readUserProfile(rpc!),
+    enabled: !!rpc && status === "online",
+    staleTime: 60_000,
+  });
+}
+
+export function useWriteUserProfile() {
+  const { rpc } = useAva();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (profile: Partial<UserProfile>) => writeUserProfile(rpc!, profile, true),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: keys.userProfile });
+    },
   });
 }
 

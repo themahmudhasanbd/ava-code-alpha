@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
+  Image,
   LayoutAnimation,
   Platform,
   ScrollView,
@@ -39,6 +40,7 @@ import { COLORS } from "@/theme/colors";
 import { formatDuration as fmtDuration, formatTokens as fmtTokens } from "@/lib/format";
 import { font, FONTS, mono } from "@/theme/fonts";
 import { useAva } from "@/state/ava-provider";
+import { useUserProfile } from "@/state/queries";
 import { answerQuestion } from "@/core/api/chat";
 
 export const formatDuration = fmtDuration;
@@ -323,6 +325,14 @@ function AssistantTurn({
 // ---------- user turn -----------------------------------------------------
 
 function UserTurnView({ message }: { message: ChatMessage }) {
+  const { auth } = useAva();
+  const { data: userProfileData } = useUserProfile();
+  const profile = userProfileData?.profile;
+
+  const displayName = profile?.name?.trim() || profile?.username?.trim() || auth?.username || "You";
+  const initials = displayName.slice(0, 2).toUpperCase();
+  const avatar = profile?.avatar;
+
   const partsText = message.parts
     ? message.parts
         .filter((p) => p.text)
@@ -331,6 +341,9 @@ function UserTurnView({ message }: { message: ChatMessage }) {
         .trim()
     : "";
   const fullText = (partsText || (message as any).text || "").trim();
+
+  const attachedFiles = message.parts?.flatMap((p) => p.meta?.files || []) || [];
+  const attachedMedia = message.parts?.flatMap((p) => p.meta?.media || []) || [];
 
   const [expanded, setExpanded] = useState(false);
 
@@ -352,7 +365,46 @@ function UserTurnView({ message }: { message: ChatMessage }) {
   };
 
   return (
-    <View style={styles.userBubbleContainer}>
+    <View style={styles.userContainer}>
+      {/* User Header with Avatar & Name */}
+      <View style={styles.userHeader}>
+        <View style={styles.userHeaderInfo}>
+          <Text style={[styles.userNameText, font("semibold")]} numberOfLines={1}>
+            {displayName}
+          </Text>
+          <Text style={[styles.userRoleTag, font("medium")]}>You</Text>
+        </View>
+
+        {avatar ? (
+          <Image source={{ uri: avatar }} style={styles.userAvatarImg} />
+        ) : (
+          <View style={styles.userAvatarBox}>
+            <Text style={[styles.userAvatarInitials, font("bold")]}>{initials}</Text>
+          </View>
+        )}
+      </View>
+
+      {/* Attachments if any */}
+      {(attachedFiles.length > 0 || attachedMedia.length > 0) && (
+        <View style={styles.userAttachmentsRow}>
+          {attachedFiles.map((file, i) => (
+            <View key={`file_${i}`} style={styles.userAttBadge}>
+              <Text style={[styles.userAttText, font("medium")]} numberOfLines={1}>
+                {file.path.split("/").pop() || file.path}
+              </Text>
+            </View>
+          ))}
+          {attachedMedia.map((media, i) => (
+            <View key={`media_${i}`} style={styles.userAttBadge}>
+              <Text style={[styles.userAttText, font("medium")]} numberOfLines={1}>
+                {media.name || "Media"}
+              </Text>
+            </View>
+          ))}
+        </View>
+      )}
+
+      {/* User Message Bubble */}
       <View style={styles.userBubble}>
         <RichResponse text={displayText} isUser />
         {isLong && (
@@ -558,17 +610,82 @@ const styles = StyleSheet.create({
     fontSize: 11,
     color: COLORS.mutedForeground,
   },
-  userBubbleContainer: {
+  userContainer: {
     alignSelf: "flex-end",
     maxWidth: "92%",
-    marginVertical: 4,
+    marginVertical: 6,
+    gap: 4,
+  },
+  userHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    alignSelf: "flex-end",
+    gap: 7,
+    marginBottom: 2,
+  },
+  userHeaderInfo: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
+  },
+  userNameText: {
+    fontSize: 12,
+    color: COLORS.foreground,
+  },
+  userRoleTag: {
+    fontSize: 9.5,
+    color: COLORS.mutedForeground,
+    backgroundColor: COLORS.secondary,
+    paddingHorizontal: 5,
+    paddingVertical: 1,
+    borderRadius: 4,
+    borderWidth: 0.5,
+    borderColor: COLORS.border,
+  },
+  userAvatarImg: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    borderWidth: 1,
+    borderColor: COLORS.primary,
+  },
+  userAvatarBox: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    backgroundColor: COLORS.primary,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  userAvatarInitials: {
+    fontSize: 10,
+    color: "#FFFFFF",
+  },
+  userAttachmentsRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 6,
+    alignSelf: "flex-end",
+    marginBottom: 4,
+  },
+  userAttBadge: {
+    backgroundColor: COLORS.secondary,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    borderRadius: 8,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+  },
+  userAttText: {
+    fontSize: 11,
+    color: COLORS.foreground,
   },
   userBubble: {
     backgroundColor: COLORS.secondary,
     borderRadius: 16,
-    borderBottomRightRadius: 4,
-    paddingHorizontal: 13,
-    paddingVertical: 8,
+    borderTopRightRadius: 4,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
     borderWidth: 1,
     borderColor: COLORS.border,
     flexDirection: "column",

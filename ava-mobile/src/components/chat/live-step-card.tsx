@@ -23,8 +23,8 @@ import { Shimmer } from "@/components/ai-elements/shimmer";
 import { RuntimeDottedIndicator } from "@/components/ai-elements/dotted-indicator";
 import { formatDuration } from "@/lib/format";
 import type { ChatMessage, MessagePart } from "@/core/types";
-import { COLORS } from "@/theme/colors";
-import { displayToolName, getToolIcon, isMcpTool } from "./tool-icons";
+import { useTheme } from "@/theme/colors";
+import { displayToolName, getToolIcon } from "./tool-icons";
 import { font, mono } from "@/theme/fonts";
 
 interface Props {
@@ -40,6 +40,7 @@ export function LiveStepOverviewCard({
   sessionId,
   onOpenTimeline,
 }: Props) {
+  const { colors, isDark } = useTheme();
   const navigation = useNavigation<any>();
 
   // Extract workflow parts (reasoning, tools, plans, notices)
@@ -87,11 +88,17 @@ export function LiveStepOverviewCard({
   const duration = message.stats?.durationMs;
   const toolCount = workflowParts.filter((s) => s.kind === "tool").length;
   const completedCount = workflowParts.filter((s) => s.status === "done").length;
-  const hasError = workflowParts.some((s) => s.status === "error");
+  const errorCount = workflowParts.filter((s) => s.status === "error").length;
+
   const plan = [...workflowParts].reverse().find((s) => s.kind === "plan");
   const planSteps = plan?.meta?.steps ?? [];
   const donePlanSteps = planSteps.filter((s) => s.status === "done").length;
   const progressPercent = Math.round((completedCount / Math.max(1, workflowParts.length)) * 100);
+
+  // Check if turn ended with final text response or normal completion
+  const hasFinalText = message.parts.some((p) => p.kind === "text" && p.text && p.text.trim().length > 0);
+  const isFatalFailure = !isRunning && !hasFinalText && errorCount > 0 && completedCount === 0;
+  const isComplete = !isRunning && !isFatalFailure;
 
   const handleOpenTimeline = () => {
     if (onOpenTimeline) {
@@ -104,17 +111,28 @@ export function LiveStepOverviewCard({
     }
   };
 
-  // Completion state
-  const isComplete = !isRunning && !hasError;
-  const isFailed = !isRunning && hasError;
-
   return (
     <View
       style={[
         styles.container,
-        isRunning && styles.containerRunning,
-        isComplete && styles.containerComplete,
-        isFailed && styles.containerFailed,
+        {
+          backgroundColor: colors.card,
+          borderColor: colors.border,
+        },
+        isRunning && [
+          styles.containerRunning,
+          {
+            borderColor: colors.primary,
+            backgroundColor: isDark ? "rgba(99, 102, 241, 0.04)" : "rgba(79, 70, 229, 0.03)",
+          },
+        ],
+        isFatalFailure && [
+          styles.containerFailed,
+          {
+            borderColor: "rgba(239, 68, 68, 0.3)",
+            backgroundColor: isDark ? "rgba(239, 68, 68, 0.05)" : "rgba(239, 68, 68, 0.03)",
+          },
+        ],
       ]}
     >
       {/* Top row: Icon + Info + Action */}
@@ -124,17 +142,25 @@ export function LiveStepOverviewCard({
         activeOpacity={0.7}
       >
         {/* Step Icon */}
-        <View style={styles.iconWrapper}>
+        <View
+          style={[
+            styles.iconWrapper,
+            {
+              backgroundColor: colors.secondary,
+              borderColor: colors.border,
+            },
+          ]}
+        >
           <StepIcon
             size={16}
             color={
               isRunning
-                ? COLORS.primary
-                : isFailed
-                ? COLORS.destructive
+                ? colors.primary
+                : isFatalFailure
+                ? colors.destructive
                 : isComplete
-                ? COLORS.success
-                : COLORS.mutedForeground
+                ? colors.success
+                : colors.mutedForeground
             }
             strokeWidth={2}
           />
@@ -144,60 +170,69 @@ export function LiveStepOverviewCard({
         <View style={styles.centerInfo}>
           <View style={styles.titleRow}>
             {isRunning ? (
-              <Shimmer style={[styles.stepTitleLive, mono("bold")]}>
+              <Shimmer style={[styles.stepTitleLive, mono("bold"), { color: colors.primary }]}>
                 {currentTitle}
               </Shimmer>
             ) : (
-              <Text style={[styles.stepTitle, mono("bold")]} numberOfLines={1}>
+              <Text
+                style={[styles.stepTitle, mono("bold"), { color: colors.foreground }]}
+                numberOfLines={1}
+              >
                 {currentTitle}
               </Text>
             )}
           </View>
 
-          <Text style={[styles.summaryText, font("regular")]}>
+          <Text style={[styles.summaryText, font("regular"), { color: colors.mutedForeground }]}>
             {isRunning
               ? `${workflowParts.length} step${workflowParts.length === 1 ? "" : "s"} · working now`
-              : isComplete
-              ? `${completedCount} steps · ${toolCount} tool${toolCount === 1 ? "" : "s"}${duration ? ` · ${formatDuration(duration)}` : ""}`
-              : isFailed
-              ? `${completedCount}/${workflowParts.length} completed · error encountered`
-              : `${completedCount}/${workflowParts.length} complete`}
+              : isFatalFailure
+              ? `${errorCount} step${errorCount === 1 ? "" : "s"} failed`
+              : `${completedCount} step${completedCount === 1 ? "" : "s"}${toolCount > 0 ? ` · ${toolCount} tool${toolCount === 1 ? "" : "s"}` : ""}${duration ? ` · ${formatDuration(duration)}` : ""}`}
           </Text>
         </View>
 
         {/* Right Action */}
         <View style={styles.rightAction}>
           {isRunning ? (
-            <ActivityIndicator size="small" color={COLORS.primary} />
-          ) : isFailed ? (
-            <AlertTriangle size={15} color={COLORS.destructive} />
+            <ActivityIndicator size="small" color={colors.primary} />
+          ) : isFatalFailure ? (
+            <AlertTriangle size={15} color={colors.destructive} />
           ) : isComplete ? (
-            <CheckCircle2 size={15} color={COLORS.success} />
+            <CheckCircle2 size={15} color={colors.success} />
           ) : null}
 
           <TouchableOpacity
-            style={styles.pillButton}
+            style={[
+              styles.pillButton,
+              {
+                backgroundColor: colors.secondary,
+                borderColor: colors.border,
+              },
+            ]}
             onPress={handleOpenTimeline}
             activeOpacity={0.7}
           >
-            <Text style={[styles.pillButtonText, font("medium")]}>Timeline</Text>
-            <ChevronRight size={11} color={COLORS.mutedForeground} />
+            <Text style={[styles.pillButtonText, font("medium"), { color: colors.secondaryForeground }]}>
+              Timeline
+            </Text>
+            <ChevronRight size={11} color={colors.mutedForeground} />
           </TouchableOpacity>
         </View>
       </TouchableOpacity>
 
       {/* Progress bar */}
-      <View style={styles.progressTrack}>
+      <View style={[styles.progressTrack, { backgroundColor: colors.muted }]}>
         <View
           style={[
             styles.progressFill,
             {
               width: `${Math.max(4, isComplete ? 100 : progressPercent)}%`,
-              backgroundColor: isFailed
-                ? COLORS.destructive
+              backgroundColor: isFatalFailure
+                ? colors.destructive
                 : isComplete
-                ? COLORS.success
-                : COLORS.primary,
+                ? colors.success
+                : colors.primary,
             },
           ]}
         />
@@ -205,7 +240,7 @@ export function LiveStepOverviewCard({
 
       {/* Expanded details: auto-expanded when running, collapsed when complete */}
       {isExpanded && (
-        <View style={styles.expandedSection}>
+        <View style={[styles.expandedSection, { borderTopColor: colors.border }]}>
           {isRunning ? (
             <RuntimeDottedIndicator
               label={currentTitle}
@@ -225,16 +260,18 @@ export function LiveStepOverviewCard({
                   <View
                     style={[
                       styles.stepDot,
-                      partRunning && styles.stepDotRunning,
-                      partDone && styles.stepDotDone,
-                      partErr && styles.stepDotErr,
+                      { backgroundColor: colors.mutedForeground },
+                      partRunning && { backgroundColor: colors.primary },
+                      partDone && { backgroundColor: colors.success },
+                      partErr && { backgroundColor: colors.destructive },
                     ]}
                   />
                   <Text
                     style={[
                       styles.stepRowText,
                       mono("regular"),
-                      partRunning && { color: COLORS.primary, fontWeight: "600" },
+                      { color: colors.mutedForeground },
+                      partRunning && { color: colors.primary, fontWeight: "600" },
                     ]}
                     numberOfLines={1}
                   >
@@ -254,26 +291,26 @@ export function LiveStepOverviewCard({
 
       {/* Bottom stats row — shown when complete */}
       {!isRunning && duration ? (
-        <View style={styles.statsRow}>
-          <Text style={[styles.statItem, mono("regular")]}>
+        <View style={[styles.statsRow, { borderTopColor: colors.border }]}>
+          <Text style={[styles.statItem, mono("regular"), { color: colors.mutedForeground }]}>
             {formatDuration(duration)}
           </Text>
-          <View style={styles.statDot} />
-          <Text style={[styles.statItem, mono("regular")]}>
+          <View style={[styles.statDot, { backgroundColor: colors.border }]} />
+          <Text style={[styles.statItem, mono("regular"), { color: colors.mutedForeground }]}>
             {toolCount} tool{toolCount === 1 ? "" : "s"}
           </Text>
           {planSteps.length > 0 && (
             <>
-              <View style={styles.statDot} />
-              <Text style={[styles.statItem, mono("regular")]}>
+              <View style={[styles.statDot, { backgroundColor: colors.border }]} />
+              <Text style={[styles.statItem, mono("regular"), { color: colors.mutedForeground }]}>
                 {donePlanSteps}/{planSteps.length} plan
               </Text>
             </>
           )}
           {message.stats?.totalTokens ? (
             <>
-              <View style={styles.statDot} />
-              <Text style={[styles.statItem, mono("regular")]}>
+              <View style={[styles.statDot, { backgroundColor: colors.border }]} />
+              <Text style={[styles.statItem, mono("regular"), { color: colors.mutedForeground }]}>
                 {(message.stats.totalTokens / 1000).toFixed(1)}k tok
               </Text>
             </>
@@ -286,22 +323,16 @@ export function LiveStepOverviewCard({
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: COLORS.card,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: COLORS.border,
     padding: 10,
     marginVertical: 6,
   },
   containerRunning: {
-    borderColor: COLORS.primary,
-    backgroundColor: "rgba(66, 64, 225, 0.03)",
-  },
-  containerComplete: {
-    borderColor: "rgba(59, 179, 96, 0.25)",
+    borderWidth: 1,
   },
   containerFailed: {
-    borderColor: "rgba(231, 0, 11, 0.2)",
+    borderWidth: 1,
   },
   cardHeader: {
     flexDirection: "row",
@@ -312,9 +343,7 @@ const styles = StyleSheet.create({
     width: 30,
     height: 30,
     borderRadius: 8,
-    backgroundColor: COLORS.secondary,
     borderWidth: 1,
-    borderColor: COLORS.border,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -329,18 +358,15 @@ const styles = StyleSheet.create({
   },
   stepTitle: {
     fontSize: 12.5,
-    color: COLORS.foreground,
     flex: 1,
     fontWeight: "600",
   },
   stepTitleLive: {
     fontSize: 12.5,
-    color: COLORS.primary,
     flex: 1,
   },
   summaryText: {
     fontSize: 11,
-    color: COLORS.mutedForeground,
   },
   rightAction: {
     flexDirection: "row",
@@ -351,22 +377,18 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 2,
-    backgroundColor: COLORS.secondary,
-    paddingHorizontal: 7,
-    paddingVertical: 3,
-    borderRadius: 10,
+    paddingHorizontal: 8,
+    paddingVertical: 3.5,
+    borderRadius: 8,
     borderWidth: 1,
-    borderColor: COLORS.border,
   },
   pillButtonText: {
     fontSize: 11,
-    color: COLORS.secondaryForeground,
   },
   progressTrack: {
     height: 3,
     marginTop: 8,
     borderRadius: 2,
-    backgroundColor: COLORS.muted,
     overflow: "hidden",
   },
   progressFill: {
@@ -377,7 +399,6 @@ const styles = StyleSheet.create({
     marginTop: 8,
     paddingTop: 8,
     borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: COLORS.border,
     gap: 6,
   },
   stepsList: {
@@ -393,20 +414,9 @@ const styles = StyleSheet.create({
     width: 5,
     height: 5,
     borderRadius: 2.5,
-    backgroundColor: COLORS.mutedForeground,
-  },
-  stepDotRunning: {
-    backgroundColor: COLORS.primary,
-  },
-  stepDotDone: {
-    backgroundColor: COLORS.success,
-  },
-  stepDotErr: {
-    backgroundColor: COLORS.destructive,
   },
   stepRowText: {
     fontSize: 11,
-    color: COLORS.mutedForeground,
     flex: 1,
   },
   statsRow: {
@@ -416,16 +426,13 @@ const styles = StyleSheet.create({
     marginTop: 6,
     paddingTop: 6,
     borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: COLORS.border,
   },
   statItem: {
     fontSize: 10.5,
-    color: COLORS.mutedForeground,
   },
   statDot: {
     width: 3,
     height: 3,
     borderRadius: 1.5,
-    backgroundColor: COLORS.border,
   },
 });

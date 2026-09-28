@@ -2,7 +2,6 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import {
   ActivityIndicator,
   BackHandler,
-  Image,
   LayoutAnimation,
   Platform,
   ScrollView,
@@ -18,7 +17,6 @@ import { PanGestureHandler } from "react-native-gesture-handler";
 import Animated from "react-native-reanimated";
 import {
   AlertCircle,
-  AlignLeft,
   ArrowDown,
   ArrowLeft,
   ArrowUpDown,
@@ -35,7 +33,6 @@ import {
   ListChecks,
   MessageSquare,
   User,
-  Wrench,
   X,
   type LucideIcon,
 } from "lucide-react-native";
@@ -246,7 +243,7 @@ export function TimelineScreen({ route, navigation }: Props) {
               ...part,
               turnId: msg.id,
               nodeType: "text",
-              hasExpandableContent: false, // directly shown, no collapse
+              hasExpandableContent: false,
             });
           }
           continue;
@@ -357,7 +354,7 @@ export function TimelineScreen({ route, navigation }: Props) {
     }
   }, [allParts.length, isTargetTurnActive, isReversed]);
 
-  // Swipe Left to Right (swiping rightwards) -> Back to Session/Chat screen
+  // Swipe Left to Right -> Back to Session/Chat screen
   const onHandlerStateChange = useCallback(
     (e: any) => {
       if (e.nativeEvent.state === 5) {
@@ -381,7 +378,7 @@ export function TimelineScreen({ route, navigation }: Props) {
         backgroundColor={colors.background}
       />
 
-      {/* ── Minimal Header Bar (Placed OUTSIDE PanGestureHandler so touches are 100% responsive) ── */}
+      {/* ── Minimal Header Bar ── */}
       <View
         style={[
           styles.headerBar,
@@ -512,7 +509,7 @@ export function TimelineScreen({ route, navigation }: Props) {
                           borderColor: isSelected ? colors.primary : colors.border,
                         },
                         isSelected && {
-                          backgroundColor: isDark ? "rgba(99, 102, 241, 0.12)" : "rgba(66, 64, 225, 0.08)",
+                          backgroundColor: isDark ? "rgba(99, 102, 241, 0.12)" : "rgba(79, 70, 229, 0.08)",
                         },
                       ]}
                       onPress={() => setSelectedTurnId(assMsg.id)}
@@ -575,16 +572,16 @@ export function TimelineScreen({ route, navigation }: Props) {
               <View style={styles.statItem}>
                 <CheckCircle2
                   size={12}
-                  color={errorCount > 0 ? colors.destructive : colors.success}
+                  color={colors.success}
                 />
                 <Text
                   style={[
                     styles.statValue,
                     font("medium"),
-                    { color: errorCount > 0 ? colors.destructive : colors.success },
+                    { color: colors.success },
                   ]}
                 >
-                  {isLive ? "Live" : errorCount > 0 ? `${errorCount} failed` : "Done"}
+                  {isLive ? "Live" : "Done"}
                 </Text>
               </View>
 
@@ -594,7 +591,7 @@ export function TimelineScreen({ route, navigation }: Props) {
                   {
                     borderColor: isReversed ? colors.primary : colors.border,
                     backgroundColor: isReversed
-                      ? (isDark ? "rgba(99, 102, 241, 0.12)" : "rgba(66, 64, 225, 0.08)")
+                      ? (isDark ? "rgba(99, 102, 241, 0.12)" : "rgba(79, 70, 229, 0.08)")
                       : "transparent",
                   },
                 ]}
@@ -690,7 +687,6 @@ export function TimelineScreen({ route, navigation }: Props) {
 
                           let Icon: LucideIcon = Brain;
                           let iconColor = colors.mutedForeground;
-                          let categoryName = "THOUGHT";
 
                           if (part.nodeType === "tool") {
                             Icon = getToolIcon(part.toolName, part.meta);
@@ -699,19 +695,15 @@ export function TimelineScreen({ route, navigation }: Props) {
                               : isRunning
                               ? colors.primary
                               : colors.foreground;
-                            categoryName = "TOOL";
                           } else if (part.nodeType === "plan") {
                             Icon = ListChecks;
                             iconColor = colors.primary;
-                            categoryName = "PLAN";
                           } else if (part.nodeType === "decision") {
                             Icon = Brain;
                             iconColor = colors.primary;
-                            categoryName = "DECISION";
                           } else if (part.nodeType === "notice") {
                             Icon = AlertCircle;
                             iconColor = colors.warning;
-                            categoryName = "NOTICE";
                           }
 
                           const toolNamePretty =
@@ -734,7 +726,7 @@ export function TimelineScreen({ route, navigation }: Props) {
                                     {
                                       backgroundColor: colors.card,
                                       borderColor: isErr
-                                        ? colors.destructive
+                                        ? "rgba(239, 68, 68, 0.4)"
                                         : isRunning
                                         ? colors.primary
                                         : colors.border,
@@ -770,22 +762,6 @@ export function TimelineScreen({ route, navigation }: Props) {
                                   activeOpacity={part.hasExpandableContent ? 0.7 : 1}
                                 >
                                   <View style={styles.nodeHeaderMain}>
-                                    <Text
-                                      style={[
-                                        styles.nodeCategory,
-                                        mono("bold"),
-                                        {
-                                          color: isErr
-                                            ? colors.destructive
-                                            : isRunning
-                                            ? colors.primary
-                                            : colors.mutedForeground,
-                                        },
-                                      ]}
-                                    >
-                                      {categoryName}
-                                    </Text>
-
                                     {toolNamePretty ? (
                                       <View style={[styles.toolChip, { backgroundColor: colors.secondary }]}>
                                         <Text
@@ -977,28 +953,6 @@ export function TimelineScreen({ route, navigation }: Props) {
                     {/* ── Direct Output Card ── */}
                     {finalOutputText ? (
                       <View style={styles.outputBox}>
-                        <View style={styles.outputHeader}>
-                          <View style={styles.outputTitleRow}>
-                            <MessageSquare size={13} color={colors.mutedForeground} />
-                            <Text style={[styles.outputTitle, font("medium"), { color: colors.foreground }]}>
-                              Response
-                            </Text>
-                          </View>
-                          <TouchableOpacity
-                            onPress={() => handleCopy("final_output", finalOutputText)}
-                            style={styles.outputCopyBtn}
-                            activeOpacity={0.7}
-                          >
-                            {copiedId === "final_output" ? (
-                              <Check size={11} color={colors.success} />
-                            ) : (
-                              <Copy size={11} color={colors.mutedForeground} />
-                            )}
-                            <Text style={[styles.outputCopyText, mono("medium"), { color: colors.mutedForeground }]}>
-                              {copiedId === "final_output" ? "Copied" : "Copy"}
-                            </Text>
-                          </TouchableOpacity>
-                        </View>
                         <View
                           style={[
                             styles.outputCard,
@@ -1008,6 +962,22 @@ export function TimelineScreen({ route, navigation }: Props) {
                             },
                           ]}
                         >
+                          <View style={styles.outputTopRow}>
+                            <TouchableOpacity
+                              onPress={() => handleCopy("final_output", finalOutputText)}
+                              style={styles.outputCopyBtn}
+                              activeOpacity={0.7}
+                            >
+                              {copiedId === "final_output" ? (
+                                <Check size={11} color={colors.success} />
+                              ) : (
+                                <Copy size={11} color={colors.mutedForeground} />
+                              )}
+                              <Text style={[styles.outputCopyText, mono("medium"), { color: colors.mutedForeground }]}>
+                                {copiedId === "final_output" ? "Copied" : "Copy"}
+                              </Text>
+                            </TouchableOpacity>
+                          </View>
                           <RichResponse text={finalOutputText} />
                         </View>
                       </View>
@@ -1351,10 +1321,6 @@ const styles = StyleSheet.create({
     gap: 8,
     flex: 1,
   },
-  nodeCategory: {
-    fontSize: 9.5,
-    letterSpacing: 0.5,
-  },
   toolChip: {
     paddingHorizontal: 6,
     paddingVertical: 2,
@@ -1425,34 +1391,28 @@ const styles = StyleSheet.create({
   },
   outputBox: {
     marginTop: 8,
-    gap: 6,
-  },
-  outputHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: 4,
-  },
-  outputTitleRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-  },
-  outputTitle: {
-    fontSize: 12.5,
-  },
-  outputCopyBtn: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 4,
-  },
-  outputCopyText: {
-    fontSize: 10.5,
   },
   outputCard: {
     padding: 12,
     borderRadius: 10,
     borderWidth: 1,
+    position: "relative",
+  },
+  outputTopRow: {
+    flexDirection: "row",
+    justifyContent: "flex-end",
+    marginBottom: 6,
+  },
+  outputCopyBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+  },
+  outputCopyText: {
+    fontSize: 10.5,
   },
   floatingScrollBtn: {
     position: "absolute",
@@ -1499,7 +1459,7 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(16, 185, 129, 0.12)",
   },
   fileTagEdit: {
-    backgroundColor: "rgba(66, 64, 225, 0.12)",
+    backgroundColor: "rgba(79, 70, 229, 0.12)",
   },
   fileTagDelete: {
     backgroundColor: "rgba(239, 68, 68, 0.12)",

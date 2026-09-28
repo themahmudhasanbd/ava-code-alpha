@@ -33,8 +33,15 @@ export function useFileContent(path: string | null) {
 }
 
 export function useRunCommand() {
-  const { rpc } = useAva();
-  return useMutation({ mutationFn: (v: { command: string; cwd: string }) => runCommand(rpc!, v.command, v.cwd) });
+  const { rpc, status } = useAva();
+  return useMutation({
+    mutationFn: (v: { command: string; cwd: string }) => {
+      if (!rpc || status !== "online") {
+        throw new Error("Terminal disconnected: AvA Core is offline or reconnecting.");
+      }
+      return runCommand(rpc, v.command, v.cwd);
+    },
+  });
 }
 
 export function useDiagnostics() {

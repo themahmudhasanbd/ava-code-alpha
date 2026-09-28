@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
   BackHandler,
   FlatList,
+  Keyboard,
   KeyboardAvoidingView,
   ActivityIndicator,
   Platform,
@@ -68,6 +69,21 @@ export function SessionScreen({
     }
   }, [navigation]);
 
+  // Auto-scroll when keyboard opens on Android/iOS if user was near bottom
+  useEffect(() => {
+    const showSub = Keyboard.addListener(
+      Platform.OS === "ios" ? "keyboardWillShow" : "keyboardDidShow",
+      () => {
+        if (isNearBottomRef.current) {
+          setTimeout(() => {
+            flatListRef.current?.scrollToEnd({ animated: true });
+          }, 120);
+        }
+      }
+    );
+    return () => showSub.remove();
+  }, []);
+
   // Hardware back button handler for Android
   useEffect(() => {
     const onBackPress = () => {
@@ -113,13 +129,14 @@ export function SessionScreen({
 
   const handleTouchEnd = (e: any) => {
     if (!touchStartRef.current) return;
+    const startX = touchStartRef.current.x;
     const dx = e.nativeEvent.pageX - touchStartRef.current.x;
     const dy = e.nativeEvent.pageY - touchStartRef.current.y;
     const dt = Date.now() - touchStartRef.current.time;
     touchStartRef.current = null;
 
-    // Swiped from right to left (negative dx) with minimal vertical deflection
-    if (dx < -75 && Math.abs(dy) < 65 && dt < 450) {
+    // Strict edge swipe (from right margin inwards with minimal vertical deflection)
+    if (startX > 220 && dx < -90 && Math.abs(dy) < 40 && dt < 450) {
       navigation?.navigate("Timeline", {
         sessionId,
       });
@@ -151,8 +168,16 @@ export function SessionScreen({
   const lastMsgTokenCount =
     lastMsg?.parts?.reduce((acc, p) => acc + (p.text?.length || 0), 0) || 0;
 
+  const lastScrollTimeRef = useRef(0);
   useEffect(() => {
-    if (isNearBottomRef.current) {
+    if (!isNearBottomRef.current) return;
+    if (isStreaming) {
+      const now = Date.now();
+      if (now - lastScrollTimeRef.current > 160) {
+        lastScrollTimeRef.current = now;
+        flatListRef.current?.scrollToEnd({ animated: false });
+      }
+    } else {
       requestAnimationFrame(() => {
         flatListRef.current?.scrollToEnd({ animated: true });
       });
@@ -211,7 +236,7 @@ export function SessionScreen({
           initialNumToRender={8}
           maxToRenderPerBatch={6}
           updateCellsBatchingPeriod={60}
-          removeClippedSubviews={Platform.OS === "android"}
+          removeClippedSubviews={false}
           keyboardShouldPersistTaps="handled"
           keyboardDismissMode="on-drag"
           ListEmptyComponent={

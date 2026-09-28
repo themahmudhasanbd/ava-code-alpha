@@ -240,6 +240,6 @@ const styles = StyleSheet.create({
     height: 7,
     borderRadius: 3.5,
     borderWidth: 1.5,
-    borderColor: "#FFFFFF",
+    borderColor: COLORS.card,
   },
 });

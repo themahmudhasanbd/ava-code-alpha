@@ -75,7 +75,7 @@ export function TimelineScreen({ route, navigation }: Props) {
   const sessionId = route?.params?.sessionId || activeSessionId || "";
   const targetMessageId = route?.params?.messageId;
 
-  const { messages, status } = useChat(sessionId);
+  const { messages, status, loadingHistory } = useChat(sessionId);
   const [activeTab, setActiveTab] = useState<"trace" | "files">("trace");
   const [expandedNodes, setExpandedNodes] = useState<Record<string, boolean>>({});
   const [copiedId, setCopiedId] = useState<string | null>(null);
@@ -329,19 +329,36 @@ export function TimelineScreen({ route, navigation }: Props) {
   }, [targetMessage, assistantMsgs, status]);
 
   const isLive = status === "submitted" || status === "streaming";
+  const latestAssistantId = assistantMsgs.length > 0 ? assistantMsgs[assistantMsgs.length - 1]?.id : null;
+  const isTargetTurnActive = isLive && (
+    !targetMessage || targetMessage.id === latestAssistantId
+  );
   const durationText = formatDuration(totalDuration);
   const errorCount = allParts.filter((part) => part.status === "error").length;
 
   const activeRunningPart = useMemo(() => {
+    if (!isTargetTurnActive) return null;
     return (
       allParts.find((p) => p.status === "running") ||
-      (isLive && allParts.length > 0 ? allParts[allParts.length - 1] : null)
+      (allParts.length > 0 ? allParts[allParts.length - 1] : null)
     );
-  }, [allParts, isLive]);
+  }, [allParts, isTargetTurnActive]);
 
-  // Auto-scroll when live steps stream in
+  // Auto-scroll throttled during active streaming
+  const lastScrollTimeRef = useRef(0);
   useEffect(() => {
-    if (isNearBottomRef.current) {
+    if (!isNearBottomRef.current) return;
+    if (isTargetTurnActive) {
+      const now = Date.now();
+      if (now - lastScrollTimeRef.current > 160) {
+        lastScrollTimeRef.current = now;
+        if (isReversed) {
+          scrollViewRef.current?.scrollTo({ y: 0, animated: false });
+        } else {
+          scrollViewRef.current?.scrollToEnd({ animated: false });
+        }
+      }
+    } else {
       requestAnimationFrame(() => {
         if (isReversed) {
           scrollViewRef.current?.scrollTo({ y: 0, animated: true });
@@ -350,7 +367,7 @@ export function TimelineScreen({ route, navigation }: Props) {
         }
       });
     }
-  }, [allParts.length, isLive, isReversed]);
+  }, [allParts.length, isTargetTurnActive, isReversed]);
 
   // Swipe Left to Right (swiping rightwards) -> Back to Session/Chat screen
   const onHandlerStateChange = useCallback(
@@ -432,7 +449,7 @@ export function TimelineScreen({ route, navigation }: Props) {
       </View>
 
       {/* ── Body Wrapped with Gesture Handler for Smooth Left-to-Right Swipe Back ── */}
-      <PanGestureHandler onHandlerStateChange={onHandlerStateChange} activeOffsetX={[-20, 20]}>
+      <PanGestureHandler onHandlerStateChange={onHandlerStateChange} activeOffsetX={[0, 45]} failOffsetY={[-20, 20]}>
         <Animated.View style={{ flex: 1 }}>
           {/* ── Multi-Turn Switcher (Minimal horizontal pills) ── */}
           {assistantMsgs.length > 1 && (
@@ -566,9 +583,14 @@ export function TimelineScreen({ route, navigation }: Props) {
                   </View>
                 ) : null}
 
-                {allParts.length === 0 && !finalOutputText ? (
+                {loadingHistory ? (
                   <View style={styles.emptyState}>
-                    {isLive ? (
+                    <ActivityIndicator size="small" color={COLORS.primary} style={{ marginBottom: 10 }} />
+                    <Text style={[styles.emptyTitle, font("medium")]}>Loading timeline…</Text>
+                  </View>
+                ) : allParts.length === 0 && !finalOutputText ? (
+                  <View style={styles.emptyState}>
+                    {isTargetTurnActive ? (
                       <>
                         <ActivityIndicator
                           size="small"
@@ -600,7 +622,7 @@ export function TimelineScreen({ route, navigation }: Props) {
                         <View style={styles.timelineSpine} />
 
                         {(isReversed ? [...allParts].reverse() : allParts).map((part, index) => {
-                          const isRunning = part.status === "running";
+                          const isRunning = isTargetTurnActive && part.status === "running";
                           const isExpanded =
                             expandedNodes[part.id] !== undefined
                               ? !!expandedNodes[part.id]
@@ -1098,7 +1120,17 @@ export function TimelineScreen({ route, navigation }: Props) {
                   </Text>
 
                   {changedFiles.map((file, fIdx) => (
-                    <View key={`file_${file.path}_${fIdx}`} style={styles.fileItemCard}>
+                    <TouchableOpacity
+                      key={`file_${file.path}_${fIdx}`}
+                      style={styles.fileItemCard}
+                      onPress={() => {
+                        navigation?.navigate("Main", {
+                          screen: "Files",
+                          params: { path: file.path },
+                        });
+                      }}
+                      activeOpacity={0.7}
+                    >
                       <View
                         style={[
                           styles.fileTag,
@@ -1130,7 +1162,18 @@ export function TimelineScreen({ route, navigation }: Props) {
                       <Text style={[styles.filePathLabel, mono("regular")]} numberOfLines={1}>
                         {file.path}
                       </Text>
-                    </View>
+
+                      <TouchableOpacity
+                        onPress={() => handleCopy(`file_${fIdx}`, file.path)}
+                        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                      >
+                        {copiedId === `file_${fIdx}` ? (
+                          <Check size={13} color={COLORS.success} />
+                        ) : (
+                          <Copy size={13} color={COLORS.mutedForeground} />
+                        )}
+                      </TouchableOpacity>
+                    </TouchableOpacity>
                   ))}
                 </View>
               )}
@@ -1138,7 +1181,7 @@ export function TimelineScreen({ route, navigation }: Props) {
           )}
 
           {/* ── Minimal Bottom Live Status Bar ── */}
-          {isLive && (
+          {isTargetTurnActive && (
             <View style={styles.liveFooter}>
               <View style={styles.liveFooterDot} />
               <Shimmer style={[styles.liveFooterText, mono("medium")]}>

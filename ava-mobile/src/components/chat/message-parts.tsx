@@ -323,11 +323,14 @@ function AssistantTurn({
 // ---------- user turn -----------------------------------------------------
 
 function UserTurnView({ message }: { message: ChatMessage }) {
-  const fullText = message.parts
-    .filter((p) => p.text)
-    .map((p) => p.text)
-    .join("\n")
-    .trim();
+  const partsText = message.parts
+    ? message.parts
+        .filter((p) => p.text)
+        .map((p) => p.text)
+        .join("\n")
+        .trim()
+    : "";
+  const fullText = (partsText || (message as any).text || "").trim();
 
   const [expanded, setExpanded] = useState(false);
 

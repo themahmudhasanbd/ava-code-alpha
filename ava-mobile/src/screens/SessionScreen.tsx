@@ -23,15 +23,12 @@ import { Composer } from "@/components/chat/composer";
 import {
   ChevronDown,
   Clock,
-  Layers,
   Play,
-  Sparkles,
   Square,
-  Terminal as TerminalSquare,
   X,
 } from "lucide-react-native";
 import { useTheme } from "@/theme/colors";
-import { font, mono } from "@/theme/fonts";
+import { font } from "@/theme/fonts";
 
 export function SessionScreen({
   route,
@@ -47,7 +44,7 @@ export function SessionScreen({
   navigation?: any;
 }) {
   const { colors, isDark } = useTheme();
-  const { activeSessionId, setActiveSessionId, modelId, workingCwd, defaultCwd } = useAva();
+  const { activeSessionId, setActiveSessionId, workingCwd, defaultCwd } = useAva();
   const sessionId = route?.params?.sessionId || activeSessionId || "";
   const initialPrompt = route?.params?.initialPrompt;
   const scrollToMessageId = route?.params?.scrollToMessageId;
@@ -221,26 +218,6 @@ export function SessionScreen({
     return segments.length > 2 ? segments.slice(-2).join("/") : currentPath;
   }, [currentPath]);
 
-  const modelNameDisplay = useMemo(() => {
-    const raw = activeSession?.model || modelId || "Auto";
-    if (raw.includes("/")) {
-      return raw.split("/").pop() || raw;
-    }
-    return raw;
-  }, [activeSession?.model, modelId]);
-
-  const toolCallsCount = useMemo(() => {
-    let count = 0;
-    for (const m of messages) {
-      if (m.parts) {
-        for (const p of m.parts) {
-          if (p.kind === "tool" || p.kind === "plan") count++;
-        }
-      }
-    }
-    return count;
-  }, [messages]);
-
   const handleSubmit = (text: string) => {
     if (!text.trim()) return;
     setDraft("");
@@ -275,94 +252,6 @@ export function SessionScreen({
         onTouchStart={handleTouchStart}
         onTouchEnd={handleTouchEnd}
       >
-        {/* ── Smart Session Sub-header Bar (Soft Glass Surface) ── */}
-        <View
-          style={[
-            styles.topBarContainer,
-            {
-              backgroundColor: colors.card,
-              borderBottomColor: colors.border,
-            },
-          ]}
-        >
-          <View style={styles.sessionMetaPill}>
-            <Sparkles size={11} color={colors.primary} />
-            <Text
-              style={[styles.sessionMetaText, font("semibold"), { color: colors.foreground }]}
-              numberOfLines={1}
-            >
-              {modelNameDisplay}
-            </Text>
-            {pathSnippet ? (
-              <>
-                <Text style={[styles.metaDot, { color: colors.mutedForeground }]}>•</Text>
-                <Text
-                  style={[styles.sessionPathText, mono("regular"), { color: colors.mutedForeground }]}
-                  numberOfLines={1}
-                >
-                  {pathSnippet}
-                </Text>
-              </>
-            ) : null}
-          </View>
-
-          <View style={styles.topActionsRow}>
-            <TouchableOpacity
-              style={[
-                styles.shortcutPill,
-                {
-                  backgroundColor: toolCallsCount > 0 ? (isDark ? "rgba(99, 102, 241, 0.15)" : "rgba(66, 64, 225, 0.08)") : colors.secondary,
-                  borderColor: toolCallsCount > 0 ? colors.primary : colors.border,
-                },
-              ]}
-              onPress={() => navigation?.navigate("Timeline", { sessionId })}
-              activeOpacity={0.75}
-              accessibilityRole="button"
-              accessibilityLabel="View Timeline"
-            >
-              <Layers
-                size={12}
-                color={toolCallsCount > 0 ? colors.primary : colors.mutedForeground}
-              />
-              <Text
-                style={[
-                  styles.shortcutPillText,
-                  font("semibold"),
-                  { color: toolCallsCount > 0 ? colors.primary : colors.mutedForeground },
-                ]}
-              >
-                Timeline
-              </Text>
-              {toolCallsCount > 0 ? (
-                <View style={[styles.badgeCount, { backgroundColor: colors.primary }]}>
-                  <Text style={[styles.badgeCountText, { color: colors.primaryForeground }]}>
-                    {toolCallsCount}
-                  </Text>
-                </View>
-              ) : null}
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={[
-                styles.shortcutPill,
-                {
-                  backgroundColor: colors.secondary,
-                  borderColor: colors.border,
-                },
-              ]}
-              onPress={() => navigation?.navigate("Main", { screen: "Terminal" })}
-              activeOpacity={0.75}
-              accessibilityRole="button"
-              accessibilityLabel="Open Terminal"
-            >
-              <TerminalSquare size={12} color={colors.mutedForeground} />
-              <Text style={[styles.shortcutPillText, font("medium"), { color: colors.mutedForeground }]}>
-                Terminal
-              </Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-
         <FlatList
           ref={flatListRef}
           data={messages}
@@ -636,62 +525,6 @@ export function SessionScreen({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-  },
-  topBarContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    gap: 8,
-  },
-  sessionMetaPill: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    flex: 1,
-    marginRight: 4,
-  },
-  sessionMetaText: {
-    fontSize: 12,
-    maxWidth: 110,
-  },
-  metaDot: {
-    fontSize: 11,
-  },
-  sessionPathText: {
-    fontSize: 11,
-    flexShrink: 1,
-  },
-  topActionsRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-  },
-  shortcutPill: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 5,
-    paddingHorizontal: 9,
-    paddingVertical: 5,
-    borderRadius: 999,
-    borderWidth: 1,
-  },
-  shortcutPillText: {
-    fontSize: 11,
-  },
-  badgeCount: {
-    borderRadius: 8,
-    paddingHorizontal: 5,
-    paddingVertical: 1,
-    minWidth: 16,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  badgeCountText: {
-    fontSize: 9,
-    fontWeight: "700",
   },
   listContent: {
     paddingHorizontal: 14,

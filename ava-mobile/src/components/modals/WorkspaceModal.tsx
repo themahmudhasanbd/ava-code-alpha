@@ -28,7 +28,7 @@ import { Surface } from "@/components/kit";
 import { APP } from "@/config/app";
 import { parentPath, pathCrumbs } from "@/core/api/files";
 import { useDirectory } from "@/state/queries";
-import { COLORS } from "@/theme/colors";
+import { COLORS, useTheme } from "@/theme/colors";
 import { font, FONTS, mono } from "@/theme/fonts";
 
 const SHORTCUTS = [
@@ -85,6 +85,8 @@ export function WorkspaceModal({
     onClose();
   };
 
+  const { isDark } = useTheme();
+
   if (!open) return null;
 
   return (
@@ -97,7 +99,7 @@ export function WorkspaceModal({
     >
       <TouchableWithoutFeedback onPress={onClose}>
         <View style={styles.backdrop}>
-          <BlurView intensity={85} tint="dark" style={StyleSheet.absoluteFill} />
+          <BlurView intensity={85} tint={isDark ? "dark" : "light"} style={StyleSheet.absoluteFill} />
           <TouchableWithoutFeedback>
             <View style={styles.modalCard}>
               {/* Drag Handle */}
@@ -106,7 +108,7 @@ export function WorkspaceModal({
               {/* Modal Header */}
               <View style={styles.header}>
                 <View style={styles.headerIconWrapper}>
-                  <FolderGit2 size={18} color="#FFFFFF" />
+                  <FolderGit2 size={18} color={COLORS.primaryForeground} />
                 </View>
                 <View style={styles.headerTitleCol}>
                   <Text style={[styles.headerTitle, font("bold")]}>Select Workspace Directory</Text>
@@ -329,7 +331,7 @@ export function WorkspaceModal({
                     onPress={() => handleConfirm()}
                     activeOpacity={0.8}
                   >
-                    <Check size={14} color="#FFFFFF" />
+                    <Check size={14} color={COLORS.primaryForeground} />
                     <Text style={[styles.confirmBtnText, font("semibold")]}>Set as Workspace</Text>
                   </TouchableOpacity>
                 </View>
@@ -355,10 +357,10 @@ const styles = StyleSheet.create({
     borderTopRightRadius: 26,
     borderWidth: 1,
     borderColor: COLORS.glassBorder,
-    borderTopColor: "rgba(255, 255, 255, 0.45)",
+    borderTopColor: COLORS.border,
     paddingTop: 10,
     overflow: "hidden",
-    shadowColor: "#000",
+    shadowColor: COLORS.glassShadow,
     shadowOffset: { width: 0, height: -6 },
     shadowOpacity: 0.35,
     shadowRadius: 20,
@@ -421,7 +423,7 @@ const styles = StyleSheet.create({
     borderColor: COLORS.border,
   },
   shortcutChipActive: {
-    backgroundColor: "rgba(66, 64, 225, 0.12)",
+    backgroundColor: COLORS.accent,
     borderColor: COLORS.primary,
   },
   shortcutChipText: {
@@ -468,7 +470,7 @@ const styles = StyleSheet.create({
   goBtnText: {
     fontSize: 12,
     fontWeight: "700",
-    color: "#FFFFFF",
+    color: COLORS.primaryForeground,
   },
   breadcrumbBar: {
     flexDirection: "row",
@@ -561,7 +563,7 @@ const styles = StyleSheet.create({
     gap: 8,
     paddingVertical: 8,
     borderBottomWidth: 1,
-    borderBottomColor: "rgba(255, 255, 255, 0.05)",
+    borderBottomColor: COLORS.secondary,
   },
   folderTextCol: {
     flex: 1,
@@ -582,7 +584,7 @@ const styles = StyleSheet.create({
     borderRadius: 6,
     paddingHorizontal: 8,
     paddingVertical: 3,
-    backgroundColor: "rgba(66, 64, 225, 0.06)",
+    backgroundColor: COLORS.accent,
   },
   selectBtnText: {
     fontSize: 10.5,
@@ -639,6 +641,6 @@ const styles = StyleSheet.create({
   confirmBtnText: {
     fontSize: 12,
     fontWeight: "700",
-    color: "#FFFFFF",
+    color: COLORS.primaryForeground,
   },
 });

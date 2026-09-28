@@ -49,7 +49,7 @@ import { storage } from "@/core/storage";
 import { useAva } from "@/state/ava-provider";
 import { useDirectory, useModels, useSessions } from "@/state/queries";
 import type { ChatMessage, Session } from "@/core/types";
-import { COLORS } from "@/theme/colors";
+import { COLORS, useTheme } from "@/theme/colors";
 import { font, FONTS, mono } from "@/theme/fonts";
 
 const ALIAS_KEY = "ava_project_aliases";
@@ -240,6 +240,8 @@ export function WorkspacePreferenceModal({
     }
   };
 
+  const { isDark } = useTheme();
+
   if (!open) return null;
 
   return (
@@ -251,7 +253,7 @@ export function WorkspacePreferenceModal({
         onRequestClose={onClose}
       >
         <View style={styles.backdrop}>
-          <BlurView intensity={75} tint="dark" style={StyleSheet.absoluteFill} />
+          <BlurView intensity={75} tint={isDark ? "dark" : "light"} style={StyleSheet.absoluteFill} />
           <TouchableWithoutFeedback onPress={onClose}>
             <View style={styles.dismissArea} />
           </TouchableWithoutFeedback>
@@ -263,7 +265,7 @@ export function WorkspacePreferenceModal({
             {/* ── Top Header ── */}
             <View style={styles.header}>
               <View style={styles.headerIconBox}>
-                <FolderGit2 size={18} color="#FFFFFF" />
+                <FolderGit2 size={18} color={COLORS.primaryForeground} />
               </View>
 
               <View style={styles.headerTitleGroup}>
@@ -289,7 +291,7 @@ export function WorkspacePreferenceModal({
                 {/* Git Branch Badge */}
                 <View style={styles.gitBranchRow}>
                   <View style={styles.gitBadge}>
-                    <GitBranch size={10} color="#8B5CF6" />
+                    <GitBranch size={10} color={COLORS.primary} />
                     <Text style={[styles.gitBadgeText, mono("bold")]}>main</Text>
                   </View>
                   <Text style={[styles.cleanTreeText, font("regular")]}>
@@ -353,8 +355,8 @@ export function WorkspacePreferenceModal({
                   onPress={handleOpenTerminal}
                   activeOpacity={0.75}
                 >
-                  <View style={[styles.toolIconBox, { backgroundColor: "rgba(16, 185, 129, 0.12)" }]}>
-                    <TerminalIcon size={18} color="#10B981" />
+                  <View style={[styles.toolIconBox, { backgroundColor: COLORS.accent }]}>
+                    <TerminalIcon size={18} color={COLORS.primary} />
                   </View>
                   <Text style={[styles.toolTileTitle, font("semibold")]}>Terminal</Text>
                   <Text style={[styles.toolTileSubtitle, mono("regular")]} numberOfLines={1}>
@@ -367,8 +369,8 @@ export function WorkspacePreferenceModal({
                   onPress={handleOpenFiles}
                   activeOpacity={0.75}
                 >
-                  <View style={[styles.toolIconBox, { backgroundColor: "rgba(245, 158, 11, 0.12)" }]}>
-                    <FileCode size={18} color="#F59E0B" />
+                  <View style={[styles.toolIconBox, { backgroundColor: COLORS.accent }]}>
+                    <FileCode size={18} color={COLORS.primary} />
                   </View>
                   <Text style={[styles.toolTileTitle, font("semibold")]}>File Tree</Text>
                   <Text style={[styles.toolTileSubtitle, font("regular")]} numberOfLines={1}>
@@ -381,8 +383,8 @@ export function WorkspacePreferenceModal({
                   onPress={handleOpenBrowser}
                   activeOpacity={0.75}
                 >
-                  <View style={[styles.toolIconBox, { backgroundColor: "rgba(56, 189, 248, 0.12)" }]}>
-                    <Globe size={18} color="#38BDF8" />
+                  <View style={[styles.toolIconBox, { backgroundColor: COLORS.accent }]}>
+                    <Globe size={18} color={COLORS.primary} />
                   </View>
                   <Text style={[styles.toolTileTitle, font("semibold")]}>Browser</Text>
                   <Text style={[styles.toolTileSubtitle, font("regular")]} numberOfLines={1}>
@@ -442,7 +444,7 @@ export function WorkspacePreferenceModal({
                 <View style={styles.configItemRow}>
                   <View style={styles.configItemLabelCol}>
                     <View style={styles.configIconLabelRow}>
-                      <Brain size={14} color="#8B5CF6" />
+                      <Brain size={14} color={COLORS.primary} />
                       <Text style={[styles.configItemTitle, font("semibold")]}>Reasoning Effort</Text>
                     </View>
                     <Text style={[styles.configItemSub, font("regular")]}>Thinking depth</Text>
@@ -479,7 +481,7 @@ export function WorkspacePreferenceModal({
                 <View style={styles.configItemRow}>
                   <View style={styles.configItemLabelCol}>
                     <View style={styles.configIconLabelRow}>
-                      <Shield size={14} color="#10B981" />
+                      <Shield size={14} color={COLORS.primary} />
                       <Text style={[styles.configItemTitle, font("semibold")]}>Sandbox Mode</Text>
                     </View>
                     <Text style={[styles.configItemSub, font("regular")]}>Execution policy</Text>
@@ -520,7 +522,7 @@ export function WorkspacePreferenceModal({
                   <View style={styles.analyticsTile}>
                     <View style={styles.analyticsTileHeader}>
                       <Text style={[styles.analyticsLabel, font("medium")]}>Agent Turns</Text>
-                      <RefreshCw size={13} color="#06B6D4" />
+                      <RefreshCw size={13} color={COLORS.primary} />
                     </View>
                     <Text style={[styles.analyticsVal, mono("bold")]}>{sessionTurns}</Text>
                     <Text style={[styles.analyticsSub, font("regular")]}>Completed turns</Text>
@@ -529,7 +531,7 @@ export function WorkspacePreferenceModal({
                   <View style={styles.analyticsTile}>
                     <View style={styles.analyticsTileHeader}>
                       <Text style={[styles.analyticsLabel, font("medium")]}>Input Tokens</Text>
-                      <ArrowDownLeft size={13} color="#3B82F6" />
+                      <ArrowDownLeft size={13} color={COLORS.primary} />
                     </View>
                     <Text style={[styles.analyticsVal, mono("bold")]}>
                       {formatTokens(sessionInputTokens)}
@@ -540,7 +542,7 @@ export function WorkspacePreferenceModal({
                   <View style={styles.analyticsTile}>
                     <View style={styles.analyticsTileHeader}>
                       <Text style={[styles.analyticsLabel, font("medium")]}>Output Tokens</Text>
-                      <ArrowUpRight size={13} color="#10B981" />
+                      <ArrowUpRight size={13} color={COLORS.primary} />
                     </View>
                     <Text style={[styles.analyticsVal, mono("bold")]}>
                       {formatTokens(sessionOutputTokens)}
@@ -551,7 +553,7 @@ export function WorkspacePreferenceModal({
                   <View style={styles.analyticsTile}>
                     <View style={styles.analyticsTileHeader}>
                       <Text style={[styles.analyticsLabel, font("medium")]}>Cache Tokens</Text>
-                      <Zap size={13} color="#F59E0B" />
+                      <Zap size={13} color={COLORS.primary} />
                     </View>
                     <Text style={[styles.analyticsVal, mono("bold")]}>
                       {formatTokens(sessionCacheReadTokens)}
@@ -563,7 +565,7 @@ export function WorkspacePreferenceModal({
                 {/* Cost Bar */}
                 <View style={styles.costBar}>
                   <View style={styles.costLabelGroup}>
-                    <DollarSign size={13} color="#10B981" />
+                    <DollarSign size={13} color={COLORS.primary} />
                     <Text style={[styles.costLabelText, font("medium")]}>
                       Estimated Session Cost:
                     </Text>
@@ -583,7 +585,7 @@ export function WorkspacePreferenceModal({
                   <View style={styles.analyticsTile}>
                     <View style={styles.analyticsTileHeader}>
                       <Text style={[styles.analyticsLabel, font("medium")]}>Total Sessions</Text>
-                      <Layers size={13} color="#8B5CF6" />
+                      <Layers size={13} color={COLORS.primary} />
                     </View>
                     <Text style={[styles.analyticsVal, mono("bold")]}>
                       {workspaceSessions.length}
@@ -594,7 +596,7 @@ export function WorkspacePreferenceModal({
                   <View style={styles.analyticsTile}>
                     <View style={styles.analyticsTileHeader}>
                       <Text style={[styles.analyticsLabel, font("medium")]}>Total Tokens</Text>
-                      <Sparkles size={13} color="#EC4899" />
+                      <Sparkles size={13} color={COLORS.primary} />
                     </View>
                     <Text style={[styles.analyticsVal, mono("bold")]}>
                       {formatTokens(workspaceTotalTokens)}
@@ -614,7 +616,7 @@ export function WorkspacePreferenceModal({
                   onPress={handleStartNewWorkspaceSession}
                   activeOpacity={0.7}
                 >
-                  <Plus size={12} color="#FFFFFF" />
+                  <Plus size={12} color={COLORS.primaryForeground} />
                   <Text style={[styles.newSessBtnMiniText, font("bold")]}>New Session</Text>
                 </TouchableOpacity>
               </View>
@@ -638,7 +640,7 @@ export function WorkspacePreferenceModal({
                       onPress={handleStartNewWorkspaceSession}
                       activeOpacity={0.8}
                     >
-                      <Plus size={13} color="#FFFFFF" />
+                      <Plus size={13} color={COLORS.primaryForeground} />
                       <Text style={[styles.startFirstBtnText, font("semibold")]}>
                         Start First Session
                       </Text>
@@ -659,7 +661,7 @@ export function WorkspacePreferenceModal({
                         activeOpacity={0.7}
                       >
                         {isCurrent ? (
-                          <MessageSquareCode size={16} color="#10B981" />
+                          <MessageSquareCode size={16} color={COLORS.primary} />
                         ) : (
                           <MessageSquare size={16} color={COLORS.mutedForeground} />
                         )}
@@ -715,7 +717,7 @@ export function WorkspacePreferenceModal({
         onRequestClose={() => setShowRenameDialog(false)}
       >
         <View style={styles.dialogBackdrop}>
-          <BlurView intensity={70} tint="dark" style={StyleSheet.absoluteFill} />
+          <BlurView intensity={70} tint={isDark ? "dark" : "light"} style={StyleSheet.absoluteFill} />
           <TouchableWithoutFeedback onPress={() => setShowRenameDialog(false)}>
             <View style={styles.dismissArea} />
           </TouchableWithoutFeedback>
@@ -752,7 +754,7 @@ export function WorkspacePreferenceModal({
                 onPress={() => saveProjectAlias(aliasDraft)}
                 activeOpacity={0.8}
               >
-                <Check size={14} color="#FFFFFF" />
+                <Check size={14} color={COLORS.primaryForeground} />
                 <Text style={[styles.dialogSaveText, font("semibold")]}>Save Alias</Text>
               </TouchableOpacity>
             </View>
@@ -779,10 +781,10 @@ const styles = StyleSheet.create({
     borderTopRightRadius: 28,
     borderWidth: 1,
     borderColor: COLORS.glassBorder,
-    borderTopColor: "rgba(255, 255, 255, 0.45)",
+    borderTopColor: COLORS.border,
     paddingTop: 10,
     overflow: "hidden",
-    shadowColor: "#000",
+    shadowColor: COLORS.glassShadow,
     shadowOffset: { width: 0, height: -10 },
     shadowOpacity: 0.35,
     shadowRadius: 28,
@@ -843,11 +845,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: 6,
     paddingVertical: 1.5,
     borderRadius: 6,
-    backgroundColor: "rgba(139, 92, 246, 0.12)",
+    backgroundColor: COLORS.accent,
   },
   gitBadgeText: {
     fontSize: 10,
-    color: "#8B5CF6",
+    color: COLORS.primary,
   },
   cleanTreeText: {
     fontSize: 10.5,
@@ -890,7 +892,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     paddingVertical: 3,
     borderRadius: 6,
-    backgroundColor: "rgba(66, 64, 225, 0.1)",
+    backgroundColor: COLORS.accent,
   },
   switchPathBtnText: {
     fontSize: 11,
@@ -995,7 +997,7 @@ const styles = StyleSheet.create({
     borderColor: COLORS.border,
   },
   choiceChipActive: {
-    backgroundColor: "rgba(66, 64, 225, 0.15)",
+    backgroundColor: COLORS.accent,
     borderColor: COLORS.primary,
   },
   choiceChipText: {
@@ -1008,7 +1010,7 @@ const styles = StyleSheet.create({
   },
   configDivider: {
     height: 1,
-    backgroundColor: "rgba(255, 255, 255, 0.05)",
+    backgroundColor: COLORS.secondary,
   },
   analyticsCard: {
     borderRadius: 16,
@@ -1054,10 +1056,10 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    backgroundColor: "rgba(16, 185, 129, 0.08)",
+    backgroundColor: COLORS.accent,
     borderRadius: 10,
     borderWidth: 1,
-    borderColor: "rgba(16, 185, 129, 0.2)",
+    borderColor: COLORS.border,
     paddingHorizontal: 10,
     paddingVertical: 8,
   },
@@ -1073,7 +1075,7 @@ const styles = StyleSheet.create({
   costValueText: {
     fontSize: 12.5,
     fontWeight: "700",
-    color: "#10B981",
+    color: COLORS.primary,
   },
   sessionsSectionHeaderRow: {
     flexDirection: "row",
@@ -1092,7 +1094,7 @@ const styles = StyleSheet.create({
   },
   newSessBtnMiniText: {
     fontSize: 11,
-    color: "#FFFFFF",
+    color: COLORS.primaryForeground,
   },
   sessionsCard: {
     borderRadius: 16,
@@ -1130,7 +1132,7 @@ const styles = StyleSheet.create({
   },
   startFirstBtnText: {
     fontSize: 12,
-    color: "#FFFFFF",
+    color: COLORS.primaryForeground,
   },
   sessionRow: {
     flexDirection: "row",
@@ -1141,10 +1143,10 @@ const styles = StyleSheet.create({
   },
   sessionRowBorder: {
     borderTopWidth: 1,
-    borderTopColor: "rgba(255, 255, 255, 0.05)",
+    borderTopColor: COLORS.secondary,
   },
   sessionRowActive: {
-    backgroundColor: "rgba(16, 185, 129, 0.06)",
+    backgroundColor: COLORS.accent,
   },
   sessionTitleCol: {
     flex: 1,
@@ -1155,7 +1157,7 @@ const styles = StyleSheet.create({
     color: COLORS.foreground,
   },
   sessionTitleActive: {
-    color: "#10B981",
+    color: COLORS.primary,
     fontWeight: "700",
   },
   sessionIdText: {
@@ -1163,14 +1165,14 @@ const styles = StyleSheet.create({
     color: COLORS.mutedForeground,
   },
   activeBadge: {
-    backgroundColor: "rgba(16, 185, 129, 0.15)",
+    backgroundColor: COLORS.accent,
     paddingHorizontal: 6,
     paddingVertical: 2,
     borderRadius: 4,
   },
   activeBadgeText: {
     fontSize: 10,
-    color: "#10B981",
+    color: COLORS.primary,
   },
 
   // Rename Dialog Styles
@@ -1188,10 +1190,10 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     borderWidth: 1,
     borderColor: COLORS.glassBorder,
-    borderTopColor: "rgba(255, 255, 255, 0.4)",
+    borderTopColor: COLORS.border,
     padding: 18,
     gap: 12,
-    shadowColor: "#000",
+    shadowColor: COLORS.glassShadow,
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.35,
     shadowRadius: 20,
@@ -1242,6 +1244,6 @@ const styles = StyleSheet.create({
   dialogSaveText: {
     fontSize: 13,
     fontWeight: "700",
-    color: "#FFFFFF",
+    color: COLORS.primaryForeground,
   },
 });

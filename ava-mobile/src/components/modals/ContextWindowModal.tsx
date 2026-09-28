@@ -28,7 +28,7 @@ import { Surface } from "@/components/kit";
 import { useAva } from "@/state/ava-provider";
 import { useModels } from "@/state/queries";
 import type { ChatMessage } from "@/core/types";
-import { COLORS } from "@/theme/colors";
+import { COLORS, useTheme } from "@/theme/colors";
 import { font, FONTS, mono } from "@/theme/fonts";
 
 interface Props {
@@ -94,12 +94,7 @@ export function ContextWindowModal({
     return String(num);
   };
 
-  const statusColor =
-    fillPercentage < 50
-      ? "#10B981"
-      : fillPercentage < 80
-      ? "#F59E0B"
-      : "#EF4444";
+  const statusColor = fillPercentage >= 80 ? COLORS.destructive : COLORS.primary;
 
   const statusLabel =
     fillPercentage < 50
@@ -124,6 +119,8 @@ export function ContextWindowModal({
     }
   };
 
+  const { isDark } = useTheme();
+
   if (!open) return null;
 
   return (
@@ -136,7 +133,7 @@ export function ContextWindowModal({
     >
       <TouchableWithoutFeedback onPress={onClose}>
         <View style={styles.backdrop}>
-          <BlurView intensity={85} tint="dark" style={StyleSheet.absoluteFill} />
+          <BlurView intensity={85} tint={isDark ? "dark" : "light"} style={StyleSheet.absoluteFill} />
           <TouchableWithoutFeedback>
             <View style={styles.modalCard}>
               {/* Drag Handle */}
@@ -145,7 +142,7 @@ export function ContextWindowModal({
               {/* Modal Header */}
               <View style={styles.header}>
                 <View style={styles.headerZapWrapper}>
-                  <Zap size={16} color="#10B981" />
+                  <Zap size={16} color={COLORS.primary} />
                 </View>
                 <View style={styles.headerTitleCol}>
                   <Text style={[styles.headerTitle, font("bold")]}>Core Context Window</Text>
@@ -153,7 +150,7 @@ export function ContextWindowModal({
                     <View
                       style={[
                         styles.statusDot,
-                        { backgroundColor: status === "online" ? "#10B981" : "#EF4444" },
+                        { backgroundColor: status === "online" ? COLORS.primary : COLORS.destructive },
                       ]}
                     />
                     <Text style={[styles.statusSubText, font("medium")]}>
@@ -183,7 +180,7 @@ export function ContextWindowModal({
                     <View
                       style={[
                         styles.statusPill,
-                        { backgroundColor: `${statusColor}18`, borderColor: `${statusColor}50` },
+                        { backgroundColor: COLORS.accent, borderColor: COLORS.border },
                       ]}
                     >
                       <Activity size={11} color={statusColor} />
@@ -249,8 +246,8 @@ export function ContextWindowModal({
                 <View style={styles.bentoGrid}>
                   <View style={styles.bentoRow}>
                     <View style={styles.bentoBox}>
-                      <View style={[styles.bentoIcon, { backgroundColor: "rgba(56, 189, 248, 0.12)" }]}>
-                        <ArrowDownLeft size={14} color="#38BDF8" />
+                      <View style={[styles.bentoIcon, { backgroundColor: COLORS.accent }]}>
+                        <ArrowDownLeft size={14} color={COLORS.primary} />
                       </View>
                       <View>
                         <Text style={[styles.bentoLabel, font("medium")]}>Input Tokens</Text>
@@ -259,8 +256,8 @@ export function ContextWindowModal({
                     </View>
 
                     <View style={styles.bentoBox}>
-                      <View style={[styles.bentoIcon, { backgroundColor: "rgba(129, 140, 248, 0.12)" }]}>
-                        <ArrowUpRight size={14} color="#818CF8" />
+                      <View style={[styles.bentoIcon, { backgroundColor: COLORS.accent }]}>
+                        <ArrowUpRight size={14} color={COLORS.primary} />
                       </View>
                       <View>
                         <Text style={[styles.bentoLabel, font("medium")]}>Output Tokens</Text>
@@ -271,8 +268,8 @@ export function ContextWindowModal({
 
                   <View style={styles.bentoRow}>
                     <View style={styles.bentoBox}>
-                      <View style={[styles.bentoIcon, { backgroundColor: "rgba(52, 211, 153, 0.12)" }]}>
-                        <Database size={14} color="#34D399" />
+                      <View style={[styles.bentoIcon, { backgroundColor: COLORS.accent }]}>
+                        <Database size={14} color={COLORS.primary} />
                       </View>
                       <View>
                         <Text style={[styles.bentoLabel, font("medium")]}>Cache Read</Text>
@@ -281,8 +278,8 @@ export function ContextWindowModal({
                     </View>
 
                     <View style={styles.bentoBox}>
-                      <View style={[styles.bentoIcon, { backgroundColor: "rgba(251, 191, 36, 0.12)" }]}>
-                        <Repeat size={14} color="#FBBF24" />
+                      <View style={[styles.bentoIcon, { backgroundColor: COLORS.accent }]}>
+                        <Repeat size={14} color={COLORS.primary} />
                       </View>
                       <View>
                         <Text style={[styles.bentoLabel, font("medium")]}>Agent Turns</Text>
@@ -295,7 +292,7 @@ export function ContextWindowModal({
                 {/* Feedback Result */}
                 {compactionResult && (
                   <View style={styles.compactionResultBox}>
-                    <CheckCircle2 size={15} color="#10B981" />
+                    <CheckCircle2 size={15} color={COLORS.primary} />
                     <Text style={[styles.compactionResultText, font("medium")]}>{compactionResult}</Text>
                   </View>
                 )}
@@ -309,9 +306,9 @@ export function ContextWindowModal({
                     activeOpacity={0.8}
                   >
                     {isCompacting ? (
-                      <ActivityIndicator size="small" color="#FFFFFF" />
+                      <ActivityIndicator size="small" color={COLORS.primaryForeground} />
                     ) : (
-                      <Minimize2 size={14} color="#FFFFFF" />
+                      <Minimize2 size={14} color={COLORS.primaryForeground} />
                     )}
                     <Text style={[styles.compactBtnText, font("semibold")]}>
                       {isCompacting ? "Compacting…" : "Compact Context"}
@@ -354,10 +351,10 @@ const styles = StyleSheet.create({
     borderTopRightRadius: 26,
     borderWidth: 1,
     borderColor: COLORS.glassBorder,
-    borderTopColor: "rgba(255, 255, 255, 0.45)",
+    borderTopColor: COLORS.border,
     paddingTop: 10,
     overflow: "hidden",
-    shadowColor: "#000",
+    shadowColor: COLORS.glassShadow,
     shadowOffset: { width: 0, height: -6 },
     shadowOpacity: 0.35,
     shadowRadius: 20,
@@ -384,7 +381,7 @@ const styles = StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: 8,
-    backgroundColor: "rgba(16, 185, 129, 0.12)",
+    backgroundColor: COLORS.accent,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -503,7 +500,7 @@ const styles = StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: 8,
-    backgroundColor: "rgba(66, 64, 225, 0.12)",
+    backgroundColor: COLORS.accent,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -521,9 +518,9 @@ const styles = StyleSheet.create({
     marginTop: 1,
   },
   reasoningBadge: {
-    backgroundColor: "rgba(139, 92, 246, 0.15)",
+    backgroundColor: COLORS.accent,
     borderWidth: 1,
-    borderColor: "rgba(139, 92, 246, 0.3)",
+    borderColor: COLORS.border,
     paddingHorizontal: 6,
     paddingVertical: 2,
     borderRadius: 6,
@@ -531,7 +528,7 @@ const styles = StyleSheet.create({
   reasoningBadgeText: {
     fontSize: 10,
     fontWeight: "700",
-    color: "#8B5CF6",
+    color: COLORS.primary,
   },
   sectionHeader: {
     fontSize: 12,
@@ -583,14 +580,14 @@ const styles = StyleSheet.create({
     gap: 8,
     padding: 10,
     borderRadius: 10,
-    backgroundColor: "rgba(16, 185, 129, 0.12)",
+    backgroundColor: COLORS.accent,
     borderWidth: 1,
-    borderColor: "rgba(16, 185, 129, 0.25)",
+    borderColor: COLORS.border,
   },
   compactionResultText: {
     fontSize: 12,
     fontWeight: "600",
-    color: "#10B981",
+    color: COLORS.primary,
     flex: 1,
   },
   actionsRow: {
@@ -611,7 +608,7 @@ const styles = StyleSheet.create({
   compactBtnText: {
     fontSize: 12.5,
     fontWeight: "700",
-    color: "#FFFFFF",
+    color: COLORS.primaryForeground,
   },
   cleanSessionBtn: {
     flex: 1,

@@ -1,5 +1,11 @@
-import { CURATED_MODELS, REASONING_EFFORTS } from "@/config/models";
-import { getCustomModels } from "../custom-models";
+import { DEFAULT_FALLBACK_MODELS, REASONING_EFFORTS } from "@/config/models";
+import {
+  fetchAntigravityModels,
+  getAntigravityAuth,
+  getCachedAntigravityModels,
+  getCustomModels,
+  getCustomProviders,
+} from "../custom-models";
 import type { RpcClient } from "../rpc-client";
 import type { McpServer, ModelInfo } from "../types";
 
@@ -7,49 +13,113 @@ import type { McpServer, ModelInfo } from "../types";
 type Raw = any;
 
 /**
- * Returns models aggregated across:
- * 1. Curated OmniRoute, Antigravity, and Frontier catalog
- * 2. User-configured custom models from AsyncStorage
- * 3. Server-configured active model from `config/read`
+ * Returns models aggregated dynamically across:
+ * 1. Google Antigravity dynamic models (via OAuth access token or cached models)
+ * 2. Active Custom Providers and their dynamically fetched models
+ * 3. Standalone user-configured custom models
+ * 4. Server-configured active model from `config/read`
+ * 5. Default fallback models (no static combos)
  */
-export async function listModels(rpc: RpcClient): Promise<ModelInfo[]> {
-  let configured = "";
-  try {
-    const res = await rpc.call<{ config?: Raw }>("config/read", { cwd: "/" });
-    configured = String(res?.config?.model ?? "");
-  } catch {
-    /* fall back to curated list */
-  }
+export async function listModels(rpc?: RpcClient): Promise<ModelInfo[]> {
+  let configuredModel = "";
+  let configuredProvider = "";
 
-  const custom = await getCustomModels();
-  const list: ModelInfo[] = CURATED_MODELS.map((m) => ({ ...m }));
-
-  // Add custom user-configured models
-  for (const c of custom) {
-    const existingIdx = list.findIndex((m) => m.id.toLowerCase() === c.id.toLowerCase());
-    if (existingIdx !== -1) {
-      list[existingIdx] = { ...list[existingIdx], ...c };
-    } else {
-      list.push(c);
+  if (rpc) {
+    try {
+      const res = await rpc.call<{ config?: Raw }>("config/read", { cwd: "/" });
+      configuredModel = String(res?.config?.model ?? "");
+      configuredProvider = String(res?.config?.model_provider ?? "");
+    } catch {
+      /* fall back gracefully */
     }
   }
 
-  // Ensure configured model is in the catalog
-  if (configured && !list.some((m) => m.id === configured)) {
-    const isAntigravity = configured.startsWith("antigravity/");
-    list.unshift({
-      id: configured,
-      name: configured,
-      provider: isAntigravity ? "antigravity" : "omniroute",
-      supportsImages: true,
-      reasoning: true,
-      reasoningEfforts: [...REASONING_EFFORTS],
-    });
+  const modelMap = new Map<string, ModelInfo>();
+
+  // 1. Load default fallback models
+  for (const m of DEFAULT_FALLBACK_MODELS) {
+    modelMap.set(m.id.toLowerCase(), { ...m });
   }
 
-  const def = configured || list[0]!.id;
+  // 2. Load Antigravity dynamic models (cached first, then refresh if token present)
+  try {
+    const cachedAntigravity = await getCachedAntigravityModels();
+    for (const m of cachedAntigravity) {
+      modelMap.set(m.id.toLowerCase(), { ...m, provider: "antigravity" });
+    }
+
+    const auth = await getAntigravityAuth();
+    if (auth?.accessToken) {
+      // Async fetch to keep cache up to date without blocking
+      fetchAntigravityModels(auth.accessToken)
+        .then((fresh) => {
+          if (fresh.length > 0) {
+            fresh.forEach((m) => modelMap.set(m.id.toLowerCase(), { ...m, provider: "antigravity" }));
+          }
+        })
+        .catch(() => {});
+    }
+  } catch (err) {
+    console.warn("[Catalog] Failed loading Antigravity models:", err);
+  }
+
+  // 3. Load active Custom Providers and their dynamically fetched models
+  try {
+    const providers = await getCustomProviders();
+    for (const prov of providers) {
+      if (!prov.enabled) continue;
+      if (Array.isArray(prov.models) && prov.models.length > 0) {
+        for (const m of prov.models) {
+          modelMap.set(m.id.toLowerCase(), {
+            ...m,
+            provider: prov.id,
+          });
+        }
+      }
+    }
+  } catch (err) {
+    console.warn("[Catalog] Failed loading Provider models:", err);
+  }
+
+  // 4. Load standalone custom models
+  try {
+    const custom = await getCustomModels();
+    for (const c of custom) {
+      modelMap.set(c.id.toLowerCase(), { ...c });
+    }
+  } catch (err) {
+    console.warn("[Catalog] Failed loading Custom models:", err);
+  }
+
+  // 5. Ensure server-configured model is in the catalog
+  if (configuredModel) {
+    const key = configuredModel.toLowerCase();
+    if (!modelMap.has(key)) {
+      const isAntigravity =
+        configuredModel.startsWith("antigravity/") ||
+        configuredProvider === "antigravity" ||
+        configuredModel.includes("gemini") ||
+        configuredModel.includes("claude");
+
+      modelMap.set(key, {
+        id: configuredModel,
+        name: configuredModel,
+        provider: configuredProvider || (isAntigravity ? "antigravity" : "server"),
+        supportsImages: true,
+        reasoning: true,
+        reasoningEfforts: [...REASONING_EFFORTS],
+      });
+    }
+  }
+
+  // Convert map to array
+  const list = Array.from(modelMap.values());
+
+  // Determine active default ID
+  const activeDefaultId = configuredModel || list[0]?.id || "gpt-5.6-sol";
+
   return list
-    .map((m) => ({ ...m, isDefault: m.id === def }))
+    .map((m) => ({ ...m, isDefault: m.id === activeDefaultId }))
     .sort((a, b) => Number(b.isDefault) - Number(a.isDefault));
 }
 

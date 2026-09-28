@@ -41,7 +41,7 @@ import {
 import { Surface } from "@/components/kit";
 import { useAva } from "@/state/ava-provider";
 import { useDirectory } from "@/state/queries";
-import { COLORS } from "@/theme/colors";
+import { COLORS, useTheme } from "@/theme/colors";
 import { font, FONTS, mono } from "@/theme/fonts";
 
 export interface SelectedMedia {
@@ -81,6 +81,7 @@ export function MediaSelectorModal({
   serverDirectory = "/root/shared-media",
 }: Props) {
   const { rpc } = useAva();
+  const { isDark } = useTheme();
   const [activeTab, setActiveTab] = useState<"sources" | "server" | "voice">(
     "sources"
   );
@@ -386,7 +387,7 @@ export function MediaSelectorModal({
     >
       <TouchableWithoutFeedback onPress={onClose}>
         <View style={styles.backdrop}>
-          <BlurView intensity={85} tint="dark" style={StyleSheet.absoluteFill} />
+          <BlurView intensity={85} tint={isDark ? "dark" : "light"} style={StyleSheet.absoluteFill} />
           <TouchableWithoutFeedback onPress={() => {}}>
             <View style={styles.sheetCard}>
               {/* Handle Bar */}
@@ -439,10 +440,10 @@ export function MediaSelectorModal({
                     <View
                       style={[
                         styles.sourceIconBox,
-                        { backgroundColor: "rgba(59, 130, 246, 0.12)" },
+                        { backgroundColor: COLORS.accent },
                       ]}
                     >
-                      <Camera size={18} color="#3b82f6" />
+                      <Camera size={18} color={COLORS.primary} />
                     </View>
                     <View style={styles.sourceContent}>
                       <Text style={[styles.sourceTitle, font("semibold")]}>Take Photo or Video</Text>
@@ -462,10 +463,10 @@ export function MediaSelectorModal({
                     <View
                       style={[
                         styles.sourceIconBox,
-                        { backgroundColor: "rgba(168, 85, 247, 0.12)" },
+                        { backgroundColor: COLORS.accent },
                       ]}
                     >
-                      <ImageIcon size={18} color="#a855f7" />
+                      <ImageIcon size={18} color={COLORS.primary} />
                     </View>
                     <View style={styles.sourceContent}>
                       <Text style={[styles.sourceTitle, font("semibold")]}>Photo & Video Library</Text>
@@ -485,10 +486,10 @@ export function MediaSelectorModal({
                     <View
                       style={[
                         styles.sourceIconBox,
-                        { backgroundColor: "rgba(16, 185, 129, 0.12)" },
+                        { backgroundColor: COLORS.accent },
                       ]}
                     >
-                      <FileText size={18} color="#10b981" />
+                      <FileText size={18} color={COLORS.primary} />
                     </View>
                     <View style={styles.sourceContent}>
                       <Text style={[styles.sourceTitle, font("semibold")]}>Device Files & Docs</Text>
@@ -508,10 +509,10 @@ export function MediaSelectorModal({
                     <View
                       style={[
                         styles.sourceIconBox,
-                        { backgroundColor: "rgba(249, 115, 22, 0.12)" },
+                        { backgroundColor: COLORS.accent },
                       ]}
                     >
-                      <Mic size={18} color="#f97316" />
+                      <Mic size={18} color={COLORS.primary} />
                     </View>
                     <View style={styles.sourceContent}>
                       <Text style={[styles.sourceTitle, font("semibold")]}>Voice Audio Note</Text>
@@ -531,7 +532,7 @@ export function MediaSelectorModal({
                     <View
                       style={[
                         styles.sourceIconBox,
-                        { backgroundColor: "rgba(66, 64, 225, 0.12)" },
+                        { backgroundColor: COLORS.accent },
                       ]}
                     >
                       <Server size={18} color={COLORS.primary} />
@@ -661,7 +662,7 @@ export function MediaSelectorModal({
                       >
                         <Mic
                           size={32}
-                          color={isRecording ? "#FFFFFF" : COLORS.primary}
+                          color={isRecording ? COLORS.primaryForeground : COLORS.primary}
                         />
                       </TouchableOpacity>
                     </Animated.View>
@@ -702,12 +703,12 @@ const styles = StyleSheet.create({
     borderTopRightRadius: 26,
     borderWidth: 1,
     borderColor: COLORS.glassBorder,
-    borderTopColor: "rgba(255, 255, 255, 0.45)",
+    borderTopColor: COLORS.border,
     paddingTop: 10,
     paddingBottom: Platform.OS === "ios" ? 36 : 20,
     paddingHorizontal: 16,
     maxHeight: "88%",
-    shadowColor: "#000",
+    shadowColor: COLORS.glassShadow,
     shadowOffset: { width: 0, height: -6 },
     shadowOpacity: 0.35,
     shadowRadius: 20,
@@ -748,7 +749,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 8,
-    backgroundColor: "rgba(66, 64, 225, 0.1)",
+    backgroundColor: COLORS.accent,
     padding: 10,
     borderRadius: 10,
     marginTop: 8,
@@ -884,7 +885,7 @@ const styles = StyleSheet.create({
     width: 30,
     height: 30,
     borderRadius: 8,
-    backgroundColor: "rgba(255, 255, 255, 0.05)",
+    backgroundColor: COLORS.secondary,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -915,12 +916,12 @@ const styles = StyleSheet.create({
     width: 86,
     height: 86,
     borderRadius: 43,
-    backgroundColor: "rgba(66, 64, 225, 0.15)",
+    backgroundColor: COLORS.accent,
     alignItems: "center",
     justifyContent: "center",
   },
   voiceRecordPulseActive: {
-    backgroundColor: "rgba(239, 68, 68, 0.2)",
+    backgroundColor: COLORS.muted,
   },
   voiceRecordCircle: {
     width: 66,

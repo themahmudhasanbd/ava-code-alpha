@@ -28,11 +28,9 @@ import {
   ChevronRight,
   Clock,
   Coins,
-  Compass,
   Copy,
   FileCode,
   FileDiff,
-  Info,
   Layers,
   ListChecks,
   MessageSquare,
@@ -47,13 +45,11 @@ import { useAva } from "@/state/ava-provider";
 import { CodeBlock } from "@/components/ai-elements/code-block";
 import { InlineText, RichResponse } from "@/components/chat/rich-response";
 import { Shimmer } from "@/components/ai-elements/shimmer";
-import { RuntimeDottedIndicator } from "@/components/ai-elements/dotted-indicator";
-import { TypewriterText } from "@/components/ai-elements/typewriter-text";
 import { formatDuration } from "@/components/chat/message-parts";
 import type { ChatMessage, MessagePart, PlanStep } from "@/core/types";
 import { font, mono } from "@/theme/fonts";
-import { displayToolName, getToolIcon, isMcpTool } from "@/components/chat/tool-icons";
-import { COLORS, useTheme } from "@/theme/colors";
+import { displayToolName, getToolIcon } from "@/components/chat/tool-icons";
+import { useTheme } from "@/theme/colors";
 
 if (Platform.OS === "android" && UIManager.setLayoutAnimationEnabledExperimental) {
   UIManager.setLayoutAnimationEnabledExperimental(true);
@@ -70,7 +66,7 @@ interface Props {
 }
 
 export function TimelineScreen({ route, navigation }: Props) {
-  const { isDark } = useTheme();
+  const { colors, isDark } = useTheme();
   const { activeSessionId } = useAva();
   const sessionId = route?.params?.sessionId || activeSessionId || "";
   const targetMessageId = route?.params?.messageId;
@@ -336,14 +332,6 @@ export function TimelineScreen({ route, navigation }: Props) {
   const durationText = formatDuration(totalDuration);
   const errorCount = allParts.filter((part) => part.status === "error").length;
 
-  const activeRunningPart = useMemo(() => {
-    if (!isTargetTurnActive) return null;
-    return (
-      allParts.find((p) => p.status === "running") ||
-      (allParts.length > 0 ? allParts[allParts.length - 1] : null)
-    );
-  }, [allParts, isTargetTurnActive]);
-
   // Auto-scroll throttled during active streaming
   const lastScrollTimeRef = useRef(0);
   useEffect(() => {
@@ -387,59 +375,109 @@ export function TimelineScreen({ route, navigation }: Props) {
   );
 
   return (
-    <SafeAreaView style={styles.screen} edges={["top", "bottom"]}>
+    <SafeAreaView style={[styles.screen, { backgroundColor: colors.background }]} edges={["top", "bottom"]}>
       <StatusBar
         barStyle={isDark ? "light-content" : "dark-content"}
-        backgroundColor={COLORS.background}
+        backgroundColor={colors.background}
       />
 
       {/* ── Minimal Header Bar (Placed OUTSIDE PanGestureHandler so touches are 100% responsive) ── */}
-      <View style={styles.headerBar}>
+      <View
+        style={[
+          styles.headerBar,
+          {
+            backgroundColor: colors.background,
+            borderBottomColor: colors.border,
+          },
+        ]}
+      >
         <TouchableOpacity
-          style={styles.headerBackBtn}
+          style={[
+            styles.headerBackBtn,
+            {
+              backgroundColor: colors.card,
+              borderColor: colors.border,
+            },
+          ]}
           onPress={handleBack}
           activeOpacity={0.7}
           hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
         >
-          <ArrowLeft size={18} color={COLORS.foreground} />
+          <ArrowLeft size={18} color={colors.foreground} />
         </TouchableOpacity>
 
         {/* Segment Toggle */}
-        <View style={styles.segmentContainer}>
+        <View
+          style={[
+            styles.segmentContainer,
+            {
+              backgroundColor: colors.card,
+              borderColor: colors.border,
+            },
+          ]}
+        >
           <TouchableOpacity
-            style={[styles.segmentBtn, activeTab === "trace" && styles.segmentBtnActive]}
+            style={[styles.segmentBtn, activeTab === "trace" && { backgroundColor: colors.secondary }]}
             onPress={() => setActiveTab("trace")}
             activeOpacity={0.7}
           >
             <Layers
               size={13}
-              color={activeTab === "trace" ? COLORS.foreground : COLORS.mutedForeground}
+              color={activeTab === "trace" ? colors.foreground : colors.mutedForeground}
             />
-            <Text style={[styles.segmentText, activeTab === "trace" && styles.segmentTextActive]}>
+            <Text
+              style={[
+                styles.segmentText,
+                font("medium"),
+                { color: activeTab === "trace" ? colors.foreground : colors.mutedForeground },
+                activeTab === "trace" && { fontWeight: "700" },
+              ]}
+            >
               Timeline
             </Text>
             {allParts.length > 0 && (
-              <View style={[styles.pillBadge, activeTab === "trace" && styles.pillBadgeActive]}>
-                <Text style={[styles.pillBadgeText, mono("medium")]}>{allParts.length}</Text>
+              <View
+                style={[
+                  styles.pillBadge,
+                  { backgroundColor: activeTab === "trace" ? colors.border : colors.muted },
+                ]}
+              >
+                <Text style={[styles.pillBadgeText, mono("medium"), { color: colors.foreground }]}>
+                  {allParts.length}
+                </Text>
               </View>
             )}
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={[styles.segmentBtn, activeTab === "files" && styles.segmentBtnActive]}
+            style={[styles.segmentBtn, activeTab === "files" && { backgroundColor: colors.secondary }]}
             onPress={() => setActiveTab("files")}
             activeOpacity={0.7}
           >
             <FileDiff
               size={13}
-              color={activeTab === "files" ? COLORS.foreground : COLORS.mutedForeground}
+              color={activeTab === "files" ? colors.foreground : colors.mutedForeground}
             />
-            <Text style={[styles.segmentText, activeTab === "files" && styles.segmentTextActive]}>
+            <Text
+              style={[
+                styles.segmentText,
+                font("medium"),
+                { color: activeTab === "files" ? colors.foreground : colors.mutedForeground },
+                activeTab === "files" && { fontWeight: "700" },
+              ]}
+            >
               Changes
             </Text>
             {changedFiles.length > 0 && (
-              <View style={[styles.pillBadge, activeTab === "files" && styles.pillBadgeActive]}>
-                <Text style={[styles.pillBadgeText, mono("medium")]}>{changedFiles.length}</Text>
+              <View
+                style={[
+                  styles.pillBadge,
+                  { backgroundColor: activeTab === "files" ? colors.border : colors.muted },
+                ]}
+              >
+                <Text style={[styles.pillBadgeText, mono("medium"), { color: colors.foreground }]}>
+                  {changedFiles.length}
+                </Text>
               </View>
             )}
           </TouchableOpacity>
@@ -453,7 +491,7 @@ export function TimelineScreen({ route, navigation }: Props) {
         <Animated.View style={{ flex: 1 }}>
           {/* ── Multi-Turn Switcher (Minimal horizontal pills) ── */}
           {assistantMsgs.length > 1 && (
-            <View style={styles.turnBar}>
+            <View style={[styles.turnBar, { borderBottomColor: colors.border }]}>
               <ScrollView
                 horizontal
                 showsHorizontalScrollIndicator={false}
@@ -467,7 +505,16 @@ export function TimelineScreen({ route, navigation }: Props) {
                   return (
                     <TouchableOpacity
                       key={`turn_${assMsg.id}_${idx}`}
-                      style={[styles.turnCapsule, isSelected && styles.turnCapsuleActive]}
+                      style={[
+                        styles.turnCapsule,
+                        {
+                          backgroundColor: colors.card,
+                          borderColor: isSelected ? colors.primary : colors.border,
+                        },
+                        isSelected && {
+                          backgroundColor: isDark ? "rgba(99, 102, 241, 0.12)" : "rgba(66, 64, 225, 0.08)",
+                        },
+                      ]}
                       onPress={() => setSelectedTurnId(assMsg.id)}
                       activeOpacity={0.7}
                     >
@@ -475,7 +522,8 @@ export function TimelineScreen({ route, navigation }: Props) {
                         style={[
                           styles.turnCapsuleText,
                           font("medium"),
-                          isSelected && styles.turnCapsuleTextActive,
+                          { color: isSelected ? colors.primary : colors.mutedForeground },
+                          isSelected && { fontWeight: "700" },
                         ]}
                       >
                         {`Turn ${idx + 1}`}
@@ -485,7 +533,7 @@ export function TimelineScreen({ route, navigation }: Props) {
                           style={[
                             styles.turnCapsuleMeta,
                             mono("regular"),
-                            isSelected && styles.turnCapsuleMetaActive,
+                            { color: isSelected ? colors.primary : colors.mutedForeground },
                           ]}
                         >
                           {turnDur}
@@ -500,16 +548,24 @@ export function TimelineScreen({ route, navigation }: Props) {
 
           {/* ── Stats Strip ── */}
           {activeTab === "trace" && allParts.length > 0 && (
-            <View style={styles.statsStrip}>
+            <View
+              style={[
+                styles.statsStrip,
+                {
+                  backgroundColor: colors.card,
+                  borderBottomColor: colors.border,
+                },
+              ]}
+            >
               <View style={styles.statItem}>
-                <Clock size={12} color={COLORS.mutedForeground} />
-                <Text style={[styles.statValue, font("regular")]}>
+                <Clock size={12} color={colors.mutedForeground} />
+                <Text style={[styles.statValue, font("regular"), { color: colors.mutedForeground }]}>
                   {isLive ? "Working…" : `${durationText || "0s"}`}
                 </Text>
               </View>
               <View style={styles.statItem}>
-                <Coins size={12} color={COLORS.mutedForeground} />
-                <Text style={[styles.statValue, font("regular")]}>
+                <Coins size={12} color={colors.mutedForeground} />
+                <Text style={[styles.statValue, font("regular"), { color: colors.mutedForeground }]}>
                   {totalTokens > 0
                     ? `${(totalTokens / 1000).toFixed(1)}k tokens`
                     : `${allParts.length} steps`}
@@ -519,13 +575,13 @@ export function TimelineScreen({ route, navigation }: Props) {
               <View style={styles.statItem}>
                 <CheckCircle2
                   size={12}
-                  color={errorCount > 0 ? COLORS.destructive : COLORS.success}
+                  color={errorCount > 0 ? colors.destructive : colors.success}
                 />
                 <Text
                   style={[
                     styles.statValue,
                     font("medium"),
-                    { color: errorCount > 0 ? COLORS.destructive : COLORS.success },
+                    { color: errorCount > 0 ? colors.destructive : colors.success },
                   ]}
                 >
                   {isLive ? "Live" : errorCount > 0 ? `${errorCount} failed` : "Done"}
@@ -533,7 +589,15 @@ export function TimelineScreen({ route, navigation }: Props) {
               </View>
 
               <TouchableOpacity
-                style={[styles.sortToggleBtn, isReversed && styles.sortToggleBtnActive]}
+                style={[
+                  styles.sortToggleBtn,
+                  {
+                    borderColor: isReversed ? colors.primary : colors.border,
+                    backgroundColor: isReversed
+                      ? (isDark ? "rgba(99, 102, 241, 0.12)" : "rgba(66, 64, 225, 0.08)")
+                      : "transparent",
+                  },
+                ]}
                 onPress={() => {
                   if (Platform.OS !== "web") {
                     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
@@ -544,13 +608,13 @@ export function TimelineScreen({ route, navigation }: Props) {
               >
                 <ArrowUpDown
                   size={11}
-                  color={isReversed ? COLORS.primary : COLORS.mutedForeground}
+                  color={isReversed ? colors.primary : colors.mutedForeground}
                 />
                 <Text
                   style={[
                     styles.sortToggleText,
                     mono("medium"),
-                    isReversed && { color: COLORS.primary },
+                    { color: isReversed ? colors.primary : colors.mutedForeground },
                   ]}
                 >
                   {isReversed ? "Newest" : "Oldest"}
@@ -572,418 +636,276 @@ export function TimelineScreen({ route, navigation }: Props) {
               >
                 {/* User Prompt Context (Minimal header preview) */}
                 {userPromptText ? (
-                  <View style={styles.promptCard}>
+                  <View
+                    style={[
+                      styles.promptCard,
+                      {
+                        backgroundColor: colors.card,
+                        borderColor: colors.border,
+                      },
+                    ]}
+                  >
                     <View style={styles.promptHeader}>
-                      <User size={11} color={COLORS.mutedForeground} />
-                      <Text style={[styles.promptLabel, mono("medium")]}>USER PROMPT</Text>
+                      <User size={11} color={colors.mutedForeground} />
+                      <Text style={[styles.promptLabel, font("semibold"), { color: colors.mutedForeground }]}>
+                        PROMPT
+                      </Text>
                     </View>
-                    <Text style={[styles.promptBody, font("regular")]} numberOfLines={2}>
+                    <Text
+                      style={[styles.promptBody, font("regular"), { color: colors.foreground }]}
+                      numberOfLines={3}
+                    >
                       {userPromptText}
                     </Text>
                   </View>
                 ) : null}
 
-                {loadingHistory ? (
+                {/* Main Events List */}
+                {allParts.length === 0 ? (
                   <View style={styles.emptyState}>
-                    <ActivityIndicator size="small" color={COLORS.primary} style={{ marginBottom: 10 }} />
-                    <Text style={[styles.emptyTitle, font("medium")]}>Loading timeline…</Text>
-                  </View>
-                ) : allParts.length === 0 && !finalOutputText ? (
-                  <View style={styles.emptyState}>
-                    {isTargetTurnActive ? (
-                      <>
-                        <ActivityIndicator
-                          size="small"
-                          color={COLORS.primary}
-                          style={{ marginBottom: 10 }}
-                        />
-                        <Text style={[styles.emptyTitle, font("medium")]}>
-                          Agent is processing…
-                        </Text>
-                        <Text style={[styles.emptySub, font("regular")]}>
-                          Actions and commands will stream here in real time.
-                        </Text>
-                      </>
-                    ) : (
-                      <>
-                        <Brain size={26} color={COLORS.mutedForeground} />
-                        <Text style={[styles.emptyTitle, font("medium")]}>No trace events</Text>
-                        <Text style={[styles.emptySub, font("regular")]}>
-                          Workflow steps for this turn will appear here.
-                        </Text>
-                      </>
-                    )}
+                    <Layers size={28} color={colors.mutedForeground} />
+                    <Text style={[styles.emptyTitle, font("medium"), { color: colors.foreground }]}>
+                      {loadingHistory ? "Loading timeline…" : "No execution events"}
+                    </Text>
+                    <Text style={[styles.emptySub, font("regular"), { color: colors.mutedForeground }]}>
+                      {isLive
+                        ? "Waiting for agent to begin execution steps…"
+                        : "Tool calls, thoughts, and outputs for this turn will appear here."}
+                    </Text>
                   </View>
                 ) : (
                   <>
-                    {/* Minimal Timeline Spine & Nodes */}
-                    {allParts.length > 0 && (
+                    {/* Execution Timeline Tree */}
+                    {allParts.filter((p) => p.nodeType !== "text").length > 0 && (
                       <View style={styles.timelineWrapper}>
-                        <View style={styles.timelineSpine} />
+                        {/* Continuous spine line */}
+                        <View style={[styles.timelineSpine, { backgroundColor: colors.border }]} />
 
-                        {(isReversed ? [...allParts].reverse() : allParts).map((part, index) => {
-                          const isRunning = isTargetTurnActive && part.status === "running";
-                          const isExpanded =
-                            expandedNodes[part.id] !== undefined
-                              ? !!expandedNodes[part.id]
-                              : isRunning;
-                          const isError =
-                            part.status === "error" ||
-                            (part.meta?.exitCode != null && part.meta.exitCode !== 0);
+                        {(isReversed ? [...allParts].reverse() : allParts).map((part, pIdx) => {
+                          if (part.nodeType === "text") return null;
 
-                          let NodeIcon: LucideIcon = Wrench;
-                          let iconColor: string = COLORS.mutedForeground;
-                          let nodeCategory = "TOOL";
-                          let title = "";
+                          const isExpanded = !!expandedNodes[part.id];
+                          const isErr = part.status === "error";
+                          const isRunning = part.status === "running";
 
-                          if (part.nodeType === "thought") {
-                            NodeIcon = Brain;
-                            iconColor = "#8B5CF6";
-                            nodeCategory = "THOUGHT";
-                            title = isRunning
-                              ? "Thinking…"
-                              : part.meta?.durationMs
-                              ? `Thought for ${formatDuration(part.meta.durationMs)}`
-                              : "Thought";
-                          } else if (part.nodeType === "decision") {
-                            NodeIcon = Compass;
-                            iconColor = "#0EA5E9";
-                            nodeCategory = "DECISION";
-                            title = "Strategy Selection";
-                          } else if (part.nodeType === "tool") {
-                            const isMcp = isMcpTool(part.toolName, part.meta);
-                            NodeIcon = getToolIcon(part.toolName, part.meta);
-                            if (isMcp) {
-                              iconColor = "#10B981";
-                              nodeCategory = "MCP";
-                              title = displayToolName(part.toolName || "MCP Tool");
-                            } else {
-                              iconColor = COLORS.primary;
-                              nodeCategory = "TOOL";
-                              title = displayToolName(part.toolName || "command");
-                            }
+                          let Icon: LucideIcon = Brain;
+                          let iconColor = colors.mutedForeground;
+                          let categoryName = "THOUGHT";
+
+                          if (part.nodeType === "tool") {
+                            Icon = getToolIcon(part.toolName, part.meta);
+                            iconColor = isErr
+                              ? colors.destructive
+                              : isRunning
+                              ? colors.primary
+                              : colors.foreground;
+                            categoryName = "TOOL";
                           } else if (part.nodeType === "plan") {
-                            NodeIcon = ListChecks;
-                            iconColor = "#059669";
-                            nodeCategory = "PLAN";
-                            title = part.text || "Execution Plan";
+                            Icon = ListChecks;
+                            iconColor = colors.primary;
+                            categoryName = "PLAN";
+                          } else if (part.nodeType === "decision") {
+                            Icon = Brain;
+                            iconColor = colors.primary;
+                            categoryName = "DECISION";
                           } else if (part.nodeType === "notice") {
-                            NodeIcon = isError ? AlertCircle : Info;
-                            iconColor = isError ? COLORS.destructive : "#F59E0B";
-                            nodeCategory = "NOTICE";
-                            title = part.text || "System Notice";
-                          } else if (part.nodeType === "text") {
-                            NodeIcon = AlignLeft;
-                            iconColor = COLORS.mutedForeground;
-                            nodeCategory = "RESPONSE";
-                            title = isRunning ? "Streaming…" : "Response";
+                            Icon = AlertCircle;
+                            iconColor = colors.warning;
+                            categoryName = "NOTICE";
                           }
 
-                          const commandString =
-                            part.meta?.command ||
-                            (typeof part.input === "string"
-                              ? part.input
-                              : part.input
-                              ? JSON.stringify(part.input, null, 2)
-                              : "");
+                          const toolNamePretty =
+                            part.nodeType === "tool"
+                              ? displayToolName(part.toolName || part.meta?.command || "tool")
+                              : "";
 
-                          const compositeKey = `${part.id || "part"}_${index}`;
+                          const titleText =
+                            part.nodeType === "tool"
+                              ? part.meta?.command || (typeof part.input === "string" ? part.input : part.input ? JSON.stringify(part.input) : toolNamePretty)
+                              : part.text || "";
 
-                          // Directly render text responses without collapsible accordion
-                          if (part.nodeType === "text") {
-                            return (
-                              <View key={compositeKey} style={styles.nodeRow}>
-                                <View style={styles.nodeSpineCol}>
-                                  <View
-                                    style={[
-                                      styles.nodeBullet,
-                                      {
-                                        borderColor: isRunning ? COLORS.primary : COLORS.border,
-                                      },
-                                    ]}
-                                  >
-                                    <NodeIcon
-                                      size={11}
-                                      color={
-                                        isRunning ? COLORS.primary : COLORS.mutedForeground
-                                      }
-                                    />
-                                  </View>
-                                </View>
-                                <View style={styles.nodeBodyCol}>
-                                  <View style={styles.textDirectCard}>
-                                    <View style={styles.textDirectHeader}>
-                                      <Text style={[styles.textDirectLabel, mono("medium")]}>
-                                        {isRunning ? "STREAMING RESPONSE" : "RESPONSE"}
-                                      </Text>
-                                      {part.text ? (
-                                        <TouchableOpacity
-                                          onPress={() =>
-                                            handleCopy(part.id + "-text", part.text || "")
-                                          }
-                                          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                                        >
-                                          <Text style={[styles.blockCopy, mono("medium")]}>
-                                            {copiedId === part.id + "-text" ? "Copied" : "Copy"}
-                                          </Text>
-                                        </TouchableOpacity>
-                                      ) : null}
-                                    </View>
-                                    {part.text ? (
-                                      isRunning ? (
-                                        <TypewriterText text={part.text} isStreaming={true} />
-                                      ) : (
-                                        <RichResponse text={part.text} />
-                                      )
-                                    ) : isRunning ? (
-                                      <Shimmer
-                                        style={[
-                                          styles.streamingTextPlaceholder,
-                                          font("regular"),
-                                        ]}
-                                      >
-                                        Generating response…
-                                      </Shimmer>
-                                    ) : null}
-                                  </View>
-                                </View>
-                              </View>
-                            );
-                          }
-
-                          // Non-expandable simple events
-                          if (!part.hasExpandableContent) {
-                            return (
-                              <View key={compositeKey} style={styles.nodeRow}>
-                                <View style={styles.nodeSpineCol}>
-                                  <View
-                                    style={[
-                                      styles.nodeBullet,
-                                      { borderColor: isRunning ? iconColor : COLORS.border },
-                                    ]}
-                                  >
-                                    <NodeIcon size={11} color={iconColor} />
-                                  </View>
-                                </View>
-                                <View style={styles.nodeBodyCol}>
-                                  <View style={styles.nodeHeaderSimple}>
-                                    <Text
-                                      style={[
-                                        styles.nodeCategory,
-                                        mono("bold"),
-                                        { color: iconColor },
-                                      ]}
-                                    >
-                                      {nodeCategory}
-                                    </Text>
-                                    <Text
-                                      style={[styles.nodeTitle, font("regular")]}
-                                      numberOfLines={2}
-                                    >
-                                      {part.text || title}
-                                    </Text>
-                                  </View>
-                                </View>
-                              </View>
-                            );
-                          }
-
-                          // Expandable events (tools, commands, plans) with clean minimal rows
                           return (
-                            <View key={compositeKey} style={styles.nodeRow}>
+                            <View key={`node_${part.id}_${pIdx}`} style={styles.nodeRow}>
+                              {/* Left Spine Bullet */}
                               <View style={styles.nodeSpineCol}>
                                 <View
                                   style={[
                                     styles.nodeBullet,
-                                    { borderColor: isRunning ? iconColor : COLORS.border },
+                                    {
+                                      backgroundColor: colors.card,
+                                      borderColor: isErr
+                                        ? colors.destructive
+                                        : isRunning
+                                        ? colors.primary
+                                        : colors.border,
+                                    },
                                   ]}
                                 >
-                                  <NodeIcon size={11} color={iconColor} />
+                                  {isRunning ? (
+                                    <ActivityIndicator size={10} color={colors.primary} />
+                                  ) : isErr ? (
+                                    <AlertCircle size={11} color={colors.destructive} />
+                                  ) : (
+                                    <Icon size={11} color={iconColor} />
+                                  )}
                                 </View>
                               </View>
 
+                              {/* Right Content Box */}
                               <View style={styles.nodeBodyCol}>
                                 <TouchableOpacity
                                   style={[
                                     styles.nodeHeader,
+                                    {
+                                      backgroundColor: colors.card,
+                                      borderColor: colors.border,
+                                    },
                                     isExpanded && styles.nodeHeaderExpanded,
                                   ]}
-                                  onPress={() => toggleNode(part.id)}
-                                  activeOpacity={0.7}
+                                  onPress={() => {
+                                    if (part.hasExpandableContent) {
+                                      toggleNode(part.id);
+                                    }
+                                  }}
+                                  activeOpacity={part.hasExpandableContent ? 0.7 : 1}
                                 >
                                   <View style={styles.nodeHeaderMain}>
                                     <Text
                                       style={[
                                         styles.nodeCategory,
                                         mono("bold"),
-                                        { color: iconColor },
+                                        {
+                                          color: isErr
+                                            ? colors.destructive
+                                            : isRunning
+                                            ? colors.primary
+                                            : colors.mutedForeground,
+                                        },
                                       ]}
                                     >
-                                      {nodeCategory}
+                                      {categoryName}
                                     </Text>
-                                    {part.nodeType === "tool" ? (
-                                      <View style={styles.toolChip}>
+
+                                    {toolNamePretty ? (
+                                      <View style={[styles.toolChip, { backgroundColor: colors.secondary }]}>
                                         <Text
-                                          style={[styles.toolChipText, mono("medium")]}
+                                          style={[styles.toolChipText, mono("medium"), { color: colors.foreground }]}
                                           numberOfLines={1}
                                         >
-                                          {title}
+                                          {toolNamePretty}
                                         </Text>
-                                      </View>
-                                    ) : (
-                                      <Text
-                                        style={[styles.nodeTitle, font("medium")]}
-                                        numberOfLines={1}
-                                      >
-                                        {title}
-                                      </Text>
-                                    )}
-                                  </View>
-
-                                  <View style={styles.nodeHeaderMeta}>
-                                    {part.meta?.durationMs != null && (
-                                      <Text style={[styles.nodeDurText, mono("regular")]}>
-                                        {formatDuration(part.meta.durationMs)}
-                                      </Text>
-                                    )}
-                                    <ChevronRight
-                                      size={13}
-                                      color={COLORS.mutedForeground}
-                                      style={{
-                                        transform: [
-                                          { rotate: isExpanded ? "90deg" : "0deg" },
-                                        ],
-                                      }}
-                                    />
-                                  </View>
-                                </TouchableOpacity>
-
-                                {/* Expanded Content */}
-                                {isExpanded && (
-                                  <View style={styles.nodeContent}>
-                                    {/* Reasoning Text */}
-                                    {part.nodeType === "thought" ||
-                                    part.nodeType === "decision" ? (
-                                      <View style={styles.textWrapper}>
-                                        <RichResponse text={part.text || ""} />
                                       </View>
                                     ) : null}
 
-                                    {/* Command / Input */}
-                                    {part.nodeType === "tool" && commandString ? (
-                                      <View style={styles.blockContainer}>
-                                        <View style={styles.blockHeader}>
-                                          <Text style={[styles.blockLabel, mono("medium")]}>
-                                            {part.toolName || "input"}
-                                          </Text>
-                                          <TouchableOpacity
-                                            onPress={() =>
-                                              handleCopy(part.id + "-cmd", commandString)
-                                            }
-                                            hitSlop={{
-                                              top: 8,
-                                              bottom: 8,
-                                              left: 8,
-                                              right: 8,
-                                            }}
-                                          >
-                                            <Text style={[styles.blockCopy, mono("medium")]}>
-                                              {copiedId === part.id + "-cmd"
-                                                ? "Copied"
-                                                : "Copy"}
-                                            </Text>
-                                          </TouchableOpacity>
-                                        </View>
-                                        <CodeBlock
-                                          code={commandString}
-                                          language={
-                                            commandString.trim().startsWith("{") ||
-                                            commandString.trim().startsWith("[")
-                                              ? "json"
-                                              : "bash"
-                                          }
-                                          showLineNumbers={
-                                            commandString.split("\n").length > 3
-                                          }
+                                    <Text
+                                      style={[
+                                        styles.nodeTitle,
+                                        font("regular"),
+                                        { color: colors.foreground },
+                                        isRunning && { color: colors.primary },
+                                      ]}
+                                      numberOfLines={1}
+                                    >
+                                      {titleText}
+                                    </Text>
+                                  </View>
+
+                                  <View style={styles.nodeHeaderMeta}>
+                                    {part.meta?.durationMs ? (
+                                      <Text style={[styles.nodeDurText, mono("regular"), { color: colors.mutedForeground }]}>
+                                        {formatDuration(part.meta.durationMs)}
+                                      </Text>
+                                    ) : null}
+
+                                    {part.hasExpandableContent && (
+                                      <ChevronRight
+                                        size={13}
+                                        color={colors.mutedForeground}
+                                        style={
+                                          isExpanded
+                                            ? { transform: [{ rotate: "90deg" }] }
+                                            : undefined
+                                        }
+                                      />
+                                    )}
+                                  </View>
+                                </TouchableOpacity>
+
+                                {/* Expandable Body Details */}
+                                {isExpanded && (
+                                  <View
+                                    style={[
+                                      styles.nodeContent,
+                                      {
+                                        backgroundColor: colors.card,
+                                        borderColor: colors.border,
+                                      },
+                                    ]}
+                                  >
+                                    {/* Reasoning Text */}
+                                    {part.text ? (
+                                      <View style={styles.textWrapper}>
+                                        <InlineText
+                                          text={part.text}
+                                          style={[font("regular"), { color: colors.foreground, fontSize: 12, lineHeight: 18 }]}
                                         />
                                       </View>
                                     ) : null}
 
-                                    {/* Working Directory */}
-                                    {part.meta?.cwd ? (
-                                      <View style={styles.cwdBox}>
-                                        <Text
-                                          style={[styles.cwdText, mono("regular")]}
-                                          numberOfLines={1}
-                                        >
-                                          cwd: {part.meta.cwd}
-                                        </Text>
+                                    {/* Tool Input / Command */}
+                                    {part.meta?.command ? (
+                                      <View style={[styles.blockContainer, { borderColor: colors.border }]}>
+                                        <View style={[styles.blockHeader, { backgroundColor: colors.secondary }]}>
+                                          <Text style={[styles.blockLabel, mono("medium"), { color: colors.mutedForeground }]}>
+                                            COMMAND
+                                          </Text>
+                                          <TouchableOpacity
+                                            onPress={() =>
+                                              handleCopy(`cmd_${part.id}`, part.meta!.command!)
+                                            }
+                                            activeOpacity={0.7}
+                                          >
+                                            <Text style={[styles.blockCopy, mono("medium"), { color: colors.primary }]}>
+                                              {copiedId === `cmd_${part.id}` ? "Copied" : "Copy"}
+                                            </Text>
+                                          </TouchableOpacity>
+                                        </View>
+                                        <CodeBlock
+                                          code={part.meta.command}
+                                          language="bash"
+                                          showLineNumbers={false}
+                                        />
                                       </View>
-                                    ) : null}
-
-                                    {/* Media Previews */}
-                                    {part.nodeType === "tool" &&
-                                    part.meta?.media?.length ? (
-                                      <View style={styles.blockContainer}>
-                                        {part.meta.media
-                                          .filter((m) => m.type === "image")
-                                          .map((m, mIdx) => (
-                                            <Image
-                                              key={`media_${mIdx}`}
-                                              source={{ uri: m.url }}
-                                              style={styles.previewImage}
-                                              resizeMode="contain"
-                                            />
-                                          ))}
+                                    ) : part.input ? (
+                                      <View style={[styles.blockContainer, { borderColor: colors.border }]}>
+                                        <View style={[styles.blockHeader, { backgroundColor: colors.secondary }]}>
+                                          <Text style={[styles.blockLabel, mono("medium"), { color: colors.mutedForeground }]}>
+                                            INPUT
+                                          </Text>
+                                        </View>
+                                        <CodeBlock
+                                          code={typeof part.input === "string" ? part.input : JSON.stringify(part.input, null, 2)}
+                                          language="json"
+                                          showLineNumbers={false}
+                                        />
                                       </View>
                                     ) : null}
 
                                     {/* Tool Output */}
-                                    {part.nodeType === "tool" && part.output ? (
-                                      <View style={styles.blockContainer}>
-                                        <View style={styles.blockHeader}>
-                                          <View
-                                            style={{
-                                              flexDirection: "row",
-                                              alignItems: "center",
-                                              gap: 6,
-                                            }}
-                                          >
-                                            <Text style={[styles.blockLabel, mono("medium")]}>
-                                              output
-                                            </Text>
-                                            {part.meta?.exitCode != null && (
-                                              <Text
-                                                style={[
-                                                  styles.exitTag,
-                                                  mono("medium"),
-                                                  {
-                                                    color:
-                                                      part.meta.exitCode === 0
-                                                        ? COLORS.success
-                                                        : COLORS.destructive,
-                                                  },
-                                                ]}
-                                              >
-                                                (exit {part.meta.exitCode})
-                                              </Text>
-                                            )}
-                                          </View>
+                                    {part.output ? (
+                                      <View style={[styles.blockContainer, { borderColor: colors.border }]}>
+                                        <View style={[styles.blockHeader, { backgroundColor: colors.secondary }]}>
+                                          <Text style={[styles.blockLabel, mono("medium"), { color: colors.mutedForeground }]}>
+                                            OUTPUT
+                                          </Text>
                                           <TouchableOpacity
                                             onPress={() =>
-                                              handleCopy(part.id + "-out", part.output || "")
+                                              handleCopy(`out_${part.id}`, part.output!)
                                             }
-                                            hitSlop={{
-                                              top: 8,
-                                              bottom: 8,
-                                              left: 8,
-                                              right: 8,
-                                            }}
+                                            activeOpacity={0.7}
                                           >
-                                            <Text style={[styles.blockCopy, mono("medium")]}>
-                                              {copiedId === part.id + "-out"
-                                                ? "Copied"
-                                                : "Copy"}
+                                            <Text style={[styles.blockCopy, mono("medium"), { color: colors.primary }]}>
+                                              {copiedId === `out_${part.id}` ? "Copied" : "Copy"}
                                             </Text>
                                           </TouchableOpacity>
                                         </View>
@@ -1012,28 +934,29 @@ export function TimelineScreen({ route, navigation }: Props) {
                                               style={styles.planRow}
                                             >
                                               {st.status === "done" ? (
-                                                <Check size={11} color={COLORS.success} />
+                                                <Check size={11} color={colors.success} />
                                               ) : st.status === "active" ? (
                                                 <ActivityIndicator
                                                   size={9}
-                                                  color={COLORS.primary}
+                                                  color={colors.primary}
                                                 />
                                               ) : st.status === "cancelled" ? (
                                                 <X
                                                   size={11}
-                                                  color={COLORS.mutedForeground}
+                                                  color={colors.mutedForeground}
                                                 />
                                               ) : (
-                                                <View style={styles.planDot} />
+                                                <View style={[styles.planDot, { backgroundColor: colors.mutedForeground }]} />
                                               )}
                                               <View style={{ flex: 1 }}>
                                                 <InlineText
                                                   text={st.text}
                                                   style={[
                                                     styles.planText,
+                                                    { color: colors.foreground },
                                                     (st.status === "done" ||
                                                       st.status === "cancelled") &&
-                                                      styles.planTextDone,
+                                                      [styles.planTextDone, { color: colors.mutedForeground }],
                                                   ]}
                                                 />
                                               </View>
@@ -1056,8 +979,10 @@ export function TimelineScreen({ route, navigation }: Props) {
                       <View style={styles.outputBox}>
                         <View style={styles.outputHeader}>
                           <View style={styles.outputTitleRow}>
-                            <MessageSquare size={13} color={COLORS.mutedForeground} />
-                            <Text style={[styles.outputTitle, font("medium")]}>Response</Text>
+                            <MessageSquare size={13} color={colors.mutedForeground} />
+                            <Text style={[styles.outputTitle, font("medium"), { color: colors.foreground }]}>
+                              Response
+                            </Text>
                           </View>
                           <TouchableOpacity
                             onPress={() => handleCopy("final_output", finalOutputText)}
@@ -1065,16 +990,24 @@ export function TimelineScreen({ route, navigation }: Props) {
                             activeOpacity={0.7}
                           >
                             {copiedId === "final_output" ? (
-                              <Check size={11} color={COLORS.success} />
+                              <Check size={11} color={colors.success} />
                             ) : (
-                              <Copy size={11} color={COLORS.mutedForeground} />
+                              <Copy size={11} color={colors.mutedForeground} />
                             )}
-                            <Text style={[styles.outputCopyText, mono("medium")]}>
+                            <Text style={[styles.outputCopyText, mono("medium"), { color: colors.mutedForeground }]}>
                               {copiedId === "final_output" ? "Copied" : "Copy"}
                             </Text>
                           </TouchableOpacity>
                         </View>
-                        <View style={styles.outputCard}>
+                        <View
+                          style={[
+                            styles.outputCard,
+                            {
+                              backgroundColor: colors.card,
+                              borderColor: colors.border,
+                            },
+                          ]}
+                        >
                           <RichResponse text={finalOutputText} />
                         </View>
                       </View>
@@ -1085,7 +1018,13 @@ export function TimelineScreen({ route, navigation }: Props) {
 
               {showScrollBottomBtn && (
                 <TouchableOpacity
-                  style={styles.floatingScrollBtn}
+                  style={[
+                    styles.floatingScrollBtn,
+                    {
+                      backgroundColor: colors.primary,
+                      shadowColor: colors.glassShadow,
+                    },
+                  ]}
                   onPress={scrollToLatest}
                   activeOpacity={0.8}
                   accessibilityRole="button"
@@ -1107,22 +1046,30 @@ export function TimelineScreen({ route, navigation }: Props) {
             >
               {changedFiles.length === 0 ? (
                 <View style={styles.emptyState}>
-                  <FileCode size={26} color={COLORS.mutedForeground} />
-                  <Text style={[styles.emptyTitle, font("medium")]}>No modified files</Text>
-                  <Text style={[styles.emptySub, font("regular")]}>
+                  <FileCode size={26} color={colors.mutedForeground} />
+                  <Text style={[styles.emptyTitle, font("medium"), { color: colors.foreground }]}>
+                    No modified files
+                  </Text>
+                  <Text style={[styles.emptySub, font("regular"), { color: colors.mutedForeground }]}>
                     Files created or modified during this turn will appear here.
                   </Text>
                 </View>
               ) : (
                 <View style={styles.filesList}>
-                  <Text style={[styles.filesCountLabel, mono("medium")]}>
+                  <Text style={[styles.filesCountLabel, mono("medium"), { color: colors.mutedForeground }]}>
                     {changedFiles.length} FILE{changedFiles.length === 1 ? "" : "S"} TOUCHED
                   </Text>
 
                   {changedFiles.map((file, fIdx) => (
                     <TouchableOpacity
                       key={`file_${file.path}_${fIdx}`}
-                      style={styles.fileItemCard}
+                      style={[
+                        styles.fileItemCard,
+                        {
+                          backgroundColor: colors.card,
+                          borderColor: colors.border,
+                        },
+                      ]}
                       onPress={() => {
                         navigation?.navigate("Main", {
                           screen: "Files",
@@ -1148,10 +1095,10 @@ export function TimelineScreen({ route, navigation }: Props) {
                             {
                               color:
                                 file.kind === "create"
-                                  ? COLORS.success
+                                  ? colors.success
                                   : file.kind === "delete"
-                                  ? COLORS.destructive
-                                  : COLORS.primary,
+                                  ? colors.destructive
+                                  : colors.primary,
                             },
                           ]}
                         >
@@ -1159,7 +1106,10 @@ export function TimelineScreen({ route, navigation }: Props) {
                         </Text>
                       </View>
 
-                      <Text style={[styles.filePathLabel, mono("regular")]} numberOfLines={1}>
+                      <Text
+                        style={[styles.filePathLabel, mono("regular"), { color: colors.foreground }]}
+                        numberOfLines={1}
+                      >
                         {file.path}
                       </Text>
 
@@ -1168,9 +1118,9 @@ export function TimelineScreen({ route, navigation }: Props) {
                         hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                       >
                         {copiedId === `file_${fIdx}` ? (
-                          <Check size={13} color={COLORS.success} />
+                          <Check size={13} color={colors.success} />
                         ) : (
-                          <Copy size={13} color={COLORS.mutedForeground} />
+                          <Copy size={13} color={colors.mutedForeground} />
                         )}
                       </TouchableOpacity>
                     </TouchableOpacity>
@@ -1182,14 +1132,22 @@ export function TimelineScreen({ route, navigation }: Props) {
 
           {/* ── Minimal Bottom Live Status Bar ── */}
           {isTargetTurnActive && (
-            <View style={styles.liveFooter}>
-              <View style={styles.liveFooterDot} />
-              <Shimmer style={[styles.liveFooterText, mono("medium")]}>
+            <View
+              style={[
+                styles.liveFooter,
+                {
+                  backgroundColor: colors.card,
+                  borderTopColor: colors.border,
+                },
+              ]}
+            >
+              <View style={[styles.liveFooterDot, { backgroundColor: colors.primary }]} />
+              <Shimmer style={[styles.liveFooterText, mono("medium"), { color: colors.primary }]}>
                 Agent execution in progress…
               </Shimmer>
               <ActivityIndicator
                 size="small"
-                color={COLORS.primary}
+                color={colors.primary}
                 style={{ marginLeft: "auto" }}
               />
             </View>
@@ -1203,7 +1161,6 @@ export function TimelineScreen({ route, navigation }: Props) {
 const styles = StyleSheet.create({
   screen: {
     flex: 1,
-    backgroundColor: COLORS.background,
   },
   headerBar: {
     height: 52,
@@ -1212,8 +1169,6 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     paddingHorizontal: 14,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: COLORS.border,
-    backgroundColor: COLORS.background,
     zIndex: 10,
   },
   headerBackBtn: {
@@ -1223,17 +1178,13 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     borderWidth: 1,
-    borderColor: COLORS.border,
-    backgroundColor: COLORS.card,
   },
   segmentContainer: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: COLORS.card,
     borderRadius: 22,
     padding: 3,
     borderWidth: 1,
-    borderColor: COLORS.border,
   },
   segmentBtn: {
     flexDirection: "row",
@@ -1243,35 +1194,21 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
     borderRadius: 18,
   },
-  segmentBtnActive: {
-    backgroundColor: COLORS.secondary,
-  },
   segmentText: {
     fontSize: 12.5,
-    color: COLORS.mutedForeground,
-  },
-  segmentTextActive: {
-    color: COLORS.foreground,
-    fontWeight: "600",
   },
   pillBadge: {
-    paddingHorizontal: 4,
+    paddingHorizontal: 5,
     paddingVertical: 1,
     borderRadius: 4,
-    backgroundColor: COLORS.muted,
-  },
-  pillBadgeActive: {
-    backgroundColor: COLORS.border,
   },
   pillBadgeText: {
     fontSize: 10,
-    color: COLORS.foreground,
   },
   turnBar: {
     paddingVertical: 6,
     paddingHorizontal: 12,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: COLORS.border,
   },
   turnScrollContent: {
     gap: 8,
@@ -1283,37 +1220,20 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: 8,
-    backgroundColor: COLORS.card,
     borderWidth: 1,
-    borderColor: COLORS.border,
-  },
-  turnCapsuleActive: {
-    borderColor: COLORS.primary,
-    backgroundColor: "rgba(66, 64, 225, 0.08)",
   },
   turnCapsuleText: {
     fontSize: 11.5,
-    color: COLORS.mutedForeground,
-  },
-  turnCapsuleTextActive: {
-    color: COLORS.primary,
-    fontWeight: "600",
   },
   turnCapsuleMeta: {
     fontSize: 10,
-    color: COLORS.mutedForeground,
-  },
-  turnCapsuleMetaActive: {
-    color: COLORS.primary,
   },
   statsStrip: {
     flexDirection: "row",
     alignItems: "center",
     paddingHorizontal: 14,
     paddingVertical: 7,
-    backgroundColor: COLORS.card,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: COLORS.border,
     gap: 12,
   },
   statItem: {
@@ -1323,7 +1243,6 @@ const styles = StyleSheet.create({
   },
   statValue: {
     fontSize: 11,
-    color: COLORS.mutedForeground,
   },
   sortToggleBtn: {
     flexDirection: "row",
@@ -1333,15 +1252,9 @@ const styles = StyleSheet.create({
     paddingVertical: 3,
     borderRadius: 6,
     borderWidth: 1,
-    borderColor: COLORS.border,
-  },
-  sortToggleBtnActive: {
-    borderColor: COLORS.primary,
-    backgroundColor: "rgba(66, 64, 225, 0.08)",
   },
   sortToggleText: {
     fontSize: 10,
-    color: COLORS.mutedForeground,
   },
   mainScroll: {
     flex: 1,
@@ -1354,9 +1267,7 @@ const styles = StyleSheet.create({
   promptCard: {
     padding: 10,
     borderRadius: 10,
-    backgroundColor: COLORS.card,
     borderWidth: 1,
-    borderColor: COLORS.border,
     marginBottom: 4,
   },
   promptHeader: {
@@ -1368,11 +1279,9 @@ const styles = StyleSheet.create({
   promptLabel: {
     fontSize: 9.5,
     letterSpacing: 0.5,
-    color: COLORS.mutedForeground,
   },
   promptBody: {
     fontSize: 12.5,
-    color: COLORS.foreground,
     lineHeight: 18,
   },
   emptyState: {
@@ -1383,11 +1292,9 @@ const styles = StyleSheet.create({
   },
   emptyTitle: {
     fontSize: 14,
-    color: COLORS.foreground,
   },
   emptySub: {
     fontSize: 12,
-    color: COLORS.mutedForeground,
     textAlign: "center",
     paddingHorizontal: 30,
   },
@@ -1401,7 +1308,6 @@ const styles = StyleSheet.create({
     top: 10,
     bottom: 10,
     width: 1.5,
-    backgroundColor: COLORS.border,
   },
   nodeRow: {
     flexDirection: "row",
@@ -1418,7 +1324,6 @@ const styles = StyleSheet.create({
     width: 22,
     height: 22,
     borderRadius: 11,
-    backgroundColor: COLORS.card,
     borderWidth: 1,
     alignItems: "center",
     justifyContent: "center",
@@ -1433,21 +1338,12 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
     paddingHorizontal: 10,
     borderRadius: 8,
-    backgroundColor: COLORS.card,
     borderWidth: 1,
-    borderColor: COLORS.border,
   },
   nodeHeaderExpanded: {
     borderBottomLeftRadius: 0,
     borderBottomRightRadius: 0,
     borderBottomWidth: 0,
-  },
-  nodeHeaderSimple: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-    paddingVertical: 6,
-    paddingHorizontal: 8,
   },
   nodeHeaderMain: {
     flexDirection: "row",
@@ -1463,15 +1359,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 6,
     paddingVertical: 2,
     borderRadius: 4,
-    backgroundColor: COLORS.secondary,
   },
   toolChipText: {
     fontSize: 11,
-    color: COLORS.foreground,
   },
   nodeTitle: {
     fontSize: 12,
-    color: COLORS.foreground,
     flex: 1,
   },
   nodeHeaderMeta: {
@@ -1481,14 +1374,11 @@ const styles = StyleSheet.create({
   },
   nodeDurText: {
     fontSize: 10,
-    color: COLORS.mutedForeground,
   },
   nodeContent: {
     padding: 10,
-    backgroundColor: COLORS.card,
     borderWidth: 1,
     borderTopWidth: 0,
-    borderColor: COLORS.border,
     borderBottomLeftRadius: 8,
     borderBottomRightRadius: 8,
     gap: 8,
@@ -1500,7 +1390,6 @@ const styles = StyleSheet.create({
     borderRadius: 6,
     overflow: "hidden",
     borderWidth: 1,
-    borderColor: COLORS.border,
   },
   blockHeader: {
     flexDirection: "row",
@@ -1508,33 +1397,12 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     paddingHorizontal: 8,
     paddingVertical: 4,
-    backgroundColor: COLORS.secondary,
   },
   blockLabel: {
     fontSize: 10,
-    color: COLORS.mutedForeground,
   },
   blockCopy: {
     fontSize: 10,
-    color: COLORS.primary,
-  },
-  exitTag: {
-    fontSize: 9.5,
-  },
-  cwdBox: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 4,
-    backgroundColor: COLORS.secondary,
-  },
-  cwdText: {
-    fontSize: 10,
-    color: COLORS.mutedForeground,
-  },
-  previewImage: {
-    width: "100%",
-    height: 180,
-    borderRadius: 6,
   },
   planBox: {
     gap: 6,
@@ -1548,37 +1416,12 @@ const styles = StyleSheet.create({
     width: 6,
     height: 6,
     borderRadius: 3,
-    backgroundColor: COLORS.mutedForeground,
   },
   planText: {
     fontSize: 12,
-    color: COLORS.foreground,
   },
   planTextDone: {
-    color: COLORS.mutedForeground,
     textDecorationLine: "line-through",
-  },
-  textDirectCard: {
-    padding: 10,
-    borderRadius: 8,
-    backgroundColor: COLORS.card,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-  },
-  textDirectHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    marginBottom: 6,
-  },
-  textDirectLabel: {
-    fontSize: 9.5,
-    letterSpacing: 0.5,
-    color: COLORS.mutedForeground,
-  },
-  streamingTextPlaceholder: {
-    fontSize: 12,
-    color: COLORS.mutedForeground,
   },
   outputBox: {
     marginTop: 8,
@@ -1597,7 +1440,6 @@ const styles = StyleSheet.create({
   },
   outputTitle: {
     fontSize: 12.5,
-    color: COLORS.foreground,
   },
   outputCopyBtn: {
     flexDirection: "row",
@@ -1606,14 +1448,11 @@ const styles = StyleSheet.create({
   },
   outputCopyText: {
     fontSize: 10.5,
-    color: COLORS.mutedForeground,
   },
   outputCard: {
     padding: 12,
     borderRadius: 10,
-    backgroundColor: COLORS.card,
     borderWidth: 1,
-    borderColor: COLORS.border,
   },
   floatingScrollBtn: {
     position: "absolute",
@@ -1622,12 +1461,10 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 4,
-    backgroundColor: COLORS.primary,
     paddingHorizontal: 12,
     paddingVertical: 7,
     borderRadius: 20,
     elevation: 4,
-    shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.2,
     shadowRadius: 4,
@@ -1643,7 +1480,6 @@ const styles = StyleSheet.create({
   filesCountLabel: {
     fontSize: 10,
     letterSpacing: 0.5,
-    color: COLORS.mutedForeground,
     marginBottom: 4,
   },
   fileItemCard: {
@@ -1652,9 +1488,7 @@ const styles = StyleSheet.create({
     gap: 10,
     padding: 10,
     borderRadius: 8,
-    backgroundColor: COLORS.card,
     borderWidth: 1,
-    borderColor: COLORS.border,
   },
   fileTag: {
     paddingHorizontal: 6,
@@ -1675,7 +1509,6 @@ const styles = StyleSheet.create({
   },
   filePathLabel: {
     fontSize: 12,
-    color: COLORS.foreground,
     flex: 1,
   },
   liveFooter: {
@@ -1684,18 +1517,14 @@ const styles = StyleSheet.create({
     gap: 8,
     paddingHorizontal: 14,
     paddingVertical: 8,
-    backgroundColor: COLORS.card,
     borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: COLORS.border,
   },
   liveFooterDot: {
     width: 7,
     height: 7,
     borderRadius: 3.5,
-    backgroundColor: COLORS.primary,
   },
   liveFooterText: {
     fontSize: 11,
-    color: COLORS.primary,
   },
 });

@@ -1,10 +1,10 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
+  ActivityIndicator,
   BackHandler,
   FlatList,
   Keyboard,
   KeyboardAvoidingView,
-  ActivityIndicator,
   Platform,
   StyleSheet,
   Text,
@@ -30,7 +30,7 @@ import {
   Terminal as TerminalSquare,
   X,
 } from "lucide-react-native";
-import { COLORS } from "@/theme/colors";
+import { useTheme } from "@/theme/colors";
 import { font, mono } from "@/theme/fonts";
 
 export function SessionScreen({
@@ -46,6 +46,7 @@ export function SessionScreen({
   };
   navigation?: any;
 }) {
+  const { colors, isDark } = useTheme();
   const { activeSessionId, setActiveSessionId, modelId, workingCwd, defaultCwd } = useAva();
   const sessionId = route?.params?.sessionId || activeSessionId || "";
   const initialPrompt = route?.params?.initialPrompt;
@@ -127,7 +128,7 @@ export function SessionScreen({
     }
   }, [scrollToMessageId, messages]);
 
-  // Swipe Right to Left → Open Timeline Screen
+  // Swipe Right to Left -> Open Timeline Screen (smooth edge detection)
   const touchStartRef = useRef<{ x: number; y: number; time: number } | null>(null);
 
   const handleTouchStart = (e: any) => {
@@ -147,7 +148,7 @@ export function SessionScreen({
     touchStartRef.current = null;
 
     // Strict edge swipe (from right margin inwards with minimal vertical deflection)
-    if (startX > 220 && dx < -90 && Math.abs(dy) < 40 && dt < 450) {
+    if (startX > 200 && dx < -85 && Math.abs(dy) < 45 && dt < 450) {
       navigation?.navigate("Timeline", {
         sessionId,
       });
@@ -268,23 +269,37 @@ export function SessionScreen({
       }}
     >
       <KeyboardAvoidingView
-        style={styles.container}
+        style={[styles.container, { backgroundColor: colors.background }]}
         behavior={Platform.OS === "ios" ? "padding" : undefined}
         keyboardVerticalOffset={Platform.OS === "ios" ? 10 : 0}
         onTouchStart={handleTouchStart}
         onTouchEnd={handleTouchEnd}
       >
-        {/* ── Smart Session Sub-header Bar ── */}
-        <View style={styles.topBarContainer}>
+        {/* ── Smart Session Sub-header Bar (Soft Glass Surface) ── */}
+        <View
+          style={[
+            styles.topBarContainer,
+            {
+              backgroundColor: colors.card,
+              borderBottomColor: colors.border,
+            },
+          ]}
+        >
           <View style={styles.sessionMetaPill}>
-            <Sparkles size={11} color={COLORS.primary} />
-            <Text style={[styles.sessionMetaText, font("semibold")]} numberOfLines={1}>
+            <Sparkles size={11} color={colors.primary} />
+            <Text
+              style={[styles.sessionMetaText, font("semibold"), { color: colors.foreground }]}
+              numberOfLines={1}
+            >
               {modelNameDisplay}
             </Text>
             {pathSnippet ? (
               <>
-                <Text style={styles.metaDot}>•</Text>
-                <Text style={[styles.sessionPathText, mono("regular")]} numberOfLines={1}>
+                <Text style={[styles.metaDot, { color: colors.mutedForeground }]}>•</Text>
+                <Text
+                  style={[styles.sessionPathText, mono("regular"), { color: colors.mutedForeground }]}
+                  numberOfLines={1}
+                >
                   {pathSnippet}
                 </Text>
               </>
@@ -295,7 +310,10 @@ export function SessionScreen({
             <TouchableOpacity
               style={[
                 styles.shortcutPill,
-                toolCallsCount > 0 && styles.shortcutPillActive,
+                {
+                  backgroundColor: toolCallsCount > 0 ? (isDark ? "rgba(99, 102, 241, 0.15)" : "rgba(66, 64, 225, 0.08)") : colors.secondary,
+                  borderColor: toolCallsCount > 0 ? colors.primary : colors.border,
+                },
               ]}
               onPress={() => navigation?.navigate("Timeline", { sessionId })}
               activeOpacity={0.75}
@@ -304,33 +322,43 @@ export function SessionScreen({
             >
               <Layers
                 size={12}
-                color={toolCallsCount > 0 ? COLORS.primary : COLORS.mutedForeground}
+                color={toolCallsCount > 0 ? colors.primary : colors.mutedForeground}
               />
               <Text
                 style={[
                   styles.shortcutPillText,
                   font("semibold"),
-                  toolCallsCount > 0 && { color: COLORS.foreground },
+                  { color: toolCallsCount > 0 ? colors.primary : colors.mutedForeground },
                 ]}
               >
                 Timeline
               </Text>
               {toolCallsCount > 0 ? (
-                <View style={styles.badgeCount}>
-                  <Text style={styles.badgeCountText}>{toolCallsCount}</Text>
+                <View style={[styles.badgeCount, { backgroundColor: colors.primary }]}>
+                  <Text style={[styles.badgeCountText, { color: colors.primaryForeground }]}>
+                    {toolCallsCount}
+                  </Text>
                 </View>
               ) : null}
             </TouchableOpacity>
 
             <TouchableOpacity
-              style={styles.shortcutPill}
+              style={[
+                styles.shortcutPill,
+                {
+                  backgroundColor: colors.secondary,
+                  borderColor: colors.border,
+                },
+              ]}
               onPress={() => navigation?.navigate("Main", { screen: "Terminal" })}
               activeOpacity={0.75}
               accessibilityRole="button"
               accessibilityLabel="Open Terminal"
             >
-              <TerminalSquare size={12} color={COLORS.mutedForeground} />
-              <Text style={[styles.shortcutPillText, font("medium")]}>Terminal</Text>
+              <TerminalSquare size={12} color={colors.mutedForeground} />
+              <Text style={[styles.shortcutPillText, font("medium"), { color: colors.mutedForeground }]}>
+                Terminal
+              </Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -351,17 +379,26 @@ export function SessionScreen({
           ListEmptyComponent={
             loadingHistory ? null : (
               <View style={styles.emptyContainer}>
-                <View style={styles.emptyMascotWrapper}>
+                <View
+                  style={[
+                    styles.emptyMascotWrapper,
+                    {
+                      backgroundColor: colors.card,
+                      borderColor: colors.border,
+                      shadowColor: colors.glassShadow,
+                    },
+                  ]}
+                >
                   <AvaMascot state={isStreaming ? "working" : "idle"} size="lg" />
                 </View>
 
-                <Text style={[styles.emptyTitle, font("bold")]}>
+                <Text style={[styles.emptyTitle, font("bold"), { color: colors.foreground }]}>
                   {status === "submitted" || status === "streaming"
                     ? "Agent is working…"
                     : "Session Ready"}
                 </Text>
 
-                <Text style={[styles.emptySubtitle, font("regular")]}>
+                <Text style={[styles.emptySubtitle, font("regular"), { color: colors.mutedForeground }]}>
                   {status === "submitted" || status === "streaming"
                     ? "Executing tools and generating solution. Output will stream here."
                     : `Active in ${pathSnippet || "workspace"}. Ask a question or run a task to begin.`}
@@ -369,18 +406,24 @@ export function SessionScreen({
 
                 {!isStreaming && (
                   <View style={styles.startersWrap}>
-                    <Text style={[styles.startersHeader, font("semibold")]}>
+                    <Text style={[styles.startersHeader, font("semibold"), { color: colors.mutedForeground }]}>
                       Quick Starters
                     </Text>
                     <View style={styles.startersGrid}>
                       {quickStarters.map((starter, idx) => (
                         <TouchableOpacity
                           key={idx}
-                          style={styles.starterCard}
+                          style={[
+                            styles.starterCard,
+                            {
+                              backgroundColor: colors.card,
+                              borderColor: colors.border,
+                            },
+                          ]}
                           onPress={() => handleSubmit(starter.prompt)}
                           activeOpacity={0.7}
                         >
-                          <Text style={[styles.starterCardText, font("medium")]}>
+                          <Text style={[styles.starterCardText, font("medium"), { color: colors.foreground }]}>
                             {starter.label}
                           </Text>
                         </TouchableOpacity>
@@ -421,17 +464,21 @@ export function SessionScreen({
           ListHeaderComponent={
             loadingHistory ? (
               <View style={styles.historyLoader}>
-                <Shimmer style={styles.historyLoaderText}>Loading session…</Shimmer>
+                <Shimmer style={[styles.historyLoaderText, { color: colors.mutedForeground }]}>
+                  Loading session…
+                </Shimmer>
               </View>
             ) : hasOlder ? (
               <TouchableOpacity
-                style={styles.loadOlderBtn}
+                style={[styles.loadOlderBtn, { backgroundColor: colors.secondary }]}
                 onPress={loadOlder}
                 activeOpacity={0.7}
                 accessibilityRole="button"
                 accessibilityLabel="Load earlier messages"
               >
-                <Text style={styles.loadOlderText}>Load earlier messages</Text>
+                <Text style={[styles.loadOlderText, { color: colors.mutedForeground }]}>
+                  Load earlier messages
+                </Text>
               </TouchableOpacity>
             ) : null
           }
@@ -439,30 +486,45 @@ export function SessionScreen({
 
         {showScrollBottomBtn && (
           <TouchableOpacity
-            style={styles.floatingScrollBtn}
+            style={[
+              styles.floatingScrollBtn,
+              {
+                backgroundColor: colors.card,
+                borderColor: colors.border,
+                shadowColor: colors.glassShadow,
+              },
+            ]}
             onPress={scrollToBottom}
             activeOpacity={0.8}
             accessibilityRole="button"
             accessibilityLabel="Scroll to bottom"
           >
-            <ChevronDown size={18} color={COLORS.foreground} />
-            {isStreaming && <View style={styles.scrollBtnDot} />}
+            <ChevronDown size={18} color={colors.foreground} />
+            {isStreaming && <View style={[styles.scrollBtnDot, { backgroundColor: colors.primary }]} />}
           </TouchableOpacity>
         )}
 
         {error ? (
           <View style={styles.errorContainer}>
-            <Text style={styles.errorBannerText}>{error}</Text>
+            <Text style={[styles.errorBannerText, { color: colors.destructive }]}>{error}</Text>
           </View>
         ) : null}
 
         {/* Queued items banner */}
         {queuedPrompts && queuedPrompts.length > 0 ? (
-          <View style={styles.queueContainer}>
+          <View
+            style={[
+              styles.queueContainer,
+              {
+                backgroundColor: colors.card,
+                borderColor: colors.border,
+              },
+            ]}
+          >
             <View style={styles.queueHeader}>
               <View style={styles.queueHeaderLeft}>
-                <Clock size={13} color={COLORS.primary} />
-                <Text style={styles.queueTitle}>
+                <Clock size={13} color={colors.primary} />
+                <Text style={[styles.queueTitle, { color: colors.foreground }]}>
                   {queuedPrompts.length} queued{" "}
                   {queuedPrompts.length === 1 ? "prompt" : "prompts"}
                 </Text>
@@ -470,7 +532,7 @@ export function SessionScreen({
               {status === "ready" ? (
                 <TouchableOpacity
                   onPress={resume}
-                  style={styles.queueRunNowBtn}
+                  style={[styles.queueRunNowBtn, { backgroundColor: colors.primary }]}
                   activeOpacity={0.7}
                   accessibilityRole="button"
                   accessibilityLabel="Start next queued prompt"
@@ -481,8 +543,17 @@ export function SessionScreen({
               ) : null}
             </View>
             {queuedPrompts.map((q) => (
-              <View key={q.id} style={styles.queueItem}>
-                <Text style={styles.queueItemText} numberOfLines={1}>
+              <View
+                key={q.id}
+                style={[
+                  styles.queueItem,
+                  { backgroundColor: colors.secondary },
+                ]}
+              >
+                <Text
+                  style={[styles.queueItemText, { color: colors.mutedForeground }]}
+                  numberOfLines={1}
+                >
                   {q.text}
                 </Text>
                 <TouchableOpacity
@@ -491,7 +562,7 @@ export function SessionScreen({
                   accessibilityRole="button"
                   accessibilityLabel="Remove queued prompt"
                 >
-                  <X size={13} color={COLORS.mutedForeground} />
+                  <X size={13} color={colors.mutedForeground} />
                 </TouchableOpacity>
               </View>
             ))}
@@ -500,10 +571,18 @@ export function SessionScreen({
 
         {/* Live streaming / processing banner */}
         {isStreaming ? (
-          <View style={styles.liveStatusBar}>
+          <View
+            style={[
+              styles.liveStatusBar,
+              {
+                backgroundColor: isDark ? "rgba(99, 102, 241, 0.08)" : "rgba(66, 64, 225, 0.05)",
+                borderColor: colors.primary,
+              },
+            ]}
+          >
             <View style={styles.liveStatusLeft}>
               <View style={styles.livePulseDot} />
-              <Shimmer style={styles.liveStatusText}>
+              <Shimmer style={[styles.liveStatusText, { color: colors.foreground }]}>
                 {status === "submitted"
                   ? "AvA is preparing response…"
                   : "AvA is executing tools & generating response…"}
@@ -511,13 +590,19 @@ export function SessionScreen({
             </View>
             <TouchableOpacity
               onPress={stop}
-              style={styles.liveStopBtn}
+              style={[
+                styles.liveStopBtn,
+                {
+                  backgroundColor: isDark ? "rgba(239, 68, 68, 0.18)" : "rgba(239, 68, 68, 0.1)",
+                  borderColor: isDark ? "rgba(239, 68, 68, 0.35)" : "rgba(239, 68, 68, 0.25)",
+                },
+              ]}
               activeOpacity={0.7}
               accessibilityRole="button"
               accessibilityLabel="Stop agent response"
             >
-              <Square size={10} color={COLORS.destructive} fill={COLORS.destructive} />
-              <Text style={styles.liveStopText}>Stop</Text>
+              <Square size={10} color={colors.destructive} fill={colors.destructive} />
+              <Text style={[styles.liveStopText, { color: colors.destructive }]}>Stop</Text>
             </TouchableOpacity>
           </View>
         ) : null}
@@ -525,8 +610,8 @@ export function SessionScreen({
         {/* Stopping indicator banner */}
         {status === "stopping" ? (
           <View style={styles.stoppingContainer}>
-            <ActivityIndicator size="small" color={COLORS.warning} />
-            <Text style={styles.stoppingText}>Stopping agent…</Text>
+            <ActivityIndicator size="small" color={colors.warning} />
+            <Text style={[styles.stoppingText, { color: colors.warning }]}>Stopping agent…</Text>
           </View>
         ) : null}
 
@@ -539,7 +624,7 @@ export function SessionScreen({
             onClear={clear}
             status={status}
           />
-          <Text style={styles.disclaimerText}>
+          <Text style={[styles.disclaimerText, { color: colors.mutedForeground }]}>
             {APP.name} can make mistakes. Review generated code before using it.
           </Text>
         </View>
@@ -556,11 +641,9 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    paddingHorizontal: 12,
-    paddingVertical: 7,
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.border,
-    backgroundColor: COLORS.glassBg,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderBottomWidth: StyleSheet.hairlineWidth,
     gap: 8,
   },
   sessionMetaPill: {
@@ -572,16 +655,13 @@ const styles = StyleSheet.create({
   },
   sessionMetaText: {
     fontSize: 12,
-    color: COLORS.foreground,
     maxWidth: 110,
   },
   metaDot: {
     fontSize: 11,
-    color: COLORS.mutedForeground,
   },
   sessionPathText: {
     fontSize: 11,
-    color: COLORS.mutedForeground,
     flexShrink: 1,
   },
   topActionsRow: {
@@ -596,20 +676,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 9,
     paddingVertical: 5,
     borderRadius: 999,
-    backgroundColor: COLORS.secondary,
     borderWidth: 1,
-    borderColor: COLORS.glassBorder,
-  },
-  shortcutPillActive: {
-    backgroundColor: COLORS.glassBg,
-    borderColor: COLORS.primary,
   },
   shortcutPillText: {
     fontSize: 11,
-    color: COLORS.mutedForeground,
   },
   badgeCount: {
-    backgroundColor: COLORS.primary,
     borderRadius: 8,
     paddingHorizontal: 5,
     paddingVertical: 1,
@@ -620,7 +692,6 @@ const styles = StyleSheet.create({
   badgeCountText: {
     fontSize: 9,
     fontWeight: "700",
-    color: COLORS.primaryForeground,
   },
   listContent: {
     paddingHorizontal: 14,
@@ -633,21 +704,18 @@ const styles = StyleSheet.create({
   },
   historyLoaderText: {
     fontSize: 13,
-    color: COLORS.mutedForeground,
   },
   loadOlderBtn: {
     alignSelf: "center",
     paddingVertical: 8,
     paddingHorizontal: 14,
     borderRadius: 999,
-    backgroundColor: COLORS.secondary,
     marginBottom: 8,
     minHeight: 36,
     justifyContent: "center",
   },
   loadOlderText: {
     fontSize: 12,
-    color: COLORS.mutedForeground,
     fontWeight: "500",
   },
   emptyContainer: {
@@ -659,12 +727,9 @@ const styles = StyleSheet.create({
   },
   emptyMascotWrapper: {
     marginBottom: 16,
-    padding: 10,
+    padding: 12,
     borderRadius: 999,
-    backgroundColor: COLORS.glassBg,
     borderWidth: 1,
-    borderColor: COLORS.glassBorder,
-    shadowColor: COLORS.glassShadow,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.1,
     shadowRadius: 10,
@@ -672,13 +737,11 @@ const styles = StyleSheet.create({
   },
   emptyTitle: {
     fontSize: 18,
-    color: COLORS.foreground,
     textAlign: "center",
     marginBottom: 6,
   },
   emptySubtitle: {
     fontSize: 13,
-    color: COLORS.mutedForeground,
     textAlign: "center",
     lineHeight: 18,
     maxWidth: 300,
@@ -691,7 +754,6 @@ const styles = StyleSheet.create({
   },
   startersHeader: {
     fontSize: 11,
-    color: COLORS.mutedForeground,
     textTransform: "uppercase",
     letterSpacing: 0.5,
     marginBottom: 2,
@@ -704,13 +766,10 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   starterCard: {
-    paddingHorizontal: 13,
+    paddingHorizontal: 14,
     paddingVertical: 8,
     borderRadius: 999,
-    backgroundColor: COLORS.glassBg,
     borderWidth: 1,
-    borderColor: COLORS.border,
-    shadowColor: COLORS.glassShadow,
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.05,
     shadowRadius: 3,
@@ -718,7 +777,6 @@ const styles = StyleSheet.create({
   },
   starterCardText: {
     fontSize: 12,
-    color: COLORS.foreground,
   },
   liveStatusBar: {
     flexDirection: "row",
@@ -729,10 +787,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 8,
     borderRadius: 12,
-    backgroundColor: COLORS.glassBg,
     borderWidth: 1,
-    borderColor: COLORS.primary,
-    shadowColor: COLORS.primary,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.08,
     shadowRadius: 6,
@@ -752,7 +807,6 @@ const styles = StyleSheet.create({
   },
   liveStatusText: {
     fontSize: 12,
-    color: COLORS.foreground,
     fontWeight: "500",
     flex: 1,
   },
@@ -763,21 +817,17 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 6,
-    backgroundColor: "rgba(239, 68, 68, 0.12)",
     borderWidth: 1,
-    borderColor: "rgba(239, 68, 68, 0.25)",
   },
   liveStopText: {
     fontSize: 11,
     fontWeight: "600",
-    color: COLORS.destructive,
   },
   errorContainer: {
     paddingHorizontal: 16,
     marginVertical: 4,
   },
   errorBannerText: {
-    color: COLORS.destructive,
     fontSize: 12,
     backgroundColor: "rgba(239, 68, 68, 0.1)",
     padding: 8,
@@ -792,7 +842,6 @@ const styles = StyleSheet.create({
   },
   disclaimerText: {
     fontSize: 11,
-    color: COLORS.mutedForeground,
     textAlign: "center",
     marginTop: 6,
   },
@@ -801,9 +850,7 @@ const styles = StyleSheet.create({
     marginBottom: 6,
     padding: 10,
     borderRadius: 12,
-    backgroundColor: COLORS.card,
     borderWidth: 1,
-    borderColor: COLORS.border,
     gap: 6,
   },
   queueHeader: {
@@ -819,13 +866,11 @@ const styles = StyleSheet.create({
   queueTitle: {
     fontSize: 12,
     fontWeight: "600",
-    color: COLORS.foreground,
   },
   queueRunNowBtn: {
     flexDirection: "row",
     alignItems: "center",
     gap: 4,
-    backgroundColor: COLORS.primary,
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 6,
@@ -834,20 +879,18 @@ const styles = StyleSheet.create({
   queueRunNowText: {
     fontSize: 11,
     fontWeight: "600",
-    color: COLORS.primaryForeground,
+    color: "#FFFFFF",
   },
   queueItem: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    backgroundColor: COLORS.secondary,
     paddingHorizontal: 8,
     paddingVertical: 6,
     borderRadius: 6,
   },
   queueItemText: {
     fontSize: 12,
-    color: COLORS.mutedForeground,
     flex: 1,
     marginRight: 8,
   },
@@ -865,7 +908,6 @@ const styles = StyleSheet.create({
   },
   stoppingText: {
     fontSize: 12,
-    color: COLORS.warning,
     fontWeight: "500",
   },
   floatingScrollBtn: {
@@ -875,12 +917,9 @@ const styles = StyleSheet.create({
     width: 38,
     height: 38,
     borderRadius: 19,
-    backgroundColor: COLORS.card,
     borderWidth: 1,
-    borderColor: COLORS.glassBorder,
     alignItems: "center",
     justifyContent: "center",
-    shadowColor: COLORS.glassShadow,
     shadowOffset: { width: 0, height: 3 },
     shadowOpacity: 0.18,
     shadowRadius: 6,
@@ -894,6 +933,5 @@ const styles = StyleSheet.create({
     width: 7,
     height: 7,
     borderRadius: 3.5,
-    backgroundColor: COLORS.primary,
   },
 });

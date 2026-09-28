@@ -1,5 +1,7 @@
 import React, { useEffect, useRef } from "react";
-import { Animated, type StyleProp, StyleSheet, Text, type TextStyle } from "react-native";
+import { Animated, type StyleProp, StyleSheet, Text, type TextStyle,
+  Platform,
+} from "react-native";
 import { COLORS } from "@/theme/colors";
 
 export function Shimmer({
@@ -17,12 +19,12 @@ export function Shimmer({
         Animated.timing(opacity, {
           toValue: 1,
           duration: 1000,
-          useNativeDriver: true,
+          useNativeDriver: Platform.OS !== "web",
         }),
         Animated.timing(opacity, {
           toValue: 0.4,
           duration: 1000,
-          useNativeDriver: true,
+          useNativeDriver: Platform.OS !== "web",
         }),
       ])
     );

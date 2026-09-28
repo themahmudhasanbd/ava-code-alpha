@@ -4,6 +4,7 @@ import {
   StyleSheet,
   TouchableOpacity,
   type ViewStyle,
+  Platform,
 } from "react-native";
 import { COLORS } from "@/theme/colors";
 
@@ -26,7 +27,7 @@ export function Switch({
     Animated.timing(animatedValue, {
       toValue: checked ? 1 : 0,
       duration: 180,
-      useNativeDriver: true,
+      useNativeDriver: Platform.OS !== "web",
     }).start();
   }, [checked, animatedValue]);
 

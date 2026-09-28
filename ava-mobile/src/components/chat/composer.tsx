@@ -387,12 +387,12 @@ export const Composer = forwardRef<TextInput, Props>(
             Animated.timing(pulseAnim, {
               toValue: 1.2,
               duration: 600,
-              useNativeDriver: true,
+              useNativeDriver: Platform.OS !== "web",
             }),
             Animated.timing(pulseAnim, {
               toValue: 1.0,
               duration: 600,
-              useNativeDriver: true,
+              useNativeDriver: Platform.OS !== "web",
             }),
           ])
         );

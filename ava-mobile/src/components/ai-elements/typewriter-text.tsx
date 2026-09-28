@@ -7,6 +7,7 @@ import {
   type StyleProp,
   type TextStyle,
   type ViewStyle,
+  Platform,
 } from "react-native";
 import { COLORS } from "@/theme/colors";
 import { font, mono } from "@/theme/fonts";
@@ -39,12 +40,12 @@ export function TypewriterText({
         Animated.timing(cursorOpacity, {
           toValue: 1,
           duration: 380,
-          useNativeDriver: true,
+          useNativeDriver: Platform.OS !== "web",
         }),
         Animated.timing(cursorOpacity, {
           toValue: 0.1,
           duration: 380,
-          useNativeDriver: true,
+          useNativeDriver: Platform.OS !== "web",
         }),
       ])
     );
@@ -86,12 +87,12 @@ export function TypingBlinker({
         Animated.timing(cursorOpacity, {
           toValue: 1,
           duration: 400,
-          useNativeDriver: true,
+          useNativeDriver: Platform.OS !== "web",
         }),
         Animated.timing(cursorOpacity, {
           toValue: 0.1,
           duration: 400,
-          useNativeDriver: true,
+          useNativeDriver: Platform.OS !== "web",
         }),
       ])
     );

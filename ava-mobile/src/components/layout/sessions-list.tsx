@@ -9,6 +9,8 @@ import {
   Modal,
   TextInput,
   TouchableWithoutFeedback,
+  Platform,
+  ActivityIndicator,
 } from "react-native";
 import {
   Plus,
@@ -21,13 +23,13 @@ import {
   PinOff,
 } from "lucide-react-native";
 import { Button } from "@/components/ui/button";
-import { GlassCapsule, SkeletonRows, DrawerSessionsSkeleton } from "@/components/kit";
+import { DrawerSessionsSkeleton } from "@/components/kit";
 import { storage } from "@/core/storage";
 import { useAva } from "@/state/ava-provider";
 import { useSessions, useDeleteSession, useRenameSession } from "@/state/queries";
 import type { Session } from "@/core/types";
 import { COLORS } from "@/theme/colors";
-import { font } from "@/theme/fonts";
+import { font, mono } from "@/theme/fonts";
 
 const PIN_KEY = "ava.workspace.pins";
 
@@ -104,14 +106,18 @@ export function SessionsList({
   }, [sessions, pins, activeDirectory]);
 
   const toggleExpand = (dir: string) => {
-    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+    if (Platform.OS !== "web") {
+      LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+    }
     setExpandedDirs((prev) =>
       prev.includes(dir) ? prev.filter((d) => d !== dir) : [...prev, dir]
     );
   };
 
   const togglePin = (dir: string) => {
-    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+    if (Platform.OS !== "web") {
+      LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+    }
     setPins((prev) => {
       const next = prev.includes(dir)
         ? prev.filter((d) => d !== dir)
@@ -174,19 +180,19 @@ export function SessionsList({
         onPress={() => handlePick(null)}
       >
         <Plus size={16} color={COLORS.foreground} />
-        <Text style={styles.newButtonText}>New Session</Text>
+        <Text style={[styles.newButtonText, font("medium")]}>New Session</Text>
       </Button>
 
       {status !== "online" && (
-        <Text style={styles.infoText}>Connecting to server...</Text>
+        <Text style={[styles.infoText, font("regular")]}>Connecting to server...</Text>
       )}
 
       {isLoading && <DrawerSessionsSkeleton count={2} />}
 
-      {error && <Text style={styles.errorText}>Could not load sessions.</Text>}
+      {error && <Text style={[styles.errorText, font("regular")]}>Could not load sessions.</Text>}
 
       {sessions.length === 0 && !isLoading && (
-        <Text style={styles.infoText}>No sessions yet.</Text>
+        <Text style={[styles.infoText, font("regular")]}>No sessions yet.</Text>
       )}
 
       <View style={styles.groupsContainer}>
@@ -214,33 +220,24 @@ export function SessionsList({
                 {isExpanded ? (
                   <ChevronDown
                     size={14}
-                    color={
-                      isActiveWorkspace
-                        ? COLORS.primary
-                        : COLORS.mutedForeground
-                    }
+                    color={isActiveWorkspace ? COLORS.primary : COLORS.mutedForeground}
                   />
                 ) : (
                   <ChevronRight
                     size={14}
-                    color={
-                      isActiveWorkspace
-                        ? COLORS.primary
-                        : COLORS.mutedForeground
-                    }
+                    color={isActiveWorkspace ? COLORS.primary : COLORS.mutedForeground}
                   />
                 )}
                 <Folder
                   size={15}
-                  color={
-                    isActiveWorkspace ? COLORS.primary : COLORS.mutedForeground
-                  }
+                  color={isActiveWorkspace ? COLORS.primary : COLORS.mutedForeground}
                 />
                 <View style={styles.groupInfoCol}>
                   <View style={styles.groupTitleRow}>
                     <Text
                       style={[
                         styles.groupTitle,
+                        font("semibold", projectName(dir)),
                         isActiveWorkspace && styles.activeGroupTitle,
                       ]}
                       numberOfLines={1}
@@ -248,32 +245,29 @@ export function SessionsList({
                       {projectName(dir)}
                     </Text>
                     {isActiveWorkspace && (
-                      <GlassCapsule
-                        label="Active"
-                        variant="primary"
-                        size="xs"
-                        active
-                      />
+                      <View style={styles.activeWorkspaceBadge}>
+                        <Text style={[styles.activeWorkspaceBadgeText, font("bold")]}>
+                          Active
+                        </Text>
+                      </View>
                     )}
                     {isPinned && !isActiveWorkspace && (
-                      <GlassCapsule
-                        icon={Pin}
-                        label="Pinned"
-                        variant="secondary"
-                        size="xs"
-                      />
+                      <View style={styles.pinnedBadge}>
+                        <Pin size={9.5} color={COLORS.primary} />
+                        <Text style={[styles.pinnedBadgeText, font("semibold")]}>
+                          Pinned
+                        </Text>
+                      </View>
                     )}
                   </View>
-                  <Text style={styles.pathTag} numberOfLines={1}>
+                  <Text style={[styles.pathTag, mono("regular")]} numberOfLines={1}>
                     {dir}
                   </Text>
                 </View>
 
-                <GlassCapsule
-                  label={`${dirSessions.length}`}
-                  variant="default"
-                  size="xs"
-                />
+                <View style={styles.countBadge}>
+                  <Text style={[styles.groupCount, mono("medium")]}>{dirSessions.length}</Text>
+                </View>
 
                 <TouchableOpacity
                   style={styles.pinBtn}
@@ -301,53 +295,70 @@ export function SessionsList({
                       workingSessionId === session.id;
 
                     return (
-                      <View key={session.id} style={styles.sessionRow}>
+                      <View
+                        key={session.id}
+                        style={[
+                          styles.sessionRow,
+                          isActive && styles.sessionRowActive,
+                        ]}
+                      >
                         <TouchableOpacity
                           activeOpacity={0.7}
                           onPress={() => handlePick(session.id)}
-                          style={[
-                            styles.sessionButton,
-                            isActive && styles.activeSessionButton,
-                          ]}
+                          style={styles.sessionButton}
                         >
-                          {isActive && <View style={styles.activeDot} />}
+                          {isRunning ? (
+                            <ActivityIndicator
+                              size="small"
+                              color={COLORS.primary}
+                              style={{ transform: [{ scale: 0.7 }] }}
+                            />
+                          ) : (
+                            <View
+                              style={[
+                                styles.sessionDot,
+                                isActive && styles.sessionDotActive,
+                              ]}
+                            />
+                          )}
                           <Text
                             style={[
                               styles.sessionTitle,
+                              font(isActive ? "medium" : "regular", session.title || "Untitled Session"),
                               isActive && styles.activeSessionTitle,
                             ]}
                             numberOfLines={1}
                           >
                             {session.title || "Untitled Session"}
                           </Text>
-                          {isRunning ? (
-                            <GlassCapsule
-                              label="Running"
-                              variant="primary"
-                              size="xs"
-                              active
-                              statusDot="busy"
-                            />
-                          ) : null}
+                          {isRunning && (
+                            <View style={styles.runningBadge}>
+                              <Text style={[styles.runningBadgeText, font("bold")]}>
+                                Running
+                              </Text>
+                            </View>
+                          )}
                         </TouchableOpacity>
 
-                        <TouchableOpacity
-                          activeOpacity={0.7}
-                          onPress={() => handleOpenRename(session)}
-                          style={styles.actionButton}
-                          hitSlop={{ top: 8, bottom: 8, left: 6, right: 6 }}
-                        >
-                          <Edit2 size={12} color={COLORS.mutedForeground} />
-                        </TouchableOpacity>
+                        <View style={styles.sessionActions}>
+                          <TouchableOpacity
+                            activeOpacity={0.7}
+                            onPress={() => handleOpenRename(session)}
+                            style={styles.actionButton}
+                            hitSlop={{ top: 8, bottom: 8, left: 6, right: 6 }}
+                          >
+                            <Edit2 size={12} color={COLORS.mutedForeground} />
+                          </TouchableOpacity>
 
-                        <TouchableOpacity
-                          activeOpacity={0.7}
-                          onPress={() => handleDelete(session)}
-                          style={styles.actionButton}
-                          hitSlop={{ top: 8, bottom: 8, left: 6, right: 6 }}
-                        >
-                          <Trash2 size={12.5} color={COLORS.mutedForeground} />
-                        </TouchableOpacity>
+                          <TouchableOpacity
+                            activeOpacity={0.7}
+                            onPress={() => handleDelete(session)}
+                            style={styles.actionButton}
+                            hitSlop={{ top: 8, bottom: 8, left: 6, right: 6 }}
+                          >
+                            <Trash2 size={12.5} color={COLORS.mutedForeground} />
+                          </TouchableOpacity>
+                        </View>
                       </View>
                     );
                   })}
@@ -385,13 +396,13 @@ export function SessionsList({
                     style={styles.renameCancel}
                     onPress={() => setRenameOpen(false)}
                   >
-                    <Text style={styles.renameCancelText}>Cancel</Text>
+                    <Text style={[styles.renameCancelText, font("medium")]}>Cancel</Text>
                   </TouchableOpacity>
                   <TouchableOpacity
                     style={styles.renameSave}
                     onPress={handleSaveRename}
                   >
-                    <Text style={styles.renameSaveText}>Save</Text>
+                    <Text style={[styles.renameSaveText, font("semibold")]}>Save</Text>
                   </TouchableOpacity>
                 </View>
               </View>
@@ -415,7 +426,6 @@ const styles = StyleSheet.create({
   },
   newButtonText: {
     fontSize: 14,
-    fontWeight: "500",
     color: COLORS.foreground,
   },
   infoText: {
@@ -431,86 +441,136 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   groupsContainer: {
-    gap: 8,
+    gap: 6,
   },
   groupCard: {
-    borderRadius: 14,
-    overflow: "hidden",
+    borderRadius: 12,
+    backgroundColor: "rgba(255, 255, 255, 0.02)",
     borderWidth: 1,
-    borderColor: "transparent",
+    borderColor: "rgba(255, 255, 255, 0.05)",
+    overflow: "hidden",
   },
   activeWorkspaceCard: {
-    backgroundColor: "rgba(66, 64, 225, 0.04)",
-    borderColor: "rgba(66, 64, 225, 0.2)",
+    backgroundColor: "rgba(66, 64, 225, 0.05)",
+    borderColor: "rgba(66, 64, 225, 0.22)",
   },
   groupHeader: {
     flexDirection: "row",
     alignItems: "center",
     gap: 8,
     paddingVertical: 8,
-    paddingHorizontal: 8,
+    paddingHorizontal: 10,
     borderRadius: 10,
   },
   activeWorkspaceHeader: {
-    backgroundColor: "rgba(66, 64, 225, 0.06)",
+    backgroundColor: "rgba(66, 64, 225, 0.08)",
   },
   groupInfoCol: {
     flex: 1,
+    minWidth: 0,
   },
   groupTitleRow: {
     flexDirection: "row",
     alignItems: "center",
     gap: 6,
+    flexWrap: "nowrap",
   },
   groupTitle: {
     fontSize: 13,
-    fontWeight: "500",
     color: COLORS.foreground,
+    flexShrink: 1,
   },
   activeGroupTitle: {
     color: COLORS.primary,
-    fontWeight: "700",
+  },
+  activeWorkspaceBadge: {
+    paddingHorizontal: 5,
+    paddingVertical: 1,
+    borderRadius: 5,
+    backgroundColor: "rgba(66, 64, 225, 0.14)",
+  },
+  activeWorkspaceBadgeText: {
+    fontSize: 9,
+    color: COLORS.primary,
+    textTransform: "uppercase",
+    letterSpacing: 0.3,
+  },
+  pinnedBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 2.5,
+    paddingHorizontal: 5,
+    paddingVertical: 1,
+    borderRadius: 5,
+    backgroundColor: COLORS.secondary,
+  },
+  pinnedBadgeText: {
+    fontSize: 9,
+    color: COLORS.primary,
   },
   pathTag: {
-    fontSize: 10.5,
+    fontSize: 10,
     color: COLORS.mutedForeground,
     marginTop: 1,
+    opacity: 0.8,
+  },
+  countBadge: {
+    paddingHorizontal: 5,
+    paddingVertical: 1,
+    borderRadius: 8,
+    backgroundColor: COLORS.secondary,
+  },
+  groupCount: {
+    fontSize: 10.5,
+    color: COLORS.mutedForeground,
   },
   pinBtn: {
-    padding: 4,
-    marginLeft: 4,
+    padding: 3,
+    marginLeft: 2,
   },
   sessionList: {
-    marginLeft: 18,
+    marginLeft: 14,
+    marginRight: 6,
     borderLeftWidth: 1.5,
     borderLeftColor: "rgba(66, 64, 225, 0.2)",
-    paddingLeft: 10,
+    paddingLeft: 8,
     gap: 2,
-    marginTop: 4,
-    marginBottom: 8,
+    paddingTop: 4,
+    paddingBottom: 6,
   },
   sessionRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 2,
+    justifyContent: "space-between",
+    borderRadius: 8,
+    paddingHorizontal: 4,
+    minHeight: 34,
+  },
+  sessionRowActive: {
+    backgroundColor: COLORS.sidebarAccent,
   },
   sessionButton: {
     flex: 1,
-    paddingVertical: 7,
-    paddingHorizontal: 8,
-    borderRadius: 8,
+    paddingVertical: 6,
+    paddingRight: 4,
     flexDirection: "row",
     alignItems: "center",
-    gap: 6,
+    gap: 7,
+    minWidth: 0,
   },
-  activeSessionButton: {
-    backgroundColor: COLORS.sidebarAccent,
+  sessionDot: {
+    width: 4,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: COLORS.mutedForeground,
+    opacity: 0.4,
   },
-  activeDot: {
+  sessionDotActive: {
     width: 5,
     height: 5,
     borderRadius: 2.5,
     backgroundColor: COLORS.primary,
+    opacity: 1,
   },
   sessionTitle: {
     fontSize: 12.5,
@@ -519,11 +579,27 @@ const styles = StyleSheet.create({
   },
   activeSessionTitle: {
     color: COLORS.foreground,
-    fontWeight: "600",
+  },
+  sessionActions: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 1,
   },
   actionButton: {
-    padding: 6,
-    borderRadius: 6,
+    padding: 5,
+    borderRadius: 5,
+    opacity: 0.65,
+  },
+  runningBadge: {
+    paddingHorizontal: 5,
+    paddingVertical: 1,
+    borderRadius: 5,
+    backgroundColor: "rgba(66, 64, 225, 0.12)",
+    marginLeft: 4,
+  },
+  runningBadgeText: {
+    fontSize: 9,
+    color: COLORS.primary,
   },
   modalBackdrop: {
     flex: 1,

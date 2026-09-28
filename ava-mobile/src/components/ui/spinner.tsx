@@ -1,5 +1,7 @@
 import React, { useEffect, useRef } from "react";
-import { Animated, Easing, StyleSheet, View, type ViewStyle } from "react-native";
+import { Animated, Easing, StyleSheet, View, type ViewStyle,
+  Platform,
+} from "react-native";
 import { Loader2 } from "lucide-react-native";
 import { COLORS } from "@/theme/colors";
 
@@ -20,7 +22,7 @@ export function Spinner({
         toValue: 1,
         duration: 900,
         easing: Easing.linear,
-        useNativeDriver: true,
+        useNativeDriver: Platform.OS !== "web",
       })
     );
     anim.start();

@@ -7,6 +7,7 @@ import {
   View,
   type ViewStyle,
   type StyleProp,
+  Platform,
 } from "react-native";
 import { Activity, Zap } from "lucide-react-native";
 import { COLORS } from "@/theme/colors";
@@ -42,13 +43,13 @@ export function RuntimeDottedIndicator({
             toValue: 1,
             duration: 350,
             easing: Easing.out(Easing.ease),
-            useNativeDriver: true,
+            useNativeDriver: Platform.OS !== "web",
           }),
           Animated.timing(val, {
             toValue: 0,
             duration: 350,
             easing: Easing.in(Easing.ease),
-            useNativeDriver: true,
+            useNativeDriver: Platform.OS !== "web",
           }),
           Animated.delay(Math.max(0, 700 - delay)),
         ])

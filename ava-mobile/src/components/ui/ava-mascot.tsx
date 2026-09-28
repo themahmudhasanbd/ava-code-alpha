@@ -1,5 +1,7 @@
 import React, { useEffect, useRef } from "react";
-import { Animated, StyleSheet, View, type ViewStyle } from "react-native";
+import { Animated, StyleSheet, View, type ViewStyle,
+  Platform,
+} from "react-native";
 import { COLORS } from "@/theme/colors";
 
 export type AvaMascotState = "idle" | "thinking" | "working" | "complete" | "error";
@@ -37,24 +39,24 @@ export function AvaMascot({
           Animated.timing(breathScale, {
             toValue: 1.05,
             duration: cycleDuration,
-            useNativeDriver: true,
+            useNativeDriver: Platform.OS !== "web",
           }),
           Animated.timing(breathRotate, {
             toValue: 1,
             duration: cycleDuration,
-            useNativeDriver: true,
+            useNativeDriver: Platform.OS !== "web",
           }),
         ]),
         Animated.parallel([
           Animated.timing(breathScale, {
             toValue: 1.0,
             duration: cycleDuration,
-            useNativeDriver: true,
+            useNativeDriver: Platform.OS !== "web",
           }),
           Animated.timing(breathRotate, {
             toValue: -1,
             duration: cycleDuration,
-            useNativeDriver: true,
+            useNativeDriver: Platform.OS !== "web",
           }),
         ]),
       ])
@@ -67,12 +69,12 @@ export function AvaMascot({
         Animated.timing(eyeScaleY, {
           toValue: 0.12,
           duration: 110,
-          useNativeDriver: true,
+          useNativeDriver: Platform.OS !== "web",
         }),
         Animated.timing(eyeScaleY, {
           toValue: 1,
           duration: 110,
-          useNativeDriver: true,
+          useNativeDriver: Platform.OS !== "web",
         }),
       ]).start();
     }, 5800);
@@ -86,18 +88,18 @@ export function AvaMascot({
             Animated.timing(ringOpacity, {
               toValue: 0.7,
               duration: 200,
-              useNativeDriver: true,
+              useNativeDriver: Platform.OS !== "web",
             }),
             Animated.timing(ringOpacity, {
               toValue: 0,
               duration: 1450,
-              useNativeDriver: true,
+              useNativeDriver: Platform.OS !== "web",
             }),
           ]),
           Animated.timing(ringScale, {
             toValue: 1.35,
             duration: 1650,
-            useNativeDriver: true,
+            useNativeDriver: Platform.OS !== "web",
           }),
         ])
       );

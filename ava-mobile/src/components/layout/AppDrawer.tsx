@@ -27,7 +27,6 @@ import {
   PinOff,
   Plus,
   Trash2,
-  User,
   X,
 } from "lucide-react-native";
 import { StatusDot, DrawerSessionsSkeleton } from "@/components/kit";
@@ -101,9 +100,9 @@ export function AppDrawer(props: DrawerContentComponentProps) {
   useEffect(() => {
     Animated.timing(tabAnim, {
       toValue: tab === "menu" ? 0 : 1,
-      duration: 160,
+      duration: 180,
       easing: Easing.out(Easing.cubic),
-      useNativeDriver: true,
+      useNativeDriver: Platform.OS !== "web",
     }).start();
   }, [tab, tabAnim]);
 
@@ -234,7 +233,7 @@ export function AppDrawer(props: DrawerContentComponentProps) {
   const singleTabWidth = tabWidth > 0 ? (tabWidth - 6) / 2 : 0;
   const indicatorTranslateX = tabAnim.interpolate({
     inputRange: [0, 1],
-    outputRange: [0, singleTabWidth],
+    outputRange: [0, singleTabWidth > 0 ? singleTabWidth : 130],
   });
 
   const profile = userProfileData?.profile;
@@ -281,17 +280,15 @@ export function AppDrawer(props: DrawerContentComponentProps) {
               style={styles.tabsList}
               onLayout={(e) => setTabWidth(e.nativeEvent.layout.width)}
             >
-              {singleTabWidth > 0 && (
-                <Animated.View
-                  style={[
-                    styles.tabIndicator,
-                    {
-                      width: singleTabWidth,
-                      transform: [{ translateX: indicatorTranslateX }],
-                    },
-                  ]}
-                />
-              )}
+              <Animated.View
+                style={[
+                  styles.tabIndicator,
+                  {
+                    width: singleTabWidth > 0 ? singleTabWidth : "48%",
+                    transform: [{ translateX: indicatorTranslateX }],
+                  },
+                ]}
+              />
               <TouchableOpacity
                 style={styles.tabBtn}
                 onPress={() => setTab("menu")}
@@ -471,7 +468,7 @@ export function AppDrawer(props: DrawerContentComponentProps) {
                               {isActiveWorkspace && (
                                 <View style={styles.activeWorkspaceBadge}>
                                   <Text style={[styles.activeWorkspaceBadgeText, font("bold")]}>
-                                    Workspace
+                                    Active
                                   </Text>
                                 </View>
                               )}
@@ -479,7 +476,7 @@ export function AppDrawer(props: DrawerContentComponentProps) {
                               {/* Pinned Pill Tag */}
                               {isPinned && !isActiveWorkspace && (
                                 <View style={styles.pinnedBadge}>
-                                  <Pin size={10} color={COLORS.primary} />
+                                  <Pin size={9.5} color={COLORS.primary} />
                                   <Text style={[styles.pinnedBadgeText, font("semibold")]}>
                                     Pinned
                                   </Text>
@@ -492,21 +489,26 @@ export function AppDrawer(props: DrawerContentComponentProps) {
                             </Text>
                           </View>
 
-                          <Text style={[styles.groupCount, mono("medium")]}>{sList.length}</Text>
+                          <View style={styles.groupHeaderRight}>
+                            <View style={styles.countBadge}>
+                              <Text style={[styles.groupCount, mono("medium")]}>{sList.length}</Text>
+                            </View>
 
-                          {/* Quick Pin / Unpin Action */}
-                          <TouchableOpacity
-                            style={styles.pinBtn}
-                            onPress={() => togglePin(dir)}
-                            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                            activeOpacity={0.7}
-                          >
-                            {isPinned ? (
-                              <PinOff size={13} color={COLORS.primary} />
-                            ) : (
-                              <Pin size={13} color={COLORS.mutedForeground} />
-                            )}
-                          </TouchableOpacity>
+                            {/* Quick Pin / Unpin Action */}
+                            <TouchableOpacity
+                              style={styles.pinBtn}
+                              onPress={() => togglePin(dir)}
+                              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                              activeOpacity={0.7}
+                              accessibilityLabel={isPinned ? "Unpin workspace" : "Pin workspace"}
+                            >
+                              {isPinned ? (
+                                <PinOff size={13} color={COLORS.primary} />
+                              ) : (
+                                <Pin size={13} color={COLORS.mutedForeground} />
+                              )}
+                            </TouchableOpacity>
+                          </View>
                         </TouchableOpacity>
 
                         {/* Smooth Collapsible Session List */}
@@ -523,12 +525,15 @@ export function AppDrawer(props: DrawerContentComponentProps) {
                                 !!runningSessions?.[s.id] ||
                                 workingSessionId === s.id;
                               return (
-                                <View key={s.id} style={styles.sessionRow}>
+                                <View
+                                  key={s.id}
+                                  style={[
+                                    styles.sessionRow,
+                                    isSelected && styles.sessionRowSelected,
+                                  ]}
+                                >
                                   <TouchableOpacity
-                                    style={[
-                                      styles.sessionBtn,
-                                      isSelected && styles.sessionBtnActive,
-                                    ]}
+                                    style={styles.sessionBtn}
                                     onPress={() => handlePickSession(s.id)}
                                     activeOpacity={0.7}
                                   >
@@ -536,15 +541,20 @@ export function AppDrawer(props: DrawerContentComponentProps) {
                                       <ActivityIndicator
                                         size="small"
                                         color={COLORS.primary}
-                                        style={{ transform: [{ scale: 0.75 }] }}
+                                        style={{ transform: [{ scale: 0.7 }] }}
                                       />
-                                    ) : isSelected ? (
-                                      <View style={styles.activeSessionDot} />
-                                    ) : null}
+                                    ) : (
+                                      <View
+                                        style={[
+                                          styles.sessionDot,
+                                          isSelected && styles.sessionDotSelected,
+                                        ]}
+                                      />
+                                    )}
                                     <Text
                                       style={[
                                         styles.sessionBtnText,
-                                        font("regular", s.title || "Untitled Session"),
+                                        font(isSelected ? "medium" : "regular", s.title || "Untitled Session"),
                                         isSelected && styles.sessionBtnTextActive,
                                       ]}
                                       numberOfLines={1}
@@ -560,27 +570,29 @@ export function AppDrawer(props: DrawerContentComponentProps) {
                                     )}
                                   </TouchableOpacity>
 
-                                  {/* Rename Session Action */}
-                                  <TouchableOpacity
-                                    style={styles.actionBtn}
-                                    onPress={() => handleOpenRename(s)}
-                                    hitSlop={{ top: 8, bottom: 8, left: 6, right: 6 }}
-                                    activeOpacity={0.7}
-                                    accessibilityLabel="Rename session"
-                                  >
-                                    <Edit2 size={12} color={COLORS.mutedForeground} />
-                                  </TouchableOpacity>
+                                  <View style={styles.sessionActions}>
+                                    {/* Rename Session Action */}
+                                    <TouchableOpacity
+                                      style={styles.actionBtn}
+                                      onPress={() => handleOpenRename(s)}
+                                      hitSlop={{ top: 8, bottom: 8, left: 6, right: 6 }}
+                                      activeOpacity={0.7}
+                                      accessibilityLabel="Rename session"
+                                    >
+                                      <Edit2 size={12} color={COLORS.mutedForeground} />
+                                    </TouchableOpacity>
 
-                                  {/* Delete Session with Confirmation */}
-                                  <TouchableOpacity
-                                    style={styles.actionBtn}
-                                    onPress={() => handleDeleteSession(s)}
-                                    hitSlop={{ top: 8, bottom: 8, left: 6, right: 6 }}
-                                    activeOpacity={0.7}
-                                    accessibilityLabel="Delete session"
-                                  >
-                                    <Trash2 size={12.5} color={COLORS.mutedForeground} />
-                                  </TouchableOpacity>
+                                    {/* Delete Session with Confirmation */}
+                                    <TouchableOpacity
+                                      style={styles.actionBtn}
+                                      onPress={() => handleDeleteSession(s)}
+                                      hitSlop={{ top: 8, bottom: 8, left: 6, right: 6 }}
+                                      activeOpacity={0.7}
+                                      accessibilityLabel="Delete session"
+                                    >
+                                      <Trash2 size={12.5} color={COLORS.mutedForeground} />
+                                    </TouchableOpacity>
+                                  </View>
                                 </View>
                               );
                             })}
@@ -857,18 +869,18 @@ const styles = StyleSheet.create({
     marginVertical: 6,
   },
   groupsWrapper: {
-    gap: 8,
+    gap: 6,
   },
   groupContainer: {
-    borderRadius: 14,
-    overflow: "hidden",
+    borderRadius: 12,
+    backgroundColor: "rgba(255, 255, 255, 0.02)",
     borderWidth: 1,
-    borderColor: "transparent",
-    backgroundColor: "transparent",
+    borderColor: "rgba(255, 255, 255, 0.05)",
+    overflow: "hidden",
   },
   activeWorkspaceContainer: {
-    backgroundColor: "rgba(66, 64, 225, 0.04)",
-    borderColor: "rgba(66, 64, 225, 0.2)",
+    backgroundColor: "rgba(66, 64, 225, 0.05)",
+    borderColor: "rgba(66, 64, 225, 0.22)",
   },
   groupHeader: {
     flexDirection: "row",
@@ -876,98 +888,127 @@ const styles = StyleSheet.create({
     gap: 8,
     paddingVertical: 9,
     paddingHorizontal: 10,
-    borderRadius: 12,
+    borderRadius: 10,
   },
   activeWorkspaceHeader: {
-    backgroundColor: "rgba(66, 64, 225, 0.06)",
+    backgroundColor: "rgba(66, 64, 225, 0.08)",
   },
   groupInfoCol: {
     flex: 1,
+    minWidth: 0,
   },
   groupTitleRow: {
     flexDirection: "row",
     alignItems: "center",
     gap: 6,
+    flexWrap: "nowrap",
   },
   groupTitle: {
     fontSize: 13,
-    fontWeight: "500",
+    fontWeight: "600",
     color: COLORS.foreground,
+    flexShrink: 1,
   },
   activeGroupTitle: {
     color: COLORS.primary,
     fontWeight: "700",
   },
   activeWorkspaceBadge: {
-    paddingHorizontal: 6,
-    paddingVertical: 1.5,
-    borderRadius: 6,
-    backgroundColor: "rgba(66, 64, 225, 0.12)",
+    paddingHorizontal: 5,
+    paddingVertical: 1,
+    borderRadius: 5,
+    backgroundColor: "rgba(66, 64, 225, 0.14)",
   },
   activeWorkspaceBadgeText: {
-    fontSize: 9.5,
+    fontSize: 9,
     fontWeight: "700",
     color: COLORS.primary,
+    textTransform: "uppercase",
+    letterSpacing: 0.3,
   },
   pinnedBadge: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 3,
+    gap: 2.5,
     paddingHorizontal: 5,
-    paddingVertical: 1.5,
-    borderRadius: 6,
+    paddingVertical: 1,
+    borderRadius: 5,
     backgroundColor: COLORS.secondary,
   },
   pinnedBadgeText: {
-    fontSize: 9.5,
+    fontSize: 9,
     fontWeight: "600",
     color: COLORS.primary,
   },
   pathTag: {
-    fontSize: 10.5,
+    fontSize: 10,
     color: COLORS.mutedForeground,
     marginTop: 1,
+    opacity: 0.8,
+  },
+  groupHeaderRight: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+  },
+  countBadge: {
+    paddingHorizontal: 5,
+    paddingVertical: 1,
+    borderRadius: 8,
+    backgroundColor: COLORS.secondary,
   },
   groupCount: {
-    fontSize: 11,
+    fontSize: 10.5,
     fontWeight: "600",
     color: COLORS.mutedForeground,
   },
   pinBtn: {
-    padding: 4,
-    marginLeft: 4,
+    padding: 3,
+    borderRadius: 6,
   },
   groupSessionList: {
-    marginLeft: 18,
+    marginLeft: 14,
+    marginRight: 6,
     borderLeftWidth: 1.5,
     borderLeftColor: "rgba(66, 64, 225, 0.2)",
-    paddingLeft: 10,
+    paddingLeft: 8,
     gap: 2,
-    marginTop: 4,
-    marginBottom: 8,
+    paddingTop: 4,
+    paddingBottom: 6,
   },
   sessionRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 3,
+    justifyContent: "space-between",
+    borderRadius: 8,
+    paddingHorizontal: 4,
+    minHeight: 34,
+  },
+  sessionRowSelected: {
+    backgroundColor: COLORS.sidebarAccent,
   },
   sessionBtn: {
     flex: 1,
     flexDirection: "row",
     alignItems: "center",
-    gap: 6,
-    paddingVertical: 7,
-    paddingHorizontal: 8,
-    borderRadius: 8,
+    gap: 7,
+    paddingVertical: 6,
+    paddingRight: 4,
+    minWidth: 0,
   },
-  sessionBtnActive: {
-    backgroundColor: COLORS.sidebarAccent,
+  sessionDot: {
+    width: 4,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: COLORS.mutedForeground,
+    opacity: 0.4,
   },
-  activeSessionDot: {
+  sessionDotSelected: {
     width: 5,
     height: 5,
     borderRadius: 2.5,
     backgroundColor: COLORS.primary,
+    opacity: 1,
   },
   sessionBtnText: {
     fontSize: 12.5,
@@ -978,19 +1019,25 @@ const styles = StyleSheet.create({
     color: COLORS.foreground,
     fontWeight: "600",
   },
+  sessionActions: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 1,
+  },
   actionBtn: {
-    padding: 6,
-    borderRadius: 6,
+    padding: 5,
+    borderRadius: 5,
+    opacity: 0.65,
   },
   runningBadge: {
-    paddingHorizontal: 6,
-    paddingVertical: 1.5,
-    borderRadius: 6,
+    paddingHorizontal: 5,
+    paddingVertical: 1,
+    borderRadius: 5,
     backgroundColor: "rgba(66, 64, 225, 0.12)",
     marginLeft: 4,
   },
   runningBadgeText: {
-    fontSize: 9.5,
+    fontSize: 9,
     fontWeight: "700",
     color: COLORS.primary,
   },

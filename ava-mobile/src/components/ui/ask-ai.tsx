@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   View,
   type ViewStyle,
+  Platform,
 } from "react-native";
 import { ArrowUpRight, Check, Copy } from "lucide-react-native";
 import { Popover, PopoverContent, PopoverTrigger } from "./popover";
@@ -37,12 +38,12 @@ export function AIMascot({
         Animated.timing(eyeScaleY, {
           toValue: 0.12,
           duration: 110,
-          useNativeDriver: true,
+          useNativeDriver: Platform.OS !== "web",
         }),
         Animated.timing(eyeScaleY, {
           toValue: 1,
           duration: 110,
-          useNativeDriver: true,
+          useNativeDriver: Platform.OS !== "web",
         }),
       ]).start();
     }, 6500);

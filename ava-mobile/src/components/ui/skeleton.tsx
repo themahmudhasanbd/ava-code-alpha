@@ -1,6 +1,7 @@
 import * as React from "react";
 import {
   Animated,
+  Platform,
   StyleSheet,
   View,
   type StyleProp,
@@ -25,12 +26,12 @@ export function Skeleton({ style, glass = false }: SkeletonProps) {
         Animated.timing(opacity, {
           toValue: 0.85,
           duration: 800,
-          useNativeDriver: true,
+          useNativeDriver: Platform.OS !== "web",
         }),
         Animated.timing(opacity, {
           toValue: 0.35,
           duration: 800,
-          useNativeDriver: true,
+          useNativeDriver: Platform.OS !== "web",
         }),
       ])
     );
@@ -213,23 +214,23 @@ export function DrawerSessionsSkeleton({ count = 2 }: { count?: number }) {
           {/* Group Header */}
           <View style={styles.drawerGroupHeaderSkeleton}>
             <Skeleton style={{ width: 14, height: 14, borderRadius: 4 }} />
-            <Skeleton style={{ width: 16, height: 16, borderRadius: 4 }} />
-            <View style={{ flex: 1, gap: 5 }}>
-              <Skeleton style={{ width: `${50 + (groupIdx * 15)}%`, height: 13, borderRadius: 6 }} />
-              <Skeleton style={{ width: `${30 + (groupIdx * 10)}%`, height: 9, borderRadius: 4 }} />
+            <Skeleton style={{ width: 15, height: 15, borderRadius: 4 }} />
+            <View style={{ flex: 1, gap: 4, minWidth: 0 }}>
+              <Skeleton style={{ width: `${55 + groupIdx * 15}%`, height: 12, borderRadius: 6 }} />
+              <Skeleton style={{ width: `${35 + groupIdx * 10}%`, height: 8, borderRadius: 4 }} />
             </View>
-            <Skeleton style={{ width: 20, height: 14, borderRadius: 4 }} />
+            <Skeleton style={{ width: 18, height: 14, borderRadius: 6 }} />
           </View>
 
           {/* Child Session Rows */}
           <View style={styles.drawerChildListSkeleton}>
             <View style={styles.drawerSessionRowSkeleton}>
-              <Skeleton style={{ width: 6, height: 6, borderRadius: 3 }} />
-              <Skeleton style={{ width: "75%", height: 12, borderRadius: 6 }} />
+              <Skeleton style={{ width: 5, height: 5, borderRadius: 2.5 }} />
+              <Skeleton style={{ width: "75%", height: 11, borderRadius: 5 }} />
             </View>
             <View style={styles.drawerSessionRowSkeleton}>
-              <Skeleton style={{ width: 6, height: 6, borderRadius: 3 }} />
-              <Skeleton style={{ width: "55%", height: 12, borderRadius: 6 }} />
+              <Skeleton style={{ width: 5, height: 5, borderRadius: 2.5 }} />
+              <Skeleton style={{ width: "55%", height: 11, borderRadius: 5 }} />
             </View>
           </View>
         </View>
@@ -305,16 +306,16 @@ const styles = StyleSheet.create({
     borderColor: COLORS.border,
   },
   drawerSessionsSkeleton: {
-    gap: 10,
+    gap: 8,
     paddingVertical: 4,
   },
   drawerGroupSkeleton: {
-    backgroundColor: COLORS.secondary,
+    backgroundColor: "rgba(255, 255, 255, 0.02)",
     borderRadius: 12,
     padding: 10,
-    gap: 8,
+    gap: 6,
     borderWidth: 1,
-    borderColor: COLORS.border,
+    borderColor: "rgba(255, 255, 255, 0.05)",
   },
   drawerGroupHeaderSkeleton: {
     flexDirection: "row",
@@ -322,7 +323,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   drawerChildListSkeleton: {
-    marginLeft: 22,
+    marginLeft: 14,
     borderLeftWidth: 1.5,
     borderLeftColor: "rgba(66, 64, 225, 0.2)",
     paddingLeft: 8,

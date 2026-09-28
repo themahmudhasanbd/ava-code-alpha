@@ -629,7 +629,19 @@ export const Composer = forwardRef<TextInput, Props>(
 
     return (
       <View style={styles.container}>
-
+        {/* Floating Top Bar: Model pill */}
+        <View style={styles.topPillRow}>
+          <TouchableOpacity
+            style={styles.floatingPill}
+            onPress={() => setPanel("model")}
+            activeOpacity={0.8}
+          >
+            <Text style={[styles.floatingPillText, font("semibold")]} numberOfLines={1}>
+              {activeModel?.name ?? modelId ?? "Model"} · {effort}
+            </Text>
+            <ChevronDown size={11} color={COLORS.mutedForeground} />
+          </TouchableOpacity>
+        </View>
 
         {/* Floating Slash Commands Autocomplete Popover */}
         {showSlashPopup && (
@@ -782,19 +794,6 @@ export const Composer = forwardRef<TextInput, Props>(
                 activeOpacity={0.7}
               >
                 <Plus size={16} color={COLORS.foreground} />
-              </TouchableOpacity>
-
-              {/* Model & Reasoning Pill */}
-              <TouchableOpacity
-                style={styles.modelPill}
-                onPress={() => setPanel("model")}
-                activeOpacity={0.7}
-              >
-                <Bot size={13} color={COLORS.primary} />
-                <Text style={[styles.modelPillText, font("semibold")]} numberOfLines={1}>
-                  {activeModel?.name ?? modelId ?? "Model"} · {effort}
-                </Text>
-                <ChevronDown size={11} color={COLORS.mutedForeground} />
               </TouchableOpacity>
 
               {/* Tools Pill Button */}
@@ -1030,27 +1029,43 @@ export const Composer = forwardRef<TextInput, Props>(
 
 const styles = StyleSheet.create({
   container: {
+    position: "relative",
     paddingHorizontal: 12,
-    paddingTop: 4,
+    paddingTop: 8,
     paddingBottom: Platform.OS === "ios" ? 22 : 12,
     backgroundColor: "transparent",
   },
-  modelPill: {
+  topPillRow: {
+    position: "absolute",
+    top: -4,
+    left: 20,
+    right: 20,
+    zIndex: 10,
     flexDirection: "row",
     alignItems: "center",
-    gap: 5,
-    height: 30,
+    justifyContent: "flex-end",
+  },
+  floatingPill: {
+    marginLeft: "auto",
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    height: 24,
     paddingHorizontal: 10,
-    borderRadius: 15,
-    backgroundColor: COLORS.secondary,
+    borderRadius: 999,
+    backgroundColor: COLORS.card,
     borderWidth: 1,
     borderColor: COLORS.border,
-    maxWidth: 160,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.08,
+    shadowRadius: 3,
+    elevation: 3,
   },
-  modelPillText: {
-    fontSize: 12,
-    color: COLORS.foreground,
-    maxWidth: 110,
+  floatingPillText: {
+    fontSize: 11,
+    color: COLORS.mutedForeground,
+    maxWidth: 160,
   },
 
   composerCard: {

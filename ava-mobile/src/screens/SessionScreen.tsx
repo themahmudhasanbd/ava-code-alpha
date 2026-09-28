@@ -18,7 +18,7 @@ import { useSessions } from "@/state/queries";
 import { useChat } from "@/state/use-chat";
 import { ChatMessageView } from "@/components/chat/message-parts";
 import { Composer } from "@/components/chat/composer";
-import { ArrowDown, Clock, Play, X } from "lucide-react-native";
+import { ChevronDown, Clock, Play, X } from "lucide-react-native";
 import { COLORS } from "@/theme/colors";
 
 export function SessionScreen({
@@ -165,9 +165,7 @@ export function SessionScreen({
   return (
     <AppShell
       title={title}
-      showBack
       chatMessages={messages}
-      onBack={handleBack}
       onNewSession={() => {
         setActiveSessionId(null);
         navigation?.navigate("Chat");
@@ -256,10 +254,9 @@ export function SessionScreen({
             onPress={scrollToBottom}
             activeOpacity={0.8}
             accessibilityRole="button"
-            accessibilityLabel="Scroll to latest messages"
+            accessibilityLabel="Scroll to bottom"
           >
-            <ArrowDown size={14} color="#FFF" />
-            <Text style={styles.floatingScrollText}>Latest</Text>
+            <ChevronDown size={19} color={COLORS.foreground} />
           </TouchableOpacity>
         )}
 
@@ -466,25 +463,21 @@ const styles = StyleSheet.create({
   },
   floatingScrollBtn: {
     position: "absolute",
-    bottom: 14,
-    right: 16,
-    flexDirection: "row",
+    bottom: 120,
+    right: 18,
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    backgroundColor: COLORS.card,
+    borderWidth: 1,
+    borderColor: COLORS.glassBorder,
     alignItems: "center",
-    gap: 4,
-    backgroundColor: COLORS.primary,
-    paddingHorizontal: 12,
-    paddingVertical: 7,
-    borderRadius: 20,
+    justifyContent: "center",
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.25,
-    shadowRadius: 4,
-    elevation: 4,
+    shadowOpacity: 0.14,
+    shadowRadius: 6,
+    elevation: 5,
     zIndex: 99,
-  },
-  floatingScrollText: {
-    fontSize: 11.5,
-    fontWeight: "600",
-    color: "#FFF",
   },
 });

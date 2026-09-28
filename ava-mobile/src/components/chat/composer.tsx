@@ -515,38 +515,8 @@ export const Composer = forwardRef<TextInput, Props>(
 
     return (
       <View style={styles.container}>
-        {/* Floating Top Bar: Model pill + Agent Live/Resume Status Pills */}
+        {/* Floating Top Bar: Model pill */}
         <View style={styles.topPillRow}>
-          {/* Live Agent Pause / Stopping / Resume Indicator */}
-          {isLive ? (
-            <TouchableOpacity
-              style={styles.floatingStatusPillLive}
-              onPress={onStop}
-              activeOpacity={0.7}
-            >
-              <View style={styles.pulsingRedDot} />
-              <Text style={styles.floatingStatusTextLive}>Running · Tap to stop</Text>
-              <Square size={9} color={COLORS.destructive} fill={COLORS.destructive} />
-            </TouchableOpacity>
-          ) : isStopping ? (
-            <View style={styles.floatingStatusPillStopping}>
-              <ActivityIndicator size="small" color={COLORS.warning} style={{ transform: [{ scale: 0.7 }] }} />
-              <Text style={styles.floatingStatusTextStopping}>Stopping…</Text>
-            </View>
-          ) : hasQueued && onResume ? (
-            <TouchableOpacity
-              style={styles.floatingStatusPillResume}
-              onPress={onResume}
-              activeOpacity={0.7}
-            >
-              <Play size={10} color={COLORS.primary} fill={COLORS.primary} />
-              <Text style={styles.floatingStatusTextResume}>
-                {queuedCount > 0 ? `Resume (${queuedCount} queued)` : "Resume agent"}
-              </Text>
-            </TouchableOpacity>
-          ) : null}
-
-          {/* Model & Reasoning Depth Badge */}
           <TouchableOpacity
             style={styles.floatingPill}
             onPress={() => setPanel("model")}
@@ -968,71 +938,7 @@ const styles = StyleSheet.create({
     zIndex: 10,
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "space-between",
-  },
-  floatingStatusPillLive: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 5,
-    height: 24,
-    paddingHorizontal: 9,
-    borderRadius: 999,
-    backgroundColor: "rgba(254, 242, 242, 0.96)",
-    borderWidth: 1,
-    borderColor: "rgba(239, 68, 68, 0.3)",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.08,
-    shadowRadius: 2,
-    elevation: 2,
-  },
-  pulsingRedDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: COLORS.destructive,
-  },
-  floatingStatusTextLive: {
-    fontSize: 10.5,
-    fontWeight: "600",
-    color: COLORS.destructive,
-  },
-  floatingStatusPillStopping: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 5,
-    height: 24,
-    paddingHorizontal: 9,
-    borderRadius: 999,
-    backgroundColor: "rgba(254, 243, 199, 0.96)",
-    borderWidth: 1,
-    borderColor: "rgba(245, 158, 11, 0.3)",
-  },
-  floatingStatusTextStopping: {
-    fontSize: 10.5,
-    fontWeight: "600",
-    color: COLORS.warning,
-  },
-  floatingStatusPillResume: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 5,
-    height: 24,
-    paddingHorizontal: 9,
-    borderRadius: 999,
-    backgroundColor: "rgba(238, 242, 255, 0.96)",
-    borderWidth: 1,
-    borderColor: "rgba(99, 102, 241, 0.3)",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.08,
-    shadowRadius: 2,
-    elevation: 2,
-  },
-  floatingStatusTextResume: {
-    fontSize: 10.5,
-    fontWeight: "600",
-    color: COLORS.primary,
+    justifyContent: "flex-end",
   },
   floatingPill: {
     marginLeft: "auto",

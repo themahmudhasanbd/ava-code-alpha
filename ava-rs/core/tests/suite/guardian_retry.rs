@@ -64,7 +64,7 @@ async fn guardian_retry_executes_only_after_a_completed_approval() -> Result<()>
         sse(vec![ev_completed("parent-done")]),
     ];
     let requests = mount_sse_sequence(&server, responses).await;
-    test.ava-code
+    test.ava
         .start_or_steer_turn(ava_core::TurnInputRequest::user_input(vec![
             ava_protocol::user_input::UserInput::Text {
                 text: "Write the marker once".into(),
@@ -75,7 +75,7 @@ async fn guardian_retry_executes_only_after_a_completed_approval() -> Result<()>
     let mut reviews = Vec::new();
     let mut warnings = Vec::new();
     loop {
-        match test.ava-code.next_event().await?.msg {
+        match test.ava.next_event().await?.msg {
             EventMsg::GuardianAssessment(review) => reviews.push(review.status),
             EventMsg::GuardianWarning(warning) => warnings.push(warning.message),
             EventMsg::TurnComplete(_) => break,

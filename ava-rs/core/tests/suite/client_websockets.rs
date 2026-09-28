@@ -1883,7 +1883,7 @@ async fn responses_websocket_usage_limit_error_emits_rate_limit_event() {
         .expect("submission should succeed while emitting usage limit error events");
 
     let token_event =
-        wait_for_event(&test.ava-code, |msg| matches!(msg, EventMsg::TokenCount(_))).await;
+        wait_for_event(&test.ava, |msg| matches!(msg, EventMsg::TokenCount(_))).await;
     let EventMsg::TokenCount(event) = token_event else {
         unreachable!();
     };
@@ -1919,7 +1919,7 @@ async fn responses_websocket_usage_limit_error_emits_rate_limit_event() {
         })
     );
 
-    let error_event = wait_for_event(&test.ava-code, |msg| matches!(msg, EventMsg::Error(_))).await;
+    let error_event = wait_for_event(&test.ava, |msg| matches!(msg, EventMsg::Error(_))).await;
     let EventMsg::Error(error_event) = error_event else {
         unreachable!();
     };
@@ -1971,7 +1971,7 @@ async fn responses_websocket_invalid_request_error_with_status_is_forwarded() {
         .await
         .expect("submission should succeed while emitting invalid request events");
 
-    let error_event = wait_for_event(&test.ava-code, |msg| matches!(msg, EventMsg::Error(_))).await;
+    let error_event = wait_for_event(&test.ava, |msg| matches!(msg, EventMsg::Error(_))).await;
     let EventMsg::Error(error_event) = error_event else {
         unreachable!();
     };
@@ -2917,8 +2917,8 @@ async fn responses_websocket_restored_history_metric(fork: bool) -> anyhow::Resu
     let server = start_websocket_server(vec![vec![warmup, turn]; 2]).await;
     let mut initial = test_ava().build_with_websocket_server(&server).await?;
     initial.submit_text_turn("original history marker").await?;
-    let rollout_path = initial.ava-code.rollout_path().expect("persisted history");
-    initial.ava-code.shutdown_and_wait().await?;
+    let rollout_path = initial.ava.rollout_path().expect("persisted history");
+    initial.ava.shutdown_and_wait().await?;
 
     let manager = &initial.thread_manager;
     let mut options = ava_core::StartThreadOptions::new(initial.config.clone());
@@ -2932,10 +2932,10 @@ async fn responses_websocket_restored_history_metric(fork: bool) -> anyhow::Resu
             ava_rollout::RolloutRecorder::get_rollout_history(&rollout_path).await?;
         manager.start_thread(options).await?
     };
-    initial.ava-code = restored.thread;
+    initial.ava = restored.thread;
     initial.submit_text_turn("continue").await?;
     assert_continuation_metrics(
-        &initial.ava-code.session_telemetry(),
+        &initial.ava.session_telemetry(),
         &[
             (["full", "restored_history", "warmup"], 1),
             (["incremental", "incremental", "generation"], 1),
@@ -2946,7 +2946,7 @@ async fn responses_websocket_restored_history_metric(fork: bool) -> anyhow::Resu
             .to_string()
             .contains("original history marker")
     }));
-    initial.ava-code.shutdown_and_wait().await?;
+    initial.ava.shutdown_and_wait().await?;
     server.shutdown().await;
     Ok(())
 }

@@ -133,9 +133,9 @@ pub(super) async fn migration_scenario() -> Result<Vec<responses::ResponsesReque
             "content": [{"type": "input_text", "text": "Keep the working tree unchanged."}]
         }}
     ]))?;
-    test.ava-code.ensure_rollout_materialized().await;
-    test.ava-code.append_rollout_items(&history).await?;
-    let thread = resume(&test, &test.ava-code, history).await?;
+    test.ava.ensure_rollout_materialized().await;
+    test.ava.append_rollout_items(&history).await?;
+    let thread = resume(&test, &test.ava, history).await?;
     assert_eq!(
         GuardianContextMode::from_history(thread.conversation_history_snapshot().await.as_ref()),
         GuardianContextMode::Legacy

@@ -39,7 +39,7 @@ const COMMITTED_MODEL: &str = "gpt-5.2";
 const TIMEOUT: Duration = Duration::from_secs(10);
 
 fn assert_checkpoints(test: &TestAva, expected: &[ThreadSettingsSnapshot]) -> Result<()> {
-    let rollout_path = test.ava-code.rollout_path().expect("rollout path");
+    let rollout_path = test.ava.rollout_path().expect("rollout path");
     let rollout: Vec<RolloutLine> = std::fs::read_to_string(rollout_path)?
         .lines()
         .map(ava_rollout::parse_rollout_line)
@@ -74,7 +74,7 @@ async fn initial_plugin_ids_use_turn_context_without_extra_settings_checkpoints(
         .await?;
     let selected = vec!["slack@openai".to_string()];
     submit_thread_settings(
-        &test.ava-code,
+        &test.ava,
         ThreadSettingsOverrides {
             disabled_plugin_ids: Some(selected.clone()),
             ..Default::default()
@@ -90,13 +90,13 @@ async fn initial_plugin_ids_use_turn_context_without_extra_settings_checkpoints(
         panic!("expected an accepted first turn, got {submission:?}");
     };
     wait_for_event(
-        &test.ava-code,
+        &test.ava,
         |event| matches!(event, EventMsg::TurnComplete(completed) if completed.turn_id == turn_id),
     )
     .await;
-    test.ava-code.flush_rollout().await?;
+    test.ava.flush_rollout().await?;
     assert_checkpoints(&test, &[])?;
-    let rollout_path = test.ava-code.rollout_path().expect("rollout path");
+    let rollout_path = test.ava.rollout_path().expect("rollout path");
     let (items, _, parse_errors) =
         ava_rollout::RolloutRecorder::load_rollout_items(&rollout_path).await?;
     assert_eq!(parse_errors, 0);
@@ -117,24 +117,24 @@ async fn initial_plugin_ids_use_turn_context_without_extra_settings_checkpoints(
     assert_eq!(response.requests().len(), 1);
 
     submit_thread_settings(
-        &test.ava-code,
+        &test.ava,
         ThreadSettingsOverrides {
             disabled_plugin_ids: Some(vec![]),
             ..Default::default()
         },
     )
     .await?;
-    let expected = vec![test.ava-code.thread_settings_snapshot().await];
+    let expected = vec![test.ava.thread_settings_snapshot().await];
     assert!(expected[0].disabled_plugin_ids.is_empty());
-    test.ava-code.flush_rollout().await?;
+    test.ava.flush_rollout().await?;
     assert_checkpoints(&test, &expected)?;
     let response =
         responses::mount_sse_once(&server, responses::sse_completed("second turn")).await;
     test.submit_text_turn("second turn").await?;
-    test.ava-code.flush_rollout().await?;
+    test.ava.flush_rollout().await?;
     assert_eq!(response.requests().len(), 1);
     assert_checkpoints(&test, &expected)?;
-    test.ava-code.shutdown_and_wait().await?;
+    test.ava.shutdown_and_wait().await?;
     Ok(())
 }
 
@@ -198,7 +198,7 @@ async fn settings_notifications_keep_their_commit_across_postcommit_work(
         .with_extensions(Arc::new(extensions.build()))
         .build_with_auto_env(&server)
         .await?;
-    let mut initial = test.ava-code.restorable_thread_settings().await;
+    let mut initial = test.ava.restorable_thread_settings().await;
     // Restore only runtime model settings, without overwriting the committed plugin selection.
     initial.disabled_plugin_ids = None;
     let thread_settings = ThreadSettingsOverrides {
@@ -207,7 +207,7 @@ async fn settings_notifications_keep_their_commit_across_postcommit_work(
         ..Default::default()
     };
     let submission = tokio::spawn({
-        let ava = Arc::clone(&test.ava-code);
+        let ava = Arc::clone(&test.ava);
         async move {
             match operation {
                 SettingsOperation::TurnStart => {
@@ -233,13 +233,13 @@ async fn settings_notifications_keep_their_commit_across_postcommit_work(
     });
 
     timeout(TIMEOUT, entered_rx).await??;
-    let expected = test.ava-code.thread_settings_snapshot().await;
+    let expected = test.ava.thread_settings_snapshot().await;
     assert_eq!(expected.model, COMMITTED_MODEL);
     assert_eq!(expected.disabled_plugin_ids, vec!["slack@openai"]);
     // Submitted operations are serialized. Runtime restoration is an existing
     // direct writer, so it can overlap the first operation's post-commit work.
-    timeout(TIMEOUT, test.ava-code.restore_thread_settings(initial)).await??;
-    let restored = test.ava-code.thread_settings_snapshot().await;
+    timeout(TIMEOUT, test.ava.restore_thread_settings(initial)).await??;
+    let restored = test.ava.thread_settings_snapshot().await;
     assert_eq!(restored.model, INITIAL_MODEL);
     assert_eq!(restored.disabled_plugin_ids, vec!["slack@openai"]);
     release_tx.send(())?;
@@ -247,7 +247,7 @@ async fn settings_notifications_keep_their_commit_across_postcommit_work(
 
     let applied = timeout(TIMEOUT, async {
         loop {
-            let event = test.ava-code.next_event().await?;
+            let event = test.ava.next_event().await?;
             match event.msg {
                 EventMsg::ThreadSettingsApplied(applied) if event.id == submission_id => {
                     return Ok::<_, anyhow::Error>((applied.thread_id, applied.thread_settings));
@@ -266,7 +266,7 @@ async fn settings_notifications_keep_their_commit_across_postcommit_work(
         SettingsOperation::TurnStart => COMMITTED_MODEL,
         SettingsOperation::Standalone => {
             assert!(response.requests().is_empty());
-            test.ava-code
+            test.ava
                 .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
                     text: "use the restored settings".to_string(),
                     text_elements: Vec::new(),
@@ -275,7 +275,7 @@ async fn settings_notifications_keep_their_commit_across_postcommit_work(
             INITIAL_MODEL
         }
     };
-    wait_for_event(&test.ava-code, |event| {
+    wait_for_event(&test.ava, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;
@@ -283,7 +283,7 @@ async fn settings_notifications_keep_their_commit_across_postcommit_work(
         response.single_request().body_json()["model"],
         expected_request_model
     );
-    assert_eq!(test.ava-code.thread_settings_snapshot().await, restored);
+    assert_eq!(test.ava.thread_settings_snapshot().await, restored);
     Ok(())
 }
 
@@ -319,7 +319,7 @@ async fn compaction_checkpoints_settings_changed_during_its_model_request() -> R
         .build_with_streaming_server(&server)
         .await?;
     test.submit_text_turn("before compaction").await?;
-    test.ava-code.submit(Op::Compact).await?;
+    test.ava.submit(Op::Compact).await?;
     timeout(TIMEOUT, server.wait_for_request_count(/*count*/ 2)).await?;
 
     let request: serde_json::Value = serde_json::from_slice(&server.requests().await[1])?;
@@ -327,7 +327,7 @@ async fn compaction_checkpoints_settings_changed_during_its_model_request() -> R
     let updated_cwd = TempDir::new()?;
     let updated_cwd_path = AbsolutePathBuf::try_from(updated_cwd.path())?;
     submit_thread_settings(
-        &test.ava-code,
+        &test.ava,
         ThreadSettingsOverrides {
             environments: Some(local_selections(updated_cwd_path.clone())),
             model: Some(COMMITTED_MODEL.to_string()),
@@ -336,17 +336,17 @@ async fn compaction_checkpoints_settings_changed_during_its_model_request() -> R
         },
     )
     .await?;
-    let expected = test.ava-code.thread_settings_snapshot().await;
+    let expected = test.ava.thread_settings_snapshot().await;
     assert_eq!(
         (&expected.cwd, expected.model.as_str()),
         (&updated_cwd_path, COMMITTED_MODEL)
     );
     release_compaction.send(()).expect("compaction is waiting");
-    wait_for_event(&test.ava-code, |event| {
+    wait_for_event(&test.ava, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;
-    test.ava-code.shutdown_and_wait().await?;
+    test.ava.shutdown_and_wait().await?;
 
     let rollout_path = test.session_configured.rollout_path.expect("rollout path");
     let rollout: Vec<RolloutLine> = std::fs::read_to_string(rollout_path)?

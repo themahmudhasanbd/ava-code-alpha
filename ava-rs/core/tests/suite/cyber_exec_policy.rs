@@ -96,7 +96,7 @@ fn guardian_allow_response(response_id: &str) -> String {
 
 async fn submit_model_turn(test: &TestAva, model: &str, prompt: &str) -> Result<()> {
     submit_thread_settings(
-        &test.ava-code,
+        &test.ava,
         ThreadSettingsOverrides {
             model: Some(model.to_string()),
             approval_policy: Some(AskForApproval::OnRequest),
@@ -213,7 +213,7 @@ async fn cyber_model_user_approval_never_offers_a_reusable_prefix() -> Result<()
     )
     .await;
 
-    test.ava-code
+    test.ava
         .start_or_steer_turn(
             TurnInputRequest::user_input(vec![UserInput::Text {
                 text: "run a command with one-time approval".to_string(),
@@ -227,7 +227,7 @@ async fn cyber_model_user_approval_never_offers_a_reusable_prefix() -> Result<()
         )
         .await?;
 
-    let EventMsg::ExecApprovalRequest(approval) = wait_for_event(&test.ava-code, |event| {
+    let EventMsg::ExecApprovalRequest(approval) = wait_for_event(&test.ava, |event| {
         matches!(
             event,
             EventMsg::ExecApprovalRequest(_) | EventMsg::TurnComplete(_)
@@ -242,14 +242,14 @@ async fn cyber_model_user_approval_never_offers_a_reusable_prefix() -> Result<()
         approval.effective_available_decisions(),
         vec![ReviewDecision::Approved, ReviewDecision::Abort],
     );
-    test.ava-code
+    test.ava
         .submit(Op::ExecApproval {
             id: approval.effective_approval_id(),
             turn_id: None,
             decision: ReviewDecision::Approved,
         })
         .await?;
-    wait_for_event(&test.ava-code, |event| {
+    wait_for_event(&test.ava, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;

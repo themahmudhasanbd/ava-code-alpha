@@ -278,7 +278,7 @@ async fn start_gated_step_preparation(test: &TestAva, server: &MockServer) -> Re
         .count();
     let (sandbox_policy, permission_profile) =
         turn_permission_fields(PermissionProfile::Disabled, test.config.cwd.as_path());
-    test.ava-code
+    test.ava
         .start_or_steer_turn(
             TurnInputRequest::user_input(vec![UserInput::Text {
                 text: "prepare MCP and plugin recommendations".to_string(),
@@ -324,7 +324,7 @@ async fn start_gated_step_preparation(test: &TestAva, server: &MockServer) -> Re
 async fn start_install_turn(test: &TestAva, prompt: &str) -> Result<ElicitationRequestEvent> {
     let (sandbox_policy, permission_profile) =
         turn_permission_fields(PermissionProfile::Disabled, test.config.cwd.as_path());
-    test.ava-code
+    test.ava
         .start_or_steer_turn(
             TurnInputRequest::user_input(vec![UserInput::Text {
                 text: prompt.to_string(),
@@ -347,7 +347,7 @@ async fn start_install_turn(test: &TestAva, prompt: &str) -> Result<ElicitationR
         )
         .await?;
 
-    Ok(wait_for_event_match(&test.ava-code, |event| match event {
+    Ok(wait_for_event_match(&test.ava, |event| match event {
         EventMsg::ElicitationRequest(request) => Some(request.clone()),
         _ => None,
     })
@@ -359,7 +359,7 @@ async fn resolve_install_elicitation(
     elicitation: ElicitationRequestEvent,
     decision: ElicitationAction,
 ) -> Result<()> {
-    test.ava-code
+    test.ava
         .submit(Op::ResolveElicitation {
             server_name: elicitation.server_name,
             request_id: elicitation.id,
@@ -368,7 +368,7 @@ async fn resolve_install_elicitation(
             meta: None,
         })
         .await?;
-    wait_for_event(&test.ava-code, |event| {
+    wait_for_event(&test.ava, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;
@@ -563,7 +563,7 @@ async fn startup_recommendations(
             .any(|name| name == REQUEST_PLUGIN_INSTALL_TOOL_NAME),
         expect_recommendations && feature == Feature::ToolSuggest,
     );
-    test.ava-code.shutdown_and_wait().await?;
+    test.ava.shutdown_and_wait().await?;
     server.verify().await;
     Ok(())
 }
@@ -614,7 +614,7 @@ async fn mcp_discovery_overlaps_endpoint_plugin_recommendations() -> Result<()> 
             /*sandbox*/ None,
         )
         .await?;
-    wait_for_event(&test.ava-code, |event| {
+    wait_for_event(&test.ava, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;
@@ -634,7 +634,7 @@ async fn mcp_discovery_overlaps_endpoint_plugin_recommendations() -> Result<()> 
         "the completed request should expose the live gated MCP tool"
     );
 
-    test.ava-code.shutdown_and_wait().await?;
+    test.ava.shutdown_and_wait().await?;
     Ok(())
 }
 
@@ -666,8 +666,8 @@ async fn interrupting_concurrent_step_preparation_prevents_sampling() -> Result<
 
     let barrier = start_gated_step_preparation(&test, &server).await?;
     assert!(response.requests().is_empty());
-    test.ava-code.submit(Op::Interrupt).await?;
-    wait_for_event(&test.ava-code, |event| {
+    test.ava.submit(Op::Interrupt).await?;
+    wait_for_event(&test.ava, |event| {
         matches!(event, EventMsg::TurnAborted(_))
     })
     .await;
@@ -684,7 +684,7 @@ async fn interrupting_concurrent_step_preparation_prevents_sampling() -> Result<
             /*sandbox*/ None,
         )
         .await?;
-    test.ava-code.shutdown_and_wait().await?;
+    test.ava.shutdown_and_wait().await?;
     assert!(
         response.requests().is_empty(),
         "releasing the cancelled MCP startup must not revive the aborted turn"
@@ -857,7 +857,7 @@ async fn subagent_install_request_returns_root_only_error(
         Some("request_plugin_install can only be used by the root thread")
     );
     subagent.shutdown_and_wait().await?;
-    test.ava-code.shutdown_and_wait().await?;
+    test.ava.shutdown_and_wait().await?;
     Ok(())
 }
 
@@ -1375,7 +1375,7 @@ async fn run_remote_plugin_install_refresh_case(refreshed_tools: RefreshedAppsTo
         "the refreshed installed-plugin cache should filter the cached recommendation"
     );
     drop(requests);
-    test.ava-code.refresh_runtime_config(test.config.clone()).await;
+    test.ava.refresh_runtime_config(test.config.clone()).await;
     test.submit_turn("check whether Calendar is still installed")
         .await?;
     let requests = mock.requests();

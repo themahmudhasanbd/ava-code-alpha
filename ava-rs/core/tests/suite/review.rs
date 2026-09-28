@@ -651,7 +651,7 @@ async fn review_uses_updated_turn_permissions_and_approval_policy() {
         .build_with_auto_env(&server)
         .await
         .expect("review conversation should be created");
-    let ava = Arc::clone(&test.ava-code);
+    let ava = Arc::clone(&test.ava);
     let updated_cwd = test.config.cwd.join("updated-review-workspace");
     let mut selection = test.executor_environment().selection().clone();
     selection.cwd = selection
@@ -827,14 +827,14 @@ async fn review_preserves_flex_tier_when_fast_mode_disabled() -> anyhow::Result<
         .build_with_auto_env(&server)
         .await?;
     core_test_support::submit_thread_settings(
-        &test.ava-code,
+        &test.ava,
         ThreadSettingsOverrides {
             service_tier: Some(Some(ServiceTier::Flex.request_value().to_string())),
             ..Default::default()
         },
     )
     .await?;
-    test.ava-code
+    test.ava
         .submit(Op::Review {
             review_request: ReviewRequest {
                 target: ReviewTarget::Custom {
@@ -844,13 +844,13 @@ async fn review_preserves_flex_tier_when_fast_mode_disabled() -> anyhow::Result<
             },
         })
         .await?;
-    wait_for_event(&test.ava-code, |event| {
+    wait_for_event(&test.ava, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;
 
     assert_eq!(
-        test.ava-code
+        test.ava
             .thread_settings_snapshot()
             .await
             .service_tier
@@ -888,7 +888,7 @@ async fn review_resolves_inherited_summary_preferences() -> anyhow::Result<()> {
     for summary in [None, Some(ReasoningSummary::Concise)] {
         if let Some(summary) = summary {
             core_test_support::submit_thread_settings(
-                &test.ava-code,
+                &test.ava,
                 ThreadSettingsOverrides {
                     summary: Some(summary),
                     ..Default::default()
@@ -896,8 +896,8 @@ async fn review_resolves_inherited_summary_preferences() -> anyhow::Result<()> {
             )
             .await?;
         }
-        let stored_settings = test.ava-code.thread_settings_snapshot().await;
-        test.ava-code
+        let stored_settings = test.ava.thread_settings_snapshot().await;
+        test.ava
             .submit(Op::Review {
                 review_request: ReviewRequest {
                     target: ReviewTarget::Custom {
@@ -907,11 +907,11 @@ async fn review_resolves_inherited_summary_preferences() -> anyhow::Result<()> {
                 },
             })
             .await?;
-        wait_for_event(&test.ava-code, |event| {
+        wait_for_event(&test.ava, |event| {
             matches!(event, EventMsg::TurnComplete(_))
         })
         .await;
-        assert_eq!(test.ava-code.thread_settings_snapshot().await, stored_settings);
+        assert_eq!(test.ava.thread_settings_snapshot().await, stored_settings);
     }
     let actual = request_log
         .requests()
@@ -951,7 +951,7 @@ async fn review_uses_custom_review_model_from_config() {
         .build_with_auto_env(&server)
         .await
         .expect("custom review conversation should be created");
-    let ava = Arc::clone(&test.ava-code);
+    let ava = Arc::clone(&test.ava);
     std::fs::remove_file(ava_home.path().join("models_cache.json"))
         .expect("initial empty model catalog should be cached");
     let mut models = ava_models_manager::bundled_models_response()
@@ -1031,7 +1031,7 @@ async fn review_uses_session_model_when_review_model_unset() {
         .build_with_auto_env(&server)
         .await
         .expect("same-model review conversation should be created");
-    let ava = Arc::clone(&test.ava-code);
+    let ava = Arc::clone(&test.ava);
 
     ava
         .submit(Op::Review {

@@ -1132,7 +1132,7 @@ fn restricted_reads_cannot_read_preferences_outside_allowed_roots() {
         .tempdir()
         .expect("temp workspace");
     let domain = PreferenceDomain(format!(
-        "com.openai.ava-code.{}",
+        "com.openai.ava.{}",
         workspace
             .path()
             .file_name()

@@ -9,7 +9,7 @@ import {
 } from "react-native";
 import { AtSign, FolderOpen, X } from "lucide-react-native";
 import type { MentionItem } from "./mentions";
-import { COLORS } from "@/theme/colors";
+import { useTheme } from "@/theme/colors";
 import { font, mono } from "@/theme/fonts";
 
 interface MentionPopupProps {
@@ -27,16 +27,44 @@ export function MentionPopup({
   onSelect,
   onClose,
 }: MentionPopupProps) {
+  const { colors, isDark } = useTheme();
+
   return (
-    <View style={styles.container}>
-      <View style={styles.header}>
+    <View
+      style={[
+        styles.container,
+        {
+          backgroundColor: colors.card,
+          borderColor: colors.border,
+          shadowColor: isDark ? "#000000" : colors.glassShadow,
+        },
+      ]}
+    >
+      <View
+        style={[
+          styles.header,
+          {
+            borderBottomColor: colors.border,
+          },
+        ]}
+      >
         <View style={styles.headerLeft}>
-          <AtSign size={13} color={COLORS.primary} />
-          <Text style={[styles.title, font("semibold")]}>Mention Context & Files</Text>
+          <AtSign size={13} color={colors.primary} />
+          <Text style={[styles.title, font("semibold"), { color: colors.foreground }]}>
+            Mention Context & Files
+          </Text>
           {currentSubDir ? (
-            <View style={styles.subDirBadge}>
-              <FolderOpen size={10} color={COLORS.primary} />
-              <Text style={[styles.subDirText, mono("regular")]} numberOfLines={1}>
+            <View
+              style={[
+                styles.subDirBadge,
+                { backgroundColor: colors.secondary, borderColor: colors.border },
+              ]}
+            >
+              <FolderOpen size={10} color={colors.primary} />
+              <Text
+                style={[styles.subDirText, mono("regular"), { color: colors.primary }]}
+                numberOfLines={1}
+              >
                 {currentSubDir}/
               </Text>
             </View>
@@ -45,20 +73,22 @@ export function MentionPopup({
         <TouchableOpacity
           onPress={onClose}
           hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-          style={styles.closeBtn}
+          style={[styles.closeBtn, { backgroundColor: colors.secondary }]}
         >
-          <X size={12} color={COLORS.mutedForeground} />
+          <X size={12} color={colors.mutedForeground} />
         </TouchableOpacity>
       </View>
 
       {isLoading ? (
         <View style={styles.loadingBox}>
-          <ActivityIndicator size="small" color={COLORS.primary} />
-          <Text style={[styles.loadingText, font("regular")]}>Scanning workspace directory…</Text>
+          <ActivityIndicator size="small" color={colors.primary} />
+          <Text style={[styles.loadingText, font("regular"), { color: colors.mutedForeground }]}>
+            Scanning workspace directory…
+          </Text>
         </View>
       ) : items.length === 0 ? (
         <View style={styles.emptyBox}>
-          <Text style={[styles.emptyText, font("regular")]}>
+          <Text style={[styles.emptyText, font("regular"), { color: colors.mutedForeground }]}>
             No files or symbols match this query.
           </Text>
         </View>
@@ -77,51 +107,103 @@ export function MentionPopup({
             return (
               <TouchableOpacity
                 key={item.id}
-                style={styles.itemRow}
+                style={[
+                  styles.itemRow,
+                  {
+                    borderBottomColor: colors.border,
+                  },
+                ]}
                 onPress={() => onSelect(item)}
                 activeOpacity={0.7}
               >
                 <View
                   style={[
                     styles.iconBox,
-                    isFolder && styles.iconBoxFolder,
-                    isMcp && styles.iconBoxMcp,
+                    {
+                      backgroundColor: isFolder
+                        ? isDark
+                          ? "rgba(99, 102, 241, 0.16)"
+                          : "rgba(79, 70, 229, 0.10)"
+                        : isMcp
+                        ? isDark
+                          ? "rgba(168, 85, 247, 0.16)"
+                          : "rgba(147, 51, 234, 0.10)"
+                        : colors.secondary,
+                    },
                   ]}
                 >
                   <Icon
                     size={14}
                     color={
                       isFolder
-                        ? COLORS.primary
+                        ? colors.primary
                         : isMcp
-                        ? "#a855f7"
-                        : COLORS.foreground
+                        ? isDark
+                          ? "#c084fc"
+                          : "#9333ea"
+                        : colors.foreground
                     }
                   />
                 </View>
                 <View style={styles.itemContent}>
                   <View style={styles.itemTitleRow}>
-                    <Text style={[styles.itemName, mono("bold")]}>{item.insertText.trim()}</Text>
+                    <Text
+                      style={[
+                        styles.itemName,
+                        mono("bold"),
+                        {
+                          color: isFolder
+                            ? colors.primary
+                            : isMcp
+                            ? isDark
+                              ? "#c084fc"
+                              : "#9333ea"
+                            : colors.foreground,
+                        },
+                      ]}
+                    >
+                      {item.insertText.trim()}
+                    </Text>
                     <View
                       style={[
                         styles.catBadge,
-                        isFolder && styles.catBadgeFolder,
-                        isMcp && styles.catBadgeMcp,
+                        {
+                          backgroundColor: isFolder
+                            ? isDark
+                              ? "rgba(99, 102, 241, 0.15)"
+                              : "rgba(79, 70, 229, 0.10)"
+                            : isMcp
+                            ? isDark
+                              ? "rgba(168, 85, 247, 0.15)"
+                              : "rgba(147, 51, 234, 0.10)"
+                            : colors.secondary,
+                          borderColor: colors.border,
+                        },
                       ]}
                     >
                       <Text
                         style={[
                           styles.catBadgeText,
                           font("medium"),
-                          isFolder && styles.catBadgeTextFolder,
-                          isMcp && styles.catBadgeTextMcp,
+                          {
+                            color: isFolder
+                              ? colors.primary
+                              : isMcp
+                              ? isDark
+                                ? "#c084fc"
+                                : "#9333ea"
+                              : colors.mutedForeground,
+                          },
                         ]}
                       >
                         {item.category}
                       </Text>
                     </View>
                   </View>
-                  <Text style={[styles.itemDesc, font("regular")]} numberOfLines={1}>
+                  <Text
+                    style={[styles.itemDesc, font("regular"), { color: colors.mutedForeground }]}
+                    numberOfLines={1}
+                  >
                     {item.description}
                   </Text>
                 </View>
@@ -141,11 +223,8 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     marginBottom: 8,
-    backgroundColor: COLORS.card,
     borderRadius: 18,
     borderWidth: 1,
-    borderColor: COLORS.glassBorder,
-    shadowColor: "#000",
     shadowOffset: { width: 0, height: -4 },
     shadowOpacity: 0.22,
     shadowRadius: 16,
@@ -160,8 +239,7 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     paddingHorizontal: 14,
     paddingVertical: 9,
-    borderBottomWidth: 1,
-    borderBottomColor: "rgba(255, 255, 255, 0.06)",
+    borderBottomWidth: StyleSheet.hairlineWidth,
   },
   headerLeft: {
     flexDirection: "row",
@@ -171,24 +249,23 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 12,
-    color: COLORS.foreground,
   },
   subDirBadge: {
     flexDirection: "row",
     alignItems: "center",
     gap: 3,
-    backgroundColor: COLORS.secondary,
     paddingHorizontal: 6,
     paddingVertical: 1,
     borderRadius: 4,
+    borderWidth: StyleSheet.hairlineWidth,
     maxWidth: 130,
   },
   subDirText: {
     fontSize: 10,
-    color: COLORS.primary,
   },
   closeBtn: {
-    padding: 3,
+    padding: 4,
+    borderRadius: 6,
   },
   loadingBox: {
     flexDirection: "row",
@@ -199,7 +276,6 @@ const styles = StyleSheet.create({
   },
   loadingText: {
     fontSize: 12,
-    color: COLORS.mutedForeground,
   },
   emptyBox: {
     paddingVertical: 20,
@@ -209,7 +285,6 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     fontSize: 12,
-    color: COLORS.mutedForeground,
     textAlign: "center",
   },
   scroll: {
@@ -224,22 +299,14 @@ const styles = StyleSheet.create({
     gap: 10,
     paddingHorizontal: 12,
     paddingVertical: 8,
-    borderBottomWidth: 1,
-    borderBottomColor: "rgba(255, 255, 255, 0.04)",
+    borderBottomWidth: StyleSheet.hairlineWidth,
   },
   iconBox: {
     width: 28,
     height: 28,
     borderRadius: 8,
-    backgroundColor: COLORS.secondary,
     alignItems: "center",
     justifyContent: "center",
-  },
-  iconBoxFolder: {
-    backgroundColor: "rgba(66, 64, 225, 0.12)",
-  },
-  iconBoxMcp: {
-    backgroundColor: "rgba(168, 85, 247, 0.12)",
   },
   itemContent: {
     flex: 1,
@@ -251,34 +318,19 @@ const styles = StyleSheet.create({
   },
   itemName: {
     fontSize: 12.5,
-    color: COLORS.foreground,
   },
   itemDesc: {
     fontSize: 11,
-    color: COLORS.mutedForeground,
     marginTop: 1,
   },
   catBadge: {
     paddingHorizontal: 5,
     paddingVertical: 1,
     borderRadius: 4,
-    backgroundColor: COLORS.secondary,
-  },
-  catBadgeFolder: {
-    backgroundColor: "rgba(66, 64, 225, 0.15)",
-  },
-  catBadgeMcp: {
-    backgroundColor: "rgba(168, 85, 247, 0.15)",
+    borderWidth: StyleSheet.hairlineWidth,
   },
   catBadgeText: {
     fontSize: 9,
-    color: COLORS.mutedForeground,
     textTransform: "uppercase",
-  },
-  catBadgeTextFolder: {
-    color: COLORS.primary,
-  },
-  catBadgeTextMcp: {
-    color: "#c084fc",
   },
 });

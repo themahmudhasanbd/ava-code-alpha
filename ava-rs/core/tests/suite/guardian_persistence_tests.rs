@@ -180,7 +180,7 @@ async fn guardian_saves_each_completed_review_before_releasing_its_action() -> a
     }
     turns.push(responses::sse(vec![responses::ev_completed("parent-done")]));
     let mock = responses::mount_sse_sequence(&server, turns).await;
-    test.ava-code
+    test.ava
         .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
             text: "Run both commands.".to_owned(),
             text_elements: Vec::new(),
@@ -210,7 +210,7 @@ async fn guardian_saves_each_completed_review_before_releasing_its_action() -> a
         assert!(
             timeout(
                 Duration::from_millis(50),
-                wait_for_event(&test.ava-code, |event| {
+                wait_for_event(&test.ava, |event| {
                     matches!(event, EventMsg::ExecCommandBegin(_))
                 })
             )
@@ -219,16 +219,16 @@ async fn guardian_saves_each_completed_review_before_releasing_its_action() -> a
         );
         assert_eq!(mock.requests().len(), review * 2);
         pending.complete.send(()).expect("finish save");
-        wait_for_event(&test.ava-code, |event| {
+        wait_for_event(&test.ava, |event| {
             matches!(event, EventMsg::ExecCommandEnd(_))
         })
         .await;
     }
-    wait_for_event(&test.ava-code, |event| {
+    wait_for_event(&test.ava, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;
     assert_eq!(mock.requests().len(), 5);
-    test.ava-code.shutdown_and_wait().await?;
+    test.ava.shutdown_and_wait().await?;
     Ok(())
 }

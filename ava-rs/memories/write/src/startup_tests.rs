@@ -628,7 +628,7 @@ async fn memories_startup_phase1_uses_live_thread_service_tier_and_detached_meta
     reset_git_repository(&test.config.cwd).await?;
 
     core_test_support::submit_thread_settings(
-        &test.ava-code,
+        &test.ava,
         ava_protocol::protocol::ThreadSettingsOverrides {
             service_tier: Some(Some(ServiceTier::Fast.request_value().to_string())),
             permission_profile: Some(ava_protocol::models::PermissionProfile::workspace_write()),
@@ -648,7 +648,7 @@ async fn memories_startup_phase1_uses_live_thread_service_tier_and_detached_meta
         Arc::clone(&test.thread_manager),
         test.thread_manager.auth_manager(),
         test.session_configured.thread_id,
-        Arc::clone(&test.ava-code),
+        Arc::clone(&test.ava),
         &test.config,
         config_snapshot.session_source.clone(),
     );
@@ -1055,7 +1055,7 @@ async fn run_memory_phase_two_model_request_test(
         assert_eq!(read_rollout_summary_bodies(&root).await?.len(), 1);
         assert!(request.body_contains_text("Consolidate the supplied rollout summaries"));
     }
-    test.ava-code.shutdown_and_wait().await?;
+    test.ava.shutdown_and_wait().await?;
     Ok(request)
 }
 
@@ -1103,7 +1103,7 @@ async fn init_state_db(home: &Arc<TempDir>) -> anyhow::Result<Arc<ava_state::Sta
 }
 
 async fn trigger_memories_startup(test: &TestAva) {
-    let config_snapshot = test.ava-code.config_snapshot().await;
+    let config_snapshot = test.ava.config_snapshot().await;
     let mut config = test.config.clone();
     config
         .features
@@ -1114,7 +1114,7 @@ async fn trigger_memories_startup(test: &TestAva) {
         Arc::clone(&test.thread_manager),
         test.thread_manager.auth_manager(),
         test.session_configured.thread_id,
-        Arc::clone(&test.ava-code),
+        Arc::clone(&test.ava),
         Arc::new(config),
         parent_permission_profile,
         &config_snapshot.session_source,
@@ -1125,7 +1125,7 @@ async fn memory_startup_context_with_provider(
     test: &TestAva,
     provider: SharedModelProvider,
 ) -> (Arc<MemoryStartupContext>, Arc<ava_core::config::Config>) {
-    let config_snapshot = test.ava-code.config_snapshot().await;
+    let config_snapshot = test.ava.config_snapshot().await;
     let mut config = test.config.clone();
     config
         .features
@@ -1136,7 +1136,7 @@ async fn memory_startup_context_with_provider(
         Arc::clone(&test.thread_manager),
         test.thread_manager.auth_manager(),
         test.session_configured.thread_id,
-        Arc::clone(&test.ava-code),
+        Arc::clone(&test.ava),
         config.as_ref(),
         config_snapshot.session_source,
         provider,
@@ -1332,7 +1332,7 @@ async fn wait_for_service_tier(
 ) -> anyhow::Result<ava_core::ThreadConfigSnapshot> {
     let deadline = Instant::now() + Duration::from_secs(10);
     loop {
-        let config_snapshot = test.ava-code.config_snapshot().await;
+        let config_snapshot = test.ava.config_snapshot().await;
         if config_snapshot.service_tier == expected_service_tier {
             return Ok(config_snapshot);
         }
@@ -1441,8 +1441,8 @@ async fn read_rollout_summary_bodies(memory_root: &Path) -> anyhow::Result<Vec<S
 }
 
 async fn shutdown_test_ava(test: &TestAva) -> anyhow::Result<()> {
-    test.ava-code.submit(Op::Shutdown {}).await?;
-    wait_for_event(&test.ava-code, |ev| matches!(ev, EventMsg::ShutdownComplete)).await;
+    test.ava.submit(Op::Shutdown {}).await?;
+    wait_for_event(&test.ava, |ev| matches!(ev, EventMsg::ShutdownComplete)).await;
     Ok(())
 }
 

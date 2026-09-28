@@ -183,7 +183,7 @@ async fn auth_rotation_refreshes_before_turn_with_best_effort(
         Input::User => {
             tokio::time::timeout(
                 Duration::from_secs(/*secs*/ 7),
-                test.ava-code
+                test.ava
                     .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
                         text: "hello".into(),
                         text_elements: Vec::new(),
@@ -192,7 +192,7 @@ async fn auth_rotation_refreshes_before_turn_with_best_effort(
             .await??;
         }
         Input::Mail => {
-            test.ava-code
+            test.ava
                 .submit(Op::InterAgentCommunication {
                     communication: InterAgentCommunication::new(
                         AgentPath::root().join("worker").expect("valid path"),
@@ -206,7 +206,7 @@ async fn auth_rotation_refreshes_before_turn_with_best_effort(
                 .await?;
         }
     }
-    let started = wait_for_event(&test.ava-code, |event| {
+    let started = wait_for_event(&test.ava, |event| {
         matches!(event, EventMsg::TurnStarted(_))
     })
     .await;
@@ -218,7 +218,7 @@ async fn auth_rotation_refreshes_before_turn_with_best_effort(
         stalled_auth.stall.store(/*val*/ false, Ordering::SeqCst);
         stalled_auth.released.cancel();
     }
-    wait_for_event(&test.ava-code, |event| {
+    wait_for_event(&test.ava, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;
@@ -235,8 +235,8 @@ async fn auth_rotation_refreshes_before_turn_with_best_effort(
         .iter()
         .any(|item| item["type"] == "additional_tools");
     assert_eq!(uses_responses_lite, succeeds);
-    test.ava-code.submit(Op::Shutdown).await?;
-    test.ava-code.wait_until_terminated().await;
+    test.ava.submit(Op::Shutdown).await?;
+    test.ava.wait_until_terminated().await;
     Ok(())
 }
 

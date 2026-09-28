@@ -185,7 +185,7 @@ async fn run_snapshot_command_with_options(
     mount_sse_sequence(harness.server(), responses).await;
 
     let test = harness.test();
-    let ava = test.ava-code.clone();
+    let ava = test.ava.clone();
     let ava_home = test.home.path().to_path_buf();
     let session_model = test.session_configured.model.clone();
     let cwd = test.config.cwd.clone();
@@ -263,7 +263,7 @@ async fn run_tool_turn_on_harness(
     mount_sse_sequence(harness.server(), responses).await;
 
     let test = harness.test();
-    let ava = test.ava-code.clone();
+    let ava = test.ava.clone();
     let session_model = test.session_configured.model.clone();
     let cwd = test.config.cwd.clone();
     let (sandbox_policy, permission_profile) =
@@ -707,7 +707,7 @@ async fn shell_snapshot_v2_guardian_uses_its_resolved_permissions_and_tools(
         network_policy: None,
         selected_capability_roots: Vec::new(),
     });
-    test.ava-code
+    test.ava
         .start_or_steer_turn(
             TurnInputRequest::user_input(vec![UserInput::Text {
                 text: "run the reviewed command".to_string(),
@@ -719,7 +719,7 @@ async fn shell_snapshot_v2_guardian_uses_its_resolved_permissions_and_tools(
             }),
         )
         .await?;
-    wait_for_event(&test.ava-code, |event| {
+    wait_for_event(&test.ava, |event| {
         assert!(
             !matches!(event, EventMsg::ExecApprovalRequest(_) | EventMsg::Error(_)),
             "unexpected event: {event:?}"
@@ -727,7 +727,7 @@ async fn shell_snapshot_v2_guardian_uses_its_resolved_permissions_and_tools(
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;
-    test.ava-code.shutdown_and_wait().await?;
+    test.ava.shutdown_and_wait().await?;
     let requests = responses.requests();
     let guardian_requests = requests
         .iter()
@@ -941,7 +941,7 @@ async fn unified_exec_snapshot_still_intercepts_apply_patch() -> Result<()> {
     let harness = TestAvaHarness::with_builder(builder).await?;
 
     let test = harness.test();
-    let ava = test.ava-code.clone();
+    let ava = test.ava.clone();
     let cwd = test.config.cwd.clone();
     let ava_home = test.home.path().to_path_buf();
     let target = cwd.join("snapshot-apply.txt");

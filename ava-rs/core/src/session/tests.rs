@@ -3844,10 +3844,10 @@ async fn fork_startup_context_then_first_turn_diff_snapshot() -> anyhow::Result<
             },
         ]))
         .await?;
-    wait_for_event(&initial.ava-code, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
+    wait_for_event(&initial.ava, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
     // Forking reads the persisted rollout JSONL, so force the completed source turn to disk
     // before snapshotting from it.
-    initial.ava-code.ensure_rollout_materialized().await;
+    initial.ava.ensure_rollout_materialized().await;
     initial
         .ava-code
         .flush_rollout()

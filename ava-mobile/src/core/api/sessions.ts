@@ -65,10 +65,21 @@ export const archiveSession = (rpc: RpcClient, id: string) => rpc.call("thread/a
 export const renameSession = (rpc: RpcClient, id: string, name: string) => rpc.call("thread/name/set", { threadId: id, name });
 
 export async function readSession(rpc: RpcClient, id: string): Promise<SessionHistoryResult> {
-  const res = await rpc.call<{ thread?: { status?: Raw; turns?: Raw[] } }>("thread/read", { threadId: id, includeTurns: true });
+  let res: Raw | null = null;
+  try {
+    // Fast path: read directly from thread store / in-memory cache without full MCP reboot
+    res = await rpc.call<Raw>("thread/read", { threadId: id, includeTurns: true });
+  } catch {
+    try {
+      res = await rpc.call<Raw>("thread/resume", { threadId: id });
+    } catch (e) {
+      console.warn("[readSession] read error:", e);
+      res = null;
+    }
+  }
   const out: ChatMessage[] = [];
-  const turns = res?.thread?.turns ?? [];
-  const threadStatus = res?.thread?.status;
+  const turns = ((res?.thread?.turns ?? res?.turns ?? res?.initialTurnsPage?.turns) as Raw[]) ?? [];
+  const threadStatus = res?.thread?.status ?? res?.status;
   const isThreadActive = threadStatus?.type === "active" || threadStatus === "active";
 
   let isTurnRunning = isThreadActive;
@@ -77,7 +88,16 @@ export async function readSession(rpc: RpcClient, id: string): Promise<SessionHi
   for (let i = 0; i < turns.length; i++) {
     const turn = turns[i]!;
     const isLastTurn = i === turns.length - 1;
-    const isTurnInProgress = turn.status === "inProgress" || (isLastTurn && isThreadActive);
+    const isTurnCompleted =
+      turn.status === "completed" ||
+      turn.status === "failed" ||
+      turn.status === "interrupted" ||
+      turn.status === "done";
+    const isTurnInProgress =
+      !isTurnCompleted &&
+      (turn.status === "inProgress" ||
+        turn.status === "running" ||
+        (isLastTurn && isThreadActive));
     if (isTurnInProgress) {
       isTurnRunning = true;
       if (turn.id) {

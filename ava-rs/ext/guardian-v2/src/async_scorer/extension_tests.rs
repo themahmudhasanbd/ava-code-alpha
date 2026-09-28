@@ -175,7 +175,7 @@ async fn installed_extension_warms_connections_without_blocking_thread_start() -
     );
     let registry = builder.build();
     let session_store = ExtensionData::new("session-1");
-    let thread_store = test.ava-code.thread_extension_data();
+    let thread_store = test.ava.thread_extension_data();
 
     let mut model = thread_store.get::<ModelInfo>().unwrap().as_ref().clone();
     model.node_repl_auto_review_required = true;
@@ -246,7 +246,7 @@ async fn installed_extension_uses_http_after_warm_socket_auth_expires() -> Resul
     );
     let registry = builder.build();
     let session_store = ExtensionData::new("session-1");
-    let thread_store = test.ava-code.thread_extension_data();
+    let thread_store = test.ava.thread_extension_data();
     let mut model = test
         .thread_manager
         .get_models_manager()
@@ -540,7 +540,7 @@ async fn sandboxed_shell_classification_respects_review_scope() -> Result<()> {
     skip_if_no_network!(Ok(()));
 
     let fixture = GuardianFailureFixture::new().await?;
-    let thread_store = fixture.test.ava-code.thread_extension_data();
+    let thread_store = fixture.test.ava.thread_extension_data();
     let mut score = cached_score(thread_store).expect("fixture should publish a score");
     score.scores.insert("action_risk".to_owned(), 0.0);
     set_cached_score(thread_store, score);
@@ -619,7 +619,7 @@ async fn computer_use_only_scores_cannot_approve_other_actions() -> Result<()> {
     skip_if_no_network!(Ok(()));
 
     let fixture = GuardianFailureFixture::new().await?;
-    let thread_store = fixture.test.ava-code.thread_extension_data();
+    let thread_store = fixture.test.ava.thread_extension_data();
     let mut model = thread_store.get::<ModelInfo>().unwrap().as_ref().clone();
     model.node_repl_auto_review_required = true;
     thread_store.insert(model);
@@ -645,7 +645,7 @@ async fn computer_use_only_scores_cannot_approve_other_actions() -> Result<()> {
         .expect("Guardian v2 should track score progress per thread");
     // The seeded low score belongs to the model selected above.
     let authorization =
-        super::super::authorization::ScoreAuthorization::current(&fixture.test.ava-code).await;
+        super::super::authorization::ScoreAuthorization::current(&fixture.test.ava).await;
     seed_cached_score(&progress, thread_store, /*index*/ 1, authorization);
     let cached = progress.inspect(/*call_id*/ None);
     let turn_store = ExtensionData::new("turn-1");
@@ -914,7 +914,7 @@ async fn sample_configured_conversation_history_with_source(
     );
     let registry = builder.build();
     let session_store = ExtensionData::new("session-1");
-    let thread_store = test.ava-code.thread_extension_data();
+    let thread_store = test.ava.thread_extension_data();
     thread_store.insert(RecordingMetrics::default());
     let metrics = thread_store.get::<RecordingMetrics>().unwrap();
     if has_model_defaults {
@@ -959,12 +959,12 @@ async fn sample_configured_conversation_history_with_source(
     };
     if !conversation_history.is_empty() {
         Box::pin(
-            test.ava-code
+            test.ava
                 .inject_response_items(conversation_history.clone()),
         )
         .await?;
     }
-    let conversation_history = test.ava-code.conversation_history_snapshot().await;
+    let conversation_history = test.ava.conversation_history_snapshot().await;
 
     registry.tool_lifecycle_contributors()[0]
         .on_tool_start(ToolStartInput {
@@ -1004,7 +1004,7 @@ struct GuardianFailureFixture {
 async fn unscored_tools_invalidate_cached_scores() -> Result<()> {
     skip_if_no_network!(Ok(()));
     let fixture = GuardianFailureFixture::new().await?;
-    let thread_store = fixture.test.ava-code.thread_extension_data();
+    let thread_store = fixture.test.ava.thread_extension_data();
     let mut model = thread_store
         .get::<ava_protocol::openai_models::ModelInfo>()
         .expect("resolved model")
@@ -1050,7 +1050,7 @@ impl GuardianFailureFixture {
             /*model_defaults*/ None,
         )
         .await?;
-        let thread_store = test.ava-code.thread_extension_data();
+        let thread_store = test.ava.thread_extension_data();
         let score_progress = thread_store
             .get::<GuardianV2ScoreProgress>()
             .expect("Guardian v2 should track score progress per thread");
@@ -1071,7 +1071,7 @@ impl GuardianFailureFixture {
     }
 
     async fn score_tool(&self, tool_name: ToolName) {
-        let thread_store = self.test.ava-code.thread_extension_data();
+        let thread_store = self.test.ava.thread_extension_data();
         set_cached_score(
             thread_store,
             SecurityRiskScore {
@@ -1104,7 +1104,7 @@ impl GuardianFailureFixture {
     }
 
     async fn assert_fails_closed(&self, expected_reason: &str) -> Result<()> {
-        let thread_store = self.test.ava-code.thread_extension_data();
+        let thread_store = self.test.ava.thread_extension_data();
         let score_progress = thread_store
             .get::<GuardianV2ScoreProgress>()
             .expect("Guardian v2 should track score progress per thread");
@@ -1218,7 +1218,7 @@ async fn contributor_fails_closed_when_luna_classification_fails() -> Result<()>
             mcp_resource_client: None,
             extension_metrics: None,
             session_store: &fixture.session_store,
-            thread_store: fixture.test.ava-code.thread_extension_data(),
+            thread_store: fixture.test.ava.thread_extension_data(),
         })
         .await;
     fixture
@@ -1422,7 +1422,7 @@ max_recent_non_user_entries = 8
         json!({"body": "x".repeat(/*n*/ 128), "tool": "read_file"})
     );
 
-    let thread_store = test.ava-code.thread_extension_data();
+    let thread_store = test.ava.thread_extension_data();
     let score_progress = thread_store
         .get::<GuardianV2ScoreProgress>()
         .expect("Guardian v2 should track score progress per thread");
@@ -1553,7 +1553,7 @@ max_recent_non_user_entries = 8
         &score_progress,
         thread_store,
         first_unscored,
-        ScoreAuthorization::current(&test.ava-code).await,
+        ScoreAuthorization::current(&test.ava).await,
     );
     assert_eq!(
         cached_approval(
@@ -1834,7 +1834,7 @@ async fn contributor_uses_model_defaults_and_preserves_local_overrides() -> Resu
         .expect("planned action should be a text item");
     assert!(action.len() <= TruncationPolicy::Tokens(/*limit*/ 128).byte_budget());
 
-    let thread_store = test.ava-code.thread_extension_data();
+    let thread_store = test.ava.thread_extension_data();
     let guardian_config = thread_store
         .get::<crate::async_scorer::config::GuardianV2Config>()
         .expect("Guardian v2 configuration should be installed");
@@ -1944,7 +1944,7 @@ async fn assert_luna_pool_context(thread_context_enabled: bool) -> Result<()> {
     )
     .await?;
     let thread_id = test.session_configured.thread_id;
-    let thread_store = test.ava-code.thread_extension_data();
+    let thread_store = test.ava.thread_extension_data();
     assert_eq!(request["model"], "gpt-5.6-luna");
     let classifier_thread_id = request["client_metadata"]["thread_id"]
         .as_str()
@@ -2047,7 +2047,7 @@ async fn assert_luna_pool_context(thread_context_enabled: bool) -> Result<()> {
         }
     );
     assert!(score.sampled_at.is_some());
-    test.ava-code.ensure_rollout_materialized().await;
+    test.ava.ensure_rollout_materialized().await;
     assert!(
         !test
             .ava-code
@@ -2148,7 +2148,7 @@ async fn contributor_persists_nested_code_mode_action_with_score() -> Result<()>
         },
     )
     .await?;
-    test.ava-code.ensure_rollout_materialized().await;
+    test.ava.ensure_rollout_materialized().await;
 
     let score = tokio::time::timeout(ASYNC_TEST_TIMEOUT, async {
         loop {
@@ -2231,7 +2231,7 @@ async fn contributor_skips_required_models_in_standard_scope() -> Result<()> {
     );
     let registry = builder.build();
     let session_store = ExtensionData::new("session-1");
-    let thread_store = test.ava-code.thread_extension_data();
+    let thread_store = test.ava.thread_extension_data();
     registry.thread_lifecycle_contributors()[0]
         .on_thread_start(ThreadStartInput {
             config: &config,
@@ -2264,8 +2264,8 @@ async fn contributor_skips_required_models_in_standard_scope() -> Result<()> {
     model_info.slug = "protected-model".to_owned();
     thread_store.insert(model_info);
     // A late prewarm preview must leave the active model's review requirements intact.
-    let _ = ava_core::guardian_review::prepare_review_prewarm(&test.ava-code).await?;
-    let authorization = ScoreAuthorization::current(&test.ava-code).await;
+    let _ = ava_core::guardian_review::prepare_review_prewarm(&test.ava).await?;
+    let authorization = ScoreAuthorization::current(&test.ava).await;
     let progress = thread_store
         .get::<GuardianV2ScoreProgress>()
         .expect("Guardian v2 should track score progress per thread");
@@ -2342,7 +2342,7 @@ async fn cached_score_survives_compaction_and_internal_context_but_not_user_inpu
         /*model_defaults*/ None,
     )
     .await?;
-    let thread_store = test.ava-code.thread_extension_data();
+    let thread_store = test.ava.thread_extension_data();
     let progress = thread_store.get::<GuardianV2ScoreProgress>().unwrap();
     tokio::time::timeout(ASYNC_TEST_TIMEOUT, async {
         while progress.inspect(/*call_id*/ None).authorization.is_none() {
@@ -2360,7 +2360,7 @@ async fn cached_score_survives_compaction_and_internal_context_but_not_user_inpu
         },
     );
 
-    test.ava-code
+    test.ava
         .inject_response_items(vec![ContextualUserFragment::into(
             InternalModelContextFragment::new(
                 InternalContextSource::from_static("goal"),
@@ -2368,8 +2368,8 @@ async fn cached_score_survives_compaction_and_internal_context_but_not_user_inpu
             ),
         )])
         .await?;
-    test.ava-code.submit(Op::Compact).await?;
-    wait_for_event(&test.ava-code, |event| {
+    test.ava.submit(Op::Compact).await?;
+    wait_for_event(&test.ava, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;
@@ -2384,7 +2384,7 @@ async fn cached_score_survives_compaction_and_internal_context_but_not_user_inpu
         Some(ReviewDecision::Approved),
     );
 
-    test.ava-code
+    test.ava
         .inject_response_items(vec![ResponseItem::Message {
             id: None,
             role: "user".to_owned(),
@@ -2426,7 +2426,7 @@ async fn assert_compaction_approval_policy(thread_context_enabled: bool) -> Resu
         "[features.guardianv2]\nthread_context = {thread_context_enabled}\n"
     ))
     .await?;
-    let thread_store = fixture.test.ava-code.thread_extension_data();
+    let thread_store = fixture.test.ava.thread_extension_data();
     set_cached_score(
         thread_store,
         SecurityRiskScore {
@@ -2446,7 +2446,7 @@ async fn assert_compaction_approval_policy(thread_context_enabled: bool) -> Resu
         .await,
         Some(ReviewDecision::Approved)
     );
-    let authorization = fixture.test.ava-code.guardian_authorization_version().await;
+    let authorization = fixture.test.ava.guardian_authorization_version().await;
     fixture
         .test
         .ava-code
@@ -2466,10 +2466,10 @@ async fn assert_compaction_approval_policy(thread_context_enabled: bool) -> Resu
     model.node_repl_auto_review_required = true;
     thread_store.insert(model);
     assert_eq!(
-        fixture.test.ava-code.guardian_authorization_version().await,
+        fixture.test.ava.guardian_authorization_version().await,
         authorization
     );
-    let score_authorization = ScoreAuthorization::current(&fixture.test.ava-code).await;
+    let score_authorization = ScoreAuthorization::current(&fixture.test.ava).await;
     let progress = thread_store
         .get::<GuardianV2ScoreProgress>()
         .expect("score progress");
@@ -2526,7 +2526,7 @@ async fn contributor_counts_failed_thread_lookups_toward_score_lag() -> Result<(
     )
     .await?;
     let session_store = ExtensionData::new("session-1");
-    let thread_store = test.ava-code.thread_extension_data();
+    let thread_store = test.ava.thread_extension_data();
     let score_progress = thread_store
         .get::<GuardianV2ScoreProgress>()
         .expect("Guardian v2 should track score progress per thread");
@@ -3019,7 +3019,7 @@ async fn assert_parent_compaction_reuse(thread_context_enabled: bool) -> Result<
     );
     let registry = builder.build();
     let session_store = ExtensionData::new("session-1");
-    let thread_store = test.ava-code.thread_extension_data();
+    let thread_store = test.ava.thread_extension_data();
     let metrics = Arc::new(RecordingMetrics::default());
     registry.thread_lifecycle_contributors()[0]
         .on_thread_start(ThreadStartInput {
@@ -3059,7 +3059,7 @@ async fn assert_parent_compaction_reuse(thread_context_enabled: bool) -> Result<
     ]);
 
     Box::pin(
-        test.ava-code
+        test.ava
             .inject_response_items(conversation_history.0.clone()),
     )
     .await?;
@@ -3250,7 +3250,7 @@ async fn legacy_contributor_can_disable_parent_compaction_reuse() -> Result<()> 
             .all(|item| item["type"] != "compaction" && item["type"] != "context_compaction")
     );
 
-    let thread_store = test.ava-code.thread_extension_data();
+    let thread_store = test.ava.thread_extension_data();
     let score = tokio::time::timeout(ASYNC_TEST_TIMEOUT, async {
         loop {
             if let Some(score) = cached_score(thread_store) {
@@ -3279,7 +3279,7 @@ impl ava_extension_api::SynchronousApprovalReviewer for CacheMiss {
 async fn cached_approval_discounts_only_its_own_unscored_wrapper() -> Result<()> {
     skip_if_no_network!(Ok(()));
     let fixture = GuardianFailureFixture::new().await?;
-    let store = fixture.test.ava-code.thread_extension_data();
+    let store = fixture.test.ava.thread_extension_data();
     let progress = store.get::<GuardianV2ScoreProgress>().unwrap();
     let mut score = cached_score(store).unwrap();
     score.scores.insert("action_risk".to_owned(), 0.0);
@@ -3341,14 +3341,14 @@ async fn cached_approval_discounts_only_its_own_unscored_wrapper() -> Result<()>
         &progress,
         store,
         wrapper,
-        ScoreAuthorization::current(&fixture.test.ava-code).await,
+        ScoreAuthorization::current(&fixture.test.ava).await,
     );
     assert_eq!(approve("third").await, None);
     seed_cached_score(
         &progress,
         store,
         wrapper + 3,
-        ScoreAuthorization::current(&fixture.test.ava-code).await,
+        ScoreAuthorization::current(&fixture.test.ava).await,
     );
     let output = start("output-only", &origin, ToolCallSource::Direct);
     let other = ResponseItemId::from_server("other-wrapper".to_owned());
@@ -3363,7 +3363,7 @@ async fn cached_approval_discounts_only_its_own_unscored_wrapper() -> Result<()>
         &progress,
         store,
         output,
-        ScoreAuthorization::current(&fixture.test.ava-code).await,
+        ScoreAuthorization::current(&fixture.test.ava).await,
     );
     assert_eq!(
         approve("other-second").await,
@@ -3483,9 +3483,9 @@ async fn cached_score_publication_rejects_delayed_results_without_changing_cover
 {
     skip_if_no_network!(Ok(()));
     let fixture = GuardianFailureFixture::new().await?;
-    let store = fixture.test.ava-code.thread_extension_data();
+    let store = fixture.test.ava.thread_extension_data();
     let progress = store.get::<GuardianV2ScoreProgress>().unwrap();
-    let authorization = ScoreAuthorization::current(&fixture.test.ava-code).await;
+    let authorization = ScoreAuthorization::current(&fixture.test.ava).await;
     seed_cached_score(&progress, store, /*index*/ 1, authorization.clone());
     let score = cached_score(store).unwrap();
     observe_unscored_call(&progress, store);

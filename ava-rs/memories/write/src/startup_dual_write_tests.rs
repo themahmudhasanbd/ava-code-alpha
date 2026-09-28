@@ -15,7 +15,7 @@ async fn dual_write_extracts_and_consolidates_into_independent_stores() -> anyho
     let mut memories = startup_test_memories_config();
     memories.dual_write = true;
     let test = build_test_ava_with_memories_config(&server, Arc::clone(&home), memories).await?;
-    let db = test.ava-code.state_db().expect("memory state");
+    let db = test.ava.state_db().expect("memory state");
     let source = seed_stage1_candidate(
         &db,
         home.path(),

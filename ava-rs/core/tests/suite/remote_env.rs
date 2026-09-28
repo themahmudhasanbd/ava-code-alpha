@@ -221,7 +221,7 @@ async fn submit_turn_with_approval_and_environments(
         test.config.cwd.clone(),
         environments,
     );
-    test.ava-code
+    test.ava
         .start_or_steer_turn(
             TurnInputRequest::user_input(vec![UserInput::Text {
                 text: prompt.into(),
@@ -252,7 +252,7 @@ async fn expect_patch_approval(
     test: &TestAva,
     expected_call_id: &str,
 ) -> ApplyPatchApprovalRequestEvent {
-    let event = wait_for_event(&test.ava-code, |event| {
+    let event = wait_for_event(&test.ava, |event| {
         matches!(
             event,
             EventMsg::ApplyPatchApprovalRequest(_) | EventMsg::TurnComplete(_)
@@ -271,7 +271,7 @@ async fn expect_patch_approval(
 }
 
 async fn wait_for_completion_without_patch_approval(test: &TestAva) {
-    let event = wait_for_event(&test.ava-code, |event| {
+    let event = wait_for_event(&test.ava, |event| {
         matches!(
             event,
             EventMsg::ApplyPatchApprovalRequest(_) | EventMsg::TurnComplete(_)
@@ -441,7 +441,7 @@ async fn approved_remote_shell_runs_in_remote_cwd() -> Result<()> {
     )
     .await?;
 
-    let event = wait_for_event(&test.ava-code, |event| {
+    let event = wait_for_event(&test.ava, |event| {
         matches!(
             event,
             EventMsg::ExecApprovalRequest(_) | EventMsg::TurnComplete(_)
@@ -455,14 +455,14 @@ async fn approved_remote_shell_runs_in_remote_cwd() -> Result<()> {
         approval.cwd.to_inferred_path_uri().as_ref(),
         Some(&selection.cwd)
     );
-    test.ava-code
+    test.ava
         .submit(Op::ExecApproval {
             id: approval.effective_approval_id(),
             turn_id: Some(approval.turn_id),
             decision: ReviewDecision::Approved,
         })
         .await?;
-    wait_for_event(&test.ava-code, |event| {
+    wait_for_event(&test.ava, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;
@@ -565,7 +565,7 @@ async fn environment_permissions_follow_configuration_ownership() -> Result<()> 
     .await;
 
     submit_thread_settings(
-        &test.ava-code,
+        &test.ava,
         ThreadSettingsOverrides {
             permission_profile: Some(PermissionProfile::read_only()),
             ..Default::default()
@@ -587,7 +587,7 @@ async fn environment_permissions_follow_configuration_ownership() -> Result<()> 
     assert!(!output.contains("WRITE_SUCCEEDED"));
 
     submit_thread_settings(
-        &test.ava-code,
+        &test.ava,
         ThreadSettingsOverrides {
             environments: Some(TurnEnvironmentSelections::new(
                 test.config.cwd.clone(),
@@ -612,7 +612,7 @@ async fn environment_permissions_follow_configuration_ownership() -> Result<()> 
         },
     )
     .await?;
-    test.ava-code
+    test.ava
         .submit(Op::ThreadSettings {
             thread_settings: ThreadSettingsOverrides {
                 permission_profile: Some(PermissionProfile::workspace_write()),
@@ -620,12 +620,12 @@ async fn environment_permissions_follow_configuration_ownership() -> Result<()> 
             },
         })
         .await?;
-    let persisted_settings = wait_for_event_match(&test.ava-code, |event| match event {
+    let persisted_settings = wait_for_event_match(&test.ava, |event| match event {
         EventMsg::ThreadSettingsApplied(event) => Some(event.thread_settings.clone()),
         _ => None,
     })
     .await;
-    let snapshot = test.ava-code.config_snapshot().await;
+    let snapshot = test.ava.config_snapshot().await;
     assert_eq!(snapshot.permission_profile, PermissionProfile::read_only());
     assert_eq!(
         snapshot.active_permission_profile,
@@ -637,16 +637,16 @@ async fn environment_permissions_follow_configuration_ownership() -> Result<()> 
     );
     assert_eq!(
         persisted_settings,
-        test.ava-code.thread_settings_snapshot().await
+        test.ava.thread_settings_snapshot().await
     );
     assert_ne!(
         persisted_settings.active_permission_profile,
         snapshot.active_permission_profile
     );
-    test.ava-code
-        .restore_thread_settings(test.ava-code.restorable_thread_settings().await)
+    test.ava
+        .restore_thread_settings(test.ava.restorable_thread_settings().await)
         .await?;
-    let (mcp_config, _) = test.ava-code.current_mcp_config_and_runtime_context().await;
+    let (mcp_config, _) = test.ava.current_mcp_config_and_runtime_context().await;
     assert_eq!(
         mcp_config.permission_profile,
         PermissionProfile::workspace_write()
@@ -715,7 +715,7 @@ async fn executor_profile_roots_survive_settings_restore_and_turn_recording() ->
         })
         .build_with_auto_env(&server)
         .await?;
-    let runtime_roots = test.ava-code.config_snapshot().await.workspace_roots;
+    let runtime_roots = test.ava.config_snapshot().await.workspace_roots;
     // Include a foreign convention on every host, plus case-distinct Windows roots.
     let roots = [
         "file:///workspace/profile",
@@ -736,7 +736,7 @@ async fn executor_profile_roots_survive_settings_restore_and_turn_recording() ->
     let profile_roots = roots.into_iter().map(Into::into).collect::<Vec<_>>();
     let active_profile = ActivePermissionProfile::new("executor");
     submit_thread_settings(
-        &test.ava-code,
+        &test.ava,
         ThreadSettingsOverrides {
             permission_profile: Some(profile.clone()),
             active_permission_profile: Some(active_profile.clone()),
@@ -745,10 +745,10 @@ async fn executor_profile_roots_survive_settings_restore_and_turn_recording() ->
         },
     )
     .await?;
-    let saved = test.ava-code.restorable_thread_settings().await;
+    let saved = test.ava.restorable_thread_settings().await;
     assert_eq!(saved.profile_workspace_roots, Some(profile_roots.clone()));
     submit_thread_settings(
-        &test.ava-code,
+        &test.ava,
         ThreadSettingsOverrides {
             permission_profile: Some(profile),
             profile_workspace_roots: Some(Vec::new()),
@@ -757,14 +757,14 @@ async fn executor_profile_roots_survive_settings_restore_and_turn_recording() ->
     )
     .await?;
     assert!(
-        test.ava-code
+        test.ava
             .config_snapshot()
             .await
             .profile_workspace_roots
             .is_empty()
     );
-    test.ava-code.restore_thread_settings(saved).await?;
-    let snapshot = test.ava-code.config_snapshot().await;
+    test.ava.restore_thread_settings(saved).await?;
+    let snapshot = test.ava.config_snapshot().await;
     assert_eq!(
         (snapshot.profile_workspace_roots, snapshot.workspace_roots),
         (profile_roots, runtime_roots)
@@ -777,7 +777,7 @@ async fn executor_profile_roots_survive_settings_restore_and_turn_recording() ->
     .await;
     test.submit_text_turn("record the executor profile").await?;
     response_mock.single_request();
-    test.ava-code.flush_rollout().await?;
+    test.ava.flush_rollout().await?;
     let context = test
         .ava-code
         .load_history(/*include_archived*/ false)
@@ -906,27 +906,27 @@ async fn settings_update_does_not_retarget_active_turn_environment() -> Result<(
     });
     let test = builder.build(&server).await?;
     let initial_cwd = test.config.cwd.clone();
-    let initial_environments = test.ava-code.environment_selections().await;
-    assert_eq!(test.ava-code.active_turn_environment_selections().await, None);
+    let initial_environments = test.ava.environment_selections().await;
+    assert_eq!(test.ava.active_turn_environment_selections().await, None);
     let next_workspace = TempDir::new()?;
     let next_cwd = next_workspace.path().abs();
     let next_environments =
         TurnEnvironmentSelections::new(next_cwd.clone(), vec![local(next_cwd.clone())]);
 
-    test.ava-code
+    test.ava
         .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
             text: "pause before continuing".into(),
             text_elements: Vec::new(),
         }]))
         .await?;
-    let request = wait_for_event_match(&test.ava-code, |event| match event {
+    let request = wait_for_event_match(&test.ava, |event| match event {
         EventMsg::RequestUserInput(request) => Some(request.clone()),
         _ => None,
     })
     .await;
 
     assert_eq!(
-        test.ava-code.active_turn_environment_selections().await,
+        test.ava.active_turn_environment_selections().await,
         Some(initial_environments.clone())
     );
 
@@ -944,12 +944,12 @@ async fn settings_update_does_not_retarget_active_turn_environment() -> Result<(
     assert_eq!(preview.cwd(), &next_cwd);
     assert_eq!(preview.workspace_roots, vec![next_cwd.clone()]);
     assert_eq!(
-        test.ava-code.environment_selections().await,
+        test.ava.environment_selections().await,
         initial_environments
     );
 
     submit_thread_settings(
-        &test.ava-code,
+        &test.ava,
         ThreadSettingsOverrides {
             environments: Some(next_environments.clone()),
             ..Default::default()
@@ -957,21 +957,21 @@ async fn settings_update_does_not_retarget_active_turn_environment() -> Result<(
     )
     .await?;
     assert_eq!(
-        test.ava-code.environment_selections().await,
+        test.ava.environment_selections().await,
         next_environments.environments
     );
     assert_eq!(
-        test.ava-code.active_turn_environment_selections().await,
+        test.ava.active_turn_environment_selections().await,
         Some(initial_environments)
     );
-    let snapshot = test.ava-code.config_snapshot().await;
+    let snapshot = test.ava.config_snapshot().await;
     assert_eq!(
         snapshot.environment_selections(),
         next_environments.environments
     );
     assert_eq!(snapshot.cwd(), &next_cwd);
     assert_eq!(snapshot.workspace_roots, vec![next_cwd.clone()]);
-    test.ava-code
+    test.ava
         .submit(Op::UserInputAnswer {
             id: request.turn_id,
             response: RequestUserInputResponse {
@@ -984,11 +984,11 @@ async fn settings_update_does_not_retarget_active_turn_environment() -> Result<(
             },
         })
         .await?;
-    wait_for_event(&test.ava-code, |event| {
+    wait_for_event(&test.ava, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;
-    assert_eq!(test.ava-code.active_turn_environment_selections().await, None);
+    assert_eq!(test.ava.active_turn_environment_selections().await, None);
     test.submit_turn("start the next turn").await?;
 
     let request_texts = response_mock
@@ -1095,7 +1095,7 @@ async fn deferred_executor_promotes_primary_environment_when_startup_completes()
         Some(vec![local_selection.clone(), remote_selection.clone()]),
     )
     .await?;
-    test.ava-code
+    test.ava
         .start_or_steer_turn(
             TurnInputRequest::user_input(vec![UserInput::Text {
                 text: "wait for the primary environment".into(),
@@ -1110,7 +1110,7 @@ async fn deferred_executor_promotes_primary_environment_when_startup_completes()
             }),
         )
         .await?;
-    let request = wait_for_event_match(&test.ava-code, |event| match event {
+    let request = wait_for_event_match(&test.ava, |event| match event {
         EventMsg::RequestUserInput(request) => Some(request.clone()),
         _ => None,
     })
@@ -1187,12 +1187,12 @@ async fn deferred_executor_promotes_primary_environment_when_startup_completes()
             }
         }
     });
-    core_test_support::wait_for_mcp_server(&test.ava-code, "deferred").await?;
+    core_test_support::wait_for_mcp_server(&test.ava, "deferred").await?;
     assert_eq!(
-        test.ava-code.active_turn_environment_selections().await,
+        test.ava.active_turn_environment_selections().await,
         Some(active_environments)
     );
-    test.ava-code
+    test.ava
         .submit(Op::UserInputAnswer {
             id: request.turn_id,
             response: RequestUserInputResponse {
@@ -1205,12 +1205,12 @@ async fn deferred_executor_promotes_primary_environment_when_startup_completes()
             },
         })
         .await?;
-    wait_for_event(&test.ava-code, |event| {
+    wait_for_event(&test.ava, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;
 
-    assert_eq!(test.ava-code.active_turn_environment_selections().await, None);
+    assert_eq!(test.ava.active_turn_environment_selections().await, None);
 
     let requests = response_mock.requests();
     assert!(
@@ -1227,9 +1227,9 @@ async fn deferred_executor_promotes_primary_environment_when_startup_completes()
     assert!(updated_context.contains("<environment id=\"remote\" primary=\"true\">"));
     assert!(updated_context.contains("<shell>zsh</shell>"));
 
-    test.ava-code.ensure_rollout_materialized().await;
-    test.ava-code.flush_rollout().await?;
-    let rollout = fs::read_to_string(test.ava-code.rollout_path().context("rollout path")?)?;
+    test.ava.ensure_rollout_materialized().await;
+    test.ava.flush_rollout().await?;
+    let rollout = fs::read_to_string(test.ava.rollout_path().context("rollout path")?)?;
     let world_state_patch = rollout
         .lines()
         .map(ava_rollout::parse_rollout_line)
@@ -1514,7 +1514,7 @@ async fn shared_executor_keeps_ready_capability_roots_scoped_to_each_attachment(
             .await;
         assert_eq!(preview.is_ok(), should_succeed);
         assert_eq!(
-            test.ava-code.environment_selections().await,
+            test.ava.environment_selections().await,
             vec![selection.clone()]
         );
     }
@@ -1546,7 +1546,7 @@ async fn shared_executor_keeps_ready_capability_roots_scoped_to_each_attachment(
         .await?;
 
     submit_thread_settings(
-        &test.ava-code,
+        &test.ava,
         ThreadSettingsOverrides {
             environments: Some(TurnEnvironmentSelections::new(
                 test.config.cwd.clone(),
@@ -1595,9 +1595,9 @@ async fn shared_executor_keeps_ready_capability_roots_scoped_to_each_attachment(
     .await;
 
     for (index, (thread, prompt)) in [
-        (&test.ava-code, "first"),
+        (&test.ava, "first"),
         (&second.thread, "second"),
-        (&test.ava-code, "first-updated"),
+        (&test.ava, "first-updated"),
         (&second.thread, "second-again"),
     ]
     .into_iter()
@@ -1637,7 +1637,7 @@ async fn shared_executor_keeps_ready_capability_roots_scoped_to_each_attachment(
     }
 
     assert_eq!(
-        test.ava-code.inspect_selected_capability_roots().ready_roots,
+        test.ava.inspect_selected_capability_roots().ready_roots,
         vec![root("first-updated-root")]
     );
     let requests = response_mock.requests();
@@ -1685,7 +1685,7 @@ async fn shared_executor_keeps_ready_capability_roots_scoped_to_each_attachment(
 async fn owner_network_policy_rejects_unsupported_environment_authority() -> Result<()> {
     let server = start_mock_server().await;
     let test = test_ava().build_with_auto_env(&server).await?;
-    let selections = test.ava-code.environment_selections().await;
+    let selections = test.ava.environment_selections().await;
     let selection = selections
         .first()
         .context("thread should select its executor environment")?;
@@ -1737,7 +1737,7 @@ async fn owner_network_policy_rejects_unsupported_environment_authority() -> Res
             "unexpected validation error: {error}"
         );
     }
-    assert_eq!(test.ava-code.environment_selections().await, selections);
+    assert_eq!(test.ava.environment_selections().await, selections);
     Ok(())
 }
 
@@ -2002,7 +2002,7 @@ async fn future_pending_environment_can_finish_without_retargeting_the_active_tu
             assert!(config.features.enable(Feature::DeferredExecutor).is_ok());
         });
     let test = builder.build_with_auto_env(&server).await?;
-    let selection = test.ava-code.environment_selections().await.remove(0);
+    let selection = test.ava.environment_selections().await.remove(0);
     let active = TurnEnvironmentSelection {
         config: EnvironmentConfigState::Pending,
         ..selection
@@ -2431,7 +2431,7 @@ async fn deferred_executor_stays_pending_after_materialization() -> Result<()> {
         provider.clone(),
     )?;
 
-    test.ava-code
+    test.ava
         .start_or_steer_turn(
             TurnInputRequest::user_input(vec![UserInput::Text {
                 text: "wait for the environment".into(),
@@ -2477,8 +2477,8 @@ async fn deferred_executor_stays_pending_after_materialization() -> Result<()> {
         Some(WAIT_FOR_ENVIRONMENT_TEST_ENVIRONMENT_ID_DESCRIPTION)
     );
 
-    test.ava-code.submit(Op::Interrupt).await?;
-    wait_for_event(&test.ava-code, |event| {
+    test.ava.submit(Op::Interrupt).await?;
+    wait_for_event(&test.ava, |event| {
         matches!(event, EventMsg::TurnAborted(_))
     })
     .await;
@@ -2602,7 +2602,7 @@ async fn deferred_executor_spawn_agent_inherits_ready_step_environments(
     let expected_environments = vec![remote_selection, local(test.config.cwd.clone())];
     let mut created_threads = test.thread_manager.subscribe_thread_created();
 
-    test.ava-code
+    test.ava
         .start_or_steer_turn(
             TurnInputRequest::user_input(vec![UserInput::Text {
                 text: "spawn after the environment becomes ready".into(),
@@ -2619,7 +2619,7 @@ async fn deferred_executor_spawn_agent_inherits_ready_step_environments(
         .await?;
     wait_for_response_request_count(&response_mock, /*expected_count*/ 1).await;
     attach_tx.send(()).expect("attach remote environment");
-    wait_for_event(&test.ava-code, |event| {
+    wait_for_event(&test.ava, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;
@@ -2764,7 +2764,7 @@ async fn deferred_executor_guardian_uses_newly_ready_step_environment() -> Resul
     let (sandbox_policy, permission_profile) =
         turn_permission_fields(permission_profile, test.config.cwd.as_path());
 
-    test.ava-code
+    test.ava
         .start_or_steer_turn(
             TurnInputRequest::user_input(vec![UserInput::Text {
                 text: "review a command after the remote environment becomes ready".into(),
@@ -2783,7 +2783,7 @@ async fn deferred_executor_guardian_uses_newly_ready_step_environment() -> Resul
         .await?;
     wait_for_response_request_count(&responses, /*expected_count*/ 1).await;
     attach_tx.send(()).expect("attach remote environment");
-    wait_for_event(&test.ava-code, |event| {
+    wait_for_event(&test.ava, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;
@@ -2880,7 +2880,7 @@ async fn deferred_executor_loads_agents_md_when_environment_becomes_ready() -> R
     ));
     let test = expect_startup(builder.build(&server)).await;
 
-    test.ava-code
+    test.ava
         .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
             text: "load the environment instructions".into(),
             text_elements: Vec::new(),
@@ -2889,7 +2889,7 @@ async fn deferred_executor_loads_agents_md_when_environment_becomes_ready() -> R
     wait_for_response_request_count(&response_mock, /*expected_count*/ 1).await;
     let agents_path = PathUri::from_abs_path(&test.config.cwd).join("AGENTS.md")?;
     attach_tx.send(()).expect("attach environment");
-    wait_for_event(&test.ava-code, |event| {
+    wait_for_event(&test.ava, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;
@@ -2905,7 +2905,7 @@ async fn deferred_executor_loads_agents_md_when_environment_becomes_ready() -> R
     assert_eq!(environment_instructions_occurrences(&requests[0]), 1);
     assert_eq!(environment_instructions_occurrences(&requests[1]), 1);
     assert_eq!(environment_instructions_occurrences(&requests[2]), 1);
-    assert_eq!(test.ava-code.instruction_sources().await, vec![agents_path]);
+    assert_eq!(test.ava.instruction_sources().await, vec![agents_path]);
 
     Ok(())
 }
@@ -2986,20 +2986,20 @@ async fn deferred_executor_compaction_preserves_then_updates_environment_once() 
         });
     let test = expect_startup(builder.build(&server)).await;
 
-    test.ava-code
+    test.ava
         .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
             text: "wait for the environment".into(),
             text_elements: Vec::new(),
         }]))
         .await?;
-    let request = wait_for_event_match(&test.ava-code, |event| match event {
+    let request = wait_for_event_match(&test.ava, |event| match event {
         EventMsg::RequestUserInput(request) => Some(request.clone()),
         _ => None,
     })
     .await;
 
     serve_environment_info(listener).await;
-    test.ava-code
+    test.ava
         .submit(Op::UserInputAnswer {
             id: request.turn_id,
             response: RequestUserInputResponse {
@@ -3012,7 +3012,7 @@ async fn deferred_executor_compaction_preserves_then_updates_environment_once() 
             },
         })
         .await?;
-    wait_for_event(&test.ava-code, |event| {
+    wait_for_event(&test.ava, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;
@@ -3051,9 +3051,9 @@ async fn deferred_executor_compaction_preserves_then_updates_environment_once() 
         .expect("the next sampling step should report that the environment is ready");
     assert!(starting_index < ready_index);
 
-    test.ava-code.ensure_rollout_materialized().await;
-    test.ava-code.flush_rollout().await?;
-    let rollout_path = test.ava-code.rollout_path().context("rollout path")?;
+    test.ava.ensure_rollout_materialized().await;
+    test.ava.flush_rollout().await?;
+    let rollout_path = test.ava.rollout_path().context("rollout path")?;
     let rollout = fs::read_to_string(rollout_path)?;
     let world_state_items = rollout
         .lines()
@@ -3372,7 +3372,7 @@ async fn remote_exec_materializes_target_roots_before_sandbox_selection() -> Res
     );
     let (sandbox_policy, permission_profile) =
         turn_permission_fields(permission_profile, test.config.cwd.as_path());
-    test.ava-code
+    test.ava
         .start_or_steer_turn(
             TurnInputRequest::user_input(vec![UserInput::Text {
                 text: "try to read the denied remote workspace root".into(),
@@ -3411,7 +3411,7 @@ async fn remote_exec_materializes_target_roots_before_sandbox_selection() -> Res
             }),
         )
         .await?;
-    wait_for_event(&test.ava-code, |event| {
+    wait_for_event(&test.ava, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;
@@ -3567,7 +3567,7 @@ async fn remote_request_permissions_grant_unblocks_later_remote_exec() -> Result
     )
     .await?;
 
-    let event = wait_for_event(&test.ava-code, |event| {
+    let event = wait_for_event(&test.ava, |event| {
         matches!(
             event,
             EventMsg::RequestPermissions(_) | EventMsg::TurnComplete(_)
@@ -3594,14 +3594,14 @@ async fn remote_request_permissions_grant_unblocks_later_remote_exec() -> Result
     assert_eq!(request_cwd, expected_cwd);
     assert_eq!(request.permissions, expected_permissions);
 
-    test.ava-code
+    test.ava
         .submit(Op::RequestPermissionsResponse {
             id: "permissions-call".to_string(),
             response: approved_response.clone(),
         })
         .await?;
 
-    let event = wait_for_event(&test.ava-code, |event| {
+    let event = wait_for_event(&test.ava, |event| {
         matches!(
             event,
             EventMsg::ExecApprovalRequest(_) | EventMsg::TurnComplete(_)
@@ -3869,13 +3869,13 @@ async fn apply_patch_approvals_are_remembered_per_environment() -> Result<()> {
     )
     .await?;
     let approval = expect_patch_approval(&test, "call-local").await;
-    test.ava-code
+    test.ava
         .submit(Op::PatchApproval {
             id: approval.call_id,
             decision: ReviewDecision::ApprovedForSession,
         })
         .await?;
-    wait_for_event(&test.ava-code, |event| {
+    wait_for_event(&test.ava, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;
@@ -3889,13 +3889,13 @@ async fn apply_patch_approvals_are_remembered_per_environment() -> Result<()> {
     )
     .await?;
     let approval = expect_patch_approval(&test, "call-remote").await;
-    test.ava-code
+    test.ava
         .submit(Op::PatchApproval {
             id: approval.call_id,
             decision: ReviewDecision::ApprovedForSession,
         })
         .await?;
-    wait_for_event(&test.ava-code, |event| {
+    wait_for_event(&test.ava, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;

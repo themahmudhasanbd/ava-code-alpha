@@ -195,13 +195,13 @@ async fn mcp_calls_stay_bound_to_each_thread() -> anyhow::Result<()> {
         .start_thread(StartThreadOptions::new(second_config))
         .await?;
 
-    wait_for_mcp_server(&fixture.ava-code, SERVER_NAME).await?;
+    wait_for_mcp_server(&fixture.ava, SERVER_NAME).await?;
     wait_for_mcp_server(&second_thread, SERVER_NAME).await?;
 
     let calls = [
-        (&fixture.ava-code, "first-call", "first-runtime"),
+        (&fixture.ava, "first-call", "first-runtime"),
         (&second_thread, "second-call", "second-runtime"),
-        (&fixture.ava-code, "first-again", "first-runtime"),
+        (&fixture.ava, "first-again", "first-runtime"),
     ];
     let mut processes = Vec::new();
     for (thread, call_id, marker) in calls {
@@ -279,7 +279,7 @@ async fn mcp_calls_stay_bound_to_each_thread() -> anyhow::Result<()> {
     assert_ne!(processes[0], processes[1]);
     assert_eq!(processes[0], processes[2]);
 
-    fixture.ava-code.shutdown_and_wait().await?;
+    fixture.ava.shutdown_and_wait().await?;
     second_thread.shutdown_and_wait().await?;
     responses_server.verify().await;
     Ok(())
@@ -355,7 +355,7 @@ async fn apps_cache_filled_during_binding_capture_reaches_the_model() -> anyhow:
             .build_with_auto_env(&server)
             .await?;
         // Startup emits one summary for both servers, not one event per server.
-        let EventMsg::McpStartupComplete(startup) = wait_for_event(&test.ava-code, |event| {
+        let EventMsg::McpStartupComplete(startup) = wait_for_event(&test.ava, |event| {
             matches!(event, EventMsg::McpStartupComplete(_))
         })
         .await
@@ -489,7 +489,7 @@ async fn cached_http_mcp_starts_lazily_for_subagents(
         })
         .build_with_auto_env(&responses_server)
         .await?;
-    wait_for_mcp_server(&fixture.ava-code, SERVER_NAME).await?;
+    wait_for_mcp_server(&fixture.ava, SERVER_NAME).await?;
     assert_eq!(startup_control.initialize_attempts(), 1);
 
     let mut subagent_config = fixture.config.clone();
@@ -573,7 +573,7 @@ async fn cached_http_mcp_starts_lazily_for_subagents(
     assert!(output.is_some());
     assert_eq!(startup_control.initialize_attempts(), 2);
 
-    fixture.ava-code.shutdown_and_wait().await?;
+    fixture.ava.shutdown_and_wait().await?;
     subagent.shutdown_and_wait().await?;
     responses_server.verify().await;
     Ok(())
@@ -660,7 +660,7 @@ async fn cached_mcp_startup_is_eager_for_root_and_lazy_for_subagents() -> anyhow
         /*sandbox*/ None,
     )
     .await?;
-    wait_for_event(&fixture.ava-code, |event| {
+    wait_for_event(&fixture.ava, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;
@@ -885,7 +885,7 @@ async fn cached_mcp_startup_is_eager_for_root_and_lazy_for_subagents() -> anyhow
         .context("an unrelated tool should complete while cached MCP startup is pending")?
         .context("the unrelated tool should emit its plan update")?;
 
-    fixture.ava-code.shutdown_and_wait().await?;
+    fixture.ava.shutdown_and_wait().await?;
     fs.write_file(
         &barrier_file,
         b"ready".to_vec(),

@@ -19,14 +19,25 @@ export interface TurnHandlers {
   onQueueChanged?: () => void;
 }
 
+export interface RunTurnOptions {
+  model?: string;
+  modelId?: string;
+  effort?: string;
+  sandbox?: string;
+  cwd?: string;
+}
+
 /** Sends a prompt and streams every live event for that thread until the turn completes. */
 export async function runTurn(
   rpc: RpcClient,
   threadId: string,
   text: string,
-  opts: { model?: string; effort?: string },
+  opts: RunTurnOptions = {},
   h: TurnHandlers,
 ) {
+  const selectedModel = opts.model || opts.modelId;
+  const selectedEffort = opts.effort;
+
   const off = rpc.on(({ method, params, id: reqId }) => {
     const eventThreadId = params?.threadId ?? params?.thread_id;
     if (eventThreadId && eventThreadId !== threadId) return;
@@ -154,25 +165,29 @@ export async function runTurn(
   });
 
   try {
+    try {
+      await rpc.call("thread/resume", { threadId });
+    } catch {}
+
     const res = await rpc.call<Raw>("turn/start", {
       threadId,
       input: [{ type: "text", text, text_elements: [] }],
-      ...(opts.model ? { model: opts.model } : {}),
-      ...(opts.effort ? { effort: opts.effort } : {}),
+      ...(selectedModel ? { model: selectedModel } : {}),
+      ...(selectedEffort ? { effort: selectedEffort } : {}),
     });
     if (res?.turn?.id && h.onTurnStarted) {
       h.onTurnStarted(String(res.turn.id));
     }
   } catch (e) {
     const errText = formatCoreError(e);
-    if (errText.toLowerCase().includes("thread not found")) {
+    if (/thread not found/i.test(errText)) {
       try {
         await rpc.call("thread/resume", { threadId });
         const retryRes = await rpc.call<Raw>("turn/start", {
           threadId,
           input: [{ type: "text", text, text_elements: [] }],
-          ...(opts.model ? { model: opts.model } : {}),
-          ...(opts.effort ? { effort: opts.effort } : {}),
+          ...(selectedModel ? { model: selectedModel } : {}),
+          ...(selectedEffort ? { effort: selectedEffort } : {}),
         });
         if (retryRes?.turn?.id && h.onTurnStarted) {
           h.onTurnStarted(String(retryRes.turn.id));
@@ -191,8 +206,10 @@ export async function runTurn(
         await addPromptToQueue(rpc, threadId, text);
         h.onNotice("A task is already running. Your prompt was added to the queue.", "info");
         if (h.onQueueChanged) h.onQueueChanged();
-        return off;
       } catch {}
+      off();
+      h.onDone(undefined, "Queued");
+      return off;
     }
 
     off();
@@ -207,6 +224,7 @@ export function attachToRunningTurn(
   threadId: string,
   h: TurnHandlers,
 ) {
+  void rpc.call("thread/resume", { threadId }).catch(() => {});
   const off = rpc.on(({ method, params, id: reqId }) => {
     const eventThreadId = params?.threadId ?? params?.thread_id;
     if (eventThreadId && eventThreadId !== threadId) return;

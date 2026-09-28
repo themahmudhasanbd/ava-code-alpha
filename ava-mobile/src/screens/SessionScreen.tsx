@@ -11,24 +11,21 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { ChevronDown, Clock, Play, X } from "lucide-react-native";
 import { AppShell } from "@/components/layout/AppShell";
+import { AvaMascot } from "@/components/ui/ava-mascot";
 import { Shimmer } from "@/components/ai-elements/shimmer";
-import { AvaMascot, ChatSessionSkeleton } from "@/components/kit";
+import { ChatMessageView } from "@/components/chat/message-parts";
+import { Composer } from "@/components/chat/composer";
 import { APP } from "@/config/app";
 import { useAva } from "@/state/ava-provider";
 import { useSessions } from "@/state/queries";
 import { useChat } from "@/state/use-chat";
-import { ChatMessageView } from "@/components/chat/message-parts";
-import { Composer } from "@/components/chat/composer";
-import {
-  ChevronDown,
-  Clock,
-  Play,
-  Square,
-  X,
-} from "lucide-react-native";
-import { useTheme } from "@/theme/colors";
+import { COLORS, useTheme } from "@/theme/colors";
 import { font } from "@/theme/fonts";
+import { ChatSessionSkeleton } from "@/components/ui/skeleton";
+
+const processedPromptNonces = new Set<string>();
 
 export function SessionScreen({
   route,
@@ -38,15 +35,18 @@ export function SessionScreen({
     params?: {
       sessionId?: string;
       initialPrompt?: string;
+      promptNonce?: string;
       scrollToMessageId?: string;
     };
   };
   navigation?: any;
 }) {
-  const { colors, isDark } = useTheme();
+  const { colors } = useTheme();
   const { activeSessionId, setActiveSessionId, workingCwd, defaultCwd } = useAva();
-  const sessionId = route?.params?.sessionId || activeSessionId || "";
+  const routeSessionId = route?.params?.sessionId;
   const initialPrompt = route?.params?.initialPrompt;
+  const promptNonce = route?.params?.promptNonce;
+  const sessionId = routeSessionId ?? activeSessionId ?? "";
   const scrollToMessageId = route?.params?.scrollToMessageId;
   const { data: sessions } = useSessions();
 
@@ -67,7 +67,6 @@ export function SessionScreen({
 
   const [draft, setDraft] = useState("");
   const flatListRef = useRef<FlatList>(null);
-  const sentPromptKeyRef = useRef<string | null>(null);
   const lastScrolledIdRef = useRef<string | null>(null);
 
   const handleBack = useCallback(() => {
@@ -138,35 +137,43 @@ export function SessionScreen({
 
   const handleTouchEnd = (e: any) => {
     if (!touchStartRef.current) return;
-    const startX = touchStartRef.current.x;
     const dx = e.nativeEvent.pageX - touchStartRef.current.x;
     const dy = e.nativeEvent.pageY - touchStartRef.current.y;
     const dt = Date.now() - touchStartRef.current.time;
     touchStartRef.current = null;
 
-    // Strict edge swipe (from right margin inwards with minimal vertical deflection)
-    if (startX > 200 && dx < -85 && Math.abs(dy) < 45 && dt < 450) {
+    // Swipe right-to-left: Open Timeline
+    if (dx < -65 && Math.abs(dy) < 55 && dt < 450) {
       navigation?.navigate("Timeline", {
         sessionId,
       });
     }
   };
 
+  // Sync activeSessionId when route parameter changes
   useEffect(() => {
-    if (sessionId) {
+    if (sessionId && sessionId !== activeSessionId) {
       setActiveSessionId(sessionId);
     }
-  }, [sessionId, setActiveSessionId]);
+  }, [sessionId, activeSessionId, setActiveSessionId]);
 
+  // Single-dispatch initialPrompt guard
   useEffect(() => {
-    if (initialPrompt && sessionId) {
-      const promptKey = `${sessionId}:${initialPrompt}`;
-      if (sentPromptKeyRef.current !== promptKey) {
-        sentPromptKeyRef.current = promptKey;
-        send(initialPrompt);
-      }
+    if (!initialPrompt) return;
+    const nonceKey = promptNonce || initialPrompt;
+    if (processedPromptNonces.has(nonceKey)) return;
+    processedPromptNonces.add(nonceKey);
+
+    if (navigation?.setParams) {
+      navigation.setParams({ initialPrompt: undefined, promptNonce: undefined });
     }
-  }, [initialPrompt, sessionId, send]);
+
+    void send(initialPrompt).then((newThreadId) => {
+      if (newThreadId && navigation?.setParams) {
+        navigation.setParams({ sessionId: newThreadId, initialPrompt: undefined, promptNonce: undefined });
+      }
+    });
+  }, [initialPrompt, promptNonce, send, navigation]);
 
   const isNearBottomRef = useRef(true);
   const [showScrollBottomBtn, setShowScrollBottomBtn] = useState(false);
@@ -218,10 +225,21 @@ export function SessionScreen({
     return segments.length > 2 ? segments.slice(-2).join("/") : currentPath;
   }, [currentPath]);
 
-  const handleSubmit = (text: string) => {
-    if (!text.trim()) return;
+  const handleSubmit = (text: string, attachments?: any[]) => {
+    if (!text.trim() && (!attachments || attachments.length === 0)) return;
     setDraft("");
-    send(text);
+    let fullPrompt = text.trim();
+    if (attachments && attachments.length > 0) {
+      const attText = attachments
+        .map((a) => `[Attachment: ${a.name || "File"} (${a.remotePath || a.id})]`)
+        .join("\n");
+      fullPrompt = fullPrompt ? `${fullPrompt}\n\n${attText}` : attText;
+    }
+    void send(fullPrompt).then((newThreadId) => {
+      if (newThreadId && newThreadId !== sessionId && navigation?.setParams) {
+        navigation.setParams({ sessionId: newThreadId });
+      }
+    });
     requestAnimationFrame(() => {
       flatListRef.current?.scrollToEnd({ animated: true });
     });
@@ -257,7 +275,7 @@ export function SessionScreen({
           data={messages}
           onScroll={handleScroll}
           scrollEventThrottle={32}
-          keyExtractor={(item) => item.id}
+          keyExtractor={(item, index) => item.id ? `${item.id}_${index}` : `msg_${index}`}
           windowSize={7}
           initialNumToRender={8}
           maxToRenderPerBatch={6}
@@ -274,9 +292,8 @@ export function SessionScreen({
                   style={[
                     styles.emptyMascotWrapper,
                     {
-                      backgroundColor: colors.card,
+                      backgroundColor: "transparent",
                       borderColor: colors.border,
-                      shadowColor: colors.glassShadow,
                     },
                   ]}
                 >
@@ -307,7 +324,7 @@ export function SessionScreen({
                           style={[
                             styles.starterCard,
                             {
-                              backgroundColor: colors.card,
+                              backgroundColor: "transparent",
                               borderColor: colors.border,
                             },
                           ]}
@@ -407,7 +424,7 @@ export function SessionScreen({
             style={[
               styles.queueContainer,
               {
-                backgroundColor: colors.card,
+                backgroundColor: "transparent",
                 borderColor: colors.border,
               },
             ]}
@@ -438,7 +455,7 @@ export function SessionScreen({
                 key={q.id}
                 style={[
                   styles.queueItem,
-                  { backgroundColor: colors.secondary },
+                  { backgroundColor: "transparent", borderColor: colors.border },
                 ]}
               >
                 <Text
@@ -460,8 +477,6 @@ export function SessionScreen({
           </View>
         ) : null}
 
-
-
         {/* Stopping indicator banner */}
         {status === "stopping" ? (
           <View style={styles.stoppingContainer}>
@@ -476,6 +491,7 @@ export function SessionScreen({
             onChange={setDraft}
             onSubmit={handleSubmit}
             onStop={stop}
+            onResume={resume}
             onClear={clear}
             status={status}
           />
@@ -497,159 +513,115 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     gap: 16,
   },
-  historyLoader: {
-    alignItems: "center",
-    paddingVertical: 8,
-  },
-  historyLoaderText: {
-    fontSize: 13,
-  },
-  loadOlderBtn: {
-    alignSelf: "center",
-    paddingVertical: 8,
-    paddingHorizontal: 14,
-    borderRadius: 999,
-    marginBottom: 8,
-    minHeight: 36,
-    justifyContent: "center",
-  },
-  loadOlderText: {
-    fontSize: 12,
-    fontWeight: "500",
-  },
   emptyContainer: {
-    flex: 1,
     alignItems: "center",
     justifyContent: "center",
-    paddingVertical: 40,
+    paddingTop: 60,
     paddingHorizontal: 20,
+    gap: 10,
   },
   emptyMascotWrapper: {
-    marginBottom: 16,
-    padding: 12,
-    borderRadius: 999,
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    alignItems: "center",
+    justifyContent: "center",
     borderWidth: 1,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 10,
-    elevation: 3,
+    marginBottom: 6,
   },
   emptyTitle: {
     fontSize: 18,
     textAlign: "center",
-    marginBottom: 6,
   },
   emptySubtitle: {
     fontSize: 13,
     textAlign: "center",
     lineHeight: 18,
-    maxWidth: 300,
-    marginBottom: 24,
+    maxWidth: 290,
   },
   startersWrap: {
+    marginTop: 24,
     width: "100%",
-    maxWidth: 340,
-    gap: 8,
+    gap: 10,
   },
   startersHeader: {
-    fontSize: 11,
+    fontSize: 11.5,
     textTransform: "uppercase",
-    letterSpacing: 0.5,
-    marginBottom: 2,
-    textAlign: "center",
+    letterSpacing: 0.6,
+    paddingHorizontal: 4,
   },
   startersGrid: {
-    flexDirection: "row",
-    flexWrap: "wrap",
     gap: 8,
-    justifyContent: "center",
   },
   starterCard: {
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 999,
+    borderRadius: 14,
     borderWidth: 1,
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 3,
-    elevation: 1,
+    paddingVertical: 12,
+    paddingHorizontal: 14,
   },
   starterCardText: {
-    fontSize: 12,
+    fontSize: 13,
   },
-  liveStatusBar: {
-    flexDirection: "row",
+  historyLoader: {
+    paddingVertical: 10,
     alignItems: "center",
-    justifyContent: "space-between",
-    marginHorizontal: 12,
-    marginBottom: 6,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 12,
-    borderWidth: 1,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 6,
-    elevation: 2,
   },
-  liveStatusLeft: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-    flex: 1,
-  },
-  livePulseDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: "#10B981",
-  },
-  liveStatusText: {
-    fontSize: 12,
-    fontWeight: "500",
-    flex: 1,
-  },
-  liveStopBtn: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 4,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 6,
-    borderWidth: 1,
-  },
-  liveStopText: {
+  historyLoaderText: {
     fontSize: 11,
-    fontWeight: "600",
+  },
+  loadOlderBtn: {
+    alignSelf: "center",
+    paddingVertical: 6,
+    paddingHorizontal: 14,
+    borderRadius: 999,
+    marginVertical: 4,
+  },
+  loadOlderText: {
+    fontSize: 11,
+  },
+  floatingScrollBtn: {
+    position: "absolute",
+    right: 18,
+    bottom: 90,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    borderWidth: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 6,
+    elevation: 6,
+    zIndex: 20,
+  },
+  scrollBtnDot: {
+    position: "absolute",
+    top: 5,
+    right: 5,
+    width: 7,
+    height: 7,
+    borderRadius: 3.5,
   },
   errorContainer: {
-    paddingHorizontal: 16,
-    marginVertical: 4,
+    marginHorizontal: 14,
+    marginBottom: 6,
+    padding: 10,
+    borderRadius: 10,
+    backgroundColor: "rgba(239, 68, 68, 0.08)",
+    borderWidth: 1,
+    borderColor: "rgba(239, 68, 68, 0.25)",
   },
   errorBannerText: {
     fontSize: 12,
-    backgroundColor: "rgba(239, 68, 68, 0.1)",
-    padding: 8,
-    borderRadius: 8,
     textAlign: "center",
-  },
-  composerWrapper: {
-    paddingHorizontal: 12,
-    paddingBottom: Platform.OS === "ios" ? 16 : 10,
-    paddingTop: 8,
-    position: "relative",
-  },
-  disclaimerText: {
-    fontSize: 11,
-    textAlign: "center",
-    marginTop: 6,
   },
   queueContainer: {
-    marginHorizontal: 12,
+    marginHorizontal: 14,
     marginBottom: 6,
-    padding: 10,
     borderRadius: 12,
     borderWidth: 1,
+    padding: 10,
     gap: 6,
   },
   queueHeader: {
@@ -663,7 +635,7 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   queueTitle: {
-    fontSize: 12,
+    fontSize: 11.5,
     fontWeight: "600",
   },
   queueRunNowBtn: {
@@ -671,66 +643,46 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 4,
     paddingHorizontal: 8,
-    paddingVertical: 4,
+    paddingVertical: 3,
     borderRadius: 6,
-    minHeight: 28,
   },
   queueRunNowText: {
-    fontSize: 11,
+    fontSize: 10.5,
+    color: "#FFF",
     fontWeight: "600",
-    color: "#FFFFFF",
   },
   queueItem: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
+    borderWidth: StyleSheet.hairlineWidth,
+    borderRadius: 8,
     paddingHorizontal: 8,
-    paddingVertical: 6,
-    borderRadius: 6,
+    paddingVertical: 5,
   },
   queueItemText: {
-    fontSize: 12,
+    fontSize: 11,
     flex: 1,
-    marginRight: 8,
+    marginRight: 6,
   },
   stoppingContainer: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
     gap: 8,
-    marginHorizontal: 16,
-    marginBottom: 6,
     paddingVertical: 6,
-    paddingHorizontal: 12,
-    borderRadius: 8,
-    backgroundColor: "rgba(245, 158, 11, 0.1)",
   },
   stoppingText: {
     fontSize: 12,
-    fontWeight: "500",
   },
-  floatingScrollBtn: {
-    position: "absolute",
-    bottom: 95,
-    right: 16,
-    width: 38,
-    height: 38,
-    borderRadius: 19,
-    borderWidth: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.18,
-    shadowRadius: 6,
-    elevation: 4,
-    zIndex: 99,
+  composerWrapper: {
+    paddingHorizontal: 10,
+    paddingBottom: Platform.OS === "ios" ? 14 : 6,
+    backgroundColor: "transparent",
   },
-  scrollBtnDot: {
-    position: "absolute",
-    top: 6,
-    right: 6,
-    width: 7,
-    height: 7,
-    borderRadius: 3.5,
+  disclaimerText: {
+    textAlign: "center",
+    fontSize: 10,
+    marginTop: 4,
   },
 });

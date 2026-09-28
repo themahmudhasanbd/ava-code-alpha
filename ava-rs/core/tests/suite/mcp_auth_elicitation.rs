@@ -282,7 +282,7 @@ approvals_reviewer = "user"
     let mut target_lifecycle = [0; 2];
     tokio::time::timeout(Duration::from_secs(15), async {
         loop {
-            let event = test.ava-code.next_event().await?;
+            let event = test.ava.next_event().await?;
             let event_turn_id = event.id;
             match event.msg {
                 EventMsg::TurnStarted(started) => {
@@ -330,7 +330,7 @@ approvals_reviewer = "user"
                             "answers": [answer, format!("user_note: {PRIVATE_SENTINEL}")]
                         }
                     }}))?;
-                    test.ava-code
+                    test.ava
                         .submit(Op::UserInputAnswer {
                             id: request.turn_id,
                             response,
@@ -369,7 +369,7 @@ approvals_reviewer = "user"
                             }
                         }
                     };
-                    test.ava-code
+                    test.ava
                         .submit(Op::ResolveElicitation {
                             server_name: request.server_name,
                             request_id: request.id,
@@ -717,6 +717,6 @@ approvals_reviewer = "user"
         );
     }
     child.shutdown_and_wait().await?;
-    test.ava-code.shutdown_and_wait().await?;
+    test.ava.shutdown_and_wait().await?;
     Ok(())
 }

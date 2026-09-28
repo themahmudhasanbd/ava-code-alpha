@@ -128,7 +128,7 @@ async fn responses_request_preserves_flex_without_catalog_support_or_fast_mode()
             .await?;
         if !configure_at_start {
             core_test_support::submit_thread_settings(
-                &test.ava-code,
+                &test.ava,
                 ThreadSettingsOverrides {
                     service_tier: Some(Some("flex".to_string())),
                     ..Default::default()
@@ -136,13 +136,13 @@ async fn responses_request_preserves_flex_without_catalog_support_or_fast_mode()
             )
             .await?;
         }
-        test.ava-code
+        test.ava
             .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
                 text: "hello".into(),
                 text_elements: Vec::new(),
             }]))
             .await?;
-        wait_for_event(&test.ava-code, |event| {
+        wait_for_event(&test.ava, |event| {
             matches!(event, EventMsg::TurnComplete(_))
         })
         .await;
@@ -577,8 +577,8 @@ async fn response_item_ids_persist_across_resume_and_preserve_server_ids() -> an
         .expect("rollout path");
 
     initial.submit_turn("before resume").await?;
-    initial.ava-code.submit(Op::Shutdown).await?;
-    wait_for_event(&initial.ava-code, |event| {
+    initial.ava.submit(Op::Shutdown).await?;
+    wait_for_event(&initial.ava, |event| {
         matches!(event, EventMsg::ShutdownComplete)
     })
     .await;
@@ -668,8 +668,8 @@ async fn synthetic_call_output_id_is_stable_across_resumes() -> anyhow::Result<(
         .await?;
 
     first.submit_turn("first resume").await?;
-    first.ava-code.submit(Op::Shutdown).await?;
-    wait_for_event(&first.ava-code, |event| {
+    first.ava.submit(Op::Shutdown).await?;
+    wait_for_event(&first.ava, |event| {
         matches!(event, EventMsg::ShutdownComplete)
     })
     .await;
@@ -734,8 +734,8 @@ async fn response_item_ids_are_sent_for_all_remote_v2_compaction_requests() -> a
         .await?;
 
     test.submit_turn("before compaction").await?;
-    test.ava-code.submit(Op::Compact).await?;
-    wait_for_event(&test.ava-code, |event| {
+    test.ava.submit(Op::Compact).await?;
+    wait_for_event(&test.ava, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;
@@ -1021,7 +1021,7 @@ async fn resume_includes_initial_messages_and_sends_prior_items() {
         .resume(&server, ava_home, session_path.clone())
         .await
         .expect("resume conversation");
-    let ava = test.ava-code.clone();
+    let ava = test.ava.clone();
     let session_configured = test.session_configured;
 
     // 1) Assert initial_messages only includes existing EventMsg entries; response items are not converted
@@ -1426,7 +1426,7 @@ async fn includes_session_id_thread_id_and_model_headers_in_request() {
         .build(&server)
         .await
         .expect("create new conversation");
-    let ava = test.ava-code.clone();
+    let ava = test.ava.clone();
     let expected_session_id = test.session_configured.session_id;
     let expected_thread_id = test.session_configured.thread_id;
 
@@ -1779,7 +1779,7 @@ async fn chatgpt_auth_sends_correct_request() {
         .build(&server)
         .await
         .expect("create new conversation");
-    let ava = test.ava-code.clone();
+    let ava = test.ava.clone();
     let expected_session_id = test.session_configured.session_id;
     let expected_thread_id = test.session_configured.thread_id;
 
@@ -1948,7 +1948,7 @@ async fn includes_user_instructions_message_in_request() {
         .build(&server)
         .await
         .expect("create new conversation");
-    let ava = test.ava-code.clone();
+    let ava = test.ava.clone();
 
     ava
         .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
@@ -2985,7 +2985,7 @@ async fn includes_developer_instructions_message_in_request() {
         .build(&server)
         .await
         .expect("create new conversation");
-    let ava = test.ava-code.clone();
+    let ava = test.ava.clone();
 
     ava
         .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
@@ -3481,7 +3481,7 @@ async fn usage_limit_error_emits_rate_limit_event() -> anyhow::Result<()> {
 
     let mut builder = test_ava();
     let ava_fixture = builder.build(&server).await?;
-    let ava = ava_fixture.ava-code.clone();
+    let ava = ava_fixture.ava.clone();
 
     let expected_limits = json!({
         "limit_id": "ava",

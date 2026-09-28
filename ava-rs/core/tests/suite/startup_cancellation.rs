@@ -65,10 +65,10 @@ async fn cancelled_resume_releases_writer_while_mcp_startup_is_pending() -> Resu
         .build_with_auto_env(&server)
         .await?;
     let thread_id = test.session_configured.thread_id;
-    let environments = test.ava-code.environment_selections().await;
-    test.ava-code.ensure_rollout_materialized().await;
-    let rollout_path = test.ava-code.rollout_path().context("thread rollout")?;
-    test.ava-code.shutdown_and_wait().await?;
+    let environments = test.ava.environment_selections().await;
+    test.ava.ensure_rollout_materialized().await;
+    let rollout_path = test.ava.rollout_path().context("thread rollout")?;
+    test.ava.shutdown_and_wait().await?;
     test.thread_manager.remove_thread(&thread_id).await;
     let history = RolloutRecorder::get_rollout_history(&rollout_path).await?;
     let store = test

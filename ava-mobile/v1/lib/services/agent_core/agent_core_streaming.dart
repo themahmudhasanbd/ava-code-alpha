@@ -329,8 +329,8 @@ mixin AgentCoreStreamingMixin on AgentCoreBase {
                   messageId: itemId,
                   turnId: params["turnId"]?.toString(),
                   type: "subagent",
-                  tool: "agent",
-                  text: agentPath,
+                  tool: kind,
+                  text: agentPath.isNotEmpty ? "$kind: $agentPath" : kind,
                   status: "running",
                 );
                 if (!partOrder.contains(itemId)) partOrder.add(itemId);

@@ -125,8 +125,8 @@ class _ChatScreenState extends State<ChatScreen> {
   bool _showAtOverlay = false;
   String _slashFilter = '';
   String _atFilter = '';
-
   List<Map<String, String>> _dynamicSuggestions = [];
+
   String _currentReasoningEffort = 'medium';
   bool _isRecordingVoice = false;
   Timer? _recordingTimer;

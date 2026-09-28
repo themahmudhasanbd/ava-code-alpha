@@ -10,6 +10,7 @@ interface RegisteredEntry {
 
 const registeredEntries: RegisteredEntry[] = [];
 let isPatched = false;
+const originalCreate = StyleSheet.create;
 
 function detectToken(
   prop: string,
@@ -78,7 +79,7 @@ export function patchStyleSheet(): void {
 
   (StyleSheet as any).create = function <T extends StyleMap>(styles: T): T {
     if (!styles || typeof styles !== "object") {
-      return styles;
+      return originalCreate ? originalCreate(styles) : styles;
     }
 
     const live: StyleMap = {};
@@ -111,7 +112,7 @@ export function patchStyleSheet(): void {
     }
 
     registeredEntries.push({ tokens, live });
-    return live as T;
+    return originalCreate ? (originalCreate(live) as T) : (live as unknown as T);
   };
 }
 

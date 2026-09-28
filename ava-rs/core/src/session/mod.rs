@@ -4153,6 +4153,17 @@ impl Session {
             developer_sections
                 .push(DeveloperInstructions::new(developer_instructions).render_fragment());
         }
+        if let Some(client_name) = turn_context.app_server_client_name.as_deref() {
+            let client_lower = client_name.to_lowercase();
+            if client_lower.contains("mobile") || client_lower.contains("web") {
+                const MOBILE_CLIENT_INSTRUCTIONS: &str = "# Active Client: AvA Mobile / Web App
+- The user is currently interacting via the AvA Mobile / Web touch interface.
+- Never instruct the user to manually find, locate, or open local filesystem paths on disk. AvA Mobile automatically attaches and visually renders preview cards, media chips, and inline links directly in the UI.
+- Never suggest desktop keyboard shortcuts (e.g. Ctrl+C, Cmd+K, Shift+Enter, Ctrl+Shift+P, Alt+Enter). All user interactions are touch- and gesture-driven.
+- Mobile Features Awareness: The user has access to the Sessions Drawer (swipe left-to-right), Interactive Live Step Overview Card, Timeline Screen (swipe right-to-left to inspect deep tool outputs/logs), Composer with slash commands, @ mentions, media picker, and voice notes, interactive Choice Cards for request_user_input, and integrated Terminal/MCP tools.";
+                developer_sections.push(DeveloperInstructions::new(MOBILE_CLIENT_INSTRUCTIONS).render_fragment());
+            }
+        }
         let loaded_plugins = self
             .services
             .plugins_manager

@@ -47,7 +47,7 @@ async fn window_id_advances_after_compact_persists_on_resume_and_resets_on_fork(
         config.compact_prompt = Some(SUMMARIZATION_PROMPT.to_string());
     });
     let initial = builder.build(&server).await?;
-    let initial_thread = Arc::clone(&initial.ava-code);
+    let initial_thread = Arc::clone(&initial.ava);
     let rollout_path = initial
         .session_configured
         .rollout_path
@@ -62,8 +62,8 @@ async fn window_id_advances_after_compact_persists_on_resume_and_resets_on_fork(
     let resumed = builder
         .resume(&server, initial.home.clone(), rollout_path.clone())
         .await?;
-    submit_user_turn(&resumed.ava-code, "after resume").await?;
-    shutdown_thread(&resumed.ava-code).await?;
+    submit_user_turn(&resumed.ava, "after resume").await?;
+    shutdown_thread(&resumed.ava).await?;
 
     let forked = resumed
         .thread_manager

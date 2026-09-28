@@ -451,7 +451,7 @@ async fn multi_agent_v2_cold_resume_refreshes_legacy_usage_hints_once(
         .rollout_path
         .clone()
         .expect("initial session should have a rollout path");
-    initial.ava-code.shutdown_and_wait().await?;
+    initial.ava.shutdown_and_wait().await?;
 
     let mut removed_recorded_usage_hint = false;
     let mut removed_usage_hint_presence = false;
@@ -618,7 +618,7 @@ async fn multi_agent_v2_resume_refreshes_changed_wait_guidance(
         .rollout_path
         .clone()
         .expect("initial session should have a rollout path");
-    initial.ava-code.shutdown_and_wait().await?;
+    initial.ava.shutdown_and_wait().await?;
     std::fs::write(
         home.path().join("config.toml"),
         format!(

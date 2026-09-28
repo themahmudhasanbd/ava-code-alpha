@@ -47,14 +47,14 @@ async fn emits_safety_buffering_from_response_metadata_with_the_header_fallback_
     .await;
 
     let test = test_ava().build(&server).await?;
-    test.ava-code
+    test.ava
         .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
             text: "Check this request".into(),
             text_elements: Vec::new(),
         }]))
         .await?;
 
-    let event = wait_for_event_match(&test.ava-code, |event| match event {
+    let event = wait_for_event_match(&test.ava, |event| match event {
         EventMsg::SafetyBuffering(event) => Some(event.clone()),
         _ => None,
     })
@@ -69,7 +69,7 @@ async fn emits_safety_buffering_from_response_metadata_with_the_header_fallback_
             faster_model: Some(FASTER_MODEL.to_string()),
         }
     );
-    wait_for_event(&test.ava-code, |event| {
+    wait_for_event(&test.ava, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;
@@ -96,14 +96,14 @@ async fn emits_safety_buffering_with_the_responses_api_model_without_header_gati
     .await;
 
     let test = test_ava().build(&server).await?;
-    test.ava-code
+    test.ava
         .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
             text: "Check this request".into(),
             text_elements: Vec::new(),
         }]))
         .await?;
 
-    let event = wait_for_event_match(&test.ava-code, |event| match event {
+    let event = wait_for_event_match(&test.ava, |event| match event {
         EventMsg::SafetyBuffering(event) => Some(event.clone()),
         _ => None,
     })
@@ -118,7 +118,7 @@ async fn emits_safety_buffering_with_the_responses_api_model_without_header_gati
             faster_model: Some(FASTER_MODEL.to_string()),
         }
     );
-    wait_for_event(&test.ava-code, |event| {
+    wait_for_event(&test.ava, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;

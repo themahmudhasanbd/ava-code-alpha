@@ -130,7 +130,7 @@ async fn extension_protocol_mode_does_not_change_other_http_servers() -> anyhow:
             .build_with_auto_env(&responses_server)
             .await?;
 
-        wait_for_mcp_server(&fixture.ava-code, "extension_apps").await?;
+        wait_for_mcp_server(&fixture.ava, "extension_apps").await?;
         let legacy = vec!["initialize", "notifications/initialized", "tools/list"];
         let modern = vec![
             "server/discover",
@@ -296,6 +296,6 @@ async fn hosted_apps_protocol_override_preserves_native_verification() -> anyhow
         },
     );
     thread.shutdown_and_wait().await?;
-    fixture.ava-code.shutdown_and_wait().await?;
+    fixture.ava.shutdown_and_wait().await?;
     Ok(())
 }

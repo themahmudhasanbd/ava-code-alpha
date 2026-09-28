@@ -156,7 +156,7 @@ async fn local_mcp_startup_and_refresh_use_configured_http_client() -> Result<()
         })
         .build_with_auto_env(&responses_server)
         .await?;
-    wait_for_mcp_server(&fixture.ava-code, SERVER_NAME).await?;
+    wait_for_mcp_server(&fixture.ava, SERVER_NAME).await?;
 
     let mut refreshed_config = fixture.config.clone();
     let mut servers = refreshed_config.mcp_servers.get().clone();
@@ -175,7 +175,7 @@ async fn local_mcp_startup_and_refresh_use_configured_http_client() -> Result<()
         .mcp_servers
         .set(servers)
         .expect("test MCP servers should accept the refreshed configuration");
-    fixture.ava-code.refresh_runtime_config(refreshed_config).await;
+    fixture.ava.refresh_runtime_config(refreshed_config).await;
     let result = fixture
         .ava-code
         .call_mcp_tool(
@@ -405,7 +405,7 @@ async fn skill_mcp_dependency_oauth_uses_configured_http_client() -> Result<()> 
             }),
         )
         .await?;
-    core_test_support::wait_for_event(fixture.ava-code.as_ref(), |event| {
+    core_test_support::wait_for_event(fixture.ava.as_ref(), |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;

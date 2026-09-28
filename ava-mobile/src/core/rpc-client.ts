@@ -1,3 +1,4 @@
+import { Platform } from "react-native";
 import { APP } from "@/config/app";
 import { toCoreError } from "./errors";
 import type { ConnectionStatus } from "./types";
@@ -48,7 +49,9 @@ export class RpcClient {
     this.closed = false;
     this.setStatus("connecting");
     this.opening = new Promise<void>((resolve, reject) => {
-      const headers: Record<string, string> = {};
+      const headers: Record<string, string> = {
+        "User-Agent": `AvA-Mobile/${APP.version} (${Platform.OS})`,
+      };
       if (this.token) {
         headers["Authorization"] = `Bearer ${this.token}`;
       }

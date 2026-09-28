@@ -118,7 +118,7 @@ fn configure_command_test_permissions(config: &mut Config) {
 }
 
 async fn start_command_turn(test: &TestAva) -> Result<()> {
-    test.ava-code
+    test.ava
         .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
             text: "Run the command.".into(),
             text_elements: Vec::new(),
@@ -193,7 +193,7 @@ async fn command_start_receives_rewritten_command_and_executor_workdir(
 
     let mut begin = None;
     wait_for_event_with_timeout(
-        &test.ava-code,
+        &test.ava,
         |event| {
             assert!(
                 !matches!(event, EventMsg::ExecApprovalRequest(_)),
@@ -304,8 +304,8 @@ async fn interrupting_command_preparation_does_not_start_the_command(
     .await;
     start_command_turn(test).await?;
     timeout(Duration::from_secs(30), entered_rx).await??;
-    test.ava-code.submit(Op::Interrupt).await?;
-    wait_for_event(&test.ava-code, |event| {
+    test.ava.submit(Op::Interrupt).await?;
+    wait_for_event(&test.ava, |event| {
         assert!(
             !matches!(event, EventMsg::ExecApprovalRequest(_)),
             "command fixture unexpectedly requested approval: {event:?}"
@@ -341,7 +341,7 @@ async fn interrupting_command_preparation_does_not_start_the_command(
     let mut process_id = None;
     let mut exit_code = None;
     wait_for_event_with_timeout(
-        &test.ava-code,
+        &test.ava,
         |event| {
             assert!(
                 !matches!(event, EventMsg::ExecApprovalRequest(_)),

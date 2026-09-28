@@ -227,6 +227,6 @@ pub(super) async fn connector_exposure_requests(
     if calls_tool {
         assert!(requests[1].body_contains_text("calendar-lookup-ok"));
     }
-    test.ava-code.shutdown_and_wait().await?;
+    test.ava.shutdown_and_wait().await?;
     Ok(requests)
 }

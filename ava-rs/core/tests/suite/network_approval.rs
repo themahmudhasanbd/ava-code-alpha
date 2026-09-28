@@ -354,7 +354,7 @@ async fn strict_auto_review_routes_network_approval_to_guardian_when_user_review
         AskForApproval::OnRequest,
     )
     .await?;
-    let EventMsg::RequestPermissions(request) = wait_for_event(&test.ava-code, |event| {
+    let EventMsg::RequestPermissions(request) = wait_for_event(&test.ava, |event| {
         matches!(event, EventMsg::RequestPermissions(_))
     })
     .await
@@ -362,7 +362,7 @@ async fn strict_auto_review_routes_network_approval_to_guardian_when_user_review
         unreachable!("matched request permissions event")
     };
     assert_eq!(request.call_id, permission_call_id);
-    test.ava-code
+    test.ava
         .submit(Op::RequestPermissionsResponse {
             id: permission_call_id.to_string(),
             response: RequestPermissionsResponse {
@@ -438,11 +438,11 @@ async fn cancelled_guardian_network_review_fails_closed_without_rewriting_turn_s
     )
     .await?;
     wait_for_guardian_request(&pending_guardian).await;
-    test.ava-code.submit(Op::Interrupt).await?;
+    test.ava.submit(Op::Interrupt).await?;
     let mut saw_turn_aborted = false;
     let mut saw_guardian_aborted = false;
     while !saw_turn_aborted || !saw_guardian_aborted {
-        let event = tokio::time::timeout(Duration::from_secs(5), test.ava-code.next_event())
+        let event = tokio::time::timeout(Duration::from_secs(5), test.ava.next_event())
             .await
             .context("timed out waiting for parent and Guardian cancellation")?
             .context("event stream ended while waiting for cancellation")?;
@@ -829,7 +829,7 @@ async fn background_network_approval_uses_current_review_settings_and_original_e
         AskForApproval::OnRequest,
     )
     .await?;
-    let EventMsg::TurnStarted(first_turn) = wait_for_event(&test.ava-code, |event| {
+    let EventMsg::TurnStarted(first_turn) = wait_for_event(&test.ava, |event| {
         matches!(event, EventMsg::TurnStarted(_))
     })
     .await
@@ -842,8 +842,8 @@ async fn background_network_approval_uses_current_review_settings_and_original_e
         first_turn.turn_id.clone()
     } else {
         wait_for_turn_complete(&test).await;
-        assert_eq!(test.ava-code.list_background_terminals().await.len(), 1);
-        test.ava-code
+        assert_eq!(test.ava.list_background_terminals().await.len(), 1);
+        test.ava
             .start_or_steer_turn(
                 TurnInputRequest::user_input(vec![UserInput::Text {
                     text: "review the existing terminal under B".to_string(),
@@ -868,7 +868,7 @@ async fn background_network_approval_uses_current_review_settings_and_original_e
                 }),
             )
             .await?;
-        let EventMsg::TurnStarted(active_turn) = wait_for_event(&test.ava-code, |event| {
+        let EventMsg::TurnStarted(active_turn) = wait_for_event(&test.ava, |event| {
             matches!(event, EventMsg::TurnStarted(_))
         })
         .await
@@ -878,7 +878,7 @@ async fn background_network_approval_uses_current_review_settings_and_original_e
         assert_ne!(active_turn.turn_id, first_turn.turn_id);
         active_turn.turn_id
     };
-    let EventMsg::RequestPermissions(request) = wait_for_event(&test.ava-code, |event| {
+    let EventMsg::RequestPermissions(request) = wait_for_event(&test.ava, |event| {
         matches!(event, EventMsg::RequestPermissions(_))
     })
     .await
@@ -888,7 +888,7 @@ async fn background_network_approval_uses_current_review_settings_and_original_e
     assert_eq!(request.call_id, permission_call_id);
     if same_turn {
         let (reply, outcome) = tokio::sync::oneshot::channel();
-        test.ava-code
+        test.ava
             .submit(Op::TurnSettings {
                 turn_id: active_turn_id.clone(),
                 update: ava_protocol::protocol::TurnSettingsUpdate {
@@ -904,7 +904,7 @@ async fn background_network_approval_uses_current_review_settings_and_original_e
             ava_protocol::protocol::TurnSettingsUpdateOutcome::Applied,
         );
     }
-    test.ava-code
+    test.ava
         .submit(Op::RequestPermissionsResponse {
             id: permission_call_id.to_string(),
             response: RequestPermissionsResponse {
@@ -914,7 +914,7 @@ async fn background_network_approval_uses_current_review_settings_and_original_e
             },
         })
         .await?;
-    let assessment = wait_for_event(&test.ava-code, |event| {
+    let assessment = wait_for_event(&test.ava, |event| {
         matches!(
             event,
             EventMsg::GuardianAssessment(assessment)
@@ -998,11 +998,11 @@ async fn background_network_approval_uses_current_review_settings_and_original_e
     );
     assert!(stdin_output.contains("CROSS-TURN-NETWORK-COMPLETE"));
     assert_eq!(
-        test.ava-code.list_background_terminals().await.len(),
+        test.ava.list_background_terminals().await.len(),
         1,
         "approved network access must not terminate the background process"
     );
-    test.ava-code.submit(Op::CleanBackgroundTerminals).await?;
+    test.ava.submit(Op::CleanBackgroundTerminals).await?;
 
     Ok(())
 }
@@ -1051,7 +1051,7 @@ async fn user_network_approval_once_session_and_denial_semantics() -> Result<()>
         approval.reason.as_deref(),
         Some("ava-network-test.invalid is not in the allowed_domains")
     );
-    test.ava-code
+    test.ava
         .submit(Op::ExecApproval {
             id: approval.effective_approval_id(),
             turn_id: Some(approval.turn_id),
@@ -1078,7 +1078,7 @@ async fn user_network_approval_once_session_and_denial_semantics() -> Result<()>
     let approval = expect_network_approval(&test, LOCAL_ENVIRONMENT_ID).await?;
     assert_eq!(approval.approval_id.as_deref(), None);
     assert_ne!(approval.call_id, first_approval_call_id);
-    test.ava-code
+    test.ava
         .submit(Op::ExecApproval {
             id: approval.effective_approval_id(),
             turn_id: Some(approval.turn_id),
@@ -1130,7 +1130,7 @@ async fn user_network_approval_once_session_and_denial_semantics() -> Result<()>
         NetworkApprovalProtocol::Http,
     )
     .await?;
-    test.ava-code
+    test.ava
         .submit(Op::ExecApproval {
             id: approval.effective_approval_id(),
             turn_id: Some(approval.turn_id),
@@ -1178,14 +1178,14 @@ async fn user_network_approval_once_session_and_denial_semantics() -> Result<()>
         NetworkApprovalProtocol::Socks5Tcp,
     )
     .await?;
-    test.ava-code
+    test.ava
         .submit(Op::ExecApproval {
             id: approval.effective_approval_id(),
             turn_id: Some(approval.turn_id),
             decision: ReviewDecision::Abort,
         })
         .await?;
-    wait_for_event(&test.ava-code, |event| {
+    wait_for_event(&test.ava, |event| {
         matches!(event, EventMsg::TurnAborted(_))
     })
     .await;
@@ -1283,7 +1283,7 @@ PY"#
     let mut approvals = Vec::new();
     for _ in 0..2 {
         let event = wait_for_event_with_timeout(
-            &test.ava-code,
+            &test.ava,
             |event| {
                 matches!(
                     event,
@@ -1298,7 +1298,7 @@ PY"#
         };
         approvals.push(approval);
     }
-    assert_eq!(test.ava-code.list_background_terminals().await.len(), 1);
+    assert_eq!(test.ava.list_background_terminals().await.len(), 1);
     // The child holds this lock until exit, including across the sandbox's PID namespace.
     let process_lock = fs::File::open(local_cwd.join("network-process-lock"))?;
     assert!(matches!(
@@ -1324,7 +1324,7 @@ PY"#
         OtherNetworkReview::ApprovedForSession => Some(ReviewDecision::ApprovedForSession),
     };
     if let Some(decision) = first_decision {
-        test.ava-code
+        test.ava
             .submit(Op::ExecApproval {
                 id: first_approval.effective_approval_id(),
                 turn_id: Some(first_approval.turn_id.clone()),
@@ -1340,7 +1340,7 @@ PY"#
         assert!(result.starts_with("HTTP/1.1 200") || result.starts_with("HTTP/1.1 502"));
     }
     let final_approval = &approvals[1];
-    test.ava-code
+    test.ava
         .submit(Op::ExecApproval {
             id: final_approval.effective_approval_id(),
             turn_id: Some(final_approval.turn_id.clone()),
@@ -1361,7 +1361,7 @@ PY"#
     })
     .await
     .context("background process remained alive after network rejection")??;
-    assert!(test.ava-code.list_background_terminals().await.is_empty());
+    assert!(test.ava.list_background_terminals().await.is_empty());
 
     let output = responses
         .requests()
@@ -1449,7 +1449,7 @@ async fn allowing_network_policy_amendment_persists_context_and_bypasses_prompt(
             },
         ]
     );
-    test.ava-code
+    test.ava
         .submit(Op::ExecApproval {
             id: approval.effective_approval_id(),
             turn_id: Some(approval.turn_id),
@@ -1518,7 +1518,7 @@ async fn denying_network_policy_amendment_persists_and_blocks_request() -> Resul
     )
     .await?;
     let approval = expect_network_approval(&test, LOCAL_ENVIRONMENT_ID).await?;
-    test.ava-code
+    test.ava
         .submit(Op::ExecApproval {
             id: approval.effective_approval_id(),
             turn_id: Some(approval.turn_id),
@@ -1575,7 +1575,7 @@ async fn failed_network_policy_amendment_denies_request_and_does_not_approve_hos
     )
     .await?;
     let approval = expect_network_approval(&test, LOCAL_ENVIRONMENT_ID).await?;
-    test.ava-code
+    test.ava
         .submit(Op::ExecApproval {
             id: approval.effective_approval_id(),
             turn_id: Some(approval.turn_id),
@@ -1611,7 +1611,7 @@ async fn failed_network_policy_amendment_denies_request_and_does_not_approve_hos
     )
     .await?;
     let approval = expect_network_approval(&test, LOCAL_ENVIRONMENT_ID).await?;
-    test.ava-code
+    test.ava
         .submit(Op::ExecApproval {
             id: approval.effective_approval_id(),
             turn_id: Some(approval.turn_id),
@@ -1681,7 +1681,7 @@ async fn unattributed_network_request_uses_active_turn_environment_fallback(
                 path: selection.cwd.clone(),
             },
         };
-        test.ava-code
+        test.ava
             .environment_ready(
                 &selection,
                 EnvironmentConfig {
@@ -1775,7 +1775,7 @@ async fn unattributed_network_request_uses_active_turn_environment_fallback(
         })
         .await
         .context("Guardian reviewer did not finish its rate-limited turn")??;
-        tokio::time::timeout(Duration::from_secs(5), test.ava-code.shutdown_and_wait())
+        tokio::time::timeout(Duration::from_secs(5), test.ava.shutdown_and_wait())
             .await
             .context("parent shutdown waited for Guardian's 60-second retry")??;
         let response = tokio::time::timeout(Duration::from_secs(5), proxy_request).await???;
@@ -1787,7 +1787,7 @@ async fn unattributed_network_request_uses_active_turn_environment_fallback(
     let approval = expect_network_approval(&test, LOCAL_ENVIRONMENT_ID).await?;
     assert_eq!(approval.command, ["network-access", NETWORK_TEST_TARGET]);
     assert_eq!(approval.cwd, selection.cwd.into());
-    test.ava-code
+    test.ava
         .submit(Op::ExecApproval {
             id: approval.effective_approval_id(),
             turn_id: Some(approval.turn_id),
@@ -1799,8 +1799,8 @@ async fn unattributed_network_request_uses_active_turn_environment_fallback(
         .context("unattributed proxy request did not finish")???;
     assert!(response.starts_with("HTTP/1.1 200") || response.starts_with("HTTP/1.1 502"));
 
-    test.ava-code.submit(Op::Interrupt).await?;
-    wait_for_event(&test.ava-code, |event| {
+    test.ava.submit(Op::Interrupt).await?;
+    wait_for_event(&test.ava, |event| {
         matches!(event, EventMsg::TurnAborted(_))
     })
     .await;
@@ -1875,7 +1875,7 @@ async fn ambiguous_unattributed_network_request_is_not_assigned_to_active_calls(
     assert!(
         tokio::time::timeout(
             Duration::from_secs(1),
-            wait_for_event(&test.ava-code, |event| matches!(
+            wait_for_event(&test.ava, |event| matches!(
                 event,
                 EventMsg::ExecApprovalRequest(_)
             ))
@@ -1885,15 +1885,15 @@ async fn ambiguous_unattributed_network_request_is_not_assigned_to_active_calls(
         "ambiguous request was incorrectly assigned to an active call"
     );
 
-    test.ava-code.submit(Op::Interrupt).await?;
-    wait_for_event(&test.ava-code, |event| {
+    test.ava.submit(Op::Interrupt).await?;
+    wait_for_event(&test.ava, |event| {
         matches!(event, EventMsg::TurnAborted(_))
     })
     .await;
-    test.ava-code.submit(Op::CleanBackgroundTerminals).await?;
+    test.ava.submit(Op::CleanBackgroundTerminals).await?;
     tokio::time::timeout(Duration::from_secs(10), async {
         loop {
-            if test.ava-code.list_background_terminals().await.is_empty() {
+            if test.ava.list_background_terminals().await.is_empty() {
                 break;
             }
             tokio::time::sleep(Duration::from_millis(10)).await;
@@ -1999,7 +1999,7 @@ async fn thread_turnover_closes_managed_proxy_tunnels() -> Result<()> {
         }
         drop(upstream);
     }
-    test.ava-code.shutdown_and_wait().await?;
+    test.ava.shutdown_and_wait().await?;
     Ok(())
 }
 
@@ -2336,7 +2336,7 @@ async fn remote_guardian_network_decisions_are_scoped_to_each_request_and_enviro
             )
             .await?;
             let approval = expect_network_approval(&test, REMOTE_ENVIRONMENT_ID).await?;
-            test.ava-code
+            test.ava
                 .submit(Op::ExecApproval {
                     id: approval.effective_approval_id(),
                     turn_id: Some(approval.turn_id),
@@ -2665,7 +2665,7 @@ PYTHON"#;
             )
             .await?;
             if escalated || suffix == "GRANTED_DENIED" {
-                let event = wait_for_event(&test.ava-code, |event| {
+                let event = wait_for_event(&test.ava, |event| {
                     matches!(
                         event,
                         EventMsg::ExecApprovalRequest(_) | EventMsg::TurnComplete(_)
@@ -2675,7 +2675,7 @@ PYTHON"#;
                 let EventMsg::ExecApprovalRequest(approval) = event else {
                     anyhow::bail!("expected command approval before completion")
                 };
-                test.ava-code
+                test.ava
                     .submit(Op::ExecApproval {
                         id: approval.effective_approval_id(),
                         turn_id: Some(approval.turn_id),
@@ -2824,9 +2824,9 @@ async fn escalated_owner_network_terminal_requires_stdin_approval(
     .await?;
     let mut approvals = Vec::new();
     loop {
-        match wait_for_event(&test.ava-code, |_| true).await {
+        match wait_for_event(&test.ava, |_| true).await {
             EventMsg::ExecApprovalRequest(approval) => {
-                test.ava-code
+                test.ava
                     .submit(Op::ExecApproval {
                         id: approval.effective_approval_id(),
                         turn_id: Some(approval.turn_id),
@@ -2910,7 +2910,7 @@ async fn approved_network_host_for_one_environment_still_prompts_in_another() ->
     )
     .await?;
     let approval = expect_network_approval(&test, LOCAL_ENVIRONMENT_ID).await?;
-    test.ava-code
+    test.ava
         .submit(Op::ExecApproval {
             id: approval.effective_approval_id(),
             turn_id: None,
@@ -2936,7 +2936,7 @@ async fn approved_network_host_for_one_environment_still_prompts_in_another() ->
     .await?;
     let approval = expect_network_approval(&test, REMOTE_ENVIRONMENT_ID).await?;
     let rejection = "approval request failed because the client disconnected";
-    test.ava-code
+    test.ava
         .submit(Op::ExecApproval {
             id: approval.effective_approval_id(),
             turn_id: None,
@@ -3125,7 +3125,7 @@ async fn submit_managed_network_turn(
     let turn_environment_selections =
         TurnEnvironmentSelections::new(test.config.cwd.clone(), environments);
 
-    test.ava-code
+    test.ava
         .start_or_steer_turn(
             TurnInputRequest::user_input(vec![UserInput::Text {
                 text: prompt.into(),
@@ -3291,7 +3291,7 @@ async fn expect_network_approval_target(
         .checked_duration_since(std::time::Instant::now())
         .context("timed out waiting for network approval request")?;
     let event = wait_for_event_with_timeout(
-        &test.ava-code,
+        &test.ava,
         |event| {
             matches!(
                 event,
@@ -3328,7 +3328,7 @@ async fn expect_network_approval_target(
 }
 
 async fn wait_for_completion_without_network_prompt(test: &TestAva) {
-    let event = wait_for_event(&test.ava-code, |event| {
+    let event = wait_for_event(&test.ava, |event| {
         matches!(
             event,
             EventMsg::ExecApprovalRequest(_) | EventMsg::TurnComplete(_)
@@ -3403,7 +3403,7 @@ async fn wait_for_paths(paths: &[&std::path::Path]) -> Result<()> {
 }
 
 async fn wait_for_turn_complete(test: &TestAva) {
-    wait_for_event(&test.ava-code, |event| {
+    wait_for_event(&test.ava, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;

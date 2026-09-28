@@ -19,8 +19,15 @@ import {
   ChevronRight,
   ChevronUp,
   Copy,
+  FileArchive,
+  FileCode,
+  FileText,
+  FileVideo,
   Globe,
   Info,
+  Mic,
+  Music,
+  Paperclip,
   Plug,
   Terminal as TerminalSquare,
   Wrench,
@@ -33,10 +40,11 @@ import { RuntimeDottedIndicator } from "@/components/ai-elements/dotted-indicato
 import { TypewriterText } from "@/components/ai-elements/typewriter-text";
 import { InlineText, RichResponse } from "./rich-response";
 import { LiveStepOverviewCard } from "./live-step-card";
+import { MediaPreviewGallery } from "./media-preview-gallery";
 import { getToolIcon } from "./tool-icons";
 import { Surface } from "@/components/kit";
-import type { ChatMessage, MessagePart } from "@/core/types";
-import { COLORS } from "@/theme/colors";
+import type { ChatMessage, MediaItem, MessagePart } from "@/core/types";
+import { COLORS, useTheme } from "@/theme/colors";
 import { formatDuration as fmtDuration, formatTokens as fmtTokens } from "@/lib/format";
 import { font, FONTS, mono } from "@/theme/fonts";
 import { useAva } from "@/state/ava-provider";
@@ -101,13 +109,40 @@ function AssistantTurn({
   const { rpc } = useAva();
   const elapsed = useElapsed(message.stats?.startedAt, live);
   const steps = message.parts.filter((p) => p.kind === "tool").length;
-  const workflowParts = message.parts.filter((p) => p.kind !== "text");
+  const workflowParts = message.parts.filter(
+    (p) =>
+      p.kind === "tool" ||
+      p.kind === "reasoning" ||
+      p.kind === "plan" ||
+      (p.kind === "notice" && (p.meta?.tone === "error" || p.meta?.tone === "warning" || p.status === "error"))
+  );
   const hasWorkflowSteps = workflowParts.length > 0;
 
   // Find the final text response intended for the user
   const textParts = message.parts.filter((p) => p.kind === "text" && p.text && p.text.trim());
   const finalPart = textParts.length > 0 ? textParts[textParts.length - 1] : null;
   const finalText = finalPart?.text?.trim() ?? "";
+
+  // Collect and deduplicate all media items from the message parts
+  const allTurnMedia = useMemo(() => {
+    const mediaList: MediaItem[] = [];
+    const seen = new Set<string>();
+    for (const p of message.parts) {
+      if (p.meta?.media && Array.isArray(p.meta.media)) {
+        for (const m of p.meta.media) {
+          if (m && m.url) {
+            const clean = m.url.trim();
+            const lower = clean.toLowerCase();
+            if (!seen.has(lower)) {
+              seen.add(lower);
+              mediaList.push({ ...m, url: clean });
+            }
+          }
+        }
+      }
+    }
+    return mediaList;
+  }, [message.parts]);
 
   // Extract questions or errors
   const questionParts = message.parts.filter((p) => p.kind === "question" || p.meta?.questions);
@@ -125,9 +160,9 @@ function AssistantTurn({
     (p) =>
       p.kind === "notice" &&
       (p.text === "Stopped" ||
-        p.text?.toLowerCase().includes("interrupted") ||
-        p.text?.toLowerCase().includes("stopped by user") ||
-        p.meta?.tone === "warning")
+        p.text?.toLowerCase() === "interrupted" ||
+        p.text?.toLowerCase() === "stopped by user" ||
+        p.text?.toLowerCase() === "interrupted by user")
   );
 
   const activityLabel = hasError
@@ -218,13 +253,13 @@ function AssistantTurn({
       )}
 
       {/* Error Notices in Session Screen */}
-      {errorNotices.map((p) => (
-        <NoticeStep key={p.id} part={p} />
+      {errorNotices.map((p, idx) => (
+        <NoticeStep key={p.id ? `notice_${p.id}_${idx}` : `notice_${idx}`} part={p} />
       ))}
 
       {/* Questions from Agent */}
-      {questionParts.map((q) => (
-        <View key={q.id} style={styles.questionCard}>
+      {questionParts.map((q, qIdx) => (
+        <View key={q.id ? `question_${q.id}_${qIdx}` : `question_${qIdx}`} style={styles.questionCard}>
           <Text style={[styles.questionTitle, font("semibold", q.text)]}>{q.text}</Text>
           {q.meta?.questions?.map((question, qIdx) => (
             <View key={qIdx} style={{ gap: 6 }}>
@@ -264,7 +299,7 @@ function AssistantTurn({
       {/* Response text: live typewriter animation during streaming, rich response when complete */}
       {finalText ? (
         <View style={styles.finalOutputContainer}>
-          {live ? (
+          {live && message.parts.some((p) => p.status === "running") ? (
             <TypewriterText text={finalText} isStreaming={true} />
           ) : (
             <RichResponse text={finalText} />
@@ -281,6 +316,13 @@ function AssistantTurn({
         </View>
       ) : null}
 
+      {/* Attached Media & Screenshots Gallery */}
+      {allTurnMedia.length > 0 ? (
+        <View style={{ marginTop: 6 }}>
+          <MediaPreviewGallery media={allTurnMedia} />
+        </View>
+      ) : null}
+
       {/* Turn Action Footer */}
       {!live && (finalText || duration) ? (
         <View style={styles.turnFooter}>
@@ -289,21 +331,15 @@ function AssistantTurn({
               style={styles.copyOutputBtn}
               onPress={handleCopy}
               activeOpacity={0.7}
+              hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
+              accessibilityRole="button"
+              accessibilityLabel={copied ? "Copied" : "Copy output"}
             >
               {copied ? (
                 <Check size={12} color={COLORS.success} />
               ) : (
                 <Copy size={12} color={COLORS.mutedForeground} />
               )}
-              <Text
-                style={[
-                  styles.copyOutputText,
-                  font("medium"),
-                  copied && styles.copyOutputTextSuccess,
-                ]}
-              >
-                {copied ? "Copied output" : "Copy output"}
-              </Text>
             </TouchableOpacity>
           ) : null}
 
@@ -324,6 +360,98 @@ function AssistantTurn({
 
 // ---------- user turn -----------------------------------------------------
 
+interface ParsedUserAttachment {
+  name: string;
+  path: string;
+  kind: "image" | "code" | "text" | "audio" | "video" | "archive" | "file";
+  ext: string;
+}
+
+function detectFileKind(path: string, name: string): { kind: ParsedUserAttachment["kind"]; ext: string } {
+  const filename = name || path.split("/").pop() || "";
+  const ext = filename.split(".").pop()?.toLowerCase() || "";
+
+  if (
+    path.startsWith("data:image/") ||
+    ["png", "jpg", "jpeg", "gif", "webp", "svg", "bmp", "ico"].includes(ext)
+  ) {
+    return { kind: "image", ext: ext.toUpperCase() || "IMG" };
+  }
+  if (
+    [
+      "ts", "tsx", "js", "jsx", "py", "rs", "json", "html", "css", "scss",
+      "sh", "bash", "yml", "yaml", "toml", "sql", "c", "cpp", "go", "php",
+      "vue", "svelte",
+    ].includes(ext)
+  ) {
+    return { kind: "code", ext: ext.toUpperCase() };
+  }
+  if (["txt", "md", "markdown", "pdf", "doc", "docx", "rtf", "log"].includes(ext)) {
+    return { kind: "text", ext: ext.toUpperCase() };
+  }
+  if (["m4a", "mp3", "wav", "ogg", "flac", "aac", "opus"].includes(ext)) {
+    return { kind: "audio", ext: ext.toUpperCase() };
+  }
+  if (["mp4", "mov", "webm", "mkv", "avi"].includes(ext)) {
+    return { kind: "video", ext: ext.toUpperCase() };
+  }
+  if (["zip", "tar", "gz", "tgz", "7z", "rar"].includes(ext)) {
+    return { kind: "archive", ext: ext.toUpperCase() };
+  }
+  return { kind: "file", ext: ext ? ext.toUpperCase() : "FILE" };
+}
+
+function AttachmentChip({ item }: { item: ParsedUserAttachment }) {
+  const { colors } = useTheme();
+
+  const getIconAndColor = () => {
+    switch (item.kind) {
+      case "code":
+        return { Icon: FileCode, color: colors.primary, bg: "rgba(99, 102, 241, 0.14)" };
+      case "audio":
+        return { Icon: Mic, color: colors.success, bg: "rgba(34, 197, 94, 0.14)" };
+      case "video":
+        return { Icon: FileVideo, color: colors.warning, bg: "rgba(234, 179, 8, 0.14)" };
+      case "archive":
+        return { Icon: FileArchive, color: colors.primary, bg: "rgba(99, 102, 241, 0.14)" };
+      case "text":
+        return { Icon: FileText, color: colors.foreground, bg: "rgba(255, 255, 255, 0.08)" };
+      default:
+        return { Icon: FileText, color: colors.mutedForeground, bg: "rgba(255, 255, 255, 0.06)" };
+    }
+  };
+
+  const { Icon, color, bg } = getIconAndColor();
+
+  return (
+    <View
+      style={[
+        styles.userAttCard,
+        { backgroundColor: colors.secondary, borderColor: colors.border },
+      ]}
+    >
+      <View style={[styles.userAttIconBox, { backgroundColor: bg }]}>
+        <Icon size={13} color={color} />
+      </View>
+      <View style={styles.userAttContent}>
+        <Text
+          style={[styles.userAttName, font("medium"), { color: colors.foreground }]}
+          numberOfLines={1}
+        >
+          {item.name}
+        </Text>
+        {item.ext ? (
+          <View style={[styles.userAttExtBadge, { backgroundColor: colors.card, borderColor: colors.border }]}>
+            <Text style={[styles.userAttExtText, mono("regular"), { color: colors.mutedForeground }]}>
+              {item.ext}
+            </Text>
+          </View>
+        ) : null}
+      </View>
+    </View>
+  );
+}
+
 function UserTurnView({ message }: { message: ChatMessage }) {
   const { auth } = useAva();
   const { data: userProfileData } = useUserProfile();
@@ -340,40 +468,169 @@ function UserTurnView({ message }: { message: ChatMessage }) {
         .join("\n")
         .trim()
     : "";
-  const fullText = (partsText || (message as any).text || "").trim();
+  const rawText = (partsText || (message as any).text || "").trim();
 
   const attachedFiles = message.parts?.flatMap((p) => p.meta?.files || []) || [];
   const attachedMedia = message.parts?.flatMap((p) => p.meta?.media || []) || [];
 
   const [expanded, setExpanded] = useState(false);
+  const [copiedPrompt, setCopiedPrompt] = useState(false);
+
+  // Parse out [Attachment: ...] lines and categorize files vs images
+  const { cleanedText, nonImageAttachments, imageAttachments } = useMemo(() => {
+    const fileList: ParsedUserAttachment[] = [];
+    const mediaList: MediaItem[] = [];
+    const seen = new Set<string>();
+
+    const attRegex = /\[Attachment:\s*([^\n()]+?)\s*\(([^)]+)\)\]/g;
+    let cleaned = rawText
+      .replace(attRegex, (_match: string, attName: string, attPath: string) => {
+        const name = (attName || "").trim();
+        const path = (attPath || "").trim();
+        const key = path.toLowerCase();
+        if (path && !seen.has(key)) {
+          seen.add(key);
+          const { kind, ext } = detectFileKind(path, name);
+          if (kind === "image") {
+            mediaList.push({ type: "image", url: path, name: name || "Image" });
+          } else {
+            fileList.push({ name: name || path.split("/").pop() || "File", path, kind, ext });
+          }
+        }
+        return "";
+      })
+      .trim();
+
+    // Merge explicit files from parts
+    for (const f of attachedFiles) {
+      if (f?.path) {
+        const key = f.path.trim().toLowerCase();
+        if (!seen.has(key)) {
+          seen.add(key);
+          const name = f.path.split("/").pop() || f.path;
+          const { kind, ext } = detectFileKind(f.path, name);
+          if (kind === "image") {
+            mediaList.push({ type: "image", url: f.path, name });
+          } else {
+            fileList.push({ name, path: f.path, kind, ext });
+          }
+        }
+      }
+    }
+
+    // Merge explicit media from parts
+    for (const m of attachedMedia) {
+      if (m?.url) {
+        const key = m.url.trim().toLowerCase();
+        if (!seen.has(key)) {
+          seen.add(key);
+          const name = m.name || m.url.split("/").pop() || "Media";
+          const { kind, ext } = detectFileKind(m.url, name);
+          if (kind === "image") {
+            mediaList.push({ type: "image", url: m.url, name });
+          } else {
+            fileList.push({ name, path: m.url, kind, ext });
+          }
+        }
+      }
+    }
+
+    return {
+      cleanedText: cleaned || rawText,
+      nonImageAttachments: fileList,
+      imageAttachments: mediaList,
+    };
+  }, [rawText, attachedFiles, attachedMedia]);
+
+  const handleCopyPrompt = async () => {
+    if (rawText) {
+      await Clipboard.setStringAsync(rawText);
+      setCopiedPrompt(true);
+      setTimeout(() => setCopiedPrompt(false), 2000);
+    }
+  };
 
   // Breakpoint: > 240 chars or > 5 lines
-  const lines = fullText.split("\n");
-  const isLong = fullText.length > 240 || lines.length > 5;
+  const lines = cleanedText.split("\n");
+  const isLong = cleanedText.length > 240 || lines.length > 5;
 
   const displayText = useMemo(() => {
-    if (!isLong || expanded) return fullText;
+    if (!isLong || expanded) return cleanedText;
     if (lines.length > 5) {
       return lines.slice(0, 4).join("\n") + "…";
     }
-    return fullText.slice(0, 220).trim() + "…";
-  }, [fullText, isLong, expanded, lines]);
+    return cleanedText.slice(0, 220).trim() + "…";
+  }, [cleanedText, isLong, expanded, lines]);
 
   const toggleExpand = () => {
-    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+    if (Platform.OS !== "web") {
+      LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+    }
     setExpanded((prev) => !prev);
   };
 
   return (
     <View style={styles.userContainer}>
-      {/* User Header with Avatar & Name */}
-      <View style={styles.userHeader}>
-        <View style={styles.userHeaderInfo}>
-          <Text style={[styles.userNameText, font("semibold")]} numberOfLines={1}>
-            {displayName}
-          </Text>
-          <Text style={[styles.userRoleTag, font("medium")]}>You</Text>
+      {/* Modern Attachment Cards & Image Previews */}
+      {(nonImageAttachments.length > 0 || imageAttachments.length > 0) && (
+        <View style={styles.userAttachmentsRow}>
+          {nonImageAttachments.map((att, i) => (
+            <AttachmentChip key={`att_${i}_${att.path}`} item={att} />
+          ))}
+          {imageAttachments.length > 0 && (
+            <View style={{ width: "100%", alignSelf: "flex-end" }}>
+              <MediaPreviewGallery media={imageAttachments} compact />
+            </View>
+          )}
         </View>
+      )}
+
+      {/* User Message Bubble */}
+      {displayText ? (
+        <View style={styles.userBubble}>
+          <RichResponse text={displayText} isUser />
+          {isLong && (
+            <TouchableOpacity
+              style={styles.seeMoreBtn}
+              onPress={toggleExpand}
+              activeOpacity={0.7}
+            >
+              <Text style={[styles.seeMoreText, font("medium")]}>
+                {expanded ? "Show less" : "Show more"}
+              </Text>
+              {expanded ? (
+                <ChevronUp size={12} color={COLORS.mutedForeground} />
+              ) : (
+                <ChevronDown size={12} color={COLORS.mutedForeground} />
+              )}
+            </TouchableOpacity>
+          )}
+        </View>
+      ) : null}
+
+      {/* User Meta Footer at the bottom of sent prompt with Avatar + Copy Button */}
+      <View style={styles.userFooter}>
+        <TouchableOpacity
+          style={styles.copyUserPromptBtn}
+          onPress={handleCopyPrompt}
+          activeOpacity={0.7}
+          hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
+        >
+          {copiedPrompt ? (
+            <Check size={11} color={COLORS.success} />
+          ) : (
+            <Copy size={11} color={COLORS.mutedForeground} />
+          )}
+          <Text
+            style={[
+              styles.copyUserPromptText,
+              font("medium"),
+              copiedPrompt && styles.copyUserPromptTextSuccess,
+            ]}
+          >
+            {copiedPrompt ? "Copied" : "Copy"}
+          </Text>
+        </TouchableOpacity>
 
         {avatar ? (
           <Image source={{ uri: avatar }} style={styles.userAvatarImg} />
@@ -381,47 +638,6 @@ function UserTurnView({ message }: { message: ChatMessage }) {
           <View style={styles.userAvatarBox}>
             <Text style={[styles.userAvatarInitials, font("bold")]}>{initials}</Text>
           </View>
-        )}
-      </View>
-
-      {/* Attachments if any */}
-      {(attachedFiles.length > 0 || attachedMedia.length > 0) && (
-        <View style={styles.userAttachmentsRow}>
-          {attachedFiles.map((file, i) => (
-            <View key={`file_${i}`} style={styles.userAttBadge}>
-              <Text style={[styles.userAttText, font("medium")]} numberOfLines={1}>
-                {file.path.split("/").pop() || file.path}
-              </Text>
-            </View>
-          ))}
-          {attachedMedia.map((media, i) => (
-            <View key={`media_${i}`} style={styles.userAttBadge}>
-              <Text style={[styles.userAttText, font("medium")]} numberOfLines={1}>
-                {media.name || "Media"}
-              </Text>
-            </View>
-          ))}
-        </View>
-      )}
-
-      {/* User Message Bubble */}
-      <View style={styles.userBubble}>
-        <RichResponse text={displayText} isUser />
-        {isLong && (
-          <TouchableOpacity
-            style={styles.seeMoreBtn}
-            onPress={toggleExpand}
-            activeOpacity={0.7}
-          >
-            <Text style={[styles.seeMoreText, font("medium")]}>
-              {expanded ? "Show less" : "Show more"}
-            </Text>
-            {expanded ? (
-              <ChevronUp size={12} color={COLORS.mutedForeground} />
-            ) : (
-              <ChevronDown size={12} color={COLORS.mutedForeground} />
-            )}
-          </TouchableOpacity>
         )}
       </View>
     </View>
@@ -518,7 +734,7 @@ const styles = StyleSheet.create({
     width: "100%",
   },
   questionCard: {
-    backgroundColor: COLORS.card,
+    backgroundColor: "transparent",
     borderRadius: 12,
     borderWidth: 1,
     borderColor: COLORS.border,
@@ -531,7 +747,7 @@ const styles = StyleSheet.create({
     color: COLORS.foreground,
   },
   questionOptionPill: {
-    backgroundColor: COLORS.secondary,
+    backgroundColor: "transparent",
     paddingVertical: 6,
     paddingHorizontal: 12,
     borderRadius: 8,
@@ -566,10 +782,14 @@ const styles = StyleSheet.create({
     marginVertical: 3,
   },
   noticeBoxInfo: {
-    backgroundColor: COLORS.secondary,
+    backgroundColor: "transparent",
+    borderWidth: 1,
+    borderColor: COLORS.border,
   },
   noticeBoxError: {
-    backgroundColor: "rgba(239, 68, 68, 0.1)",
+    backgroundColor: "transparent",
+    borderWidth: 1,
+    borderColor: "rgba(239, 68, 68, 0.25)",
   },
   noticeText: {
     fontSize: 12,
@@ -592,19 +812,13 @@ const styles = StyleSheet.create({
   copyOutputBtn: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 4,
-    paddingHorizontal: 8,
+    justifyContent: "center",
+    paddingHorizontal: 6,
     paddingVertical: 4,
     borderRadius: 6,
-    backgroundColor: COLORS.secondary,
-  },
-  copyOutputText: {
-    fontSize: 11,
-    fontWeight: "500",
-    color: COLORS.mutedForeground,
-  },
-  copyOutputTextSuccess: {
-    color: COLORS.success,
+    backgroundColor: "transparent",
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: COLORS.border,
   },
   footerStatsText: {
     fontSize: 11,
@@ -616,31 +830,101 @@ const styles = StyleSheet.create({
     marginVertical: 6,
     gap: 4,
   },
-  userHeader: {
+  userAttachmentsRow: {
     flexDirection: "row",
-    alignItems: "center",
+    flexWrap: "wrap",
+    gap: 6,
     alignSelf: "flex-end",
-    gap: 7,
-    marginBottom: 2,
+    marginBottom: 4,
   },
-  userHeaderInfo: {
+  userAttCard: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 5,
+    gap: 8,
+    paddingVertical: 5,
+    paddingHorizontal: 8,
+    borderRadius: 10,
+    borderWidth: 1,
+    maxWidth: 220,
   },
-  userNameText: {
+  userAttIconBox: {
+    width: 24,
+    height: 24,
+    borderRadius: 6,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  userAttContent: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    flexShrink: 1,
+  },
+  userAttName: {
     fontSize: 12,
-    color: COLORS.foreground,
+    maxWidth: 130,
   },
-  userRoleTag: {
-    fontSize: 9.5,
-    color: COLORS.mutedForeground,
-    backgroundColor: COLORS.secondary,
-    paddingHorizontal: 5,
+  userAttExtBadge: {
+    paddingHorizontal: 4,
     paddingVertical: 1,
     borderRadius: 4,
     borderWidth: 0.5,
+  },
+  userAttExtText: {
+    fontSize: 9.5,
+  },
+  userBubble: {
+    backgroundColor: "transparent",
+    borderRadius: 16,
+    borderBottomRightRadius: 4,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderWidth: 1,
     borderColor: COLORS.border,
+    flexDirection: "column",
+    alignSelf: "flex-end",
+  },
+  seeMoreBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    alignSelf: "flex-end",
+    marginTop: 6,
+    paddingVertical: 4,
+    paddingHorizontal: 8,
+    borderRadius: 6,
+    backgroundColor: "transparent",
+    borderWidth: 1,
+    borderColor: COLORS.border,
+  },
+  seeMoreText: {
+    fontSize: 11,
+    color: COLORS.mutedForeground,
+  },
+  userFooter: {
+    flexDirection: "row",
+    alignItems: "center",
+    alignSelf: "flex-end",
+    gap: 8,
+    marginTop: 2,
+  },
+  copyUserPromptBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 3.5,
+    paddingHorizontal: 6,
+    paddingVertical: 2.5,
+    borderRadius: 5,
+    backgroundColor: "transparent",
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: COLORS.border,
+  },
+  copyUserPromptText: {
+    fontSize: 10.5,
+    color: COLORS.mutedForeground,
+  },
+  copyUserPromptTextSuccess: {
+    color: COLORS.success,
   },
   userAvatarImg: {
     width: 22,
@@ -660,52 +944,5 @@ const styles = StyleSheet.create({
   userAvatarInitials: {
     fontSize: 10,
     color: "#FFFFFF",
-  },
-  userAttachmentsRow: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 6,
-    alignSelf: "flex-end",
-    marginBottom: 4,
-  },
-  userAttBadge: {
-    backgroundColor: COLORS.secondary,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    borderRadius: 8,
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-  },
-  userAttText: {
-    fontSize: 11,
-    color: COLORS.foreground,
-  },
-  userBubble: {
-    backgroundColor: COLORS.secondary,
-    borderRadius: 16,
-    borderTopRightRadius: 4,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    flexDirection: "column",
-    alignSelf: "flex-end",
-  },
-  seeMoreBtn: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 4,
-    alignSelf: "flex-end",
-    marginTop: 6,
-    paddingVertical: 4,
-    paddingHorizontal: 8,
-    borderRadius: 6,
-    backgroundColor: COLORS.card,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-  },
-  seeMoreText: {
-    fontSize: 11,
-    color: COLORS.mutedForeground,
   },
 });

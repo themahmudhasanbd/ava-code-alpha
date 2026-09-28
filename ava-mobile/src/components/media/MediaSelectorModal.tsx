@@ -3,6 +3,8 @@ import {
   ActionSheetIOS,
   ActivityIndicator,
   Alert,
+  Animated,
+  Easing,
   Modal,
   Platform,
   StyleSheet,
@@ -228,41 +230,89 @@ export function MediaSelectorModal({
     onClose();
   };
 
+  const slideAnim = React.useRef(new Animated.Value(300)).current;
+  const fadeAnim = React.useRef(new Animated.Value(0)).current;
+  const isVisible = open && !serverModalOpen;
+  const [mounted, setMounted] = React.useState(isVisible);
+
+  React.useEffect(() => {
+    if (isVisible) {
+      setMounted(true);
+      Animated.parallel([
+        Animated.timing(fadeAnim, {
+          toValue: 1,
+          duration: 200,
+          easing: Easing.out(Easing.cubic),
+          useNativeDriver: Platform.OS !== "web",
+        }),
+        Animated.spring(slideAnim, {
+          toValue: 0,
+          damping: 24,
+          stiffness: 280,
+          mass: 0.8,
+          useNativeDriver: Platform.OS !== "web",
+        }),
+      ]).start();
+    } else {
+      Animated.parallel([
+        Animated.timing(fadeAnim, {
+          toValue: 0,
+          duration: 160,
+          easing: Easing.in(Easing.cubic),
+          useNativeDriver: Platform.OS !== "web",
+        }),
+        Animated.timing(slideAnim, {
+          toValue: 300,
+          duration: 160,
+          easing: Easing.in(Easing.cubic),
+          useNativeDriver: Platform.OS !== "web",
+        }),
+      ]).start(() => {
+        setMounted(false);
+      });
+    }
+  }, [isVisible, fadeAnim, slideAnim]);
+
   return (
     <>
-      <Modal
-        visible={open && !serverModalOpen}
-        transparent
-        statusBarTranslucent
-        animationType="fade"
-        onRequestClose={onClose}
-      >
-        <TouchableWithoutFeedback onPress={onClose}>
-          <View
-            style={[
-              styles.backdrop,
-              isTabletOrWeb && styles.backdropCentered,
-              { backgroundColor: isDark ? "rgba(0, 0, 0, 0.70)" : "rgba(15, 23, 42, 0.45)" },
-            ]}
-          >
-            <BlurView
-              intensity={isDark ? 80 : 60}
-              tint={isDark ? "dark" : "light"}
-              style={StyleSheet.absoluteFill}
-            />
-            <TouchableWithoutFeedback onPress={() => {}}>
-              <View
-                style={[
-                  styles.sheetCard,
-                  isTabletOrWeb && styles.floatingCard,
-                  {
-                    width: isTabletOrWeb ? cardWidth : "100%",
-                    backgroundColor: colors.card,
-                    borderColor: colors.border,
-                    shadowColor: isDark ? "#000" : "rgba(15, 23, 42, 0.35)",
-                  },
-                ]}
-              >
+      {mounted && (
+        <Modal
+          visible={mounted}
+          transparent
+          statusBarTranslucent
+          animationType="none"
+          onRequestClose={onClose}
+        >
+          <TouchableWithoutFeedback onPress={onClose}>
+            <Animated.View
+              style={[
+                styles.backdrop,
+                isTabletOrWeb && styles.backdropCentered,
+                {
+                  opacity: fadeAnim,
+                  backgroundColor: isDark ? "rgba(0, 0, 0, 0.70)" : "rgba(15, 23, 42, 0.45)",
+                },
+              ]}
+            >
+              <BlurView
+                intensity={isDark ? 80 : 60}
+                tint={isDark ? "dark" : "light"}
+                style={StyleSheet.absoluteFill}
+              />
+              <TouchableWithoutFeedback onPress={() => {}}>
+                <Animated.View
+                  style={[
+                    styles.sheetCard,
+                    isTabletOrWeb && styles.floatingCard,
+                    {
+                      width: isTabletOrWeb ? cardWidth : "100%",
+                      backgroundColor: colors.card,
+                      borderColor: colors.border,
+                      shadowColor: isDark ? "#000" : "rgba(15, 23, 42, 0.35)",
+                      transform: [{ translateY: slideAnim }],
+                    },
+                  ]}
+                >
                 {/* Drag Handle */}
                 {!isTabletOrWeb && <View style={[styles.handleBar, { backgroundColor: colors.border }]} />}
 
@@ -368,11 +418,12 @@ export function MediaSelectorModal({
                     <ChevronRight size={16} color={colors.mutedForeground} />
                   </TouchableOpacity>
                 </View>
-              </View>
-            </TouchableWithoutFeedback>
-          </View>
-        </TouchableWithoutFeedback>
-      </Modal>
+                </Animated.View>
+              </TouchableWithoutFeedback>
+            </Animated.View>
+          </TouchableWithoutFeedback>
+        </Modal>
+      )}
 
       {/* Dedicated Server Media Picker Modal */}
       <ServerMediaModal

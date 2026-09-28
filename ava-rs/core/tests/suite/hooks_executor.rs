@@ -79,7 +79,7 @@ async fn thread_plugin_selection_disables_executor_hooks_without_disabling_their
     ] {
         let enabled = disabled_plugin_ids.is_empty();
         submit_thread_settings(
-            &fixture.test.ava-code,
+            &fixture.test.ava,
             ThreadSettingsOverrides {
                 disabled_plugin_ids: Some(disabled_plugin_ids),
                 ..Default::default()
@@ -196,8 +196,8 @@ async fn executor_interrupt_hook_runs_after_attachment() -> Result<()> {
     })
     .await
     .context("interrupted turn should reach the model request")?;
-    fixture.test.ava-code.submit(Op::Interrupt).await?;
-    wait_for_event(&fixture.test.ava-code, |event| {
+    fixture.test.ava.submit(Op::Interrupt).await?;
+    wait_for_event(&fixture.test.ava, |event| {
         matches!(event, EventMsg::TurnAborted(_))
     })
     .await;
@@ -360,7 +360,7 @@ async fn executor_stop_hook_rejects_mismatched_environment() -> Result<()> {
         .next()
         .context("attached executor environment should remain selected")?;
     submit_thread_settings(
-        &fixture.test.ava-code,
+        &fixture.test.ava,
         ThreadSettingsOverrides {
             environments: Some(TurnEnvironmentSelections::new(
                 fixture.test.config.cwd.clone(),
@@ -557,11 +557,11 @@ async fn executor_browser_and_computer_use_cleanup_hooks_use_separate_mcp_routes
                     agent_role: None,
                 })),
                 thread_source: Some(ThreadSource::Subagent),
-                environments: Some(fixture.test.ava-code.environment_selections().await),
+                environments: Some(fixture.test.ava.environment_selections().await),
                 ..StartThreadOptions::new(fixture.test.config.clone())
             })
             .await?;
-        fixture.test.ava-code = child.thread;
+        fixture.test.ava = child.thread;
         fixture.test.session_configured = child.session_configured;
     }
     fixture.attach().await?;
@@ -594,8 +594,8 @@ async fn executor_browser_and_computer_use_cleanup_hooks_use_separate_mcp_routes
         })
         .await
         .context("interrupted turn should reach the model request")?;
-        fixture.test.ava-code.submit(Op::Interrupt).await?;
-        wait_for_event(&fixture.test.ava-code, |event| {
+        fixture.test.ava.submit(Op::Interrupt).await?;
+        wait_for_event(&fixture.test.ava, |event| {
             matches!(event, EventMsg::TurnAborted(_))
         })
         .await;
@@ -794,7 +794,7 @@ async fn executor_plugin_hook_fixture(
             .expect("configure Node REPL MCP server");
     });
     let test = builder.build_with_auto_env(&server).await?;
-    wait_for_mcp_server(&test.ava-code, "node_repl").await?;
+    wait_for_mcp_server(&test.ava, "node_repl").await?;
 
     let mut plugin_roots = Vec::new();
     let filesystem = test.fs();
@@ -889,12 +889,12 @@ impl ExecutorHookFixture {
     }
 
     async fn interrupt_running_command(&self) -> Result<()> {
-        wait_for_event(&self.test.ava-code, |event| {
+        wait_for_event(&self.test.ava, |event| {
             matches!(event, EventMsg::ExecCommandBegin(_))
         })
         .await;
-        self.test.ava-code.submit(Op::Interrupt).await?;
-        wait_for_event(&self.test.ava-code, |event| {
+        self.test.ava.submit(Op::Interrupt).await?;
+        wait_for_event(&self.test.ava, |event| {
             matches!(event, EventMsg::TurnAborted(_))
         })
         .await;

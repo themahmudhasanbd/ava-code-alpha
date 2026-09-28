@@ -193,16 +193,16 @@ async fn guardian_subagent_review_preserves_late_root_user_authorization(
             }]
         }))?;
         checkpoint.retained_context = Some(Default::default());
-        test.ava-code.ensure_rollout_materialized().await;
-        test.ava-code = super::guardian_checkpoint_migration::resume(
+        test.ava.ensure_rollout_materialized().await;
+        test.ava = super::guardian_checkpoint_migration::resume(
             &test,
-            &test.ava-code,
+            &test.ava,
             vec![RolloutItem::Compacted(checkpoint)],
         )
         .await?;
         assert_eq!(
             ava_core::context::GuardianContextMode::from_history(
-                test.ava-code.conversation_history_snapshot().await.as_ref()
+                test.ava.conversation_history_snapshot().await.as_ref()
             ),
             ava_core::context::GuardianContextMode::Legacy,
         );
@@ -323,7 +323,7 @@ async fn guardian_subagent_review_preserves_late_root_user_authorization(
             internal_chat_message_metadata_passthrough: None,
         },
     ]);
-    test.ava-code.inject_response_items(root_history_items).await?;
+    test.ava.inject_response_items(root_history_items).await?;
 
     mount_sse_once_match(
         &server,
@@ -428,13 +428,13 @@ async fn guardian_subagent_review_preserves_late_root_user_authorization(
     )
     .await;
 
-    test.ava-code
+    test.ava
         .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
             text: USER_APPROVAL.to_owned(),
             text_elements: Vec::new(),
         }]))
         .await?;
-    let question = wait_for_event_match(&test.ava-code, |event| match event {
+    let question = wait_for_event_match(&test.ava, |event| match event {
         EventMsg::RequestUserInput(request) => Some(request.clone()),
         _ => None,
     })
@@ -455,14 +455,14 @@ async fn guardian_subagent_review_preserves_late_root_user_authorization(
     );
     if queued_approval {
         // Accepted before the restrictive answer, but delivered to model history after it.
-        test.ava-code
+        test.ava
             .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
                 text: QUEUED_APPROVAL.to_owned(),
                 text_elements: Vec::new(),
             }]))
             .await?;
     }
-    test.ava-code
+    test.ava
         .submit(Op::UserInputAnswer {
             id: question.turn_id,
             response: RequestUserInputResponse {
@@ -475,7 +475,7 @@ async fn guardian_subagent_review_preserves_late_root_user_authorization(
             },
         })
         .await?;
-    wait_for_event(&test.ava-code, |event| {
+    wait_for_event(&test.ava, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;
@@ -645,7 +645,7 @@ async fn guardian_subagent_review_preserves_late_root_user_authorization(
 
     if matches!(root_context, RootContext::Retained) && matches!(root_answer, RootAnswer::Complete)
     {
-        let mut root = test.ava-code.clone();
+        let mut root = test.ava.clone();
         let history = root.conversation_history_snapshot().await;
         root.flush_rollout().await?;
         let saved = test

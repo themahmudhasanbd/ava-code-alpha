@@ -15,16 +15,19 @@ use crate::terminal_palette::stdout_color_level;
 use ratatui::style::Color;
 use ratatui::style::Style;
 
-const LIGHT_BG_ACCENT_RGB: (u8, u8, u8) = (28, 100, 200);
+/// Ava Brand Indigo 600 (#4F46E5), used for high-contrast foreground accents on light backgrounds.
+const LIGHT_BG_ACCENT_RGB: (u8, u8, u8) = (79, 70, 229);
 
-/// ChatGPT Blue 100 (#A4CDFB), used for selection fills on light backgrounds.
-pub(crate) const CHATGPT_BLUE_100: (u8, u8, u8) = (164, 205, 251);
+/// Ava Brand Indigo 200 (#C7D2FE), used for selection fills on light backgrounds.
+pub(crate) const AVA_INDIGO_100: (u8, u8, u8) = (199, 210, 254);
+pub(crate) const CHATGPT_BLUE_100: (u8, u8, u8) = AVA_INDIGO_100;
 
-/// ChatGPT Blue 200 (#63A8F8).
-pub(crate) const CHATGPT_BLUE_200: (u8, u8, u8) = (99, 168, 248);
+/// Ava Brand Indigo 500 (#6366F1), primary accent used for selection fills on dark backgrounds.
+pub(crate) const AVA_INDIGO_500: (u8, u8, u8) = (99, 102, 241);
+pub(crate) const CHATGPT_BLUE_200: (u8, u8, u8) = AVA_INDIGO_500;
 
 /// Shared accent for picker selection backgrounds and transcript foreground emphasis.
-pub(crate) const UI_ACCENT: (u8, u8, u8) = CHATGPT_BLUE_200;
+pub(crate) const UI_ACCENT: (u8, u8, u8) = AVA_INDIGO_500;
 
 #[derive(Clone, Copy)]
 pub(crate) enum StatusTone {

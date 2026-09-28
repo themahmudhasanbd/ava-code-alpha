@@ -68,18 +68,18 @@ async fn terminal_turn_clears_extension_owned_denials() -> anyhow::Result<()> {
         })
         .build_with_auto_env(&server)
         .await?;
-    let denials = ReviewDenials::for_thread(test.ava-code.thread_extension_data());
+    let denials = ReviewDenials::for_thread(test.ava.thread_extension_data());
 
     let mut previous_turn = None;
     // The third turn also checks that an interrupted turn leaves the next turn usable.
     for (index, release) in releases.into_iter().enumerate() {
-        test.ava-code
+        test.ava
             .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
                 text: "Continue.".into(),
                 text_elements: Vec::new(),
             }]))
             .await?;
-        let turn_id = wait_for_event_match(&test.ava-code, |event| match event {
+        let turn_id = wait_for_event_match(&test.ava, |event| match event {
             EventMsg::TurnStarted(event) => Some(event.turn_id.clone()),
             _ => None,
         })
@@ -98,8 +98,8 @@ async fn terminal_turn_clears_extension_owned_denials() -> anyhow::Result<()> {
             assert_eq!(denials.record_denial(&turn_id, &model).await, None);
         }
         if index == 1 {
-            test.ava-code.submit(Op::Interrupt).await?;
-            wait_for_event(&test.ava-code, |event| {
+            test.ava.submit(Op::Interrupt).await?;
+            wait_for_event(&test.ava, |event| {
                 matches!(event, EventMsg::TurnAborted(event)
                     if event.reason == TurnAbortReason::Interrupted
                         && event.turn_id.as_deref() == Some(turn_id.as_str()))
@@ -109,13 +109,13 @@ async fn terminal_turn_clears_extension_owned_denials() -> anyhow::Result<()> {
         } else {
             release.send(()).unwrap();
             wait_for_event(
-                &test.ava-code,
+                &test.ava,
                 |event| matches!(event, EventMsg::TurnComplete(event) if event.turn_id == turn_id),
             )
             .await;
         }
     }
-    test.ava-code.shutdown_and_wait().await?;
+    test.ava.shutdown_and_wait().await?;
     assert_eq!(
         denials.record_denial(&previous_turn.unwrap(), &model).await,
         None

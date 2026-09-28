@@ -86,7 +86,7 @@ async fn direct_call_metadata_during_compaction_respects_provider_support(
     test.submit_turn("Update the plan before compaction")
         .await?;
     // Read the live history: deserializing a rollout intentionally drops host-owned metadata.
-    let history = test.ava-code.conversation_history_snapshot().await;
+    let history = test.ava.conversation_history_snapshot().await;
     let history = serde_json::to_value(history.items().collect::<Vec<_>>())?;
     let history = history.as_array().expect("source history");
     let seed_output = history
@@ -111,14 +111,14 @@ async fn direct_call_metadata_during_compaction_respects_provider_support(
     if !metadata_enabled {
         let mut config = test.config.clone();
         config.features.disable(Feature::ExecutedToolCallMetadata)?;
-        test.ava-code.refresh_runtime_config(config).await;
+        test.ava.refresh_runtime_config(config).await;
     }
-    test.ava-code.submit(Op::Compact).await?;
-    wait_for_event(&test.ava-code, |event| {
+    test.ava.submit(Op::Compact).await?;
+    wait_for_event(&test.ava, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;
-    let compacted = test.ava-code.conversation_history_snapshot().await;
+    let compacted = test.ava.conversation_history_snapshot().await;
     let compacted = serde_json::to_value(compacted.items().collect::<Vec<_>>())?;
     let compacted = compacted.as_array().expect("compacted history");
     // Both paths retain the user message and summary, not the old call or output.
@@ -180,7 +180,7 @@ async fn direct_call_metadata_during_compaction_respects_provider_support(
     );
     let output = requests[4].function_call_output("shared");
     assert_eq!(output["output"], "Plan updated");
-    let captured = test.ava-code.conversation_history_snapshot().await;
+    let captured = test.ava.conversation_history_snapshot().await;
     let captured = serde_json::to_value(captured.items().collect::<Vec<_>>())?;
     let captured_output = captured
         .as_array()

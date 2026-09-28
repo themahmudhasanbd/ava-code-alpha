@@ -66,7 +66,7 @@ async fn refresh_keeps_superseded_mcp_server_alive_for_in_flight_calls() -> anyh
         })
         .build(&server)
         .await?;
-    wait_for_mcp_server(&fixture.ava-code, "refresh_cleanup").await?;
+    wait_for_mcp_server(&fixture.ava, "refresh_cleanup").await?;
 
     let superseded_pid = wait_for_pid_file(&pid_file).await?;
     assert!(process_is_alive(&superseded_pid)?);
@@ -77,7 +77,7 @@ async fn refresh_keeps_superseded_mcp_server_alive_for_in_flight_calls() -> anyh
         "timeout_ms": 1_000
     });
     let long_call = tokio::spawn({
-        let ava = Arc::clone(&fixture.ava-code);
+        let ava = Arc::clone(&fixture.ava);
         let barrier = barrier.clone();
         async move {
             ava
@@ -113,7 +113,7 @@ async fn refresh_keeps_superseded_mcp_server_alive_for_in_flight_calls() -> anyh
         ]),
     )
     .await;
-    fixture.ava-code.submit(Op::RefreshMcpServers).await?;
+    fixture.ava.submit(Op::RefreshMcpServers).await?;
     fixture.submit_turn("refresh MCP servers").await?;
 
     let replacement_pid = wait_for_pid_file(&pid_file).await?;
@@ -129,6 +129,6 @@ async fn refresh_keeps_superseded_mcp_server_alive_for_in_flight_calls() -> anyh
     wait_for_process_exit(&superseded_pid).await?;
     assert!(process_is_alive(&replacement_pid)?);
 
-    fixture.ava-code.shutdown_and_wait().await?;
+    fixture.ava.shutdown_and_wait().await?;
     wait_for_process_exit(&replacement_pid).await
 }

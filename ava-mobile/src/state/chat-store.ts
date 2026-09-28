@@ -1,6 +1,6 @@
 import type { ChatMessage, MessagePart } from "@/core/types";
 
-export type ChatStatus = "ready" | "submitted" | "streaming" | "stopping" | "error";
+export type ChatStatus = "ready" | "submitted" | "streaming" | "stopping" | "paused" | "error";
 
 export interface QueuedPromptItem {
   id: string;

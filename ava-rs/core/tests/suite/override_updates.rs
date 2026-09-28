@@ -37,7 +37,7 @@ async fn thread_settings_update_without_user_turn_does_not_record_permissions_up
     let test = builder.build(&server).await?;
 
     core_test_support::submit_thread_settings(
-        &test.ava-code,
+        &test.ava,
         ava_protocol::protocol::ThreadSettingsOverrides {
             approval_policy: Some(AskForApproval::Never),
             ..Default::default()
@@ -45,10 +45,10 @@ async fn thread_settings_update_without_user_turn_does_not_record_permissions_up
     )
     .await?;
 
-    test.ava-code.submit(Op::Shutdown).await?;
-    wait_for_event(&test.ava-code, |ev| matches!(ev, EventMsg::ShutdownComplete)).await;
+    test.ava.submit(Op::Shutdown).await?;
+    wait_for_event(&test.ava, |ev| matches!(ev, EventMsg::ShutdownComplete)).await;
 
-    let rollout_path = test.ava-code.rollout_path().expect("rollout path");
+    let rollout_path = test.ava.rollout_path().expect("rollout path");
     assert!(
         !rollout_path.exists(),
         "did not expect a rollout before a new user turn"
@@ -67,7 +67,7 @@ async fn thread_settings_update_without_user_turn_does_not_record_environment_up
     let new_cwd = TempDir::new()?;
 
     core_test_support::submit_thread_settings(
-        &test.ava-code,
+        &test.ava,
         ava_protocol::protocol::ThreadSettingsOverrides {
             environments: Some(local_selections(new_cwd.abs())),
             ..Default::default()
@@ -75,10 +75,10 @@ async fn thread_settings_update_without_user_turn_does_not_record_environment_up
     )
     .await?;
 
-    test.ava-code.submit(Op::Shutdown).await?;
-    wait_for_event(&test.ava-code, |ev| matches!(ev, EventMsg::ShutdownComplete)).await;
+    test.ava.submit(Op::Shutdown).await?;
+    wait_for_event(&test.ava, |ev| matches!(ev, EventMsg::ShutdownComplete)).await;
 
-    let rollout_path = test.ava-code.rollout_path().expect("rollout path");
+    let rollout_path = test.ava.rollout_path().expect("rollout path");
     assert!(
         !rollout_path.exists(),
         "did not expect a rollout before a new user turn"
@@ -98,7 +98,7 @@ async fn thread_settings_update_without_user_turn_does_not_record_collaboration_
     let collaboration_mode = collab_mode_with_instructions(Some(collab_text));
 
     core_test_support::submit_thread_settings(
-        &test.ava-code,
+        &test.ava,
         ava_protocol::protocol::ThreadSettingsOverrides {
             collaboration_mode: Some(collaboration_mode),
             ..Default::default()
@@ -106,10 +106,10 @@ async fn thread_settings_update_without_user_turn_does_not_record_collaboration_
     )
     .await?;
 
-    test.ava-code.submit(Op::Shutdown).await?;
-    wait_for_event(&test.ava-code, |ev| matches!(ev, EventMsg::ShutdownComplete)).await;
+    test.ava.submit(Op::Shutdown).await?;
+    wait_for_event(&test.ava, |ev| matches!(ev, EventMsg::ShutdownComplete)).await;
 
-    let rollout_path = test.ava-code.rollout_path().expect("rollout path");
+    let rollout_path = test.ava.rollout_path().expect("rollout path");
     assert!(
         !rollout_path.exists(),
         "did not expect a rollout before a new user turn"

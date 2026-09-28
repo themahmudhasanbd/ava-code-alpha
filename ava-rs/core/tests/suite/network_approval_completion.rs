@@ -209,7 +209,7 @@ mode = "full"
         test.session_configured.permission_profile.clone(),
         test.config.cwd.as_path(),
     );
-    test.ava-code
+    test.ava
         .start_or_steer_turn(
             TurnInputRequest::user_input(vec![UserInput::Text {
                 text: "build the site".into(),
@@ -241,7 +241,7 @@ mode = "full"
     }
     let completed = timeout(Duration::from_secs(/*secs*/ 15), async {
         loop {
-            match test.ava-code.next_event().await?.msg {
+            match test.ava.next_event().await?.msg {
                 EventMsg::ItemCompleted(event) => {
                     if let TurnItem::CommandExecution(item) = event.item {
                         return Ok::<_, anyhow::Error>(item);

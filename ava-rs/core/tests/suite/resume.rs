@@ -29,18 +29,18 @@ async fn resume_restores_windows_sandbox_override() -> Result<()> {
     let mut builder = test_ava();
     let initial = builder.build(&server).await?;
     core_test_support::submit_thread_settings(
-        &initial.ava-code,
+        &initial.ava,
         ThreadSettingsOverrides {
             windows_sandbox_level: Some(WindowsSandboxLevel::Elevated),
             ..Default::default()
         },
     )
     .await?;
-    initial.ava-code.ensure_rollout_materialized().await;
-    let settings = initial.ava-code.restorable_thread_settings().await;
+    initial.ava.ensure_rollout_materialized().await;
+    let settings = initial.ava.restorable_thread_settings().await;
 
     let resumed = builder.restart(&server, &initial).await?;
-    resumed.ava-code.restore_thread_settings(settings).await?;
+    resumed.ava.restore_thread_settings(settings).await?;
 
     assert_eq!(
         resumed
@@ -60,7 +60,7 @@ async fn resume_includes_initial_messages_from_rollout_events() -> Result<()> {
     let server = start_mock_server().await;
     let mut builder = test_ava();
     let initial = builder.build(&server).await?;
-    let ava = Arc::clone(&initial.ava-code);
+    let ava = Arc::clone(&initial.ava);
 
     let initial_sse = sse(vec![
         ev_response_created("resp-initial"),
@@ -108,18 +108,18 @@ async fn resume_includes_initial_messages_from_rollout_events() -> Result<()> {
         other => panic!("unexpected initial messages after resume: {other:#?}"),
     }
 
-    resumed.ava-code.flush_rollout().await?;
+    resumed.ava.flush_rollout().await?;
     let mut rejoined = resumed
         .thread_manager
         .resume_thread_from_rollout(
             resumed.config.clone(),
-            resumed.ava-code.rollout_path().expect("resumed rollout path"),
+            resumed.ava.rollout_path().expect("resumed rollout path"),
             resumed.thread_manager.auth_manager(),
             /*parent_trace*/ None,
             ClientMcpExtensions::default(),
         )
         .await?;
-    assert!(Arc::ptr_eq(&rejoined.thread, &resumed.ava-code));
+    assert!(Arc::ptr_eq(&rejoined.thread, &resumed.ava));
     let rejoined_messages = rejoined
         .session_configured
         .initial_messages
@@ -146,7 +146,7 @@ async fn resume_includes_initial_messages_from_reasoning_events() -> Result<()> 
         config.show_raw_agent_reasoning = true;
     });
     let initial = builder.build(&server).await?;
-    let ava = Arc::clone(&initial.ava-code);
+    let ava = Arc::clone(&initial.ava);
 
     let initial_sse = sse(vec![
         ev_response_created("resp-initial"),
@@ -204,7 +204,7 @@ async fn resume_switches_models_preserves_base_instructions() -> Result<()> {
         config.model = Some("gpt-5.2".to_string());
     });
     let initial = builder.build(&server).await?;
-    let ava = Arc::clone(&initial.ava-code);
+    let ava = Arc::clone(&initial.ava);
 
     let initial_sse = sse(vec![
         ev_response_created("resp-initial"),
@@ -255,7 +255,7 @@ async fn resume_switches_models_preserves_base_instructions() -> Result<()> {
             text_elements: Vec::new(),
         }]))
         .await?;
-    wait_for_event(&resumed.ava-code, |event| {
+    wait_for_event(&resumed.ava, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;
@@ -267,7 +267,7 @@ async fn resume_switches_models_preserves_base_instructions() -> Result<()> {
             text_elements: Vec::new(),
         }]))
         .await?;
-    wait_for_event(&resumed.ava-code, |event| {
+    wait_for_event(&resumed.ava, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;
@@ -311,7 +311,7 @@ async fn resume_model_switch_is_not_duplicated_after_pre_turn_override() -> Resu
         config.model = Some("gpt-5.2".to_string());
     });
     let initial = builder.build(&server).await?;
-    let ava = Arc::clone(&initial.ava-code);
+    let ava = Arc::clone(&initial.ava);
 
     let initial_mock = mount_sse_once(
         &server,
@@ -346,7 +346,7 @@ async fn resume_model_switch_is_not_duplicated_after_pre_turn_override() -> Resu
     });
     let resumed = resume_builder.restart(&server, &initial).await?;
     core_test_support::submit_thread_settings(
-        &resumed.ava-code,
+        &resumed.ava,
         ThreadSettingsOverrides {
             model: Some("gpt-5.4".to_string()),
             ..Default::default()
@@ -360,7 +360,7 @@ async fn resume_model_switch_is_not_duplicated_after_pre_turn_override() -> Resu
             text_elements: Vec::new(),
         }]))
         .await?;
-    wait_for_event(&resumed.ava-code, |event| {
+    wait_for_event(&resumed.ava, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;

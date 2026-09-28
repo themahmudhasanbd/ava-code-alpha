@@ -221,7 +221,10 @@ async fn websocket_upgrade_handler(
     State(state): State<ExecServerWebSocketState>,
 ) -> impl IntoResponse {
     info!(%peer_addr, "exec-server websocket client connected");
-    websocket.on_upgrade(move |stream| async move {
+    websocket
+        .max_message_size(64 * 1024 * 1024)
+        .max_frame_size(64 * 1024 * 1024)
+        .on_upgrade(move |stream| async move {
         state
             .processor
             .run_connection(

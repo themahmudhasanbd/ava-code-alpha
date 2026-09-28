@@ -152,7 +152,7 @@ async fn cancelling_tool_aborts_its_guardian_review(cancellation: Cancellation) 
     )
     .await;
 
-    test.ava-code
+    test.ava
         .start_or_steer_turn(
             TurnInputRequest::user_input(vec![UserInput::Text {
                 text: "start a Guardian-reviewed command".into(),
@@ -173,7 +173,7 @@ async fn cancelling_tool_aborts_its_guardian_review(cancellation: Cancellation) 
     .context("Guardian review did not start")?;
 
     if let Some(yielded_parent) = yielded_parent {
-        wait_for_event(&test.ava-code, |event| {
+        wait_for_event(&test.ava, |event| {
             matches!(event, EventMsg::TurnComplete(_))
         })
         .await;
@@ -212,21 +212,21 @@ async fn cancelling_tool_aborts_its_guardian_review(cancellation: Cancellation) 
             ],
         )
         .await;
-        test.ava-code
+        test.ava
             .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
                 text: "terminate the background cell".into(),
                 text_elements: Vec::new(),
             }]))
             .await?;
     } else {
-        test.ava-code.submit(Op::Interrupt).await?;
+        test.ava.submit(Op::Interrupt).await?;
     }
 
     tokio::time::timeout(Duration::from_secs(10), async {
         let mut guardian_aborted = false;
         let mut parent_finished = false;
         while !guardian_aborted || !parent_finished {
-            let event = test.ava-code.next_event().await?;
+            let event = test.ava.next_event().await?;
             match event.msg {
                 EventMsg::GuardianAssessment(assessment)
                     if assessment.status == GuardianAssessmentStatus::Aborted =>
@@ -247,6 +247,6 @@ async fn cancelling_tool_aborts_its_guardian_review(cancellation: Cancellation) 
     .await
     .context("tool cancellation did not abort Guardian")??;
     assert!(!output_file.exists(), "cancelled command executed");
-    test.ava-code.shutdown_and_wait().await?;
+    test.ava.shutdown_and_wait().await?;
     Ok(())
 }

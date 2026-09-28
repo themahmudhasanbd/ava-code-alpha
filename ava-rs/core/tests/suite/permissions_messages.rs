@@ -70,13 +70,13 @@ async fn submit_text_turn(
     test: &core_test_support::test_ava::TestAva,
     text: &str,
 ) -> Result<()> {
-    test.ava-code
+    test.ava
         .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
             text: text.to_string(),
             text_elements: Vec::new(),
         }]))
         .await?;
-    wait_for_event(&test.ava-code, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
+    wait_for_event(&test.ava, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
     Ok(())
 }
 
@@ -151,7 +151,7 @@ async fn model_change_appends_new_catalog_approval_message() -> Result<()> {
     submit_text_turn(&test, "first").await?;
 
     core_test_support::submit_thread_settings(
-        &test.ava-code,
+        &test.ava,
         ThreadSettingsOverrides {
             model: Some(second_slug.to_string()),
             ..Default::default()
@@ -279,7 +279,7 @@ async fn catalog_permission_message_is_sent_initially_and_after_model_change() -
     submit_text_turn(&test, "first").await?;
 
     core_test_support::submit_thread_settings(
-        &test.ava-code,
+        &test.ava,
         ThreadSettingsOverrides {
             model: Some(second_slug.to_string()),
             ..Default::default()
@@ -368,13 +368,13 @@ async fn permissions_message_sent_once_on_start() -> Result<()> {
     });
     let test = builder.build(&server).await?;
 
-    test.ava-code
+    test.ava
         .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
             text: "hello".into(),
             text_elements: Vec::new(),
         }]))
         .await?;
-    wait_for_event(&test.ava-code, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
+    wait_for_event(&test.ava, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
 
     assert_eq!(permissions_texts(&req.single_request()).len(), 1);
 
@@ -402,16 +402,16 @@ async fn permissions_message_added_on_override_change() -> Result<()> {
     });
     let test = builder.build(&server).await?;
 
-    test.ava-code
+    test.ava
         .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
             text: "hello 1".into(),
             text_elements: Vec::new(),
         }]))
         .await?;
-    wait_for_event(&test.ava-code, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
+    wait_for_event(&test.ava, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
 
     core_test_support::submit_thread_settings(
-        &test.ava-code,
+        &test.ava,
         ThreadSettingsOverrides {
             approval_policy: Some(AskForApproval::Never),
             ..Default::default()
@@ -419,13 +419,13 @@ async fn permissions_message_added_on_override_change() -> Result<()> {
     )
     .await?;
 
-    test.ava-code
+    test.ava
         .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
             text: "hello 2".into(),
             text_elements: Vec::new(),
         }]))
         .await?;
-    wait_for_event(&test.ava-code, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
+    wait_for_event(&test.ava, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
 
     let permissions_1 = permissions_texts(&req1.single_request());
     let permissions_2 = permissions_texts(&req2.single_request());
@@ -459,21 +459,21 @@ async fn permissions_message_not_added_when_no_change() -> Result<()> {
     });
     let test = builder.build(&server).await?;
 
-    test.ava-code
+    test.ava
         .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
             text: "hello 1".into(),
             text_elements: Vec::new(),
         }]))
         .await?;
-    wait_for_event(&test.ava-code, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
+    wait_for_event(&test.ava, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
 
-    test.ava-code
+    test.ava
         .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
             text: "hello 2".into(),
             text_elements: Vec::new(),
         }]))
         .await?;
-    wait_for_event(&test.ava-code, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
+    wait_for_event(&test.ava, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
 
     let permissions_1 = permissions_texts(&req1.single_request());
     let permissions_2 = permissions_texts(&req2.single_request());
@@ -507,16 +507,16 @@ async fn permissions_message_omitted_when_disabled() -> Result<()> {
     });
     let test = builder.build(&server).await?;
 
-    test.ava-code
+    test.ava
         .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
             text: "hello 1".into(),
             text_elements: Vec::new(),
         }]))
         .await?;
-    wait_for_event(&test.ava-code, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
+    wait_for_event(&test.ava, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
 
     core_test_support::submit_thread_settings(
-        &test.ava-code,
+        &test.ava,
         ThreadSettingsOverrides {
             approval_policy: Some(AskForApproval::Never),
             ..Default::default()
@@ -524,13 +524,13 @@ async fn permissions_message_omitted_when_disabled() -> Result<()> {
     )
     .await?;
 
-    test.ava-code
+    test.ava
         .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
             text: "hello 2".into(),
             text_elements: Vec::new(),
         }]))
         .await?;
-    wait_for_event(&test.ava-code, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
+    wait_for_event(&test.ava, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
 
     assert_eq!(
         permissions_texts(&req1.single_request()),
@@ -577,10 +577,10 @@ async fn resume_replays_permissions_messages() -> Result<()> {
             text_elements: Vec::new(),
         }]))
         .await?;
-    wait_for_event(&initial.ava-code, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
+    wait_for_event(&initial.ava, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
 
     core_test_support::submit_thread_settings(
-        &initial.ava-code,
+        &initial.ava,
         ThreadSettingsOverrides {
             approval_policy: Some(AskForApproval::Never),
             ..Default::default()
@@ -595,7 +595,7 @@ async fn resume_replays_permissions_messages() -> Result<()> {
             text_elements: Vec::new(),
         }]))
         .await?;
-    wait_for_event(&initial.ava-code, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
+    wait_for_event(&initial.ava, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
 
     let resumed = builder.restart(&server, &initial).await?;
     resumed
@@ -605,7 +605,7 @@ async fn resume_replays_permissions_messages() -> Result<()> {
             text_elements: Vec::new(),
         }]))
         .await?;
-    wait_for_event(&resumed.ava-code, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
+    wait_for_event(&resumed.ava, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
 
     let permissions = permissions_texts(&req3.single_request());
     assert_eq!(permissions.len(), 3);
@@ -658,10 +658,10 @@ async fn resume_and_fork_append_permissions_messages() -> Result<()> {
             text_elements: Vec::new(),
         }]))
         .await?;
-    wait_for_event(&initial.ava-code, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
+    wait_for_event(&initial.ava, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
 
     core_test_support::submit_thread_settings(
-        &initial.ava-code,
+        &initial.ava,
         ThreadSettingsOverrides {
             approval_policy: Some(AskForApproval::Never),
             ..Default::default()
@@ -676,7 +676,7 @@ async fn resume_and_fork_append_permissions_messages() -> Result<()> {
             text_elements: Vec::new(),
         }]))
         .await?;
-    wait_for_event(&initial.ava-code, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
+    wait_for_event(&initial.ava, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
 
     let permissions_base = permissions_texts(&req2.single_request());
     assert_eq!(permissions_base.len(), 2);
@@ -692,7 +692,7 @@ async fn resume_and_fork_append_permissions_messages() -> Result<()> {
             text_elements: Vec::new(),
         }]))
         .await?;
-    wait_for_event(&resumed.ava-code, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
+    wait_for_event(&resumed.ava, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
 
     let permissions_resume = permissions_texts(&req3.single_request());
     assert_eq!(permissions_resume.len(), permissions_base.len() + 1);
@@ -768,13 +768,13 @@ async fn permissions_message_includes_writable_roots() -> Result<()> {
     });
     let test = builder.build(&server).await?;
 
-    test.ava-code
+    test.ava
         .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
             text: "hello".into(),
             text_elements: Vec::new(),
         }]))
         .await?;
-    wait_for_event(&test.ava-code, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
+    wait_for_event(&test.ava, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
 
     let permissions = permissions_texts(&req.single_request());
     assert_eq!(permissions.len(), 1);

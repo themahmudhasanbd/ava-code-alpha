@@ -36,7 +36,7 @@ const languageByExtension: Record<string, BundledLanguage> = {
 
 function fileLanguage(path: string): BundledLanguage {
   const extension = path.split(".").pop()?.toLowerCase() ?? "";
-  return languageByExtension[extension] ?? "plaintext";
+  return languageByExtension[extension] ?? "markdown";
 }
 
 function TreeBranch({ path, depth, query, active, onOpen }: { path: string; depth: number; query: string; active: string | null; onOpen: (entry: FileEntry) => void }) {

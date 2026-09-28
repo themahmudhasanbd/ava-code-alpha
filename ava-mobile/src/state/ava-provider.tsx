@@ -41,31 +41,23 @@ const WORKING_CWD_KEY = "ava.working.cwd";
 const ACTIVE_SESSION_KEY = "ava.active.session";
 
 export function AvaProvider({ children }: { children: ReactNode }) {
-  const [ready, setReady] = useState(false);
-  const [auth, setAuth] = useState<AuthState | null>(null);
+  const [ready, setReady] = useState(true);
+  const [auth, setAuth] = useState<AuthState | null>(() => loadAuth());
   const [status, setStatus] = useState<ConnectionStatus>("offline");
-  const [activeSessionId, setActiveSessionIdState] = useState<string | null>(null);
+  const [activeSessionId, setActiveSessionIdState] = useState<string | null>(() => storage.get(ACTIVE_SESSION_KEY) || null);
   const [workingSessionId, setWorkingSessionId] = useState<string | null>(null);
   const [runningSessions, setRunningSessions] = useState<Record<string, boolean>>({});
-  const [modelId, setModelIdState] = useState("");
-  const [effort, setEffortState] = useState("medium");
-  const [sandbox, setSandboxState] = useState("danger-full-access");
-  const [defaultCwd, setDefaultCwdState] = useState<string>(APP.defaultCwd);
-  const [workingCwd, setWorkingCwdState] = useState<string>(APP.defaultCwd);
+  const [modelId, setModelIdState] = useState(() => storage.get(MODEL_KEY) ?? "");
+  const [effort, setEffortState] = useState(() => storage.get(EFFORT_KEY) ?? "medium");
+  const [sandbox, setSandboxState] = useState(() => storage.get(SANDBOX_KEY) ?? "danger-full-access");
+  const [defaultCwd, setDefaultCwdState] = useState<string>(() => storage.get(DEFAULT_CWD_KEY) || APP.defaultCwd);
+  const [workingCwd, setWorkingCwdState] = useState<string>(() => storage.get(WORKING_CWD_KEY) || storage.get(DEFAULT_CWD_KEY) || APP.defaultCwd);
 
   useEffect(() => {
-    setAuth(loadAuth());
-    setModelIdState(storage.get(MODEL_KEY) ?? "");
-    setEffortState(storage.get(EFFORT_KEY) ?? "medium");
-    setSandboxState(storage.get(SANDBOX_KEY) ?? "danger-full-access");
-    const savedDefaultCwd = storage.get(DEFAULT_CWD_KEY) || APP.defaultCwd;
-    setDefaultCwdState(savedDefaultCwd);
-    setWorkingCwdState(storage.get(WORKING_CWD_KEY) || savedDefaultCwd);
-    const savedSession = storage.get(ACTIVE_SESSION_KEY);
-    if (savedSession) {
-      setActiveSessionIdState(savedSession);
+    const savedAuth = loadAuth();
+    if (savedAuth && (!auth || auth.token !== savedAuth.token || auth.serverUrl !== savedAuth.serverUrl)) {
+      setAuth(savedAuth);
     }
-    setReady(true);
   }, []);
 
   const setActiveSessionId = useCallback((id: string | null) => {
@@ -81,8 +73,10 @@ export function AvaProvider({ children }: { children: ReactNode }) {
     if (!id) return;
     setRunningSessions((prev) => {
       if (isRunning) {
+        if (prev[id]) return prev;
         return { ...prev, [id]: true };
       } else {
+        if (!prev[id]) return prev;
         const next = { ...prev };
         delete next[id];
         return next;
@@ -95,7 +89,7 @@ export function AvaProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
-  const rpc = useMemo(() => (auth ? new RpcClient(auth.serverUrl, auth.token) : null), [auth]);
+  const rpc = useMemo(() => (auth ? new RpcClient(auth.serverUrl, auth.token) : null), [auth?.serverUrl, auth?.token]);
 
   useEffect(() => {
     if (!rpc) return;
@@ -175,33 +169,58 @@ export function AvaProvider({ children }: { children: ReactNode }) {
     setWorkingSessionId(null);
   }, [setActiveSessionId]);
 
+  const contextValue = useMemo<AvaContextValue>(
+    () => ({
+      ready,
+      auth,
+      rpc,
+      status,
+      activeSessionId,
+      setActiveSessionId,
+      workingSessionId,
+      setWorkingSessionId,
+      runningSessions,
+      setSessionRunning,
+      modelId,
+      setModelId,
+      effort,
+      setEffort,
+      sandbox,
+      setSandbox,
+      defaultCwd,
+      setDefaultCwd,
+      workingCwd,
+      setWorkingCwd,
+      signIn,
+      signOut,
+    }),
+    [
+      ready,
+      auth,
+      rpc,
+      status,
+      activeSessionId,
+      setActiveSessionId,
+      workingSessionId,
+      runningSessions,
+      setSessionRunning,
+      modelId,
+      setModelId,
+      effort,
+      setEffort,
+      sandbox,
+      setSandbox,
+      defaultCwd,
+      setDefaultCwd,
+      workingCwd,
+      setWorkingCwd,
+      signIn,
+      signOut,
+    ]
+  );
+
   return (
-    <AvaContext.Provider
-      value={{
-        ready,
-        auth,
-        rpc,
-        status,
-        activeSessionId,
-        setActiveSessionId,
-        workingSessionId,
-        setWorkingSessionId,
-        runningSessions,
-        setSessionRunning,
-        modelId,
-        setModelId,
-        effort,
-        setEffort,
-        sandbox,
-        setSandbox,
-        defaultCwd,
-        setDefaultCwd,
-        workingCwd,
-        setWorkingCwd,
-        signIn,
-        signOut,
-      }}
-    >
+    <AvaContext.Provider value={contextValue}>
       {children}
     </AvaContext.Provider>
   );

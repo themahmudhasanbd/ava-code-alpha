@@ -254,7 +254,7 @@ async fn extension_tool_uses_granted_turn_permissions_without_host_local_persist
 
     let (sandbox_policy, permission_profile) =
         turn_permission_fields(base_permission_profile, test.config.cwd.as_path());
-    test.ava-code
+    test.ava
         .start_or_steer_turn(
             TurnInputRequest::user_input(vec![UserInput::Text {
                 text: "request access and edit the image".to_string(),
@@ -278,7 +278,7 @@ async fn extension_tool_uses_granted_turn_permissions_without_host_local_persist
             }),
         )
         .await?;
-    let event = wait_for_event(&test.ava-code, |event| {
+    let event = wait_for_event(&test.ava, |event| {
         matches!(
             event,
             EventMsg::RequestPermissions(_) | EventMsg::TurnComplete(_)
@@ -289,7 +289,7 @@ async fn extension_tool_uses_granted_turn_permissions_without_host_local_persist
         panic!("expected request_permissions before turn completion");
     };
     assert_eq!(request.call_id, permissions_call_id);
-    test.ava-code
+    test.ava
         .submit(Op::RequestPermissionsResponse {
             id: permissions_call_id.to_string(),
             response: RequestPermissionsResponse {
@@ -299,7 +299,7 @@ async fn extension_tool_uses_granted_turn_permissions_without_host_local_persist
             },
         })
         .await?;
-    wait_for_event(&test.ava-code, |event| {
+    wait_for_event(&test.ava, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;
@@ -477,7 +477,7 @@ async fn extension_tool_rebinds_granted_permissions_on_each_turn(
 
     let (sandbox_policy, permission_profile) =
         turn_permission_fields(base_permission_profile, test.config.cwd.as_path());
-    test.ava-code
+    test.ava
         .start_or_steer_turn(
             TurnInputRequest::user_input(vec![UserInput::Text {
                 text: "request access and edit the image".to_string(),
@@ -501,7 +501,7 @@ async fn extension_tool_rebinds_granted_permissions_on_each_turn(
             }),
         )
         .await?;
-    let event = wait_for_event(&test.ava-code, |event| {
+    let event = wait_for_event(&test.ava, |event| {
         matches!(
             event,
             EventMsg::RequestPermissions(_) | EventMsg::TurnComplete(_)
@@ -512,7 +512,7 @@ async fn extension_tool_rebinds_granted_permissions_on_each_turn(
         panic!("expected request_permissions before turn completion");
     };
     assert_eq!(request.call_id, permissions_call_id);
-    test.ava-code
+    test.ava
         .submit(Op::RequestPermissionsResponse {
             id: permissions_call_id.to_string(),
             response: RequestPermissionsResponse {
@@ -522,7 +522,7 @@ async fn extension_tool_rebinds_granted_permissions_on_each_turn(
             },
         })
         .await?;
-    wait_for_event(&test.ava-code, |event| {
+    wait_for_event(&test.ava, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;

@@ -67,7 +67,7 @@ async fn config_personality_none_sends_no_personality() -> anyhow::Result<()> {
     });
     let test = builder.build(&server).await?;
 
-    test.ava-code
+    test.ava
         .start_or_steer_turn(read_only_text_turn(
             &test,
             "hello",
@@ -76,7 +76,7 @@ async fn config_personality_none_sends_no_personality() -> anyhow::Result<()> {
         ))
         .await?;
 
-    wait_for_event(&test.ava-code, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
+    wait_for_event(&test.ava, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
 
     let request = resp_mock.single_request();
     let instructions_text = request.instructions_text();
@@ -128,7 +128,7 @@ async fn config_personality_none_strips_baked_personality_section(
         });
     let test = builder.build_with_auto_env(&server).await?;
 
-    test.ava-code
+    test.ava
         .start_or_steer_turn(read_only_text_turn(
             &test,
             "hello",
@@ -137,7 +137,7 @@ async fn config_personality_none_strips_baked_personality_section(
         ))
         .await?;
 
-    wait_for_event(&test.ava-code, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
+    wait_for_event(&test.ava, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
 
     assert_eq!(
         resp_mock.single_request().instructions_text(),
@@ -171,7 +171,7 @@ async fn config_personality_none_preserves_explicit_base_instructions(
         });
     let test = builder.build_with_auto_env(&server).await?;
 
-    test.ava-code
+    test.ava
         .start_or_steer_turn(read_only_text_turn(
             &test,
             "hello",
@@ -180,7 +180,7 @@ async fn config_personality_none_preserves_explicit_base_instructions(
         ))
         .await?;
 
-    wait_for_event(&test.ava-code, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
+    wait_for_event(&test.ava, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
 
     let request = resp_mock.single_request();
     let body = request.body_json();
@@ -203,7 +203,7 @@ async fn default_instructions_are_friendly_without_config_toml() -> anyhow::Resu
     let test = builder.build(&server).await?;
     assert_eq!(test.config.personality, None);
 
-    test.ava-code
+    test.ava
         .start_or_steer_turn(read_only_text_turn(
             &test,
             "hello",
@@ -212,7 +212,7 @@ async fn default_instructions_are_friendly_without_config_toml() -> anyhow::Resu
         ))
         .await?;
 
-    wait_for_event(&test.ava-code, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
+    wait_for_event(&test.ava, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
 
     let request = resp_mock.single_request();
     let instructions_text = request.instructions_text();
@@ -247,7 +247,7 @@ async fn fixed_friendly_personality_ignores_pragmatic_update(
     test.submit_turn("first turn").await?;
 
     core_test_support::submit_thread_settings(
-        &test.ava-code,
+        &test.ava,
         ThreadSettingsOverrides {
             personality: Some(Personality::Pragmatic),
             ..Default::default()

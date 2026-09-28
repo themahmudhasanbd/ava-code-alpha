@@ -272,7 +272,7 @@ async fn tool_start_receives_executed_mcp_call_for_connector(
         .with_extensions(Arc::new(extensions.build()))
         .build_with_auto_env(&server)
         .await?;
-    wait_for_mcp_server(&test.ava-code, AVA_APPS_MCP_SERVER_NAME).await?;
+    wait_for_mcp_server(&test.ava, AVA_APPS_MCP_SERVER_NAME).await?;
 
     test.submit_text_turn("List my calendar events.").await?;
 
@@ -409,7 +409,7 @@ async fn mcp_result_processing_precedes_completion(
         })
         .build_with_auto_env(&server)
         .await?;
-    wait_for_mcp_server(&test.ava-code, AVA_APPS_MCP_SERVER_NAME).await?;
+    wait_for_mcp_server(&test.ava, AVA_APPS_MCP_SERVER_NAME).await?;
 
     let call_id = "mcp-result-call";
     let call = match mode {
@@ -435,7 +435,7 @@ async fn mcp_result_processing_precedes_completion(
         responses::sse(vec![responses::ev_completed("second-response")]),
     )
     .await;
-    test.ava-code
+    test.ava
         .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
             text: "List my calendar events.".to_string(),
             text_elements: Vec::new(),
@@ -449,7 +449,7 @@ async fn mcp_result_processing_precedes_completion(
     assert!(
         timeout(
             Duration::from_millis(100),
-            wait_for_event(&test.ava-code, |event| matches!(
+            wait_for_event(&test.ava, |event| matches!(
                 event,
                 EventMsg::McpToolCallEnd(_) | EventMsg::TurnComplete(_)
             )),
@@ -461,7 +461,7 @@ async fn mcp_result_processing_precedes_completion(
     assert!(follow_up.requests().is_empty());
 
     contributor.release.notify_one();
-    let EventMsg::McpToolCallEnd(end) = wait_for_event(&test.ava-code, |event| {
+    let EventMsg::McpToolCallEnd(end) = wait_for_event(&test.ava, |event| {
         matches!(event, EventMsg::McpToolCallEnd(_))
     })
     .await
@@ -472,7 +472,7 @@ async fn mcp_result_processing_precedes_completion(
         end.result.expect("MCP server returned a result"),
         expected_result
     );
-    wait_for_event(&test.ava-code, |event| {
+    wait_for_event(&test.ava, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;
@@ -522,7 +522,7 @@ async fn tool_start_receives_frozen_host_plugin_root() -> Result<()> {
         .with_model_info_override("gpt-5.4", |model| model.supports_search_tool = false)
         .build_with_environment(&server, test_env)
         .await?;
-    wait_for_mcp_server(&test.ava-code, "sample").await?;
+    wait_for_mcp_server(&test.ava, "sample").await?;
     responses::mount_sse_sequence(
         &server,
         vec![

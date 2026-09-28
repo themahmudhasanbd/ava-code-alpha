@@ -50,7 +50,7 @@ async fn submit_turn_with_policies(
 ) -> Result<()> {
     let (sandbox_policy, permission_profile) =
         turn_permission_fields(permission_profile, test.cwd_path());
-    test.ava-code
+    test.ava
         .start_or_steer_turn(
             TurnInputRequest::user_input(vec![UserInput::Text {
                 text: prompt.to_string(),
@@ -117,7 +117,7 @@ fn skill_script_command(test: &TestAva, script_name: &str) -> Result<String> {
 }
 
 async fn wait_for_exec_approval_request(test: &TestAva) -> Option<ExecApprovalRequestEvent> {
-    wait_for_event_match(test.ava-code.as_ref(), |event| match event {
+    wait_for_event_match(test.ava.as_ref(), |event| match event {
         EventMsg::ExecApprovalRequest(request) => Some(Some(request.clone())),
         EventMsg::TurnComplete(_) => Some(None),
         _ => None,
@@ -126,7 +126,7 @@ async fn wait_for_exec_approval_request(test: &TestAva) -> Option<ExecApprovalRe
 }
 
 async fn wait_for_turn_complete(test: &TestAva) {
-    wait_for_event(test.ava-code.as_ref(), |event| {
+    wait_for_event(test.ava.as_ref(), |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;

@@ -72,11 +72,11 @@ async fn observed_response_usage_accumulates_per_turn_and_thread() -> Result<()>
     )
     .await;
     let test = test_ava().build_with_auto_env(&server).await?;
-    let rollout_path = test.ava-code.rollout_path().expect("rollout path");
+    let rollout_path = test.ava.rollout_path().expect("rollout path");
     let home = test.home.clone();
 
     test.submit_turn("first").await?;
-    test.ava-code.shutdown_and_wait().await?;
+    test.ava.shutdown_and_wait().await?;
 
     let resumed = test_ava()
         .resume(&server, home, rollout_path.clone())
@@ -84,7 +84,7 @@ async fn observed_response_usage_accumulates_per_turn_and_thread() -> Result<()>
     for prompt in ["second", "third"] {
         resumed.submit_turn(prompt).await?;
     }
-    resumed.ava-code.shutdown_and_wait().await?;
+    resumed.ava.shutdown_and_wait().await?;
 
     let records = token_usage_records(&rollout_path);
     assert_eq!(records.len(), 3);

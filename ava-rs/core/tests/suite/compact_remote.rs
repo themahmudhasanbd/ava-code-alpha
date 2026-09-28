@@ -313,16 +313,16 @@ async fn remote_compact_v2_retains_metadata_from_resumed_history() -> Result<()>
         .rollout_path
         .clone()
         .context("rollout path")?;
-    initial.ava-code.shutdown_and_wait().await?;
+    initial.ava.shutdown_and_wait().await?;
     annotate_retained_user_in_rollout(&rollout_path, retained_text)?;
 
     let resumed = builder()
         .resume(&server, home, rollout_path.clone())
         .await?;
-    resumed.ava-code.submit(Op::Compact).await?;
-    wait_for_turn_complete(&resumed.ava-code).await;
+    resumed.ava.submit(Op::Compact).await?;
+    wait_for_turn_complete(&resumed.ava).await;
     resumed.submit_turn("continue after compaction").await?;
-    resumed.ava-code.shutdown_and_wait().await?;
+    resumed.ava.shutdown_and_wait().await?;
 
     let requests = response_mock.requests();
     let compact_request = &requests[1];
@@ -1432,11 +1432,11 @@ async fn active_realtime_refreshes_changed_start_instructions_only_after_compact
     )
     .await;
 
-    start_realtime_conversation(initial.ava-code.as_ref()).await?;
+    start_realtime_conversation(initial.ava.as_ref()).await?;
     initial.submit_turn("USER_ONE").await?;
-    close_realtime_conversation(initial.ava-code.as_ref()).await?;
-    initial.ava-code.submit(Op::Shutdown).await?;
-    wait_for_event(&initial.ava-code, |ev| {
+    close_realtime_conversation(initial.ava.as_ref()).await?;
+    initial.ava.submit(Op::Shutdown).await?;
+    wait_for_event(&initial.ava, |ev| {
         matches!(ev, EventMsg::ShutdownComplete)
     })
     .await;
@@ -1453,10 +1453,10 @@ async fn active_realtime_refreshes_changed_start_instructions_only_after_compact
         });
     let resumed = resume_builder.resume(&server, home, rollout_path).await?;
 
-    start_realtime_conversation(resumed.ava-code.as_ref()).await?;
+    start_realtime_conversation(resumed.ava.as_ref()).await?;
     resumed.submit_turn("USER_TWO").await?;
-    resumed.ava-code.submit(Op::Compact).await?;
-    wait_for_turn_complete(&resumed.ava-code).await;
+    resumed.ava.submit(Op::Compact).await?;
+    wait_for_turn_complete(&resumed.ava).await;
     resumed.submit_turn("USER_THREE").await?;
 
     let requests = responses_mock.requests();
@@ -1479,7 +1479,7 @@ async fn active_realtime_refreshes_changed_start_instructions_only_after_compact
     assert_request_contains_custom_realtime_start(&requests[3], changed_instructions);
     assert!(!requests[3].body_contains_text(initial_instructions));
 
-    close_realtime_conversation(resumed.ava-code.as_ref()).await?;
+    close_realtime_conversation(resumed.ava.as_ref()).await?;
     resumed_realtime_server.shutdown().await;
     Ok(())
 }
@@ -1626,13 +1626,13 @@ async fn remote_mid_turn_compact_v2_sends_turn_state_over_websocket() -> Result<
 
     // Phase 1: startup prewarm stays empty, then WebSocket sampling mints state and schedules
     // inline v2 compaction.
-    test.ava-code
+    test.ava
         .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
             text: "RUN_WITH_WS_MID_TURN_COMPACT_V2".to_string(),
             text_elements: Vec::new(),
         }]))
         .await?;
-    wait_for_turn_complete(&test.ava-code).await;
+    wait_for_turn_complete(&test.ava).await;
 
     let requests = server.single_connection();
     assert_eq!(requests.len(), 5);

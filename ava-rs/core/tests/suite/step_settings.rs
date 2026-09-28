@@ -331,7 +331,7 @@ async fn tool_result_history_keeps_originating_model_across_switch_and_replay() 
             ..StartThreadOptions::new(test.config.clone())
         })
         .await?;
-    test.ava-code = started.thread;
+    test.ava = started.thread;
     let responses = mount_sse_sequence(
         &server,
         vec![
@@ -368,7 +368,7 @@ async fn tool_result_history_keeps_originating_model_across_switch_and_replay() 
         content_items,
         success: true,
     };
-    test.ava-code
+    test.ava
         .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
             text: "collect diagnostics".to_string(),
             text_elements: Vec::new(),
@@ -376,7 +376,7 @@ async fn tool_result_history_keeps_originating_model_across_switch_and_replay() 
         .await?;
     let mut raw_outputs = Vec::new();
     for call_id in ["call-a", "call-b"] {
-        let call = wait_for_event_match(&test.ava-code, |event| match event {
+        let call = wait_for_event_match(&test.ava, |event| match event {
             EventMsg::DynamicToolCallRequest(request) => Some(request.clone()),
             _ => None,
         })
@@ -386,7 +386,7 @@ async fn tool_result_history_keeps_originating_model_across_switch_and_replay() 
             // Apply B while A's result is pending in the same turn.
             assert_eq!(
                 submit_turn_settings(
-                    &test.ava-code,
+                    &test.ava,
                     &call.turn_id,
                     TurnSettingsUpdate {
                         model: Some(MODEL_B.to_string()),
@@ -397,14 +397,14 @@ async fn tool_result_history_keeps_originating_model_across_switch_and_replay() 
                 TurnSettingsUpdateOutcome::Applied
             );
         }
-        test.ava-code
+        test.ava
             .submit(Op::DynamicToolResponse {
                 id: call.call_id,
                 response: response.clone(),
             })
             .await?;
         raw_outputs.push(
-            wait_for_event_match(&test.ava-code, |event| match event {
+            wait_for_event_match(&test.ava, |event| match event {
                 EventMsg::RawResponseItem(event)
                     if matches!(&event.item, ResponseItem::FunctionCallOutput { .. }) =>
                 {
@@ -415,7 +415,7 @@ async fn tool_result_history_keeps_originating_model_across_switch_and_replay() 
             .await,
         );
     }
-    let paused_request = wait_for_event_match(&test.ava-code, |event| match event {
+    let paused_request = wait_for_event_match(&test.ava, |event| match event {
         EventMsg::RequestUserInput(request) => Some(request.clone()),
         _ => None,
     })
@@ -459,7 +459,7 @@ async fn tool_result_history_keeps_originating_model_across_switch_and_replay() 
     );
 
     apply_turn_settings(
-        &test.ava-code,
+        &test.ava,
         &paused_request.turn_id,
         TurnSettingsUpdate {
             model: Some(MODEL_A.to_string()),
@@ -467,8 +467,8 @@ async fn tool_result_history_keeps_originating_model_across_switch_and_replay() 
         },
     )
     .await?;
-    answer_paused_turn(&test.ava-code, &paused_request.turn_id).await?;
-    wait_for_event(&test.ava-code, |event| {
+    answer_paused_turn(&test.ava, &paused_request.turn_id).await?;
+    wait_for_event(&test.ava, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;
@@ -478,7 +478,7 @@ async fn tool_result_history_keeps_originating_model_across_switch_and_replay() 
 
     // Project for each receiving model without rewriting the prepared images.
     for model in [MODEL_B, MODEL_A, MODEL_C, MODEL_B] {
-        test.ava-code
+        test.ava
             .submit(Op::ThreadSettings {
                 thread_settings: ThreadSettingsOverrides {
                     model: Some(model.to_string()),
@@ -527,8 +527,8 @@ async fn tool_result_history_keeps_originating_model_across_switch_and_replay() 
     assert_ne!(request_turn_id(&requests[5]), request_turn_id(&requests[4]));
 
     // Persistence and raw notifications retain the prepared, untruncated payload in append order.
-    test.ava-code.shutdown_and_wait().await?;
-    let rollout_path = test.ava-code.rollout_path().expect("rollout path");
+    test.ava.shutdown_and_wait().await?;
+    let rollout_path = test.ava.rollout_path().expect("rollout path");
     async fn saved_outputs(path: &std::path::Path) -> Result<Vec<(Value, Option<usize>)>> {
         let history = ava_rollout::RolloutRecorder::get_rollout_history(path).await?;
         Ok(history
@@ -670,8 +670,8 @@ async fn custom_tool_output_replay_preserves_originating_budget() -> Result<()> 
         live_text
     );
 
-    test.ava-code.shutdown_and_wait().await?;
-    let rollout_path = test.ava-code.rollout_path().expect("rollout path");
+    test.ava.shutdown_and_wait().await?;
+    let rollout_path = test.ava.rollout_path().expect("rollout path");
     let history = ava_rollout::RolloutRecorder::get_rollout_history(&rollout_path).await?;
     let saved = history
         .get_rollout_items()
@@ -760,12 +760,12 @@ async fn settings_updates_preserve_turn_identity_and_target(target: SettingsTarg
     )
     .await;
     let test = step_settings_test().build_with_auto_env(&server).await?;
-    let original_settings = test.ava-code.thread_settings_snapshot().await;
-    let request = start_paused_turn(&test.ava-code).await?;
+    let original_settings = test.ava.thread_settings_snapshot().await;
+    let request = start_paused_turn(&test.ava).await?;
 
     match target {
         SettingsTarget::Thread => {
-            test.ava-code
+            test.ava
                 .submit(Op::ThreadSettings {
                     thread_settings: ThreadSettingsOverrides {
                         model: Some(MODEL_B.to_string()),
@@ -786,19 +786,19 @@ async fn settings_updates_preserve_turn_identity_and_target(target: SettingsTarg
                 ..Default::default()
             };
             assert_eq!(
-                submit_turn_settings(&test.ava-code, "different-turn", update.clone()).await?,
+                submit_turn_settings(&test.ava, "different-turn", update.clone()).await?,
                 TurnSettingsUpdateOutcome::TargetUnavailable
             );
             assert_eq!(
-                submit_turn_settings(&test.ava-code, &request.turn_id, update).await?,
+                submit_turn_settings(&test.ava, &request.turn_id, update).await?,
                 TurnSettingsUpdateOutcome::Applied
             );
         }
     }
-    answer_paused_turn(&test.ava-code, &request.turn_id).await?;
+    answer_paused_turn(&test.ava, &request.turn_id).await?;
     let mut settings_events = Vec::new();
     let mut new_turns = Vec::new();
-    let completion = wait_for_event(&test.ava-code, |event| match event {
+    let completion = wait_for_event(&test.ava, |event| match event {
         EventMsg::ThreadSettingsApplied(event) => {
             settings_events.push(event.thread_settings.clone());
             false
@@ -839,7 +839,7 @@ async fn settings_updates_preserve_turn_identity_and_target(target: SettingsTarg
         }
     };
     assert_eq!(
-        test.ava-code.thread_settings_snapshot().await,
+        test.ava.thread_settings_snapshot().await,
         expected_future_settings
     );
     test.submit_text_turn("start the next turn").await?;
@@ -956,10 +956,10 @@ async fn new_context_after_model_switch_uses_captured_extension_window() -> Resu
         })
         .build_with_auto_env(&server)
         .await?;
-    let paused = start_paused_turn(&test.ava-code).await?;
+    let paused = start_paused_turn(&test.ava).await?;
     assert_eq!(
         submit_turn_settings(
-            &test.ava-code,
+            &test.ava,
             &paused.turn_id,
             TurnSettingsUpdate {
                 model: Some(MODEL_B.to_string()),
@@ -969,8 +969,8 @@ async fn new_context_after_model_switch_uses_captured_extension_window() -> Resu
         .await?,
         TurnSettingsUpdateOutcome::Applied
     );
-    answer_paused_turn(&test.ava-code, &paused.turn_id).await?;
-    wait_for_event(&test.ava-code, |event| {
+    answer_paused_turn(&test.ava, &paused.turn_id).await?;
+    wait_for_event(&test.ava, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;
@@ -1115,18 +1115,18 @@ async fn active_model_switch_updates_core_context_from_captured_settings(
         })
         .build_with_auto_env(&server)
         .await?;
-    let request = start_paused_turn(&test.ava-code).await?;
+    let request = start_paused_turn(&test.ava).await?;
 
     if reload_user_config {
         std::fs::write(
             test.ava_home_path().join("config.toml"),
             "[features.token_budget]\nenabled = true\nreminder_message_template = \"Reloaded reminder\"\n",
         )?;
-        test.ava-code.submit(Op::ReloadUserConfig).await?;
+        test.ava.submit(Op::ReloadUserConfig).await?;
     }
 
     apply_turn_settings(
-        &test.ava-code,
+        &test.ava,
         &request.turn_id,
         TurnSettingsUpdate {
             model: Some(MODEL_B.to_string()),
@@ -1134,14 +1134,14 @@ async fn active_model_switch_updates_core_context_from_captured_settings(
         },
     )
     .await?;
-    answer_paused_turn(&test.ava-code, &request.turn_id).await?;
-    let request = wait_for_event_match(&test.ava-code, |event| match event {
+    answer_paused_turn(&test.ava, &request.turn_id).await?;
+    let request = wait_for_event_match(&test.ava, |event| match event {
         EventMsg::RequestUserInput(request) => Some(request.clone()),
         _ => None,
     })
     .await;
-    answer_paused_turn(&test.ava-code, &request.turn_id).await?;
-    wait_for_event(&test.ava-code, |event| match event {
+    answer_paused_turn(&test.ava, &request.turn_id).await?;
+    wait_for_event(&test.ava, |event| match event {
         EventMsg::Error(error) => panic!("settings activation failed: {}", error.message),
         EventMsg::TurnComplete(_) => true,
         _ => false,
@@ -1301,10 +1301,10 @@ async fn active_model_switch_updates_multi_agent_policy_from_captured_effort(
         })
         .build_with_auto_env(&server)
         .await?;
-    let request = start_paused_turn(&test.ava-code).await?;
+    let request = start_paused_turn(&test.ava).await?;
     assert_eq!(
         submit_turn_settings(
-            &test.ava-code,
+            &test.ava,
             &request.turn_id,
             TurnSettingsUpdate {
                 model: Some(MODEL_B.to_string()),
@@ -1315,8 +1315,8 @@ async fn active_model_switch_updates_multi_agent_policy_from_captured_effort(
         .await?,
         TurnSettingsUpdateOutcome::Applied
     );
-    answer_paused_turn(&test.ava-code, &request.turn_id).await?;
-    wait_for_event(&test.ava-code, |event| {
+    answer_paused_turn(&test.ava, &request.turn_id).await?;
+    wait_for_event(&test.ava, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;
@@ -1442,14 +1442,14 @@ async fn mcp_confirmation_policy_follows_step_model_changes() -> Result<()> {
         })
         .build_with_auto_env(&server)
         .await?;
-    wait_for_mcp_server(&test.ava-code, "node_repl").await?;
+    wait_for_mcp_server(&test.ava, "node_repl").await?;
     test.submit_text_turn("call the tool with model A").await?;
 
-    let request = start_paused_turn(&test.ava-code).await?;
+    let request = start_paused_turn(&test.ava).await?;
     assert_eq!(request.call_id, "policy-a-pending");
     // The pending call must retain model A's policies after this settings update.
     apply_turn_settings(
-        &test.ava-code,
+        &test.ava,
         &request.turn_id,
         TurnSettingsUpdate {
             model: Some(MODEL_B.to_string()),
@@ -1457,7 +1457,7 @@ async fn mcp_confirmation_policy_follows_step_model_changes() -> Result<()> {
         },
     )
     .await?;
-    test.ava-code
+    test.ava
         .submit(Op::UserInputAnswer {
             id: request.turn_id.clone(),
             response: RequestUserInputResponse {
@@ -1470,14 +1470,14 @@ async fn mcp_confirmation_policy_follows_step_model_changes() -> Result<()> {
             },
         })
         .await?;
-    wait_for_event(&test.ava-code, |event| {
+    wait_for_event(&test.ava, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;
 
     for model in [BROWSER_ONLY_MODEL, COMPUTER_ONLY_MODEL, MODEL_C] {
         core_test_support::submit_thread_settings(
-            &test.ava-code,
+            &test.ava,
             ThreadSettingsOverrides {
                 model: Some(model.to_string()),
                 ..Default::default()
@@ -1593,9 +1593,9 @@ async fn captured_model_replans_tools_and_retains_the_issuing_request_router() -
         })
         .build_with_auto_env(&server)
         .await?;
-    let paused = start_paused_turn(&test.ava-code).await?;
+    let paused = start_paused_turn(&test.ava).await?;
     apply_turn_settings(
-        &test.ava-code,
+        &test.ava,
         &paused.turn_id,
         TurnSettingsUpdate {
             model: Some(MODEL_B.to_string()),
@@ -1603,15 +1603,15 @@ async fn captured_model_replans_tools_and_retains_the_issuing_request_router() -
         },
     )
     .await?;
-    answer_paused_turn(&test.ava-code, &paused.turn_id).await?;
-    let paused = wait_for_event_match(&test.ava-code, |event| match event {
+    answer_paused_turn(&test.ava, &paused.turn_id).await?;
+    let paused = wait_for_event_match(&test.ava, |event| match event {
         EventMsg::RequestUserInput(request) => Some(request.clone()),
         _ => None,
     })
     .await;
     assert_eq!(paused.call_id, "pause-b");
     apply_turn_settings(
-        &test.ava-code,
+        &test.ava,
         &paused.turn_id,
         TurnSettingsUpdate {
             model: Some(MODEL_A.to_string()),
@@ -1621,8 +1621,8 @@ async fn captured_model_replans_tools_and_retains_the_issuing_request_router() -
     .await?;
     // B's response issues its patch after A is active, so dispatch must retain B's router.
     release_patch.send(()).expect("release B's patch call");
-    answer_paused_turn(&test.ava-code, &paused.turn_id).await?;
-    wait_for_event(&test.ava-code, |event| {
+    answer_paused_turn(&test.ava, &paused.turn_id).await?;
+    wait_for_event(&test.ava, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;
@@ -1769,9 +1769,9 @@ async fn captured_model_enables_and_executes_code_mode() -> Result<()> {
             /*sandbox*/ None,
         )
         .await?;
-    let paused = start_paused_turn(&test.ava-code).await?;
+    let paused = start_paused_turn(&test.ava).await?;
     apply_turn_settings(
-        &test.ava-code,
+        &test.ava,
         &paused.turn_id,
         TurnSettingsUpdate {
             model: Some(MODEL_B.to_string()),
@@ -1779,8 +1779,8 @@ async fn captured_model_enables_and_executes_code_mode() -> Result<()> {
         },
     )
     .await?;
-    answer_paused_turn(&test.ava-code, &paused.turn_id).await?;
-    wait_for_event(&test.ava-code, |event| {
+    answer_paused_turn(&test.ava, &paused.turn_id).await?;
+    wait_for_event(&test.ava, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;
@@ -1839,10 +1839,10 @@ async fn response_metadata_uses_the_captured_step_after_a_turn_update() -> Resul
     )
     .await;
     let test = step_settings_test().build_with_auto_env(&server).await?;
-    let request = start_paused_turn(&test.ava-code).await?;
+    let request = start_paused_turn(&test.ava).await?;
     assert_eq!(
         submit_turn_settings(
-            &test.ava-code,
+            &test.ava,
             &request.turn_id,
             TurnSettingsUpdate {
                 model: Some(MODEL_B.to_string()),
@@ -1853,11 +1853,11 @@ async fn response_metadata_uses_the_captured_step_after_a_turn_update() -> Resul
         .await?,
         TurnSettingsUpdateOutcome::Applied
     );
-    answer_paused_turn(&test.ava-code, &request.turn_id).await?;
+    answer_paused_turn(&test.ava, &request.turn_id).await?;
 
     let mut reroutes = Vec::new();
     let mut buffering_events = Vec::new();
-    wait_for_event(&test.ava-code, |event| match event {
+    wait_for_event(&test.ava, |event| match event {
         EventMsg::ModelReroute(event) => {
             reroutes.push(event.clone());
             false
@@ -1937,10 +1937,10 @@ async fn sparse_updates_preserve_divergent_active_and_future_models() -> Result<
     )
     .await;
     let test = step_settings_test().build_with_auto_env(&server).await?;
-    let request = start_paused_turn(&test.ava-code).await?;
+    let request = start_paused_turn(&test.ava).await?;
 
     core_test_support::submit_thread_settings(
-        &test.ava-code,
+        &test.ava,
         ThreadSettingsOverrides {
             model: Some(MODEL_B.to_string()),
             ..Default::default()
@@ -1948,7 +1948,7 @@ async fn sparse_updates_preserve_divergent_active_and_future_models() -> Result<
     )
     .await?;
     apply_turn_settings(
-        &test.ava-code,
+        &test.ava,
         &request.turn_id,
         TurnSettingsUpdate {
             model: Some(MODEL_C.to_string()),
@@ -1957,8 +1957,8 @@ async fn sparse_updates_preserve_divergent_active_and_future_models() -> Result<
         },
     )
     .await?;
-    answer_paused_turn(&test.ava-code, &request.turn_id).await?;
-    let second_request = wait_for_event_match(&test.ava-code, |event| match event {
+    answer_paused_turn(&test.ava, &request.turn_id).await?;
+    let second_request = wait_for_event_match(&test.ava, |event| match event {
         EventMsg::RequestUserInput(request) => Some(request.clone()),
         _ => None,
     })
@@ -1966,7 +1966,7 @@ async fn sparse_updates_preserve_divergent_active_and_future_models() -> Result<
     assert_eq!(second_request.turn_id, request.turn_id);
     assert_eq!(second_request.call_id, "pause-second-step");
 
-    test.ava-code
+    test.ava
         .submit(Op::ThreadSettings {
             thread_settings: ThreadSettingsOverrides {
                 service_tier: Some(Some(ServiceTier::Fast.request_value().to_string())),
@@ -1975,7 +1975,7 @@ async fn sparse_updates_preserve_divergent_active_and_future_models() -> Result<
         })
         .await?;
     apply_turn_settings(
-        &test.ava-code,
+        &test.ava,
         &request.turn_id,
         TurnSettingsUpdate {
             service_tier: Some(Some(ServiceTier::Fast.request_value().to_string())),
@@ -1983,7 +1983,7 @@ async fn sparse_updates_preserve_divergent_active_and_future_models() -> Result<
         },
     )
     .await?;
-    let durable_settings = wait_for_event_match(&test.ava-code, |event| match event {
+    let durable_settings = wait_for_event_match(&test.ava, |event| match event {
         EventMsg::ThreadSettingsApplied(event) => Some(event.thread_settings.clone()),
         _ => None,
     })
@@ -1997,8 +1997,8 @@ async fn sparse_updates_preserve_divergent_active_and_future_models() -> Result<
         durable_settings.service_tier,
         Some(ServiceTier::Fast.request_value().to_string())
     );
-    answer_paused_turn(&test.ava-code, &second_request.turn_id).await?;
-    wait_for_event(&test.ava-code, |event| {
+    answer_paused_turn(&test.ava, &second_request.turn_id).await?;
+    wait_for_event(&test.ava, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;
@@ -2060,10 +2060,10 @@ async fn turn_settings_do_not_target_idle_or_finished_turns() -> Result<()> {
             .last()
             .map(request_turn_id)
             .unwrap_or_else(|| "never-started".to_string());
-        let before = test.ava-code.thread_settings_snapshot().await;
+        let before = test.ava.thread_settings_snapshot().await;
         assert_eq!(
             submit_turn_settings(
-                &test.ava-code,
+                &test.ava,
                 &turn_id,
                 TurnSettingsUpdate {
                     model: Some(discarded_model.to_string()),
@@ -2073,9 +2073,9 @@ async fn turn_settings_do_not_target_idle_or_finished_turns() -> Result<()> {
             .await?,
             TurnSettingsUpdateOutcome::TargetUnavailable
         );
-        assert_eq!(test.ava-code.thread_settings_snapshot().await, before);
+        assert_eq!(test.ava.thread_settings_snapshot().await, before);
         core_test_support::submit_thread_settings(
-            &test.ava-code,
+            &test.ava,
             ThreadSettingsOverrides {
                 model: Some(model.to_string()),
                 ..Default::default()
@@ -2161,10 +2161,10 @@ async fn model_activation_uses_destination_metadata_defaults(
         })
         .build_with_auto_env(&server)
         .await?;
-    let request = start_paused_turn(&test.ava-code).await?;
+    let request = start_paused_turn(&test.ava).await?;
 
     apply_turn_settings(
-        &test.ava-code,
+        &test.ava,
         &request.turn_id,
         TurnSettingsUpdate {
             model: Some(MODEL_B.to_string()),
@@ -2172,8 +2172,8 @@ async fn model_activation_uses_destination_metadata_defaults(
         },
     )
     .await?;
-    answer_paused_turn(&test.ava-code, &request.turn_id).await?;
-    let paused = wait_for_event_match(&test.ava-code, |event| match event {
+    answer_paused_turn(&test.ava, &request.turn_id).await?;
+    let paused = wait_for_event_match(&test.ava, |event| match event {
         EventMsg::RequestUserInput(request) => Some(request.clone()),
         _ => None,
     })
@@ -2181,7 +2181,7 @@ async fn model_activation_uses_destination_metadata_defaults(
     // B cannot use the requested tier. Switching back must recover that
     // selection and preserve an unset summary, not reuse B's effective values.
     apply_turn_settings(
-        &test.ava-code,
+        &test.ava,
         &request.turn_id,
         TurnSettingsUpdate {
             model: Some(MODEL_A.to_string()),
@@ -2189,8 +2189,8 @@ async fn model_activation_uses_destination_metadata_defaults(
         },
     )
     .await?;
-    answer_paused_turn(&test.ava-code, &paused.turn_id).await?;
-    wait_for_event(&test.ava-code, |event| match event {
+    answer_paused_turn(&test.ava, &paused.turn_id).await?;
+    wait_for_event(&test.ava, |event| match event {
         EventMsg::Error(error) => panic!("model activation failed: {}", error.message),
         EventMsg::TurnComplete(_) => true,
         _ => false,
@@ -2303,9 +2303,9 @@ async fn tool_messages_follow_mid_turn_model_changes() -> Result<()> {
         })
         .build_with_auto_env(&server)
         .await?;
-    let paused = start_paused_turn(&test.ava-code).await?;
+    let paused = start_paused_turn(&test.ava).await?;
     apply_turn_settings(
-        &test.ava-code,
+        &test.ava,
         &paused.turn_id,
         TurnSettingsUpdate {
             model: Some(MODEL_B.to_string()),
@@ -2313,8 +2313,8 @@ async fn tool_messages_follow_mid_turn_model_changes() -> Result<()> {
         },
     )
     .await?;
-    answer_paused_turn(&test.ava-code, &paused.turn_id).await?;
-    wait_for_event(&test.ava-code, |event| match event {
+    answer_paused_turn(&test.ava, &paused.turn_id).await?;
+    wait_for_event(&test.ava, |event| match event {
         EventMsg::Error(error) => panic!("model activation failed: {}", error.message),
         EventMsg::TurnComplete(_) => true,
         _ => false,
@@ -2403,9 +2403,9 @@ async fn persistent_instructions_follow_mid_turn_model_changes() -> Result<()> {
         })
         .build_with_auto_env(&server)
         .await?;
-    let paused = start_paused_turn(&test.ava-code).await?;
+    let paused = start_paused_turn(&test.ava).await?;
     apply_turn_settings(
-        &test.ava-code,
+        &test.ava,
         &paused.turn_id,
         TurnSettingsUpdate {
             model: Some(MODEL_B.to_string()),
@@ -2413,8 +2413,8 @@ async fn persistent_instructions_follow_mid_turn_model_changes() -> Result<()> {
         },
     )
     .await?;
-    answer_paused_turn(&test.ava-code, &paused.turn_id).await?;
-    wait_for_event(&test.ava-code, |event| match event {
+    answer_paused_turn(&test.ava, &paused.turn_id).await?;
+    wait_for_event(&test.ava, |event| match event {
         EventMsg::Error(error) => panic!("model activation failed: {}", error.message),
         EventMsg::TurnComplete(_) => true,
         _ => false,
@@ -2474,19 +2474,19 @@ async fn turn_settings_rejection_preserves_independent_future_settings() -> Resu
         })
         .build_with_auto_env(&server)
         .await?;
-    let request = start_paused_turn(&test.ava-code).await?;
+    let request = start_paused_turn(&test.ava).await?;
     core_test_support::submit_thread_settings(
-        &test.ava-code,
+        &test.ava,
         ThreadSettingsOverrides {
             model: Some(MODEL_B.to_string()),
             ..Default::default()
         },
     )
     .await?;
-    let future = test.ava-code.thread_settings_snapshot().await;
+    let future = test.ava.thread_settings_snapshot().await;
     assert_eq!(
         submit_turn_settings(
-            &test.ava-code,
+            &test.ava,
             &request.turn_id,
             TurnSettingsUpdate {
                 model: Some(MODEL_B.to_string()),
@@ -2499,9 +2499,9 @@ async fn turn_settings_rejection_preserves_independent_future_settings() -> Resu
                 .to_string(),
         }
     );
-    assert_eq!(test.ava-code.thread_settings_snapshot().await, future);
-    answer_paused_turn(&test.ava-code, &request.turn_id).await?;
-    wait_for_event(&test.ava-code, |event| {
+    assert_eq!(test.ava.thread_settings_snapshot().await, future);
+    answer_paused_turn(&test.ava, &request.turn_id).await?;
+    wait_for_event(&test.ava, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;
@@ -2564,7 +2564,7 @@ async fn request_preference_activation_keeps_admitted_model_metadata() -> Result
         })
         .build_with_auto_env(&server)
         .await?;
-    let request = start_paused_turn(&test.ava-code).await?;
+    let request = start_paused_turn(&test.ava).await?;
     assert_eq!(initial_catalog.requests().len(), 1);
 
     for model in &mut models {
@@ -2581,7 +2581,7 @@ async fn request_preference_activation_keeps_admitted_model_metadata() -> Result
     assert_eq!(refresh.requests().len(), 1);
 
     apply_turn_settings(
-        &test.ava-code,
+        &test.ava,
         &request.turn_id,
         TurnSettingsUpdate {
             effort: Some(Some(ReasoningEffort::High)),
@@ -2589,8 +2589,8 @@ async fn request_preference_activation_keeps_admitted_model_metadata() -> Result
         },
     )
     .await?;
-    answer_paused_turn(&test.ava-code, &request.turn_id).await?;
-    wait_for_event(&test.ava-code, |event| {
+    answer_paused_turn(&test.ava, &request.turn_id).await?;
+    wait_for_event(&test.ava, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;
@@ -2692,9 +2692,9 @@ async fn captured_step_controls_exec_completion_and_write_stdin_output() -> Resu
         })
         .build_with_auto_env(&server)
         .await?;
-    let paused = start_paused_turn(&test.ava-code).await?;
+    let paused = start_paused_turn(&test.ava).await?;
     apply_turn_settings(
-        &test.ava-code,
+        &test.ava,
         &paused.turn_id,
         TurnSettingsUpdate {
             model: Some(MODEL_B.to_string()),
@@ -2702,15 +2702,15 @@ async fn captured_step_controls_exec_completion_and_write_stdin_output() -> Resu
         },
     )
     .await?;
-    answer_paused_turn(&test.ava-code, &paused.turn_id).await?;
-    let paused = wait_for_event_match(&test.ava-code, |event| match event {
+    answer_paused_turn(&test.ava, &paused.turn_id).await?;
+    let paused = wait_for_event_match(&test.ava, |event| match event {
         EventMsg::RequestUserInput(request) => Some(request.clone()),
         _ => None,
     })
     .await;
     assert_eq!(paused.call_id, "pause-b");
     apply_turn_settings(
-        &test.ava-code,
+        &test.ava,
         &paused.turn_id,
         TurnSettingsUpdate {
             model: Some(MODEL_C.to_string()),
@@ -2718,10 +2718,10 @@ async fn captured_step_controls_exec_completion_and_write_stdin_output() -> Resu
         },
     )
     .await?;
-    answer_paused_turn(&test.ava-code, &paused.turn_id).await?;
+    answer_paused_turn(&test.ava, &paused.turn_id).await?;
     let mut end = None;
     let mut turn_complete = false;
-    wait_for_event(&test.ava-code, |event| {
+    wait_for_event(&test.ava, |event| {
         match event {
             EventMsg::ExecCommandEnd(event) if event.call_id == "exec-b" => {
                 end = Some(event.clone())
@@ -2845,10 +2845,10 @@ async fn captured_step_controls_mcp_output_limit(supports_images: bool) -> Resul
         })
         .build_with_auto_env(&server)
         .await?;
-    wait_for_mcp_server(&test.ava-code, "calendar").await?;
-    let paused = start_paused_turn(&test.ava-code).await?;
+    wait_for_mcp_server(&test.ava, "calendar").await?;
+    let paused = start_paused_turn(&test.ava).await?;
     apply_turn_settings(
-        &test.ava-code,
+        &test.ava,
         &paused.turn_id,
         TurnSettingsUpdate {
             model: Some(MODEL_B.to_string()),
@@ -2856,8 +2856,8 @@ async fn captured_step_controls_mcp_output_limit(supports_images: bool) -> Resul
         },
     )
     .await?;
-    answer_paused_turn(&test.ava-code, &paused.turn_id).await?;
-    let recorded_output = wait_for_event_match(&test.ava-code, |event| match event {
+    answer_paused_turn(&test.ava, &paused.turn_id).await?;
+    let recorded_output = wait_for_event_match(&test.ava, |event| match event {
         EventMsg::RawResponseItem(item) => {
             let item = serde_json::to_value(&item.item).expect("raw response JSON");
             (item["call_id"] == "mcp-b" && item["type"] == "function_call_output").then_some(item)
@@ -2880,7 +2880,7 @@ async fn captured_step_controls_mcp_output_limit(supports_images: bool) -> Resul
             vec![]
         }
     );
-    wait_for_event(&test.ava-code, |event| {
+    wait_for_event(&test.ava, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;
@@ -2976,9 +2976,9 @@ async fn captured_step_settings_reach_extension_executor() -> Result<()> {
         })
         .build_with_auto_env(&server)
         .await?;
-    let paused = start_paused_turn(&test.ava-code).await?;
+    let paused = start_paused_turn(&test.ava).await?;
     apply_turn_settings(
-        &test.ava-code,
+        &test.ava,
         &paused.turn_id,
         TurnSettingsUpdate {
             model: Some(MODEL_B.to_string()),
@@ -2987,8 +2987,8 @@ async fn captured_step_settings_reach_extension_executor() -> Result<()> {
         },
     )
     .await?;
-    answer_paused_turn(&test.ava-code, &paused.turn_id).await?;
-    wait_for_event(&test.ava-code, |event| {
+    answer_paused_turn(&test.ava, &paused.turn_id).await?;
+    wait_for_event(&test.ava, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;
@@ -3054,10 +3054,10 @@ async fn captured_step_controls_mcp_resource_output() -> Result<()> {
         })
         .build_with_auto_env(&server)
         .await?;
-    wait_for_mcp_server(&test.ava-code, "resources").await?;
-    let paused = start_paused_turn(&test.ava-code).await?;
+    wait_for_mcp_server(&test.ava, "resources").await?;
+    let paused = start_paused_turn(&test.ava).await?;
     apply_turn_settings(
-        &test.ava-code,
+        &test.ava,
         &paused.turn_id,
         TurnSettingsUpdate {
             model: Some(MODEL_B.to_string()),
@@ -3065,8 +3065,8 @@ async fn captured_step_controls_mcp_resource_output() -> Result<()> {
         },
     )
     .await?;
-    answer_paused_turn(&test.ava-code, &paused.turn_id).await?;
-    wait_for_event(&test.ava-code, |event| {
+    answer_paused_turn(&test.ava, &paused.turn_id).await?;
+    wait_for_event(&test.ava, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;

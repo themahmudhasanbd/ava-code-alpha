@@ -253,17 +253,17 @@ async fn astra_asks_an_async_question_and_receives_the_answer_while_working() ->
         .build_with_auto_env(&config_server)
         .await?;
 
-    test.ava-code
+    test.ava
         .start_or_steer_turn(TurnInputRequest::user_input(vec![text(
             "Draft a short launch update. Ask me who it is for and keep working while I answer.",
         )]))
         .await?;
-    let turn_id = wait_for_event_match(&test.ava-code, |event| match event {
+    let turn_id = wait_for_event_match(&test.ava, |event| match event {
         EventMsg::TurnStarted(event) => Some(event.turn_id.clone()),
         _ => None,
     })
     .await;
-    wait_for_event(&test.ava-code, |event| {
+    wait_for_event(&test.ava, |event| {
         matches!(event, EventMsg::ItemCompleted(event)
             if matches!(&event.item, TurnItem::AgentMessage(message)
                 if message.delivery == Some(AgentMessageDelivery::Async)))
@@ -274,7 +274,7 @@ async fn astra_asks_an_async_question_and_receives_the_answer_while_working() ->
         streaming.wait_for_request_count(/*count*/ 2),
     )
     .await?;
-    wait_for_event(&test.ava-code, |event| {
+    wait_for_event(&test.ava, |event| {
         matches!(event, EventMsg::ItemCompleted(event)
             if matches!(&event.item, TurnItem::AgentMessage(message) if message.id == "working"))
     })
@@ -282,11 +282,11 @@ async fn astra_asks_an_async_question_and_receives_the_answer_while_working() ->
 
     let question_id = json!(["request_user_input_async", "audience-question", 0]).to_string();
     let answer = AnsweredQuestion::new(&question_id, question, "Customers").render();
-    test.ava-code
+    test.ava
         .steer_turn(TurnInputRequest::user_input(vec![text(&answer)]), turn_id)
         .await?;
     release_continuation.send(()).expect("release continuation");
-    wait_for_event(&test.ava-code, |event| {
+    wait_for_event(&test.ava, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;
@@ -380,22 +380,22 @@ async fn astra_kickoff_with_skills_plugins_and_remote_compaction() -> Result<()>
     ]
     .into_iter()
     {
-        test.ava-code
+        test.ava
             .start_or_steer_turn(TurnInputRequest::user_input(input))
             .await?;
-        wait_for_event(&test.ava-code, |event| {
+        wait_for_event(&test.ava, |event| {
             matches!(event, EventMsg::TurnComplete(_))
         })
         .await;
     }
 
-    test.ava-code.submit(Op::Compact).await?;
-    wait_for_event(&test.ava-code, |event| {
+    test.ava.submit(Op::Compact).await?;
+    wait_for_event(&test.ava, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;
 
-    test.ava-code
+    test.ava
         .start_or_steer_turn(TurnInputRequest::user_input(vec![
             text("Check the final kickoff brief and attached sketch with $final-check and $calendar:agenda."),
             UserInput::Image {
@@ -408,7 +408,7 @@ async fn astra_kickoff_with_skills_plugins_and_remote_compaction() -> Result<()>
             plugin("calendar"),
         ]))
         .await?;
-    wait_for_event(&test.ava-code, |event| {
+    wait_for_event(&test.ava, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;
@@ -636,7 +636,7 @@ async fn astra_settings_release_check_with_direct_and_code_mode_tools() -> Resul
         release.join("settings.png"),
         BASE64_STANDARD.decode(ONE_PIXEL_PNG_BASE64)?,
     )?;
-    wait_for_mcp_server(&test.ava-code, "rmcp").await?;
+    wait_for_mcp_server(&test.ava, "rmcp").await?;
 
     let patch = "*** Begin Patch\n*** Update File: release/status.md\n@@\n-Status: pending\n+Status: blocked\n+Reason: expected Apply; observed Save\n+MCP: reachable\n*** End Patch\n";
     let patch_code = format!("text(await tools.apply_patch(`{patch}`));");
@@ -860,15 +860,15 @@ async fn astra_refreshes_plugin_tools_and_skills_in_an_existing_thread() -> Resu
         home.path().join("config.toml"),
         format!("{config}\n[plugins.\"notes@test\"]\nenabled = true\n"),
     )?;
-    test.ava-code.submit(Op::ReloadUserConfig).await?;
-    test.ava-code
+    test.ava.submit(Op::ReloadUserConfig).await?;
+    test.ava
         .start_or_steer_turn(TurnInputRequest::user_input(vec![
             text("I installed Notes. Use $notes:summarize and the Notes tool to check that Mira owns the kickoff."),
             plugin("notes"),
             selected_skill("notes:summarize", &skill),
         ]))
         .await?;
-    wait_for_event(&test.ava-code, |event| {
+    wait_for_event(&test.ava, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;

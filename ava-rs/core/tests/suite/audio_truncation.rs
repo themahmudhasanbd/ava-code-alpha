@@ -102,23 +102,23 @@ async fn dynamic_tool_audio_exceeding_the_output_budget_is_omitted() -> Result<(
         })
         .await?;
     let mut test = base_test;
-    test.ava-code = new_thread.thread;
+    test.ava = new_thread.thread;
     test.session_configured = new_thread.session_configured;
 
-    test.ava-code
+    test.ava
         .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
             text: "Return a recording".to_string(),
             text_elements: Vec::new(),
         }]))
         .await?;
-    let EventMsg::DynamicToolCallRequest(request) = wait_for_event(&test.ava-code, |event| {
+    let EventMsg::DynamicToolCallRequest(request) = wait_for_event(&test.ava, |event| {
         matches!(event, EventMsg::DynamicToolCallRequest(_))
     })
     .await
     else {
         unreachable!("event guard guarantees DynamicToolCallRequest");
     };
-    test.ava-code
+    test.ava
         .submit(Op::DynamicToolResponse {
             id: request.call_id,
             response: DynamicToolResponse {
@@ -129,7 +129,7 @@ async fn dynamic_tool_audio_exceeding_the_output_budget_is_omitted() -> Result<(
             },
         })
         .await?;
-    wait_for_event(&test.ava-code, |event| {
+    wait_for_event(&test.ava, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;

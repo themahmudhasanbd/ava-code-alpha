@@ -220,14 +220,14 @@ async fn run_agent_with_model(models_manager: SharedModelsManager, model_slug: &
     );
 
     submit_thread_settings(
-        &test.ava-code,
+        &test.ava,
         ThreadSettingsOverrides {
             model: Some(model_slug.to_string()),
             ..Default::default()
         },
     )
     .await?;
-    test.ava-code
+    test.ava
         .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
             text: "hello".to_string(),
             text_elements: Vec::new(),
@@ -235,7 +235,7 @@ async fn run_agent_with_model(models_manager: SharedModelsManager, model_slug: &
         .await?;
     loop {
         if matches!(
-            wait_for_event(&test.ava-code, |_| true).await,
+            wait_for_event(&test.ava, |_| true).await,
             EventMsg::TurnComplete(_)
         ) {
             break;

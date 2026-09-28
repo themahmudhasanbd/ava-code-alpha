@@ -172,13 +172,13 @@ async fn daybreak_metadata_follows_the_actual_plugin_call(case: AccessCase) -> R
                 .expect("remote executor")
                 .is_remote()
         );
-        let (config, _) = test.ava-code.current_mcp_config_and_runtime_context().await;
+        let (config, _) = test.ava.current_mcp_config_and_runtime_context().await;
         assert_eq!(
             config.mcp_server_catalog.configured_servers()["sample"].environment_id,
             "remote"
         );
     }
-    wait_for_mcp_server(&test.ava-code, "sample").await?;
+    wait_for_mcp_server(&test.ava, "sample").await?;
     let mock = responses::mount_sse_sequence(
         &server,
         vec![
@@ -202,21 +202,21 @@ async fn daybreak_metadata_follows_the_actual_plugin_call(case: AccessCase) -> R
         ],
     )
     .await;
-    test.ava-code
+    test.ava
         .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
             text: "Call the sample Daybreak access tool".to_string(),
             text_elements: Vec::new(),
         }]))
         .await?;
-    let end = wait_for_event(&test.ava-code, |event| {
+    let end = wait_for_event(&test.ava, |event| {
         matches!(event, EventMsg::McpToolCallEnd(_))
     })
     .await;
-    wait_for_event(&test.ava-code, |event| {
+    wait_for_event(&test.ava, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;
-    test.ava-code.shutdown_and_wait().await?;
+    test.ava.shutdown_and_wait().await?;
     let EventMsg::McpToolCallEnd(end) = end else {
         unreachable!()
     };
@@ -363,7 +363,7 @@ async fn daybreak_discards_in_flight_account_changes_without_apps() -> Result<()
         })
         .build_with_remote_and_local_env(&server)
         .await?;
-    wait_for_mcp_server(&test.ava-code, "sample").await?;
+    wait_for_mcp_server(&test.ava, "sample").await?;
     responses::mount_sse_sequence(
         &server,
         vec![
@@ -390,13 +390,13 @@ async fn daybreak_discards_in_flight_account_changes_without_apps() -> Result<()
         ],
     )
     .await;
-    test.ava-code
+    test.ava
         .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
             text: "Call the sample Daybreak access tool".to_string(),
             text_elements: Vec::new(),
         }]))
         .await?;
-    let call = wait_for_event(&test.ava-code, |event| {
+    let call = wait_for_event(&test.ava, |event| {
         matches!(event, EventMsg::McpToolCallEnd(_))
     });
     let switch = async {
@@ -424,11 +424,11 @@ async fn daybreak_discards_in_flight_account_changes_without_apps() -> Result<()
     let (result, switched) = tokio::join!(call, switch);
     switched?;
     response_task.await??;
-    wait_for_event(&test.ava-code, |event| {
+    wait_for_event(&test.ava, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;
-    test.ava-code.shutdown_and_wait().await?;
+    test.ava.shutdown_and_wait().await?;
     let EventMsg::McpToolCallEnd(result) = result else {
         unreachable!()
     };

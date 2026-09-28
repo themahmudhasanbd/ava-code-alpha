@@ -53,7 +53,7 @@ async fn provisioning_failure_reaches_model_and_turn_continues(
             provider.clone(),
         )?;
     }
-    test.ava-code
+    test.ava
         .start_or_steer_turn(
             TurnInputRequest::user_input(vec![UserInput::Text {
                 text: "inspect the repository".into(),
@@ -81,7 +81,7 @@ async fn provisioning_failure_reaches_model_and_turn_continues(
             provider,
         )?;
     }
-    wait_for_event(&test.ava-code, |event| {
+    wait_for_event(&test.ava, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;

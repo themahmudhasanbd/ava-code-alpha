@@ -569,7 +569,7 @@ async fn symlinked_cwd_uses_logical_parent_for_agents_discovery() -> Result<()> 
         .expect("symlink should have a parent");
 
     assert_eq!(
-        test.ava-code.instruction_sources().await,
+        test.ava.instruction_sources().await,
         vec![
             PathUri::from_abs_path(&logical_root.join("AGENTS.md")),
             PathUri::from_abs_path(&test.config.cwd.join("AGENTS.md"))
@@ -619,7 +619,7 @@ async fn selected_environment_sources_match_model_visible_instructions() -> Resu
     let global_agents = global_agents.abs();
 
     assert_eq!(
-        test.ava-code.instruction_sources().await,
+        test.ava.instruction_sources().await,
         vec![
             PathUri::from_abs_path(&global_agents),
             test.workspace_path_uri("AGENTS.md")?,
@@ -668,7 +668,7 @@ async fn untrusted_project_excludes_project_instructions() -> Result<()> {
     let test = builder.build_with_auto_env(&server).await?;
 
     assert_eq!(
-        test.ava-code.instruction_sources().await,
+        test.ava.instruction_sources().await,
         vec![PathUri::from_abs_path(&global_agents)]
     );
 
@@ -721,25 +721,25 @@ async fn runtime_trust_reload_refreshes_project_instructions() -> Result<()> {
 
     test.submit_turn("trusted project").await?;
     assert_eq!(
-        test.ava-code.instruction_sources().await,
+        test.ava.instruction_sources().await,
         vec![global_agents.clone(), project_agents.clone()]
     );
 
-    let mut untrusted_config = (*test.ava-code.config().await).clone();
+    let mut untrusted_config = (*test.ava.config().await).clone();
     untrusted_config.active_project.trust_level = Some(TrustLevel::Untrusted);
-    test.ava-code.refresh_runtime_config(untrusted_config).await;
+    test.ava.refresh_runtime_config(untrusted_config).await;
     test.submit_turn("untrusted project").await?;
     assert_eq!(
-        test.ava-code.instruction_sources().await,
+        test.ava.instruction_sources().await,
         vec![global_agents.clone()]
     );
 
-    let mut trusted_config = (*test.ava-code.config().await).clone();
+    let mut trusted_config = (*test.ava.config().await).clone();
     trusted_config.active_project.trust_level = Some(TrustLevel::Trusted);
-    test.ava-code.refresh_runtime_config(trusted_config).await;
+    test.ava.refresh_runtime_config(trusted_config).await;
     test.submit_turn("trusted again").await?;
     assert_eq!(
-        test.ava-code.instruction_sources().await,
+        test.ava.instruction_sources().await,
         vec![global_agents, project_agents]
     );
 
@@ -788,7 +788,7 @@ async fn restricted_project_without_instructions_starts_successfully() -> Result
     let test = builder.build_with_auto_env(&server).await?;
 
     assert_eq!(
-        test.ava-code.instruction_sources().await,
+        test.ava.instruction_sources().await,
         Vec::<PathUri>::new()
     );
     test.submit_text_turn("continue without project instructions")
@@ -951,7 +951,7 @@ async fn tightening_environment_read_permissions_invalidates_cached_project_inst
     let test = builder.build_with_auto_env(&server).await?;
 
     assert_eq!(
-        test.ava-code.instruction_sources().await,
+        test.ava.instruction_sources().await,
         vec![
             PathUri::from_abs_path(&global_source),
             test.workspace_path_uri(GLOBAL_AGENTS_FILENAME)?
@@ -972,7 +972,7 @@ async fn tightening_environment_read_permissions_invalidates_cached_project_inst
     );
     let (sandbox_policy, permission_profile) =
         turn_permission_fields(permission_profile, test.config.cwd.as_path());
-    test.ava-code
+    test.ava
         .start_or_steer_turn(
             TurnInputRequest::user_input(vec![UserInput::Text {
                 text: "inspect instructions after tightening permissions".to_string(),
@@ -987,7 +987,7 @@ async fn tightening_environment_read_permissions_invalidates_cached_project_inst
         .await?;
 
     let mut warnings_before_error = Vec::new();
-    let EventMsg::Error(error) = wait_for_event(&test.ava-code, |event| {
+    let EventMsg::Error(error) = wait_for_event(&test.ava, |event| {
         if let EventMsg::Warning(warning) = event {
             warnings_before_error.push(warning.message.clone());
         }
@@ -1005,7 +1005,7 @@ async fn tightening_environment_read_permissions_invalidates_cached_project_inst
     );
 
     assert_eq!(
-        test.ava-code.instruction_sources().await,
+        test.ava.instruction_sources().await,
         Vec::<PathUri>::new()
     );
     assert!(
@@ -1324,7 +1324,7 @@ async fn isolated_guardian_keeps_applied_thread_instructions() -> Result<()> {
     let parent = test
         .thread_manager
         .start_thread(StartThreadOptions {
-            environments: Some(test.ava-code.environment_selections().await),
+            environments: Some(test.ava.environment_selections().await),
             thread_instructions_provider: Some(provider.clone()),
             ..StartThreadOptions::new(test.config.clone())
         })
@@ -1759,7 +1759,7 @@ async fn fresh_thread_composes_global_before_project_and_reports_sources() -> Re
     ];
 
     // Confirm the thread records both creation-time sources in composition order.
-    assert_eq!(test.ava-code.instruction_sources().await, creation_sources);
+    assert_eq!(test.ava.instruction_sources().await, creation_sources);
 
     // Materialize the initial snapshot, then rewrite both selected files in place before another
     // ordinary turn.
@@ -1828,7 +1828,7 @@ async fn fresh_thread_composes_global_before_project_and_reports_sources() -> Re
         "expected rendered instructions to contain {PROJECT_SEPARATOR:?}; observed: {rendered}"
     );
     assert_eq!(
-        test.ava-code.instruction_sources().await,
+        test.ava.instruction_sources().await,
         creation_sources,
         "same-path global refresh preserves source paths and composition order"
     );
@@ -2078,7 +2078,7 @@ async fn global_instruction_warnings_reappear_only_after_recovery() -> Result<()
     let mut builder = test_ava().with_home(Arc::clone(&home));
     let test = builder.build_with_auto_env(&server).await?;
     wait_for_event(
-        &test.ava-code,
+        &test.ava,
         |event| matches!(event, EventMsg::Warning(warning) if warning.message == expected_warning),
     )
     .await;
@@ -2095,14 +2095,14 @@ async fn global_instruction_warnings_reappear_only_after_recovery() -> Result<()
         } else {
             std::fs::write(&override_path, "")?;
         }
-        test.ava-code
+        test.ava
             .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
                 text: "check the instructions".to_string(),
                 text_elements: Vec::new(),
             }]))
             .await?;
         let mut warnings = Vec::new();
-        wait_for_event(&test.ava-code, |event| {
+        wait_for_event(&test.ava, |event| {
             if let EventMsg::Warning(warning) = event {
                 warnings.push(warning.message.clone());
             }
@@ -2146,7 +2146,7 @@ async fn invalid_utf8_global_instructions_are_lossy() -> Result<()> {
         .await?;
 
     assert_eq!(
-        test.ava-code.instruction_sources().await,
+        test.ava.instruction_sources().await,
         vec![PathUri::from_abs_path(&source)]
     );
     let expected_fragment =
@@ -2192,7 +2192,7 @@ async fn cold_resume_invalidates_deleted_legacy_agents_md_once() -> Result<()> {
 
     // Assert the pre-resume thread reports the source used to create its snapshot.
     assert_eq!(
-        initial.ava-code.instruction_sources().await,
+        initial.ava.instruction_sources().await,
         vec![PathUri::from_abs_path(&old_source)],
         "initial thread reports the creation-time global source"
     );
@@ -2202,8 +2202,8 @@ async fn cold_resume_invalidates_deleted_legacy_agents_md_once() -> Result<()> {
         .rollout_path
         .clone()
         .expect("rollout path");
-    initial.ava-code.submit(Op::Shutdown).await?;
-    wait_for_event(&initial.ava-code, |event| {
+    initial.ava.submit(Op::Shutdown).await?;
+    wait_for_event(&initial.ava, |event| {
         matches!(event, EventMsg::ShutdownComplete)
     })
     .await;
@@ -2219,7 +2219,7 @@ async fn cold_resume_invalidates_deleted_legacy_agents_md_once() -> Result<()> {
 
     // Model history still contains the old fragment, but the source no longer exists.
     assert_eq!(
-        resumed.ava-code.instruction_sources().await,
+        resumed.ava.instruction_sources().await,
         Vec::<PathUri>::new(),
         "resume reports no deleted instruction source"
     );
@@ -2296,14 +2296,14 @@ async fn fork_injects_changed_agents_md_once() -> Result<()> {
 
     // Assert the parent reports the source used to create its snapshot.
     assert_eq!(
-        parent.ava-code.instruction_sources().await,
+        parent.ava.instruction_sources().await,
         vec![PathUri::from_abs_path(&source)],
         "parent reports the creation-time global source"
     );
     parent.submit_turn("persist instructions").await?;
-    parent.ava-code.ensure_rollout_materialized().await;
-    parent.ava-code.flush_rollout().await?;
-    let rollout_path = parent.ava-code.rollout_path().expect("rollout path");
+    parent.ava.ensure_rollout_materialized().await;
+    parent.ava.flush_rollout().await?;
+    let rollout_path = parent.ava.rollout_path().expect("rollout path");
 
     // Add a preferred override source, then fork with freshly loaded configuration.
     let new_source = write_global_file(
@@ -2471,7 +2471,7 @@ async fn run_subagent_global_instruction_case(fork_context: bool) -> Result<()> 
 
     // Assert the parent reports the creation-time source before spawning.
     assert_eq!(
-        test.ava-code.instruction_sources().await,
+        test.ava.instruction_sources().await,
         vec![PathUri::from_abs_path(&source)],
         "parent reports the creation-time global source before spawning"
     );
@@ -2526,7 +2526,7 @@ async fn run_subagent_global_instruction_case(fork_context: bool) -> Result<()> 
         );
     }
     assert_eq!(
-        test.ava-code.instruction_sources().await,
+        test.ava.instruction_sources().await,
         vec![PathUri::from_abs_path(&new_source)],
         "parent reports the refreshed global source"
     );

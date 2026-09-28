@@ -425,7 +425,7 @@ async fn persisted_remote_plugin_command_attribution_flows_through_turn_context(
         .with_model("gpt-5.2")
         .with_config(move |config| config.chatgpt_base_url = chatgpt_base_url);
     let test_ava = builder.build_with_auto_env(&server).await?;
-    let ava = Arc::clone(&test_ava.ava-code);
+    let ava = Arc::clone(&test_ava.ava);
     let cwd = test_ava.config.cwd.clone();
     let session_model = test_ava.session_configured.model.clone();
     let (sandbox_policy, permission_profile) =
@@ -589,7 +589,7 @@ fi
     assert!(remote.is_remote());
     let (sandbox_policy, permission_profile) =
         turn_permission_fields(PermissionProfile::Disabled, test.config.cwd.as_path());
-    test.ava-code
+    test.ava
         .start_or_steer_turn(
             TurnInputRequest::user_input(vec![UserInput::Text {
                 text: "run both plugin versions".into(),
@@ -605,12 +605,12 @@ fi
         .await?;
     for call_id in ["wrong-version", "matching-version"] {
         let expected = (Some(REMOTE_PLUGIN_CONFIG_NAME), Some("scripts/run.sh"));
-        let begin = wait_for_event_match(&test.ava-code, |event| match event {
+        let begin = wait_for_event_match(&test.ava, |event| match event {
             EventMsg::ExecCommandBegin(event) if event.call_id == call_id => Some(event.clone()),
             _ => None,
         })
         .await;
-        let end = wait_for_event_match(&test.ava-code, |event| match event {
+        let end = wait_for_event_match(&test.ava, |event| match event {
             EventMsg::ExecCommandEnd(event) if event.call_id == call_id => Some(event.clone()),
             _ => None,
         })
@@ -625,7 +625,7 @@ fi
             expected
         );
     }
-    wait_for_event(&test.ava-code, |event| {
+    wait_for_event(&test.ava, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;
@@ -697,7 +697,7 @@ async fn thread_disabled_plugins_filter_skills_and_tools_without_changing_shared
     for (phase, enabled, injection_count) in [(0, true, 1), (1, false, 1), (2, true, 2)] {
         if !enabled {
             submit_thread_settings(
-                &test.ava-code,
+                &test.ava,
                 ThreadSettingsOverrides {
                     disabled_plugin_ids: Some(vec![SAMPLE_PLUGIN_CONFIG_NAME.to_string()]),
                     ..Default::default()
@@ -706,7 +706,7 @@ async fn thread_disabled_plugins_filter_skills_and_tools_without_changing_shared
             .await?;
             // Saving pending settings must not change the admitted runtime.
             for (server_name, tool, arguments) in &tool_calls {
-                test.ava-code
+                test.ava
                     .call_mcp_tool(server_name, tool, arguments.clone(), /*meta*/ None)
                     .await?;
             }
@@ -729,7 +729,7 @@ async fn thread_disabled_plugins_filter_skills_and_tools_without_changing_shared
             ],
         )
         .await;
-        test.ava-code
+        test.ava
             .start_or_steer_turn(
                 TurnInputRequest::user_input(vec![
                     UserInput::Skill {
@@ -747,7 +747,7 @@ async fn thread_disabled_plugins_filter_skills_and_tools_without_changing_shared
                 }),
             )
             .await?;
-        wait_for_event(&test.ava-code, |event| {
+        wait_for_event(&test.ava, |event| {
             matches!(event, EventMsg::TurnComplete(_))
         })
         .await;
@@ -828,7 +828,7 @@ async fn agent_plugin_skills_use_shared_catalog_and_direct_child_discovery() -> 
             path: skill_path,
         }]))
         .await?;
-    let warning = wait_for_event(&test_ava.ava-code, |ev| {
+    let warning = wait_for_event(&test_ava.ava, |ev| {
         matches!(
             ev,
             EventMsg::Warning(warning)
@@ -836,7 +836,7 @@ async fn agent_plugin_skills_use_shared_catalog_and_direct_child_discovery() -> 
         )
     })
     .await;
-    wait_for_event(&test_ava.ava-code, |ev| {
+    wait_for_event(&test_ava.ava, |ev| {
         matches!(ev, EventMsg::TurnComplete(_))
     })
     .await;
@@ -931,13 +931,13 @@ async fn plugin_skill_product_policy_and_migrated_command_precedence_reach_agent
             .collect::<Vec<_>>()
     );
 
-    test.ava-code
+    test.ava
         .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
             text: "Inspect the available plugin skills.".to_string(),
             text_elements: Vec::new(),
         }]))
         .await?;
-    wait_for_event(&test.ava-code, |event| {
+    wait_for_event(&test.ava, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;
@@ -986,7 +986,7 @@ async fn legacy_plugin_skill_prompt_remains_complete() -> Result<()> {
             path: skill_path,
         }]))
         .await?;
-    wait_for_event(&test_ava.ava-code, |ev| {
+    wait_for_event(&test_ava.ava, |ev| {
         matches!(ev, EventMsg::TurnComplete(_))
     })
     .await;
@@ -1086,13 +1086,13 @@ enabled = true
         .reconcile_remote_installed_plugins(&test.config.plugins_config_input(), auth.as_ref())
         .await?;
 
-    test.ava-code
+    test.ava
         .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
             text: "Inspect the available Sites skills.".to_string(),
             text_elements: Vec::new(),
         }]))
         .await?;
-    wait_for_event(&test.ava-code, |event| {
+    wait_for_event(&test.ava, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;
@@ -1189,7 +1189,7 @@ async fn agent_plugin_root_mcp_stdio_tool_round_trip_expands_reserved_paths_and_
     )?;
     let mut builder = test_ava().with_home(Arc::clone(&ava_home));
     let test_ava = builder.build_with_remote_and_local_env(&server).await?;
-    wait_for_mcp_server(&test_ava.ava-code, "agent").await?;
+    wait_for_mcp_server(&test_ava.ava, "agent").await?;
     let data_root = dunce::canonicalize(
         std::fs::read_dir(ava_home.path().join("plugins/data/agent-plugins"))?
             .next()
@@ -1209,15 +1209,15 @@ async fn agent_plugin_root_mcp_stdio_tool_round_trip_expands_reserved_paths_and_
             text_elements: Vec::new(),
         }]))
         .await?;
-    let end = wait_for_event(&test_ava.ava-code, |event| {
+    let end = wait_for_event(&test_ava.ava, |event| {
         matches!(event, EventMsg::McpToolCallEnd(_))
     })
     .await;
-    let overlay_end = wait_for_event(&test_ava.ava-code, |event| {
+    let overlay_end = wait_for_event(&test_ava.ava, |event| {
         matches!(event, EventMsg::McpToolCallEnd(_))
     })
     .await;
-    wait_for_event(&test_ava.ava-code, |event| {
+    wait_for_event(&test_ava.ava, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;
@@ -1544,7 +1544,7 @@ async fn explicit_plugin_mentions_use_apps_for_chatgpt_dual_surface_plugins(
     let test_ava =
         build_apps_enabled_plugin_test_ava(&server, ava_home, apps_server.chatgpt_base_url)
             .await?;
-    let ava = Arc::clone(&test_ava.ava-code);
+    let ava = Arc::clone(&test_ava.ava);
     wait_for_mcp_server(&ava, AVA_APPS_MCP_SERVER_NAME).await?;
 
     ava
@@ -1631,7 +1631,7 @@ async fn explicit_plugin_mentions_keep_non_conflicting_mcp_for_chatgpt_auth() ->
     let test_ava =
         build_apps_enabled_plugin_test_ava(&server, ava_home, apps_server.chatgpt_base_url)
             .await?;
-    let ava = Arc::clone(&test_ava.ava-code);
+    let ava = Arc::clone(&test_ava.ava);
     wait_for_mcp_server(&ava, "sample").await?;
 
     ava
@@ -1746,7 +1746,7 @@ async fn system_marketplace_plugin_honors_layered_activation_and_mcp_policy(
         .with_home(ava_home)
         .with_config(move |config| config.config_layer_stack = layered_config.config_layer_stack);
     let test = builder.build_with_remote_and_local_env(&server).await?;
-    let startup = wait_for_event_match(&test.ava-code, |event| match event {
+    let startup = wait_for_event_match(&test.ava, |event| match event {
         EventMsg::McpStartupComplete(summary) => Some(summary.clone()),
         _ => None,
     })
@@ -1760,13 +1760,13 @@ async fn system_marketplace_plugin_honors_layered_activation_and_mcp_policy(
         serde_json::to_value(startup)?,
         serde_json::json!({"ready": expected_ready, "failed": [], "cancelled": []}),
     );
-    test.ava-code
+    test.ava
         .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Mention {
             name: "sample".into(),
             path: format!("plugin://{SAMPLE_PLUGIN_CONFIG_NAME}"),
         }]))
         .await?;
-    wait_for_event(&test.ava-code, |event| {
+    wait_for_event(&test.ava, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;
@@ -1826,7 +1826,7 @@ async fn explicitly_requested_mcp_waits_for_startup(request: ExplicitMcpRequest)
                 .expect("test config should allow feature update");
         });
     let test_ava = builder.build_with_remote_and_local_env(&server).await?;
-    let ava = Arc::clone(&test_ava.ava-code);
+    let ava = Arc::clone(&test_ava.ava);
 
     let input = match request {
         ExplicitMcpRequest::Plugin => UserInput::Mention {
@@ -1919,7 +1919,7 @@ async fn explicit_plugin_mentions_track_plugin_used_analytics() -> Result<()> {
     let ava_home = Arc::new(TempDir::new()?);
     write_plugin_skill_plugin(ava_home.as_ref());
     let test_ava = build_analytics_plugin_test_ava(&server, ava_home).await?;
-    let ava = Arc::clone(&test_ava.ava-code);
+    let ava = Arc::clone(&test_ava.ava);
 
     ava
         .start_or_steer_turn(TurnInputRequest::user_input(vec![
@@ -1970,7 +1970,7 @@ async fn explicit_plugin_skill_invocation_tracks_remote_plugin_id() -> Result<()
     let skill_path = dunce::canonicalize(write_remote_plugin_skill_plugin(ava_home.as_ref()))?;
     persist_sample_remote_plugin_id(ava_home.as_ref());
     let test_ava = build_analytics_plugin_test_ava(&server, ava_home).await?;
-    let ava = Arc::clone(&test_ava.ava-code);
+    let ava = Arc::clone(&test_ava.ava);
 
     ava
         .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Skill {
@@ -2049,7 +2049,7 @@ async fn implicit_plugin_skill_invocation_tracks_remote_plugin_id(
     )
     .await;
     let test_ava = build_analytics_plugin_test_ava(&server, ava_home).await?;
-    let ava = Arc::clone(&test_ava.ava-code);
+    let ava = Arc::clone(&test_ava.ava);
 
     ava
         .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {

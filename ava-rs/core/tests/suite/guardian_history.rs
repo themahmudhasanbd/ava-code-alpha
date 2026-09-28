@@ -86,8 +86,8 @@ async fn guardian_history_survives_restart_and_user_fork(
     let authorization = "You may publish the reviewed release.";
     mount_sse_once(&server, sse(vec![ev_completed("authorized")])).await;
     initial.submit_text_turn(authorization).await?;
-    initial.ava-code.submit(Op::Compact).await?;
-    wait_for_event(&initial.ava-code, |event| {
+    initial.ava.submit(Op::Compact).await?;
+    wait_for_event(&initial.ava, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;
@@ -95,7 +95,7 @@ async fn guardian_history_survives_restart_and_user_fork(
     let restriction = "Keep the release private.";
     mount_sse_once(&server, sse(vec![ev_completed("restriction")])).await;
     initial.submit_text_turn(restriction).await?;
-    initial.ava-code.shutdown_and_wait().await?;
+    initial.ava.shutdown_and_wait().await?;
     let thread_id = initial.session_configured.thread_id;
     initial.thread_manager.remove_thread(&thread_id).await;
     let model_context = initial
@@ -234,8 +234,8 @@ async fn guardian_history_uses_deltas_between_eviction_batches() -> Result<()> {
     .await;
     let restriction = "Only inspect the repository; do not publish it.";
     test.submit_text_turn(restriction).await?;
-    test.ava-code.submit(Op::Compact).await?;
-    wait_for_event(&test.ava-code, |event| {
+    test.ava.submit(Op::Compact).await?;
+    wait_for_event(&test.ava, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;
@@ -307,7 +307,7 @@ async fn guardian_history_uses_deltas_between_eviction_batches() -> Result<()> {
         guardian_requests[1].body_json()["client_metadata"]["thread_id"],
         guardian_requests[2].body_json()["client_metadata"]["thread_id"]
     );
-    test.ava-code.shutdown_and_wait().await?;
+    test.ava.shutdown_and_wait().await?;
     Ok(())
 }
 
@@ -368,18 +368,18 @@ async fn guardian_history_survives_compaction_and_eviction_but_not_legacy_rollba
         ],
     )
     .await;
-    test.ava-code
+    test.ava
         .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
             text: "Only publish to a private repository.".into(),
             text_elements: Vec::new(),
         }]))
         .await?;
-    let question = wait_for_event_match(&test.ava-code, |event| match event {
+    let question = wait_for_event_match(&test.ava, |event| match event {
         EventMsg::RequestUserInput(request) => Some(request.clone()),
         _ => None,
     })
     .await;
-    test.ava-code
+    test.ava
         .submit(Op::UserInputAnswer {
             id: question.turn_id,
             response: RequestUserInputResponse {
@@ -392,12 +392,12 @@ async fn guardian_history_survives_compaction_and_eviction_but_not_legacy_rollba
             },
         })
         .await?;
-    wait_for_event(&test.ava-code, |event| {
+    wait_for_event(&test.ava, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;
-    test.ava-code.submit(Op::Compact).await?;
-    wait_for_event(&test.ava-code, |event| {
+    test.ava.submit(Op::Compact).await?;
+    wait_for_event(&test.ava, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;
@@ -435,7 +435,7 @@ async fn guardian_history_survives_compaction_and_eviction_but_not_legacy_rollba
             ],
         )
         .await;
-        test.ava-code
+        test.ava
             .start_or_steer_turn(TurnInputRequest::user_input(vec![
                 UserInput::Text {
                     text: prompt.to_owned(),
@@ -449,7 +449,7 @@ async fn guardian_history_survives_compaction_and_eviction_but_not_legacy_rollba
                 },
             ]))
             .await?;
-        wait_for_event(&test.ava-code, |event| {
+        wait_for_event(&test.ava, |event| {
             matches!(event, EventMsg::TurnComplete(_))
         })
         .await;
@@ -502,13 +502,13 @@ async fn guardian_history_survives_compaction_and_eviction_but_not_legacy_rollba
                     .all(|item| item["call_id"] != "inspect-0"
                         && item["call_id"] != "confirm-publish")
             );
-            test.ava-code.ensure_rollout_materialized().await;
-            test.ava-code
+            test.ava.ensure_rollout_materialized().await;
+            test.ava
                 .append_rollout_items(&[RolloutItem::EventMsg(EventMsg::ThreadRolledBack(
                     ThreadRolledBackEvent { num_turns: 2 },
                 ))])
                 .await?;
-            test.ava-code.shutdown_and_wait().await?;
+            test.ava.shutdown_and_wait().await?;
             let thread_id = test.session_configured.thread_id;
             test.thread_manager.remove_thread(&thread_id).await;
             let model_context = test
@@ -518,7 +518,7 @@ async fn guardian_history_survives_compaction_and_eviction_but_not_legacy_rollba
                     include_archived: false,
                 })
                 .await?;
-            test.ava-code = test
+            test.ava = test
                 .thread_manager
                 .resume_thread_with_history(
                     test.config.clone(),

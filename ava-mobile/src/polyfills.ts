@@ -54,4 +54,36 @@ if (typeof global !== "undefined" && global !== g) {
   global.crypto = g.crypto;
 }
 
+// Inject continuous spinner CSS keyframes for Web environments
+if (typeof document !== "undefined" && typeof document.createElement === "function") {
+  try {
+    const styleId = "ava-universal-spinner-keyframes";
+    if (!document.getElementById(styleId)) {
+      const style = document.createElement("style");
+      style.id = styleId;
+      style.textContent = `
+        @keyframes r-animation-spin {
+          0% { transform: rotate(0deg); }
+          100% { transform: rotate(360deg); }
+        }
+        @keyframes ava-spin {
+          0% { transform: rotate(0deg); }
+          100% { transform: rotate(360deg); }
+        }
+        [role="progressbar"] svg,
+        [role="progressbar"] > div,
+        .r-animation-spin,
+        .r-animation-spin-1,
+        .animate-spin {
+          animation: r-animation-spin 0.85s linear infinite !important;
+          transform-origin: center center !important;
+        }
+      `;
+      document.head.appendChild(style);
+    }
+  } catch {
+    // ignore
+  }
+}
+
 export {};

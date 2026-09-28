@@ -135,7 +135,7 @@ async fn user_turn_includes_skill_instructions() -> Result<()> {
     let session_model = test.session_configured.model.clone();
     let (sandbox_policy, permission_profile) =
         turn_permission_fields(PermissionProfile::Disabled, test.config.cwd.as_path());
-    test.ava-code
+    test.ava
         .start_or_steer_turn(
             TurnInputRequest::user_input(vec![
                 UserInput::Text {
@@ -165,7 +165,7 @@ async fn user_turn_includes_skill_instructions() -> Result<()> {
         )
         .await?;
 
-    core_test_support::wait_for_event(test.ava-code.as_ref(), |event| {
+    core_test_support::wait_for_event(test.ava.as_ref(), |event| {
         matches!(event, ava_protocol::protocol::EventMsg::TurnComplete(_))
     })
     .await;
@@ -236,7 +236,7 @@ async fn history_injection_skips_skill_discovery_after_initial_context() -> Resu
 
     // A fresh thread still needs full initial context before its first injected item.
     buffer.lock().unwrap().clear();
-    test.ava-code
+    test.ava
         .inject_response_items_for_turn(vec![developer_message(FIRST_INSTRUCTIONS)])
         .await?;
     let logs = take_logs()?;
@@ -245,7 +245,7 @@ async fn history_injection_skips_skill_discovery_after_initial_context() -> Resu
         "initial injection must discover skills: {logs}"
     );
 
-    test.ava-code
+    test.ava
         .inject_response_items_for_turn(vec![developer_message(SECOND_INSTRUCTIONS)])
         .await?;
     let logs = take_logs()?;
@@ -266,7 +266,7 @@ async fn history_injection_skips_skill_discovery_after_initial_context() -> Resu
         .canonicalize()
         .unwrap_or_else(|_| test.config.cwd.join(".agents/skills/demo/SKILL.md"))
         .to_path_buf();
-    test.ava-code
+    test.ava
         .start_or_steer_turn(TurnInputRequest::user_input(vec![
             UserInput::Text {
                 text: "please use $demo".to_string(),
@@ -278,7 +278,7 @@ async fn history_injection_skips_skill_discovery_after_initial_context() -> Resu
             },
         ]))
         .await?;
-    core_test_support::wait_for_event(test.ava-code.as_ref(), |event| {
+    core_test_support::wait_for_event(test.ava.as_ref(), |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;
@@ -381,7 +381,7 @@ async fn user_turn_selects_symlinked_skill_by_advertised_discovery_path() -> Res
         .await?;
     assert!(matches!(submission, StartIfIdleSubmission::Started { .. }));
 
-    core_test_support::wait_for_event(test.ava-code.as_ref(), |event| {
+    core_test_support::wait_for_event(test.ava.as_ref(), |event| {
         matches!(event, ava_protocol::protocol::EventMsg::TurnComplete(_))
     })
     .await;
@@ -468,7 +468,7 @@ async fn idle_user_turn_includes_skill_instructions_in_the_first_request() -> Re
         .await?;
     assert!(matches!(submission, StartIfIdleSubmission::Started { .. }));
 
-    core_test_support::wait_for_event(test.ava-code.as_ref(), |event| {
+    core_test_support::wait_for_event(test.ava.as_ref(), |event| {
         matches!(event, ava_protocol::protocol::EventMsg::TurnComplete(_))
     })
     .await;

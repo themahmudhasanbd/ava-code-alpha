@@ -144,7 +144,7 @@ async fn ultra_reasoning_uses_highest_non_ultra_and_proactive_mode() -> Result<(
         .build(&server)
         .await?;
 
-    submit_turn(&test.ava-code, "hello", /*effort*/ None).await?;
+    submit_turn(&test.ava, "hello", /*effort*/ None).await?;
 
     let request = response.single_request();
     assert_eq!(
@@ -200,8 +200,8 @@ async fn mode_hints_override_reasoning_effort(source: ModeHintSource) -> Result<
         })
         .build(&server)
         .await?;
-    submit_turn(&test.ava-code, "explicit", Some(ReasoningEffort::High)).await?;
-    submit_turn(&test.ava-code, "proactive", Some(ReasoningEffort::Ultra)).await?;
+    submit_turn(&test.ava, "explicit", Some(ReasoningEffort::High)).await?;
+    submit_turn(&test.ava, "proactive", Some(ReasoningEffort::Ultra)).await?;
 
     let requests = responses.requests();
     let first_input = requests[0].input();
@@ -262,7 +262,7 @@ async fn catalog_proactive_mode_is_ultra_only(
         .build_with_auto_env(&server)
         .await?;
 
-    submit_turn(&test.ava-code, "hello", Some(effort)).await?;
+    submit_turn(&test.ava, "hello", Some(effort)).await?;
 
     let input = response.single_request().input();
     let texts = developer_texts(&input);
@@ -327,16 +327,16 @@ async fn model_switch_refreshes_catalog_role_and_mode(
         .with_config(configure_multi_agent_v2)
         .build_with_auto_env(&server)
         .await?;
-    submit_turn(&test.ava-code, "first model", Some(effort.clone())).await?;
+    submit_turn(&test.ava, "first model", Some(effort.clone())).await?;
     core_test_support::submit_thread_settings(
-        &test.ava-code,
+        &test.ava,
         ThreadSettingsOverrides {
             model: Some("gpt-5.2".to_string()),
             ..Default::default()
         },
     )
     .await?;
-    submit_turn(&test.ava-code, "second model", Some(effort)).await?;
+    submit_turn(&test.ava, "second model", Some(effort)).await?;
 
     let requests = responses.requests();
     for (index, request) in requests.iter().enumerate() {
@@ -414,7 +414,7 @@ async fn empty_configured_mode_hint_emits_no_mode_message(effort: ReasoningEffor
         .build_with_auto_env(&server)
         .await?;
 
-    submit_turn(&test.ava-code, "hello", Some(effort)).await?;
+    submit_turn(&test.ava, "hello", Some(effort)).await?;
 
     let input = response.single_request().input();
     let texts = developer_texts(&input);
@@ -452,7 +452,7 @@ async fn changing_configured_mode_hint_to_empty_emits_no_update() -> Result<()> 
         .build(&server)
         .await?;
 
-    submit_turn(&initial.ava-code, "before resume", /*effort*/ None).await?;
+    submit_turn(&initial.ava, "before resume", /*effort*/ None).await?;
 
     let mut resume_builder = test_ava().with_config(|config| {
         configure_multi_agent_v2(config);
@@ -460,7 +460,7 @@ async fn changing_configured_mode_hint_to_empty_emits_no_update() -> Result<()> 
     });
     let resumed = resume_builder.restart(&server, &initial).await?;
     drop(initial);
-    submit_turn(&resumed.ava-code, "after resume", /*effort*/ None).await?;
+    submit_turn(&resumed.ava, "after resume", /*effort*/ None).await?;
 
     let requests = responses.requests();
     let first_input = requests[0].input();
@@ -511,8 +511,8 @@ async fn live_mode_change_appends_mode_without_reappending_usage_hint() -> Resul
         .clone()
         .expect("rollout path");
 
-    submit_turn(&test.ava-code, "proactive", /*effort*/ None).await?;
-    submit_turn(&test.ava-code, "explicit", Some(ReasoningEffort::High)).await?;
+    submit_turn(&test.ava, "proactive", /*effort*/ None).await?;
+    submit_turn(&test.ava, "explicit", Some(ReasoningEffort::High)).await?;
 
     let requests = responses.requests();
     let first_input = requests[0].input();
@@ -537,8 +537,8 @@ async fn live_mode_change_appends_mode_without_reappending_usage_hint() -> Resul
         ),
         (1, 1, 1),
     );
-    test.ava-code.ensure_rollout_materialized().await;
-    test.ava-code.flush_rollout().await?;
+    test.ava.ensure_rollout_materialized().await;
+    test.ava.flush_rollout().await?;
     let rollout_values = std::fs::read_to_string(rollout_path)?
         .lines()
         .map(serde_json::from_str::<Value>)
@@ -583,14 +583,14 @@ async fn leaving_ultra_after_cold_resume_emits_explicit_mode() -> Result<()> {
         .build(&server)
         .await?;
 
-    submit_turn(&initial.ava-code, "before resume", /*effort*/ None).await?;
+    submit_turn(&initial.ava, "before resume", /*effort*/ None).await?;
 
     let mut resume_builder = test_ava()
         .with_model_info_override("gpt-5.4", add_ultra_reasoning)
         .with_config(configure_ultra);
     let resumed = resume_builder.restart(&server, &initial).await?;
     drop(initial);
-    submit_turn(&resumed.ava-code, "after resume", Some(ReasoningEffort::High)).await?;
+    submit_turn(&resumed.ava, "after resume", Some(ReasoningEffort::High)).await?;
 
     let requests = responses.requests();
     assert_eq!(
@@ -636,7 +636,7 @@ async fn ultra_on_multi_agent_v1_uses_highest_non_ultra_without_mode_instruction
         .build(&server)
         .await?;
 
-    submit_turn(&test.ava-code, "hello", /*effort*/ None).await?;
+    submit_turn(&test.ava, "hello", /*effort*/ None).await?;
 
     let request = response.single_request();
     assert_eq!(

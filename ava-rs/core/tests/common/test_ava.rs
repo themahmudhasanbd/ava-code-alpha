@@ -644,7 +644,7 @@ impl TestAvaBuilder {
             .rollout_path
             .clone()
             .context("rollout path")?;
-        previous.ava-code.shutdown_and_wait().await?;
+        previous.ava.shutdown_and_wait().await?;
         self.resume(server, Arc::clone(&previous.home), rollout_path)
             .await
     }
@@ -996,14 +996,14 @@ impl TestAva {
 
     /// Submits a text turn without changing the current thread settings.
     pub async fn submit_text_turn(&self, prompt: &str) -> Result<()> {
-        self.ava-code
+        self.ava
             .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
                 text: prompt.into(),
                 text_elements: Vec::new(),
             }]))
             .await?;
 
-        wait_for_event(&self.ava-code, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
+        wait_for_event(&self.ava, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
         Ok(())
     }
 
@@ -1127,7 +1127,7 @@ impl TestAva {
         let turn_environment_selections = environments.map(|environments| {
             TurnEnvironmentSelections::new(self.config.cwd.clone(), environments)
         });
-        self.ava-code
+        self.ava
             .start_or_steer_turn(
                 TurnInputRequest::user_input(vec![UserInput::Text {
                     text: prompt.into(),
@@ -1152,13 +1152,13 @@ impl TestAva {
             )
             .await?;
 
-        let turn_id = wait_for_event_match(&self.ava-code, |event| match event {
+        let turn_id = wait_for_event_match(&self.ava, |event| match event {
             EventMsg::TurnStarted(event) => Some(event.turn_id.clone()),
             _ => None,
         })
         .await;
         wait_for_event_with_timeout(
-            &self.ava-code,
+            &self.ava,
             |event| match event {
                 EventMsg::TurnComplete(event) => event.turn_id == turn_id,
                 _ => false,

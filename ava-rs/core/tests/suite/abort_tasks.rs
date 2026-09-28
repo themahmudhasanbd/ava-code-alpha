@@ -49,7 +49,7 @@ async fn interrupt_long_running_tool_emits_turn_aborted() {
         .build(&server)
         .await
         .unwrap();
-    let ava = Arc::clone(&fixture.ava-code);
+    let ava = Arc::clone(&fixture.ava);
 
     // Kick off a turn that triggers the function call.
     ava
@@ -89,7 +89,7 @@ async fn root_turn_suspension_preserves_unfinished_turn_history() {
         .build_with_auto_env(&server)
         .await
         .expect("start persistent root thread");
-    let ava = Arc::clone(&test.ava-code);
+    let ava = Arc::clone(&test.ava);
     let descendant = test
         .thread_manager
         .start_thread(StartThreadOptions {
@@ -194,7 +194,7 @@ async fn root_turn_suspension_preserves_unfinished_turn_history() {
             turn_id: turn_id.clone(),
         },
     );
-    let completed = wait_for_event(&resumed.ava-code, |event| {
+    let completed = wait_for_event(&resumed.ava, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;
@@ -236,7 +236,7 @@ async fn interrupt_tool_records_history_entries() {
         .build(&server)
         .await
         .unwrap();
-    let ava = Arc::clone(&fixture.ava-code);
+    let ava = Arc::clone(&fixture.ava);
 
     ava
         .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
@@ -329,7 +329,7 @@ async fn interrupt_persists_turn_aborted_marker_in_next_request() {
         .build(&server)
         .await
         .unwrap();
-    let ava = Arc::clone(&fixture.ava-code);
+    let ava = Arc::clone(&fixture.ava);
 
     ava
         .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {

@@ -98,14 +98,14 @@ async fn sampling_requires_gateway_and_primary_auth(expected_error: Option<&str>
         })
         .build_with_auto_env(&server)
         .await?;
-    test.ava-code
+    test.ava
         .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
             text: "hello".into(),
             text_elements: vec![],
         }]))
         .await?;
     let mut error_message = None;
-    wait_for_event(&test.ava-code, |event| {
+    wait_for_event(&test.ava, |event| {
         if let EventMsg::Error(error) = event {
             error_message = Some(error.message.clone());
         }

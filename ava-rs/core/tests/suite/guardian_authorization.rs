@@ -164,10 +164,10 @@ async fn guardian_revalidates_owning_session_before_allow(
         .build_with_auto_env(&server)
         .await?;
     if review_mode == GuardianContextMode::Legacy {
-        test.ava-code.ensure_rollout_materialized().await;
-        test.ava-code = super::guardian_checkpoint_migration::resume(
+        test.ava.ensure_rollout_materialized().await;
+        test.ava = super::guardian_checkpoint_migration::resume(
             &test,
-            &test.ava-code,
+            &test.ava,
             vec![RolloutItem::Compacted(serde_json::from_value(json!({
                 "message": "old checkpoint",
                 "replacement_history": [{
@@ -179,11 +179,11 @@ async fn guardian_revalidates_owning_session_before_allow(
     }
     assert_eq!(
         GuardianContextMode::from_history(
-            test.ava-code.conversation_history_snapshot().await.as_ref()
+            test.ava.conversation_history_snapshot().await.as_ref()
         ),
         review_mode,
     );
-    test.ava-code
+    test.ava
         .start_or_steer_turn(
             TurnInputRequest::user_input(vec![UserInput::Text {
                 text: "Run the command in a background cell.".into(),
@@ -213,12 +213,12 @@ async fn guardian_revalidates_owning_session_before_allow(
         .send(())
         .expect("release parent completion");
     if matches!(change, PendingReviewChange::VerifiedAnswer) {
-        let request = wait_for_event_match(&test.ava-code, |event| match event {
+        let request = wait_for_event_match(&test.ava, |event| match event {
             EventMsg::RequestUserInput(request) => Some(request.clone()),
             _ => None,
         })
         .await;
-        test.ava-code
+        test.ava
             .submit(Op::UserInputAnswer {
                 id: request.turn_id,
                 response: RequestUserInputResponse {
@@ -232,7 +232,7 @@ async fn guardian_revalidates_owning_session_before_allow(
             })
             .await?;
     }
-    wait_for_event(&test.ava-code, |event| {
+    wait_for_event(&test.ava, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;
@@ -241,9 +241,9 @@ async fn guardian_revalidates_owning_session_before_allow(
     }
     let mut completed_status = None;
     if matches!(change, PendingReviewChange::Compaction) {
-        test.ava-code.submit(Op::Compact).await?;
+        test.ava.submit(Op::Compact).await?;
         loop {
-            match test.ava-code.next_event().await?.msg {
+            match test.ava.next_event().await?.msg {
                 EventMsg::GuardianAssessment(assessment)
                     if assessment.status != GuardianAssessmentStatus::InProgress =>
                 {
@@ -262,7 +262,7 @@ async fn guardian_revalidates_owning_session_before_allow(
     let status = match completed_status {
         Some(status) => status,
         None => {
-            wait_for_event_match(&test.ava-code, |event| match event {
+            wait_for_event_match(&test.ava, |event| match event {
                 EventMsg::GuardianAssessment(assessment)
                     if assessment.status != GuardianAssessmentStatus::InProgress =>
                 {
@@ -274,7 +274,7 @@ async fn guardian_revalidates_owning_session_before_allow(
         }
     };
     assert_eq!(status, expected_status);
-    test.ava-code.shutdown_and_wait().await?;
+    test.ava.shutdown_and_wait().await?;
     streaming_server.shutdown().await;
     Ok(())
 }
@@ -299,17 +299,17 @@ async fn guardian_authorization_revision_survives_compaction_not_user_input() ->
         .build_with_auto_env(&server)
         .await?;
     test.submit_text_turn("Inspect the deployment.").await?;
-    let mut expected = test.ava-code.guardian_authorization_version().await;
+    let mut expected = test.ava.guardian_authorization_version().await;
 
     let internal_context = InternalModelContextFragment::new(
         InternalContextSource::from_static("goal"),
         "Inspecting the deployment.",
     );
     let notification_text = internal_context.render();
-    test.ava-code
+    test.ava
         .inject_response_items(vec![ContextualUserFragment::into(internal_context)])
         .await?;
-    assert_eq!(test.ava-code.guardian_authorization_version().await, expected);
+    assert_eq!(test.ava.guardian_authorization_version().await, expected);
 
     // The same text submitted by the user must invalidate, even if it looks internal.
     responses::mount_sse_once(
@@ -319,7 +319,7 @@ async fn guardian_authorization_revision_survives_compaction_not_user_input() ->
     .await;
     test.submit_text_turn(&notification_text).await?;
     expected.user_message_revision += 1;
-    assert_eq!(test.ava-code.guardian_authorization_version().await, expected);
+    assert_eq!(test.ava.guardian_authorization_version().await, expected);
 
     // Failed image preparation must not turn a real user message into internal context.
     responses::mount_sse_once(
@@ -327,7 +327,7 @@ async fn guardian_authorization_revision_survives_compaction_not_user_input() ->
         responses::sse(vec![responses::ev_completed("user-image")]),
     )
     .await;
-    test.ava-code
+    test.ava
         .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Image {
             image: ImageReference::Inline {
                 image_url: "data:image/png;base64,not-an-image".to_owned(),
@@ -335,19 +335,19 @@ async fn guardian_authorization_revision_survives_compaction_not_user_input() ->
             detail: None,
         }]))
         .await?;
-    wait_for_event(&test.ava-code, |event| {
+    wait_for_event(&test.ava, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;
     expected.user_message_revision += 1;
-    assert_eq!(test.ava-code.guardian_authorization_version().await, expected);
+    assert_eq!(test.ava.guardian_authorization_version().await, expected);
 
-    test.ava-code.submit(Op::Compact).await?;
-    wait_for_event(&test.ava-code, |event| {
+    test.ava.submit(Op::Compact).await?;
+    wait_for_event(&test.ava, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;
-    assert_eq!(test.ava-code.guardian_authorization_version().await, expected);
+    assert_eq!(test.ava.guardian_authorization_version().await, expected);
 
     Ok(())
 }

@@ -109,6 +109,8 @@ async fn websocket_upgrade_handler(
     }
     info!(%peer_addr, "websocket client connected");
     websocket
+        .max_message_size(64 * 1024 * 1024)
+        .max_frame_size(64 * 1024 * 1024)
         .on_upgrade(move |stream| async move {
             let (websocket_writer, websocket_reader) = stream.split();
             run_websocket_connection(websocket_writer, websocket_reader, state.transport_event_tx)

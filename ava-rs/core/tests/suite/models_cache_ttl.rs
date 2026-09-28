@@ -177,7 +177,7 @@ async fn renews_cache_ttl_on_matching_models_etag() -> Result<()> {
     });
 
     let test = builder.build(&server).await?;
-    let ava = Arc::clone(&test.ava-code);
+    let ava = Arc::clone(&test.ava);
     let config = test.config.clone();
 
     // Populate cache via initial refresh.

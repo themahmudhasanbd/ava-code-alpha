@@ -351,7 +351,7 @@ async fn file_image_passes_through_request_and_rollout() -> anyhow::Result<()> {
     )
     .await;
 
-    test.ava-code
+    test.ava
         .start_or_steer_turn(TurnInputRequest::user_input(vec![
             UserInput::Image {
                 image: ImageReference::File {
@@ -365,7 +365,7 @@ async fn file_image_passes_through_request_and_rollout() -> anyhow::Result<()> {
             },
         ]))
         .await?;
-    wait_for_event(&test.ava-code, |event| {
+    wait_for_event(&test.ava, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;
@@ -382,8 +382,8 @@ async fn file_image_passes_through_request_and_rollout() -> anyhow::Result<()> {
             })
     }));
 
-    test.ava-code.shutdown_and_wait().await?;
-    let rollout_path = test.ava-code.rollout_path().expect("rollout path");
+    test.ava.shutdown_and_wait().await?;
+    let rollout_path = test.ava.rollout_path().expect("rollout path");
     let rollout_text = read_rollout_text(&rollout_path).await?;
     let actual = find_user_message_with_image(&rollout_text)
         .expect("expected user message with file image in rollout");
@@ -490,11 +490,11 @@ async fn uploaded_images_preserve_user_message_display_history() -> anyhow::Resu
         ]),
     )
     .await;
-    test.ava-code
+    test.ava
         .start_or_steer_turn(TurnInputRequest::user_input(input))
         .await?;
 
-    let started = wait_for_event_match(&test.ava-code, |event| match event {
+    let started = wait_for_event_match(&test.ava, |event| match event {
         EventMsg::ItemStarted(event) => match &event.item {
             TurnItem::UserMessage(item) => Some(item.clone()),
             _ => None,
@@ -502,7 +502,7 @@ async fn uploaded_images_preserve_user_message_display_history() -> anyhow::Resu
         _ => None,
     })
     .await;
-    let completed = wait_for_event_match(&test.ava-code, |event| match event {
+    let completed = wait_for_event_match(&test.ava, |event| match event {
         EventMsg::ItemCompleted(event) => match &event.item {
             TurnItem::UserMessage(item) => Some(item.clone()),
             _ => None,
@@ -514,7 +514,7 @@ async fn uploaded_images_preserve_user_message_display_history() -> anyhow::Resu
     assert_eq!(completed.id, started.id);
     assert_eq!(completed.client_id, started.client_id);
     assert_eq!(completed.content, started.content);
-    wait_for_event(&test.ava-code, |event| {
+    wait_for_event(&test.ava, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;
@@ -549,8 +549,8 @@ async fn uploaded_images_preserve_user_message_display_history() -> anyhow::Resu
         ]
     );
 
-    test.ava-code.shutdown_and_wait().await?;
-    let rollout_path = test.ava-code.rollout_path().context("rollout path")?;
+    test.ava.shutdown_and_wait().await?;
+    let rollout_path = test.ava.rollout_path().context("rollout path")?;
     let rollout_text = read_rollout_text(&rollout_path).await?;
     let mut persisted_user_items = Vec::new();
     for line in rollout_text.lines() {
@@ -593,7 +593,7 @@ async fn resumed_history_only_emits_resize_notices_for_new_images() -> anyhow::R
         .rollout_path
         .clone()
         .context("initial rollout path")?;
-    initial.ava-code.shutdown_and_wait().await?;
+    initial.ava.shutdown_and_wait().await?;
 
     let image_path = initial.cwd.path().join("large-image.png");
     ImageBuffer::from_pixel(
@@ -670,7 +670,7 @@ async fn resumed_history_only_emits_resize_notices_for_new_images() -> anyhow::R
             detail: Some(ImageDetail::High),
         }]))
         .await?;
-    wait_for_event(&resumed.ava-code, |event| {
+    wait_for_event(&resumed.ava, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;
@@ -754,7 +754,7 @@ async fn resumed_history_only_emits_resize_notices_for_new_images() -> anyhow::R
         Some(expected_notice)
     );
 
-    resumed.ava-code.shutdown_and_wait().await?;
+    resumed.ava.shutdown_and_wait().await?;
     let replayed = resume_builder
         .resume(&server, resumed.home.clone(), rollout_path.clone())
         .await?;

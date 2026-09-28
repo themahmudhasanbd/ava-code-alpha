@@ -39,6 +39,6 @@ async fn consolidation_rebinds_workspace_roots_to_memory_root() -> anyhow::Resul
         }
     );
 
-    test.ava-code.shutdown_and_wait().await?;
+    test.ava.shutdown_and_wait().await?;
     Ok(())
 }

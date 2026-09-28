@@ -23,7 +23,7 @@ import {
 } from "@earendil-works/pi-ai/api/github-copilot-headers";
 import { openAICompletionsApi } from "@earendil-works/pi-ai/api/openai-completions.lazy";
 import { openAIResponsesApi } from "@earendil-works/pi-ai/api/openai-responses.lazy";
-import { openAIAvaResponsesApi } from "@earendil-works/pi-ai/api/openai-ava-responses.lazy";
+import { openAICodexResponsesApi } from "@earendil-works/pi-ai/api/openai-codex-responses.lazy";
 import { anthropicMessagesApi } from "@earendil-works/pi-ai/api/anthropic-messages.lazy";
 import { googleGenerativeAIApi } from "@earendil-works/pi-ai/api/google-generative-ai.lazy";
 import { piMessagesApi } from "@earendil-works/pi-ai/api/pi-messages.lazy";
@@ -120,7 +120,7 @@ export function apiBindingForStyle(apiStyle?: string): ApiBinding {
       // Ava conversation envelope, which is not the public /v1/responses API.
       return {
         api: "openai-ava-responses",
-        adapter: openAIAvaResponsesApi,
+        adapter: openAICodexResponsesApi,
         defaultBaseUrl: "https://chatgpt.com/backend-api",
       };
     case "pi_messages":

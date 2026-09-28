@@ -136,7 +136,7 @@ async fn approval_review_contributor_skips_existing_guardian_model_call() -> Res
                 .expect("test config should allow feature update");
         });
     let test = builder.build_with_auto_env(&server).await?;
-    test.ava-code
+    test.ava
         .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
             text: "request low-risk network access".into(),
             text_elements: Vec::new(),
@@ -144,7 +144,7 @@ async fn approval_review_contributor_skips_existing_guardian_model_call() -> Res
         .await?;
 
     loop {
-        match wait_for_event(&test.ava-code, |_| true).await {
+        match wait_for_event(&test.ava, |_| true).await {
             EventMsg::GuardianAssessment(event) => {
                 panic!("approved extension review should not start Guardian: {event:?}")
             }
@@ -229,7 +229,7 @@ async fn require_escalated_bypasses_extension_approval_and_runs_guardian() -> Re
                 .expect("set read-only permission profile");
         });
     let test = builder.build_with_auto_env(&server).await?;
-    test.ava-code
+    test.ava
         .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
             text: "retry the blocked command outside the sandbox".into(),
             text_elements: Vec::new(),
@@ -237,7 +237,7 @@ async fn require_escalated_bypasses_extension_approval_and_runs_guardian() -> Re
         .await?;
 
     loop {
-        match wait_for_event(&test.ava-code, |_| true).await {
+        match wait_for_event(&test.ava, |_| true).await {
             EventMsg::ExecApprovalRequest(event) => {
                 panic!("escalated command should not prompt the user: {event:?}")
             }
@@ -361,13 +361,13 @@ async fn required_model_bypasses_extension_approval_when_guardian_v2_is_disabled
     let test = builder.build_with_auto_env(&server).await?;
     assert!(!test.config.features.enabled(Feature::GuardianV2));
 
-    test.ava-code
+    test.ava
         .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
             text: reason.into(),
             text_elements: Vec::new(),
         }]))
         .await?;
-    let event = wait_for_event(&test.ava-code, |event| {
+    let event = wait_for_event(&test.ava, |event| {
         matches!(
             event,
             EventMsg::RequestPermissions(_) | EventMsg::TurnComplete(_)

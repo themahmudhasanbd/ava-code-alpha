@@ -213,6 +213,6 @@ async fn user_verification_mcp_round_trip_requires_proof_in_full_access() -> Res
         Some(json!({"action": "accept", "content": proof})),
     );
     thread.shutdown_and_wait().await?;
-    test.ava-code.shutdown_and_wait().await?;
+    test.ava.shutdown_and_wait().await?;
     Ok(())
 }

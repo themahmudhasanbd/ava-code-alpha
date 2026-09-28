@@ -2,6 +2,9 @@ name: AvA Mobile Build & CI
 
 on:
   push:
+    branches:
+      - main
+      - master
     tags:
       - 'v*'
     paths:
@@ -20,6 +23,13 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+          cache-dependency-path: 'ava-mobile/package.json'
+
       - name: Setup Java
         uses: actions/setup-java@v4
         with:
@@ -33,26 +43,40 @@ jobs:
           channel: 'stable'
           cache: true
 
-      - name: Install Flutter Dependencies
+      - name: Install Mobile Node Dependencies
         run: |
           cd ava-mobile
-          flutter pub get
+          npm install --legacy-peer-deps
 
-      - name: Build Android Release APK
+      - name: Typecheck Mobile React Native
         run: |
           cd ava-mobile
-          flutter build apk --release || true
+          npx tsc --noEmit
 
-      - name: Build Flutter Web Bundle
+      - name: Build Flutter v1 Android APK
+        run: |
+          if [ -d "ava-mobile/v1" ]; then
+            cd ava-mobile/v1
+            flutter pub get
+            flutter build apk --release || true
+          fi
+
+      - name: Prebuild & Assemble Android APK (Expo v2)
         run: |
           cd ava-mobile
-          flutter build web --release || true
+          npx expo prebuild --platform android --clean || true
+          if [ -d "android" ] && [ -f "android/gradlew" ]; then
+            cd android
+            chmod +x gradlew
+            ./gradlew assembleRelease || ./gradlew assembleDebug || true
+          fi
 
       - name: Upload Mobile Artifacts
         uses: actions/upload-artifact@v4
         with:
           name: ava-mobile-artifacts
           path: |
-            ava-mobile/build/app/outputs/flutter-apk/*.apk
-            ava-mobile/build/web/
+            ava-mobile/android/app/build/outputs/apk/**/*.apk
+            ava-mobile/v1/build/app/outputs/flutter-apk/*.apk
+            ava-mobile/dist/
           if-no-files-found: warn

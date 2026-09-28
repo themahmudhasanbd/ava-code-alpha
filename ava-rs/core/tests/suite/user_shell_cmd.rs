@@ -120,7 +120,7 @@ async fn user_shell_command_without_local_environment_emits_error() -> anyhow::R
     let mut builder = test_ava();
     let test = builder.build(&server).await?;
     submit_thread_settings(
-        &test.ava-code,
+        &test.ava,
         ThreadSettingsOverrides {
             environments: Some(ava_protocol::protocol::TurnEnvironmentSelections::new(
                 test.config.cwd.clone(),
@@ -131,7 +131,7 @@ async fn user_shell_command_without_local_environment_emits_error() -> anyhow::R
     )
     .await?;
 
-    test.ava-code
+    test.ava
         .submit(Op::RunUserShellCommand {
             command: "echo shell".to_string(),
             timeout_ms: None,
@@ -139,7 +139,7 @@ async fn user_shell_command_without_local_environment_emits_error() -> anyhow::R
         .await?;
 
     let EventMsg::Error(error) =
-        wait_for_event(&test.ava-code, |event| matches!(event, EventMsg::Error(_))).await
+        wait_for_event(&test.ava, |event| matches!(event, EventMsg::Error(_))).await
     else {
         unreachable!()
     };
@@ -158,7 +158,7 @@ async fn user_shell_cmd_can_be_interrupted() {
         .build(&server)
         .await
         .expect("create new conversation");
-    let ava = &fixture.ava-code;
+    let ava = &fixture.ava;
 
     // Start a long-running command and then interrupt it before its deadline.
     ava
@@ -207,7 +207,7 @@ async fn user_shell_command_honors_default_and_extended_deadlines() -> anyhow::R
             );
         }
         submit_thread_settings(
-            &fixture.ava-code,
+            &fixture.ava,
             ThreadSettingsOverrides {
                 environments: Some(TurnEnvironmentSelections::new(local_cwd, environments)),
                 ..Default::default()
@@ -221,7 +221,7 @@ async fn user_shell_command_honors_default_and_extended_deadlines() -> anyhow::R
                 timeout_ms,
             })
             .await?;
-        wait_for_event(&fixture.ava-code, |event| {
+        wait_for_event(&fixture.ava, |event| {
             matches!(event, EventMsg::ExecCommandOutputDelta(delta)
                 if String::from_utf8_lossy(&delta.chunk).contains("shell-timeout-ready"))
         })
@@ -229,7 +229,7 @@ async fn user_shell_command_honors_default_and_extended_deadlines() -> anyhow::R
 
         let completed = async {
             loop {
-                let event = fixture.ava-code.next_event().await.expect("read shell event");
+                let event = fixture.ava.next_event().await.expect("read shell event");
                 if let EventMsg::ExecCommandEnd(end) = event.msg {
                     break end;
                 }
@@ -255,7 +255,7 @@ async fn user_shell_command_honors_default_and_extended_deadlines() -> anyhow::R
         assert_eq!(end.exit_code, -1);
         assert!(end.aggregated_output.contains("Timeout"));
         assert!(end.aggregated_output.contains("shell-timeout-ready"));
-        wait_for_event(&fixture.ava-code, |event| {
+        wait_for_event(&fixture.ava, |event| {
             matches!(event, EventMsg::TurnComplete(_))
         })
         .await;
@@ -329,7 +329,7 @@ async fn user_shell_command_does_not_replace_active_turn() -> anyhow::Result<()>
         )
         .await?;
 
-    let _ = wait_for_event_match(&fixture.ava-code, |ev| match ev {
+    let _ = wait_for_event_match(&fixture.ava, |ev| match ev {
         EventMsg::ExecCommandBegin(event)
             if event.source == ExecCommandSource::UnifiedExecStartup =>
         {
@@ -355,7 +355,7 @@ async fn user_shell_command_does_not_replace_active_turn() -> anyhow::Result<()>
     let mut saw_user_shell_end = false;
     let mut saw_turn_complete = false;
     for _ in 0..200 {
-        let event = timeout(Duration::from_secs(20), fixture.ava-code.next_event())
+        let event = timeout(Duration::from_secs(20), fixture.ava.next_event())
             .await
             .context("timed out waiting for event")?
             .context("event stream ended unexpectedly")?;
@@ -410,14 +410,14 @@ async fn user_shell_command_history_is_persisted_and_shared_with_model() -> anyh
     #[cfg(not(windows))]
     let command = r#"sh -c "printf '%s' \"${AVA_SANDBOX:-not-set}\"""#.to_string();
 
-    test.ava-code
+    test.ava
         .submit(Op::RunUserShellCommand {
             command: command.clone(),
             timeout_ms: None,
         })
         .await?;
 
-    let begin_event = wait_for_event_match(&test.ava-code, |ev| match ev {
+    let begin_event = wait_for_event_match(&test.ava, |ev| match ev {
         EventMsg::ExecCommandBegin(event) => Some(event.clone()),
         _ => None,
     })
@@ -431,7 +431,7 @@ async fn user_shell_command_history_is_persisted_and_shared_with_model() -> anyh
         begin_event.command
     );
 
-    let delta_event = wait_for_event_match(&test.ava-code, |ev| match ev {
+    let delta_event = wait_for_event_match(&test.ava, |ev| match ev {
         EventMsg::ExecCommandOutputDelta(event) => Some(event.clone()),
         _ => None,
     })
@@ -441,7 +441,7 @@ async fn user_shell_command_history_is_persisted_and_shared_with_model() -> anyh
         String::from_utf8(delta_event.chunk.clone()).expect("user command chunk is valid utf-8");
     assert_eq!(chunk_text.trim(), "not-set");
 
-    let end_event = wait_for_event_match(&test.ava-code, |ev| match ev {
+    let end_event = wait_for_event_match(&test.ava, |ev| match ev {
         EventMsg::ExecCommandEnd(event) => Some(event.clone()),
         _ => None,
     })
@@ -449,7 +449,7 @@ async fn user_shell_command_history_is_persisted_and_shared_with_model() -> anyh
     assert_eq!(end_event.exit_code, 0);
     assert_eq!(end_event.stdout.trim(), "not-set");
 
-    let _ = wait_for_event(&test.ava-code, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
+    let _ = wait_for_event(&test.ava, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
 
     let responses = vec![responses::sse(vec![
         responses::ev_response_created("resp-1"),
@@ -498,7 +498,7 @@ async fn user_shell_command_does_not_set_network_sandbox_env_var() -> anyhow::Re
     let command =
         r#"sh -c "printf '%s' \"${AVA_SANDBOX_NETWORK_DISABLED:-not-set}\"""#.to_string();
 
-    test.ava-code
+    test.ava
         .submit(Op::RunUserShellCommand {
             command,
             timeout_ms: None,
@@ -510,7 +510,7 @@ async fn user_shell_command_does_not_set_network_sandbox_env_var() -> anyhow::Re
         stdout,
         stderr,
         ..
-    } = wait_for_event_match(&test.ava-code, |ev| match ev {
+    } = wait_for_event_match(&test.ava, |ev| match ev {
         EventMsg::ExecCommandEnd(event) => Some(event.clone()),
         _ => None,
     })
@@ -542,21 +542,21 @@ async fn user_shell_command_output_is_truncated_in_history() -> anyhow::Result<(
     #[cfg(not(windows))]
     let command = "seq 1 400".to_string();
 
-    test.ava-code
+    test.ava
         .submit(Op::RunUserShellCommand {
             command: command.clone(),
             timeout_ms: None,
         })
         .await?;
 
-    let end_event = wait_for_event_match(&test.ava-code, |ev| match ev {
+    let end_event = wait_for_event_match(&test.ava, |ev| match ev {
         EventMsg::ExecCommandEnd(event) => Some(event.clone()),
         _ => None,
     })
     .await;
     assert_eq!(end_event.exit_code, 0);
 
-    let _ = wait_for_event(&test.ava-code, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
+    let _ = wait_for_event(&test.ava, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
 
     let responses = vec![responses::sse(vec![
         responses::ev_response_created("resp-1"),

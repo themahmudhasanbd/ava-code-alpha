@@ -112,7 +112,7 @@ async fn canonical_plugin_disable_overrides_shared_connector_and_can_be_cleared(
             ],
         )
         .await;
-        test.ava-code
+        test.ava
             .start_or_steer_turn(
                 TurnInputRequest::user_input(vec![UserInput::Text {
                     text: "Find the calendar tool.".to_string(),
@@ -124,7 +124,7 @@ async fn canonical_plugin_disable_overrides_shared_connector_and_can_be_cleared(
                 }),
             )
             .await?;
-        wait_for_event(&test.ava-code, |event| {
+        wait_for_event(&test.ava, |event| {
             matches!(event, EventMsg::TurnComplete(_))
         })
         .await;

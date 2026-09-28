@@ -579,7 +579,7 @@ async fn run_cloud_plugin_projection_scenarios() -> anyhow::Result<()> {
                 root_path.join(".mcp.json"),
                 json!({"mcpServers": {"notes": declaration}}).to_string(),
             )?;
-            test.ava-code
+            test.ava
                 .environment_ready(
                     &selection,
                     EnvironmentConfig {
@@ -693,7 +693,7 @@ async fn run_cloud_plugin_projection_scenarios() -> anyhow::Result<()> {
             cloud_enabled && cloud_available && !cloud_empty,
             "{case}"
         );
-        test.ava-code.shutdown_and_wait().await?;
+        test.ava.shutdown_and_wait().await?;
     }
     Ok(())
 }

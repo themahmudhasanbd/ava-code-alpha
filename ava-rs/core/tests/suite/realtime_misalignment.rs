@@ -88,7 +88,7 @@ async fn misalignment_retires_late_voice_handoff_before_it_starts_a_turn() -> Re
         config.realtime.version = RealtimeWsVersion::V1;
     });
     let test = builder.build_with_auto_env(&api_server).await?;
-    test.ava-code
+    test.ava
         .submit(Op::RealtimeConversationStart(ConversationStartParams {
             client_managed_handoffs: false,
             delegation_ack_filler: None,
@@ -112,7 +112,7 @@ async fn misalignment_retires_late_voice_handoff_before_it_starts_a_turn() -> Re
         }))
         .await?;
 
-    wait_for_event_match(&test.ava-code, |event| match event {
+    wait_for_event_match(&test.ava, |event| match event {
         EventMsg::Error(error)
             if error.ava_error_info == Some(AvaErrorInfo::MisalignmentPolicyViolation) =>
         {
@@ -123,7 +123,7 @@ async fn misalignment_retires_late_voice_handoff_before_it_starts_a_turn() -> Re
     .await;
     assert_eq!(first_response.requests().len(), 1);
     late_handoff_tx.send(()).expect("sideband still open");
-    wait_for_event_match(&test.ava-code, |event| match event {
+    wait_for_event_match(&test.ava, |event| match event {
         EventMsg::RealtimeConversationRealtime(RealtimeConversationRealtimeEvent {
             payload: RealtimeEvent::HandoffRequested(handoff),
         }) if handoff.handoff_id == "late_handoff" => Some(()),

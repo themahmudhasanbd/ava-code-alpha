@@ -176,7 +176,7 @@ async fn ephemeral_fork_shares_cache_routing_but_keeps_session_identity() -> Res
     .await;
     let mut test = test_ava().build_with_auto_env(&server).await?;
     test.submit_text_turn("parent").await?;
-    test.ava-code.flush_rollout().await?;
+    test.ava.flush_rollout().await?;
     let parent_session = test.session_configured.session_id.to_string();
     let mut config = test.config.clone();
     config.ephemeral = true;
@@ -185,15 +185,15 @@ async fn ephemeral_fork_shares_cache_routing_but_keeps_session_identity() -> Res
         .fork_thread(
             ForkSnapshot::TruncateBeforeNthUserMessage(usize::MAX),
             StartThreadOptions {
-                environments: Some(test.ava-code.environment_selections().await),
+                environments: Some(test.ava.environment_selections().await),
                 ..StartThreadOptions::new(config)
             },
-            test.ava-code.rollout_path().expect("parent rollout"),
+            test.ava.rollout_path().expect("parent rollout"),
         )
         .await?;
     let fork_session = fork.session_configured.session_id.to_string();
     assert_ne!(fork_session, parent_session);
-    test.ava-code = fork.thread;
+    test.ava = fork.thread;
     test.submit_text_turn("side").await?;
     let requests = requests.requests();
     let body = requests[1].body_json();

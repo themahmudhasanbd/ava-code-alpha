@@ -68,7 +68,7 @@ async fn standalone_ava_apps_respects_protocol_setting(
         .build_with_auto_env(&server)
         .await?;
 
-    wait_for_mcp_server(&fixture.ava-code, AVA_APPS_MCP_SERVER_NAME).await?;
+    wait_for_mcp_server(&fixture.ava, AVA_APPS_MCP_SERVER_NAME).await?;
     let methods = server
         .received_requests()
         .await
@@ -112,7 +112,7 @@ async fn apps_call_survives_catalog_restoration_while_awaiting_approval() -> any
         })
         .build_with_auto_env(&server)
         .await?;
-    wait_for_mcp_server(&fixture.ava-code, AVA_APPS_MCP_SERVER_NAME).await?;
+    wait_for_mcp_server(&fixture.ava, AVA_APPS_MCP_SERVER_NAME).await?;
     let call = responses::mount_sse_once(
         &server,
         responses::sse(vec![
@@ -142,7 +142,7 @@ async fn apps_call_survives_catalog_restoration_while_awaiting_approval() -> any
             }),
         )
         .await?;
-    let EventMsg::ElicitationRequest(approval) = wait_for_event(&fixture.ava-code, |event| {
+    let EventMsg::ElicitationRequest(approval) = wait_for_event(&fixture.ava, |event| {
         matches!(
             event,
             EventMsg::ElicitationRequest(_) | EventMsg::TurnComplete(_)
@@ -182,7 +182,7 @@ async fn apps_call_survives_catalog_restoration_while_awaiting_approval() -> any
             meta: None,
         })
         .await?;
-    wait_for_event(&fixture.ava-code, |event| {
+    wait_for_event(&fixture.ava, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;

@@ -77,7 +77,7 @@ export function useSessions() {
   return useQuery({
     queryKey: keys.sessions,
     queryFn: () => listSessions(rpc!),
-    enabled: !!rpc && status === "online",
+    enabled: !!rpc,
     refetchInterval: status === "online" ? 3000 : false,
   });
 }
@@ -87,14 +87,14 @@ export function useSessionHistory(id: string | null) {
   return useQuery({
     queryKey: keys.session(id ?? ""),
     queryFn: () => readSession(rpc!, id!),
-    enabled: !!rpc && !!id && status === "online",
+    enabled: !!rpc && !!id,
     refetchInterval: status === "online" ? 15000 : false,
   });
 }
 
 export function useModels() {
-  const { rpc, status } = useAva();
-  return useQuery({ queryKey: keys.models, queryFn: () => listModels(rpc!), enabled: !!rpc && status === "online", staleTime: 300_000 });
+  const { rpc } = useAva();
+  return useQuery({ queryKey: keys.models, queryFn: () => listModels(rpc!), enabled: !!rpc, staleTime: 300_000 });
 }
 
 export function useMcpServers() {
@@ -140,11 +140,11 @@ export function useRenameSession() {
 }
 
 export function useUserProfile() {
-  const { rpc, status } = useAva();
+  const { rpc } = useAva();
   return useQuery({
     queryKey: keys.userProfile,
     queryFn: () => readUserProfile(rpc!),
-    enabled: !!rpc && status === "online",
+    enabled: !!rpc,
     staleTime: 60_000,
   });
 }

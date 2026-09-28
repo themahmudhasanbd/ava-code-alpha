@@ -40,8 +40,27 @@ export async function listMedia(rpc: RpcClient, dir: string): Promise<MediaItem[
 
 /** Reads a media file and returns a data URL for previewing it. */
 export async function readMediaUrl(rpc: RpcClient, path: string): Promise<string> {
-  const res = await rpc.call<{ dataBase64?: string }>("fs/readFile", { path });
-  return `data:${MIME[ext(path)] ?? "application/octet-stream"};base64,${res.dataBase64 ?? ""}`;
+  if (!path || !path.trim()) return "";
+  const clean = path.trim();
+  if (
+    clean.startsWith("data:image/") ||
+    clean.startsWith("http://") ||
+    clean.startsWith("https://") ||
+    clean.startsWith("blob:") ||
+    clean.startsWith("file://")
+  ) {
+    return clean;
+  }
+  try {
+    const res = await rpc.call<{ dataBase64?: string }>("fs/readFile", { path: clean });
+    if (!res || typeof res.dataBase64 !== "string" || res.dataBase64.length < 10) {
+      return "";
+    }
+    const mime = MIME[ext(clean)] || "image/png";
+    return `data:${mime};base64,${res.dataBase64}`;
+  } catch (err) {
+    return "";
+  }
 }
 
 export const removeMedia = (rpc: RpcClient, path: string) => rpc.call("fs/remove", { path });

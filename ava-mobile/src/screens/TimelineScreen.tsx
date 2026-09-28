@@ -45,7 +45,8 @@ import { Shimmer } from "@/components/ai-elements/shimmer";
 import { formatDuration } from "@/components/chat/message-parts";
 import type { ChatMessage, MessagePart, PlanStep } from "@/core/types";
 import { font, mono } from "@/theme/fonts";
-import { displayToolName, getToolIcon } from "@/components/chat/tool-icons";
+import { displayToolName, getToolIcon, getToolSubtitle } from "@/components/chat/tool-icons";
+import { MediaPreviewGallery } from "@/components/chat/media-preview-gallery";
 import { useTheme } from "@/theme/colors";
 
 if (Platform.OS === "android" && UIManager.setLayoutAnimationEnabledExperimental) {
@@ -290,6 +291,10 @@ export function TimelineScreen({ route, navigation }: Props) {
         }
 
         if (part.kind === "notice") {
+          // Exclude transient transport notices (e.g. connected, info notices with no body)
+          if (part.meta?.tone === "info" || part.text?.toLowerCase().includes("connected") || !part.text?.trim()) {
+            continue;
+          }
           parts.push({
             ...part,
             turnId: msg.id,
@@ -381,7 +386,7 @@ export function TimelineScreen({ route, navigation }: Props) {
           style={[
             styles.headerBackBtn,
             {
-              backgroundColor: colors.card,
+              backgroundColor: "transparent",
               borderColor: colors.border,
             },
           ]}
@@ -397,7 +402,7 @@ export function TimelineScreen({ route, navigation }: Props) {
           style={[
             styles.segmentContainer,
             {
-              backgroundColor: colors.card,
+              backgroundColor: "transparent",
               borderColor: colors.border,
             },
           ]}
@@ -494,7 +499,7 @@ export function TimelineScreen({ route, navigation }: Props) {
                       style={[
                         styles.turnCapsule,
                         {
-                          backgroundColor: colors.card,
+                          backgroundColor: "transparent",
                           borderColor: isSelected ? colors.primary : colors.border,
                         },
                         isSelected && {
@@ -538,7 +543,7 @@ export function TimelineScreen({ route, navigation }: Props) {
               style={[
                 styles.statsStrip,
                 {
-                  backgroundColor: colors.card,
+                  backgroundColor: "transparent",
                   borderBottomColor: colors.border,
                 },
               ]}
@@ -626,7 +631,7 @@ export function TimelineScreen({ route, navigation }: Props) {
                     style={[
                       styles.promptCard,
                       {
-                        backgroundColor: colors.card,
+                        backgroundColor: "transparent",
                         borderColor: colors.border,
                       },
                     ]}
@@ -670,7 +675,7 @@ export function TimelineScreen({ route, navigation }: Props) {
                         {(isReversed ? [...allParts].reverse() : allParts).map((part, pIdx) => {
                           const isExpanded = !!expandedNodes[part.id];
                           const isErr = part.status === "error";
-                          const isRunning = part.status === "running";
+                          const isRunning = isTargetTurnActive && part.status === "running";
 
                           // Direct text response node in timeline sequence
                           if (part.nodeType === "text") {
@@ -684,7 +689,7 @@ export function TimelineScreen({ route, navigation }: Props) {
                                     style={[
                                       styles.nodeBullet,
                                       {
-                                        backgroundColor: colors.card,
+                                        backgroundColor: colors.background,
                                         borderColor: isRunning ? colors.primary : colors.border,
                                       },
                                     ]}
@@ -703,12 +708,33 @@ export function TimelineScreen({ route, navigation }: Props) {
                                     style={[
                                       styles.outputCard,
                                       {
-                                        backgroundColor: colors.card,
+                                        backgroundColor: "transparent",
                                         borderColor: colors.border,
                                       },
                                     ]}
                                   >
-                                    <View style={styles.outputTopRow}>
+                                    {/* Text Content First */}
+                                    {part.text ? (
+                                      <RichResponse text={part.text} />
+                                    ) : isRunning ? (
+                                      <Text
+                                        style={[
+                                          styles.generatingPlaceholder,
+                                          font("regular"),
+                                          { color: colors.mutedForeground },
+                                        ]}
+                                      >
+                                        Generating response…
+                                      </Text>
+                                    ) : null}
+
+                                    {/* Media attached to text/response */}
+                                    {part.meta?.media && part.meta.media.length > 0 ? (
+                                      <MediaPreviewGallery media={part.meta.media} />
+                                    ) : null}
+
+                                    {/* Copy Button & Streaming Indicator AFTER the text */}
+                                    <View style={styles.outputBottomRow}>
                                       {isRunning ? (
                                         <View style={styles.streamingIndicator}>
                                           <ActivityIndicator size={9} color={colors.primary} />
@@ -747,20 +773,6 @@ export function TimelineScreen({ route, navigation }: Props) {
                                         </TouchableOpacity>
                                       ) : null}
                                     </View>
-
-                                    {part.text ? (
-                                      <RichResponse text={part.text} />
-                                    ) : isRunning ? (
-                                      <Text
-                                        style={[
-                                          styles.generatingPlaceholder,
-                                          font("regular"),
-                                          { color: colors.mutedForeground },
-                                        ]}
-                                      >
-                                        Generating response…
-                                      </Text>
-                                    ) : null}
                                   </View>
                                 </View>
                               </View>
@@ -790,12 +802,12 @@ export function TimelineScreen({ route, navigation }: Props) {
 
                           const toolNamePretty =
                             part.nodeType === "tool"
-                              ? displayToolName(part.toolName || part.meta?.command || "tool")
+                              ? displayToolName(part.toolName || "Tool")
                               : "";
 
-                          const titleText =
+                          const subtitle =
                             part.nodeType === "tool"
-                              ? part.meta?.command || (typeof part.input === "string" ? part.input : part.input ? JSON.stringify(part.input) : toolNamePretty)
+                              ? getToolSubtitle(part)
                               : part.text || "";
 
                           return (
@@ -806,7 +818,7 @@ export function TimelineScreen({ route, navigation }: Props) {
                                   style={[
                                     styles.nodeBullet,
                                     {
-                                      backgroundColor: colors.card,
+                                      backgroundColor: colors.background,
                                       borderColor: isErr
                                         ? "rgba(239, 68, 68, 0.4)"
                                         : isRunning
@@ -831,7 +843,7 @@ export function TimelineScreen({ route, navigation }: Props) {
                                   style={[
                                     styles.nodeHeader,
                                     {
-                                      backgroundColor: colors.card,
+                                      backgroundColor: "transparent",
                                       borderColor: colors.border,
                                     },
                                     isExpanded && styles.nodeHeaderExpanded,
@@ -855,18 +867,22 @@ export function TimelineScreen({ route, navigation }: Props) {
                                       </View>
                                     ) : null}
 
-                                    <View style={{ flex: 1 }}>
-                                      <InlineText
-                                        text={titleText}
-                                        numberOfLines={isExpanded ? undefined : 1}
-                                        style={[
-                                          styles.nodeTitle,
-                                          font("regular"),
-                                          { color: colors.foreground, fontSize: 13 },
-                                          isRunning && { color: colors.primary },
-                                        ]}
-                                      />
-                                    </View>
+                                    {subtitle ? (
+                                      <View style={{ flex: 1 }}>
+                                        <InlineText
+                                          text={subtitle}
+                                          numberOfLines={isExpanded ? undefined : 1}
+                                          style={[
+                                            styles.nodeTitle,
+                                            font("regular"),
+                                            { color: colors.foreground, fontSize: 13 },
+                                            isRunning && { color: colors.primary },
+                                          ]}
+                                        />
+                                      </View>
+                                    ) : (
+                                      <View style={{ flex: 1 }} />
+                                    )}
                                   </View>
 
                                   <View style={styles.nodeHeaderMeta}>
@@ -896,7 +912,7 @@ export function TimelineScreen({ route, navigation }: Props) {
                                     style={[
                                       styles.nodeContent,
                                       {
-                                        backgroundColor: colors.card,
+                                        backgroundColor: "transparent",
                                         borderColor: colors.border,
                                       },
                                     ]}
@@ -914,7 +930,7 @@ export function TimelineScreen({ route, navigation }: Props) {
                                     {/* Tool Input / Command */}
                                     {part.meta?.command ? (
                                       <View style={[styles.blockContainer, { borderColor: colors.border }]}>
-                                        <View style={[styles.blockHeader, { backgroundColor: colors.secondary }]}>
+                                        <View style={[styles.blockHeader, { borderBottomColor: colors.border }]}>
                                           <Text style={[styles.blockLabel, mono("medium"), { color: colors.mutedForeground }]}>
                                             COMMAND
                                           </Text>
@@ -937,7 +953,7 @@ export function TimelineScreen({ route, navigation }: Props) {
                                       </View>
                                     ) : part.input ? (
                                       <View style={[styles.blockContainer, { borderColor: colors.border }]}>
-                                        <View style={[styles.blockHeader, { backgroundColor: colors.secondary }]}>
+                                        <View style={[styles.blockHeader, { borderBottomColor: colors.border }]}>
                                           <Text style={[styles.blockLabel, mono("medium"), { color: colors.mutedForeground }]}>
                                             INPUT
                                           </Text>
@@ -953,7 +969,7 @@ export function TimelineScreen({ route, navigation }: Props) {
                                     {/* Tool Output */}
                                     {part.output ? (
                                       <View style={[styles.blockContainer, { borderColor: colors.border }]}>
-                                        <View style={[styles.blockHeader, { backgroundColor: colors.secondary }]}>
+                                        <View style={[styles.blockHeader, { borderBottomColor: colors.border }]}>
                                           <Text style={[styles.blockLabel, mono("medium"), { color: colors.mutedForeground }]}>
                                             OUTPUT
                                           </Text>
@@ -969,7 +985,7 @@ export function TimelineScreen({ route, navigation }: Props) {
                                           </TouchableOpacity>
                                         </View>
                                         <CodeBlock
-                                          code={part.output.trim()}
+                                          code={part.output}
                                           language={
                                             part.output.trim().startsWith("{") ||
                                             part.output.trim().startsWith("[")
@@ -981,6 +997,11 @@ export function TimelineScreen({ route, navigation }: Props) {
                                           }
                                         />
                                       </View>
+                                    ) : null}
+
+                                    {/* Attached Media & Screenshots */}
+                                    {part.meta?.media && part.meta.media.length > 0 ? (
+                                      <MediaPreviewGallery media={part.meta.media} title="Attached Media & Screenshots" />
                                     ) : null}
 
                                     {/* Plan Steps */}
@@ -1086,7 +1107,7 @@ export function TimelineScreen({ route, navigation }: Props) {
                       style={[
                         styles.fileItemCard,
                         {
-                          backgroundColor: colors.card,
+                          backgroundColor: "transparent",
                           borderColor: colors.border,
                         },
                       ]}
@@ -1151,12 +1172,12 @@ export function TimelineScreen({ route, navigation }: Props) {
           )}
 
           {/* ── Minimal Bottom Live Status Bar ── */}
-          {isTargetTurnActive && (
+          {isTargetTurnActive && allParts.some((p) => p.status === "running") && (
             <View
               style={[
                 styles.liveFooter,
                 {
-                  backgroundColor: colors.card,
+                  backgroundColor: "transparent",
                   borderTopColor: colors.border,
                 },
               ]}
@@ -1413,6 +1434,7 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     paddingHorizontal: 8,
     paddingVertical: 4,
+    borderBottomWidth: StyleSheet.hairlineWidth,
   },
   blockLabel: {
     fontSize: 10,
@@ -1439,14 +1461,12 @@ const styles = StyleSheet.create({
   planTextDone: {
     textDecorationLine: "line-through",
   },
-  outputBox: {
-    marginTop: 8,
-  },
   outputCard: {
-    padding: 12,
-    borderRadius: 10,
+    padding: 10,
+    borderRadius: 8,
     borderWidth: 1,
     position: "relative",
+    gap: 6,
   },
   streamingIndicator: {
     flexDirection: "row",
@@ -1460,10 +1480,12 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontStyle: "italic",
   },
-  outputTopRow: {
+  outputBottomRow: {
     flexDirection: "row",
-    justifyContent: "flex-end",
-    marginBottom: 6,
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginTop: 6,
+    paddingTop: 4,
   },
   outputCopyBtn: {
     flexDirection: "row",
@@ -1472,6 +1494,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 6,
     paddingVertical: 2,
     borderRadius: 4,
+    backgroundColor: "transparent",
   },
   outputCopyText: {
     fontSize: 10.5,

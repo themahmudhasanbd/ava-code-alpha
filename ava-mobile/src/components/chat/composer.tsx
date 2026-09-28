@@ -4,6 +4,7 @@ import {
   ActivityIndicator,
   Animated,
   Dimensions,
+  Easing,
   Modal,
   Platform,
   ScrollView,
@@ -31,6 +32,8 @@ import {
   Plus,
   PlusCircle,
   Search,
+  Pause,
+  Play,
   ShieldCheck,
   Square,
   Terminal as TerminalSquare,
@@ -43,15 +46,17 @@ import { useAva } from "@/state/ava-provider";
 import { useDirectory, useMcpServers, useModels } from "@/state/queries";
 import type { ChatStatus } from "@/state/use-chat";
 import { MediaSelectorModal, type SelectedMedia } from "@/components/media/MediaSelectorModal";
-import { COLORS } from "@/theme/colors";
-import { font } from "@/theme/fonts";
+import { COLORS, useTheme } from "@/theme/colors";
+import { font, mono } from "@/theme/fonts";
 import { joinPath } from "@/core/api/files";
 import {
   filterSlashCommands,
+  MOBILE_SLASH_COMMANDS,
   type SlashCommandItem,
 } from "./slash-commands";
 import {
   buildFileMentions,
+  getFileMentionIcon,
   parseMentionQuery,
   STATIC_CONTEXT_MENTIONS,
   type MentionItem,
@@ -78,6 +83,7 @@ interface Props {
   onChange: (val: string) => void;
   onSubmit: (text: string, attachments?: AttachedItem[]) => void;
   onStop: () => void;
+  onResume?: () => void;
   onClear: () => void;
   status?: ChatStatus | string;
   chatStatus?: ChatStatus | string;
@@ -192,19 +198,68 @@ function FloatingPopupModal({
   searchQuery?: string;
   onSearchChange?: (q: string) => void;
 }) {
+  const slideAnim = useRef(new Animated.Value(320)).current;
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const [mounted, setMounted] = useState(open);
+
+  useEffect(() => {
+    if (open) {
+      setMounted(true);
+      Animated.parallel([
+        Animated.timing(fadeAnim, {
+          toValue: 1,
+          duration: 200,
+          easing: Easing.out(Easing.cubic),
+          useNativeDriver: Platform.OS !== "web",
+        }),
+        Animated.spring(slideAnim, {
+          toValue: 0,
+          damping: 24,
+          stiffness: 280,
+          mass: 0.8,
+          useNativeDriver: Platform.OS !== "web",
+        }),
+      ]).start();
+    } else {
+      Animated.parallel([
+        Animated.timing(fadeAnim, {
+          toValue: 0,
+          duration: 160,
+          easing: Easing.in(Easing.cubic),
+          useNativeDriver: Platform.OS !== "web",
+        }),
+        Animated.timing(slideAnim, {
+          toValue: 320,
+          duration: 160,
+          easing: Easing.in(Easing.cubic),
+          useNativeDriver: Platform.OS !== "web",
+        }),
+      ]).start(() => {
+        setMounted(false);
+      });
+    }
+  }, [open, fadeAnim, slideAnim]);
+
+  if (!mounted) return null;
+
   return (
     <Modal
-      visible={open}
+      visible={mounted}
       transparent
       statusBarTranslucent
-      animationType="fade"
+      animationType="none"
       onRequestClose={onClose}
     >
       <TouchableWithoutFeedback onPress={onClose}>
-        <View style={styles.modalBackdrop}>
+        <Animated.View style={[styles.modalBackdrop, { opacity: fadeAnim }]}>
           <BlurView intensity={85} tint="dark" style={StyleSheet.absoluteFill} />
           <TouchableWithoutFeedback onPress={() => {}}>
-            <View style={styles.bottomSheetCard}>
+            <Animated.View
+              style={[
+                styles.bottomSheetCard,
+                { transform: [{ translateY: slideAnim }] },
+              ]}
+            >
               <View style={styles.sheetHandleBar} />
 
               <View style={styles.popupHeader}>
@@ -261,9 +316,9 @@ function FloatingPopupModal({
               >
                 {children}
               </ScrollView>
-            </View>
+            </Animated.View>
           </TouchableWithoutFeedback>
-        </View>
+        </Animated.View>
       </TouchableWithoutFeedback>
     </Modal>
   );
@@ -276,6 +331,7 @@ export const Composer = forwardRef<TextInput, Props>(
       onChange,
       onSubmit,
       onStop,
+      onResume,
       onClear,
       status,
       chatStatus,
@@ -284,8 +340,10 @@ export const Composer = forwardRef<TextInput, Props>(
     ref
   ) {
     const effectiveStatus = (status || chatStatus || "idle") as ChatStatus;
+    const { colors, isDark } = useTheme();
     const {
       rpc,
+      status: connectionStatus,
       modelId,
       setModelId,
       effort,
@@ -502,7 +560,7 @@ export const Composer = forwardRef<TextInput, Props>(
     };
 
     const handleSend = () => {
-      if (busy) return;
+      console.log("[DEBUG COMPOSER handleSend]", { value, effectiveStatus, connectionStatus, hasRpc: !!rpc });
       if (!value.trim() && attachments.length === 0) return;
       setShowSlashPopup(false);
       setShowMentionPopup(false);
@@ -537,6 +595,112 @@ export const Composer = forwardRef<TextInput, Props>(
     };
 
     // ── Slash Command Handling ──
+    
+    // ── Recognized Active Tokens (Highlight / commands and @ mentions) ──
+    interface ActiveHighlightedToken {
+      id: string;
+      type: "slash" | "mention";
+      raw: string;
+      label: string;
+      category?: string;
+      icon: LucideIcon;
+      isMcp?: boolean;
+    }
+
+    const activeHighlightedTokens = useMemo<ActiveHighlightedToken[]>(() => {
+      if (!value) return [];
+      const tokens: ActiveHighlightedToken[] = [];
+      const words = value.split(/\s+/);
+      const seen = new Set<string>();
+
+      for (const word of words) {
+        if (!word || seen.has(word)) continue;
+
+        // Check registered slash commands
+        if (word.startsWith("/")) {
+          const cmdName = word.slice(1).toLowerCase();
+          const matchedCmd = MOBILE_SLASH_COMMANDS.find(
+            (c) =>
+              c.command.toLowerCase() === cmdName ||
+              c.label.toLowerCase() === word.toLowerCase()
+          );
+          if (matchedCmd) {
+            seen.add(word);
+            tokens.push({
+              id: `slash_${matchedCmd.command}`,
+              type: "slash",
+              raw: word,
+              label: matchedCmd.label,
+              category: matchedCmd.category,
+              icon: matchedCmd.icon,
+            });
+          }
+        }
+
+        // Check registered mentions (@workspace, @git, @diff, @memory, @mcp, @file)
+        if (word.startsWith("@")) {
+          const mentionKey = word.slice(1);
+          const matchedStatic = STATIC_CONTEXT_MENTIONS.find(
+            (m) =>
+              m.name.toLowerCase() === mentionKey.toLowerCase() ||
+              m.insertText.trim().toLowerCase() === word.toLowerCase()
+          );
+          if (matchedStatic) {
+            seen.add(word);
+            tokens.push({
+              id: `mention_${matchedStatic.id}`,
+              type: "mention",
+              raw: word,
+              label: matchedStatic.insertText.trim(),
+              category: matchedStatic.category,
+              icon: matchedStatic.icon,
+              isMcp: matchedStatic.category === "mcp",
+            });
+          } else {
+            const matchedMcp = mcpServers.find(
+              (s) => s.name.toLowerCase() === mentionKey.toLowerCase()
+            );
+            if (matchedMcp) {
+              seen.add(word);
+              tokens.push({
+                id: `mcp_${matchedMcp.name}`,
+                type: "mention",
+                raw: word,
+                label: `@${matchedMcp.name}`,
+                category: "mcp",
+                icon: Cpu,
+                isMcp: true,
+              });
+            } else if (
+              mentionKey.length > 1 &&
+              (mentionKey.includes("/") || mentionKey.includes("."))
+            ) {
+              const isDir = mentionKey.endsWith("/");
+              const icon = getFileMentionIcon(mentionKey, isDir);
+              seen.add(word);
+              tokens.push({
+                id: `file_${mentionKey}`,
+                type: "mention",
+                raw: word,
+                label: `@${mentionKey}`,
+                category: isDir ? "folder" : "file",
+                icon,
+              });
+            }
+          }
+        }
+      }
+
+      return tokens;
+    }, [value, mcpServers]);
+
+    const handleRemoveToken = (tokenRaw: string) => {
+      const escaped = tokenRaw.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      const regex = new RegExp(`(^|\\s)${escaped}(\\s|$)`, "g");
+      const next = value.replace(regex, " ").replace(/\s+/g, " ").trim();
+      onChange(next);
+    };
+
     const filteredSlashCommands = useMemo(() => {
       return filterSlashCommands(slashQuery);
     }, [slashQuery]);
@@ -729,6 +893,131 @@ export const Composer = forwardRef<TextInput, Props>(
             </View>
           )}
 
+          
+          {/* Active Highlighted Slash Commands & Context Mentions Bar */}
+          {activeHighlightedTokens.length > 0 && (
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.tokensRow}
+            >
+              {activeHighlightedTokens.map((token) => {
+                const Icon = token.icon;
+                const isSlash = token.type === "slash";
+                const isMcp = token.isMcp;
+
+                return (
+                  <View
+                    key={token.id}
+                    style={[
+                      styles.tokenChip,
+                      isSlash
+                        ? [
+                            styles.tokenChipSlash,
+                            {
+                              backgroundColor: isDark
+                                ? "rgba(99, 102, 241, 0.16)"
+                                : "rgba(79, 70, 229, 0.10)",
+                              borderColor: isDark
+                                ? "rgba(99, 102, 241, 0.35)"
+                                : "rgba(79, 70, 229, 0.25)",
+                            },
+                          ]
+                        : isMcp
+                        ? [
+                            styles.tokenChipMcp,
+                            {
+                              backgroundColor: isDark
+                                ? "rgba(168, 85, 247, 0.16)"
+                                : "rgba(147, 51, 234, 0.10)",
+                              borderColor: isDark
+                                ? "rgba(168, 85, 247, 0.35)"
+                                : "rgba(147, 51, 234, 0.25)",
+                            },
+                          ]
+                        : [
+                            styles.tokenChipMention,
+                            {
+                              backgroundColor: colors.secondary,
+                              borderColor: colors.border,
+                            },
+                          ],
+                    ]}
+                  >
+                    <Icon
+                      size={12}
+                      color={
+                        isSlash
+                          ? colors.primary
+                          : isMcp
+                          ? (isDark ? "#c084fc" : "#9333ea")
+                          : colors.foreground
+                      }
+                    />
+                    <Text
+                      style={[
+                        styles.tokenLabel,
+                        mono("semibold"),
+                        {
+                          color: isSlash
+                            ? colors.primary
+                            : isMcp
+                            ? (isDark ? "#c084fc" : "#9333ea")
+                            : colors.foreground,
+                        },
+                      ]}
+                    >
+                      {token.label}
+                    </Text>
+                    {token.category ? (
+                      <View
+                        style={[
+                          styles.tokenCatBadge,
+                          {
+                            backgroundColor: isSlash
+                              ? isDark
+                                ? "rgba(99, 102, 241, 0.25)"
+                                : "rgba(79, 70, 229, 0.15)"
+                              : isMcp
+                              ? isDark
+                                ? "rgba(168, 85, 247, 0.25)"
+                                : "rgba(147, 51, 234, 0.15)"
+                              : isDark
+                              ? "rgba(255, 255, 255, 0.12)"
+                              : "rgba(0, 0, 0, 0.06)",
+                          },
+                        ]}
+                      >
+                        <Text
+                          style={[
+                            styles.tokenCatText,
+                            font("medium"),
+                            {
+                              color: isSlash
+                                ? colors.primary
+                                : isMcp
+                                ? (isDark ? "#c084fc" : "#9333ea")
+                                : colors.mutedForeground,
+                            },
+                          ]}
+                        >
+                          {token.category}
+                        </Text>
+                      </View>
+                    ) : null}
+                    <TouchableOpacity
+                      onPress={() => handleRemoveToken(token.raw)}
+                      style={styles.tokenRemoveBtn}
+                      hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
+                    >
+                      <X size={11} color={colors.mutedForeground} />
+                    </TouchableOpacity>
+                  </View>
+                );
+              })}
+            </ScrollView>
+          )}
+
           {/* Live Voice Recording Bar */}
           {isRecording ? (
             <View style={styles.liveRecordingBar}>
@@ -774,6 +1063,16 @@ export const Composer = forwardRef<TextInput, Props>(
               value={value}
               onChangeText={onChange}
               onSelectionChange={(e) => setSelection(e.nativeEvent.selection)}
+              onKeyPress={(e: any) => {
+                if (
+                  Platform.OS === "web" &&
+                  e.nativeEvent?.key === "Enter" &&
+                  !e.nativeEvent?.shiftKey
+                ) {
+                  e.preventDefault?.();
+                  handleSend();
+                }
+              }}
               multiline
               autoCapitalize="sentences"
             />
@@ -836,17 +1135,37 @@ export const Composer = forwardRef<TextInput, Props>(
                 />
               </TouchableOpacity>
 
-              {/* If agent is busy, provide Stop/Pause button */}
-              {busy ? (
+              {/* Action Button: Disconnected / Busy / Paused / Ready */}
+              {connectionStatus !== "online" && !value.trim() && attachments.length === 0 ? (
+                <View style={styles.connectingBtn} accessibilityLabel="Connecting to server">
+                  <ActivityIndicator size="small" color={COLORS.primary} />
+                </View>
+              ) : effectiveStatus === "stopping" && !value.trim() && attachments.length === 0 ? (
+                <View style={styles.stopBtn}>
+                  <ActivityIndicator size="small" color={COLORS.destructiveForeground} />
+                </View>
+              ) : (effectiveStatus === "streaming" || effectiveStatus === "submitted") && !value.trim() && attachments.length === 0 ? (
                 <View style={styles.busyActionGroup}>
                   <TouchableOpacity
                     style={styles.stopBtn}
                     onPress={onStop}
                     activeOpacity={0.7}
+                    accessibilityRole="button"
+                    accessibilityLabel="Pause agent"
                   >
-                    <Square size={13} color={COLORS.destructiveForeground} fill={COLORS.destructiveForeground} />
+                    <Pause size={14} color={COLORS.destructiveForeground} fill={COLORS.destructiveForeground} />
                   </TouchableOpacity>
                 </View>
+              ) : effectiveStatus === "paused" && !value.trim() && attachments.length === 0 ? (
+                <TouchableOpacity
+                  style={[styles.sendBtn, styles.sendBtnActive, { backgroundColor: COLORS.primary }]}
+                  onPress={onResume || onStop}
+                  activeOpacity={0.7}
+                  accessibilityRole="button"
+                  accessibilityLabel="Resume agent"
+                >
+                  <Play size={13} color={COLORS.primaryForeground} fill={COLORS.primaryForeground} />
+                </TouchableOpacity>
               ) : (
                 <TouchableOpacity
                   style={[
@@ -857,6 +1176,8 @@ export const Composer = forwardRef<TextInput, Props>(
                   onPress={handleSend}
                   disabled={!value.trim() && attachments.length === 0}
                   activeOpacity={0.7}
+                  accessibilityRole="button"
+                  accessibilityLabel="Send prompt"
                 >
                   <ArrowUp
                     size={17}
@@ -1068,6 +1389,43 @@ const styles = StyleSheet.create({
     maxWidth: 160,
   },
 
+  
+  tokensRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    paddingBottom: 6,
+    paddingTop: 2,
+  },
+  tokenChip: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
+    borderRadius: 8,
+    paddingVertical: 3.5,
+    paddingHorizontal: 8,
+    borderWidth: 1,
+  },
+  tokenChipSlash: {},
+  tokenChipMcp: {},
+  tokenChipMention: {},
+  tokenLabel: {
+    fontSize: 12,
+  },
+  tokenCatBadge: {
+    paddingHorizontal: 4,
+    paddingVertical: 1,
+    borderRadius: 3.5,
+  },
+  tokenCatText: {
+    fontSize: 9,
+    textTransform: "uppercase",
+  },
+  tokenRemoveBtn: {
+    padding: 1,
+    marginLeft: 2,
+  },
+
   composerCard: {
     borderRadius: 26,
     paddingHorizontal: 14,
@@ -1226,6 +1584,16 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 6,
+  },
+  connectingBtn: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: COLORS.secondary,
+    borderWidth: 1,
+    borderColor: COLORS.border,
   },
   micBtn: {
     width: 32,

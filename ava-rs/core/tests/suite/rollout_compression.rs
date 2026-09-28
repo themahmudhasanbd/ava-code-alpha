@@ -52,7 +52,7 @@ async fn compressed_shared_fork_resume_preserves_checkpoint_and_frozen_history()
         .await?;
     turn(
         &server,
-        &test.ava-code,
+        &test.ava,
         "Create a checkpoint",
         "OBSOLETE_PRE_CHECKPOINT_REPLY",
     )
@@ -65,14 +65,14 @@ async fn compressed_shared_fork_resume_preserves_checkpoint_and_frozen_history()
         ]),
     )
     .await;
-    test.ava-code.submit(Op::Compact).await?;
-    wait_for_event(&test.ava-code, |event| {
+    test.ava.submit(Op::Compact).await?;
+    wait_for_event(&test.ava, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;
     turn(
         &server,
-        &test.ava-code,
+        &test.ava,
         "shared-compression: inherited parent turn",
         "INHERITED_COMPRESSION_REPLY",
     )
@@ -94,7 +94,7 @@ async fn compressed_shared_fork_resume_preserves_checkpoint_and_frozen_history()
         .await?;
     turn(
         &server,
-        &test.ava-code,
+        &test.ava,
         "shared-compression: parent AFTER fork cutoff",
         "POST_FORK_COMPRESSION_REPLY",
     )
@@ -107,9 +107,9 @@ async fn compressed_shared_fork_resume_preserves_checkpoint_and_frozen_history()
     )
     .await?;
 
-    let parent_path = test.ava-code.rollout_path().context("parent rollout")?;
+    let parent_path = test.ava.rollout_path().context("parent rollout")?;
     let child_path = child.thread.rollout_path().context("child rollout")?;
-    test.ava-code.shutdown_and_wait().await?;
+    test.ava.shutdown_and_wait().await?;
     child.thread.shutdown_and_wait().await?;
     assert_eq!(
         ava_rollout::read_session_meta_line(&child_path)

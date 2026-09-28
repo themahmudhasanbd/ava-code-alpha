@@ -324,7 +324,7 @@ mixin AgentCoreSystemMixin on AgentCoreBase {
       if (raw != null && raw.trim().isNotEmpty) {
         final decoded = jsonDecode(raw);
         if (decoded is Map) {
-          return Map<String, dynamic>.from(decoded as Map);
+          return Map<String, dynamic>.from(decoded);
         }
       }
     } catch (err) {

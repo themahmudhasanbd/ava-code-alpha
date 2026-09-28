@@ -121,7 +121,7 @@ async fn review_preserves_user_instructions_until_request_budgeting(
     // V2 retains the first review's user input. The smallest window exercises
     // first-review truncation only; the larger windows cover follow-up delivery.
     if compactions_per_turn.len() == 2 {
-        test.ava-code
+        test.ava
             .inject_response_items(vec![
                 responses::user_message_item(&followup),
                 ResponseItem::Message {
@@ -193,7 +193,7 @@ async fn review_preserves_user_instructions_until_request_budgeting(
             .to_string()
             .contains("complete-instructions")
     );
-    test.ava-code.shutdown_and_wait().await?;
+    test.ava.shutdown_and_wait().await?;
     Ok(())
 }
 
@@ -596,7 +596,7 @@ async fn review_respects_complete_context_budget(
             );
         }
     }
-    test.ava-code.shutdown_and_wait().await?;
+    test.ava.shutdown_and_wait().await?;
     Ok(())
 }
 
@@ -690,14 +690,14 @@ async fn oversized_action_preserves_review_policy_and_next_review(
         );
     }
     let response = responses::mount_sse_sequence(&server, events).await;
-    test.ava-code
+    test.ava
         .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
             text: "Run the commands if the approval reviewer allows them.".to_owned(),
             text_elements: Vec::new(),
         }]))
         .await?;
     let mut terminal_assessment = None;
-    let event = wait_for_event(&test.ava-code, |event| {
+    let event = wait_for_event(&test.ava, |event| {
         if let EventMsg::GuardianAssessment(assessment) = event
             && assessment.status != ava_protocol::protocol::GuardianAssessmentStatus::InProgress
         {
@@ -722,14 +722,14 @@ async fn oversized_action_preserves_review_policy_and_next_review(
             ))
         );
         assert_eq!(approval.command.last(), Some(&oversized_command));
-        test.ava-code
+        test.ava
             .submit(Op::ExecApproval {
                 id: approval.effective_approval_id(),
                 turn_id: None,
                 decision: ReviewDecision::denied("rejected by user"),
             })
             .await?;
-        wait_for_event(&test.ava-code, |event| {
+        wait_for_event(&test.ava, |event| {
             matches!(event, EventMsg::TurnComplete(_))
         })
         .await;
@@ -776,6 +776,6 @@ async fn oversized_action_preserves_review_policy_and_next_review(
             .to_string()
             .contains("complete-action-review")
     );
-    test.ava-code.shutdown_and_wait().await?;
+    test.ava.shutdown_and_wait().await?;
     Ok(())
 }

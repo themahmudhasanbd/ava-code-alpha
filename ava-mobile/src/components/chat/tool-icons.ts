@@ -1,5 +1,6 @@
 import {
   Activity,
+  AlertCircle,
   Bot,
   Brain,
   CheckCircle2,
@@ -91,7 +92,7 @@ export function displayToolName(name?: string): string {
   cleaned = cleaned.replace(/^default_api:/i, "");
   cleaned = cleaned.replace(/^mcp_puppeteer_puppeteer_/i, "puppeteer: ");
   cleaned = cleaned.replace(/^mcp_puppeteer_/i, "puppeteer: ");
-  cleaned = cleaned.replace(/^(?:vps|mcp)[_:s-]+/i, "");
+  cleaned = cleaned.replace(/^(?:vps|mcp)[_:-]+/i, "");
   cleaned = cleaned.replace(/^puppeteer_puppeteer_/i, "puppeteer: ");
   cleaned = cleaned.replace(/^puppeteer_/i, "puppeteer: ");
   cleaned = cleaned.replace(/^browser_/i, "browser: ");
@@ -119,21 +120,106 @@ export function displayToolName(name?: string): string {
 
   // Handle prefix styling for nice badges
   cleaned = cleaned
-    .replace(/^Cpanel:s*/i, "cPanel · ")
-    .replace(/^Cloudflare:s*/i, "Cloudflare · ")
-    .replace(/^Github:s*/i, "GitHub · ")
-    .replace(/^Mysql:s*/i, "MySQL · ")
-    .replace(/^Mail:s*/i, "Mail · ")
-    .replace(/^Memory:s*/i, "Memory · ")
-    .replace(/^Meta:s*/i, "Meta · ")
-    .replace(/^Puppeteer:s*/i, "Puppeteer · ")
-    .replace(/^Browser:s*/i, "Browser · ");
+    .replace(/^Cpanel:\s*/i, "cPanel · ")
+    .replace(/^Cloudflare:\s*/i, "Cloudflare · ")
+    .replace(/^Github:\s*/i, "GitHub · ")
+    .replace(/^Mysql:\s*/i, "MySQL · ")
+    .replace(/^Mail:\s*/i, "Mail · ")
+    .replace(/^Memory:\s*/i, "Memory · ")
+    .replace(/^Meta:\s*/i, "Meta · ")
+    .replace(/^Puppeteer:\s*/i, "Puppeteer · ")
+    .replace(/^Browser:\s*/i, "Browser · ");
 
-  if (cleaned.toLowerCase() === "exec command" || cleaned.toLowerCase() === "execute command") {
-    return "Terminal Command";
+  if (
+    cleaned.toLowerCase() === "exec command" ||
+    cleaned.toLowerCase() === "execute command" ||
+    cleaned.toLowerCase() === "exec" ||
+    cleaned.toLowerCase() === "terminal" ||
+    cleaned.toLowerCase() === "shell"
+  ) {
+    return "Terminal";
+  }
+
+  if (
+    cleaned.toLowerCase() === "read file" ||
+    cleaned.toLowerCase() === "get file contents" ||
+    cleaned.toLowerCase() === "get file content"
+  ) {
+    return "Read File";
+  }
+
+  if (cleaned.toLowerCase() === "view image") {
+    return "View Image";
+  }
+
+  if (
+    cleaned.toLowerCase() === "apply patch" ||
+    cleaned.toLowerCase() === "file change"
+  ) {
+    return "File Change";
   }
 
   return cleaned || "Tool";
+}
+
+function extractSummaryFromObject(obj: any): string {
+  if (!obj || typeof obj !== "object") return "";
+  if (obj.path && typeof obj.path === "string") return obj.path.split("/").pop() || obj.path;
+  if (obj.file && typeof obj.file === "string") return obj.file.split("/").pop() || obj.file;
+  if (obj.query && typeof obj.query === "string") return `"${obj.query.slice(0, 45)}"`;
+  if (obj.pattern && typeof obj.pattern === "string") return `"${obj.pattern.slice(0, 45)}"`;
+  if (obj.domain && typeof obj.domain === "string") return obj.domain;
+  if (obj.table && typeof obj.table === "string") return `table: ${obj.table}`;
+  if (obj.database && typeof obj.database === "string") return `db: ${obj.database}`;
+  if (obj.email && typeof obj.email === "string") return obj.email;
+  if (obj.url && typeof obj.url === "string") return obj.url.slice(0, 50);
+  if (obj.cmd && typeof obj.cmd === "string") {
+    const firstLine = obj.cmd.trim().split("\n")[0] || obj.cmd;
+    return firstLine.length > 50 ? firstLine.slice(0, 47) + "…" : firstLine;
+  }
+  if (obj.name && typeof obj.name === "string") return obj.name;
+  return "";
+}
+
+/**
+ * Returns a short, clean, human-readable subtitle for tool invocations (e.g. filename, query, domain).
+ * Avoids dumping raw JSON objects or huge payloads into single-line headers.
+ */
+export function getToolSubtitle(part: MessagePart): string {
+  if (part.meta?.files && part.meta.files.length > 0) {
+    const f = part.meta.files[0];
+    const path = f.path.split("/").pop() || f.path;
+    return part.meta.files.length > 1 ? `${path} (+${part.meta.files.length - 1} more)` : path;
+  }
+
+  if (part.meta?.command) {
+    const cmd = part.meta.command.trim();
+    const firstLine = cmd.split("\n")[0] || cmd;
+    return firstLine.length > 60 ? firstLine.slice(0, 57) + "…" : firstLine;
+  }
+
+  const inp = part.input;
+  if (!inp) return "";
+
+  if (typeof inp === "string") {
+    const trimmed = inp.trim();
+    if (trimmed.startsWith("{") || trimmed.startsWith("[")) {
+      try {
+        const obj = JSON.parse(trimmed);
+        return extractSummaryFromObject(obj);
+      } catch {
+        return "";
+      }
+    }
+    const firstLine = trimmed.split("\n")[0] || trimmed;
+    return firstLine.length > 60 ? firstLine.slice(0, 57) + "…" : firstLine;
+  }
+
+  if (typeof inp === "object") {
+    return extractSummaryFromObject(inp);
+  }
+
+  return "";
 }
 
 export function getToolIcon(toolName?: string, meta?: MessagePart["meta"]): LucideIcon {

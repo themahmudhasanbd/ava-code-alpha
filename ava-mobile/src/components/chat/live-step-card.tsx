@@ -24,7 +24,7 @@ import { RuntimeDottedIndicator } from "@/components/ai-elements/dotted-indicato
 import { formatDuration } from "@/lib/format";
 import type { ChatMessage, MessagePart } from "@/core/types";
 import { useTheme } from "@/theme/colors";
-import { displayToolName, getToolIcon } from "./tool-icons";
+import { displayToolName, getToolIcon, getToolSubtitle } from "./tool-icons";
 import { font, mono } from "@/theme/fonts";
 
 interface Props {
@@ -43,8 +43,14 @@ export function LiveStepOverviewCard({
   const { colors, isDark } = useTheme();
   const navigation = useNavigation<any>();
 
-  // Extract workflow parts (reasoning, tools, plans, notices)
-  const workflowParts = message.parts.filter((p) => p.kind !== "text");
+  // Extract genuine workflow parts (reasoning, tools, plans, errors/warnings)
+  const workflowParts = message.parts.filter(
+    (p) =>
+      p.kind === "tool" ||
+      p.kind === "reasoning" ||
+      p.kind === "plan" ||
+      (p.kind === "notice" && (p.meta?.tone === "error" || p.meta?.tone === "warning" || p.status === "error"))
+  );
 
   // Never render until at least one workflow step has actually started
   if (workflowParts.length === 0) {
@@ -76,7 +82,7 @@ export function LiveStepOverviewCard({
       currentTitle = isRunning ? "Thinking…" : "Reasoning complete";
     } else if (latestPart.kind === "tool") {
       StepIcon = getToolIcon(latestPart.toolName, latestPart.meta);
-      currentTitle = displayToolName(latestPart.toolName || latestPart.meta?.command || "execute_command");
+      currentTitle = displayToolName(latestPart.toolName || "Terminal");
     } else if (latestPart.kind === "plan") {
       StepIcon = ListChecks;
       currentTitle = latestPart.text || "Execution plan";
@@ -116,21 +122,21 @@ export function LiveStepOverviewCard({
       style={[
         styles.container,
         {
-          backgroundColor: colors.card,
+          backgroundColor: "transparent",
           borderColor: colors.border,
         },
         isRunning && [
           styles.containerRunning,
           {
             borderColor: colors.primary,
-            backgroundColor: isDark ? "rgba(99, 102, 241, 0.04)" : "rgba(79, 70, 229, 0.03)",
+            backgroundColor: "transparent",
           },
         ],
         isFatalFailure && [
           styles.containerFailed,
           {
             borderColor: "rgba(239, 68, 68, 0.3)",
-            backgroundColor: isDark ? "rgba(239, 68, 68, 0.05)" : "rgba(239, 68, 68, 0.03)",
+            backgroundColor: "transparent",
           },
         ],
       ]}
@@ -146,13 +152,13 @@ export function LiveStepOverviewCard({
           style={[
             styles.iconWrapper,
             {
-              backgroundColor: colors.secondary,
+              backgroundColor: "transparent",
               borderColor: colors.border,
             },
           ]}
         >
           <StepIcon
-            size={16}
+            size={15}
             color={
               isRunning
                 ? colors.primary
@@ -206,7 +212,7 @@ export function LiveStepOverviewCard({
             style={[
               styles.pillButton,
               {
-                backgroundColor: colors.secondary,
+                backgroundColor: "transparent",
                 borderColor: colors.border,
               },
             ]}
@@ -244,7 +250,7 @@ export function LiveStepOverviewCard({
           {isRunning ? (
             <RuntimeDottedIndicator
               label={currentTitle}
-              subLabel={latestPart?.meta?.command || latestPart?.text || "Processing step…"}
+              subLabel={getToolSubtitle(latestPart) || latestPart?.text || "Processing step…"}
               size="sm"
             />
           ) : null}
@@ -252,11 +258,11 @@ export function LiveStepOverviewCard({
           {/* Quick steps list */}
           <View style={styles.stepsList}>
             {workflowParts.slice(-4).map((part, pIdx) => {
-              const partRunning = part.status === "running";
+              const partRunning = live && part.status === "running";
               const partDone = part.status === "done";
               const partErr = part.status === "error";
               return (
-                <View key={`${part.id || pIdx}`} style={styles.stepRow}>
+                <View key={`step_${part.id || pIdx}_${pIdx}`} style={styles.stepRow}>
                   <View
                     style={[
                       styles.stepDot,
@@ -340,9 +346,9 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   iconWrapper: {
-    width: 30,
-    height: 30,
-    borderRadius: 8,
+    width: 28,
+    height: 28,
+    borderRadius: 7,
     borderWidth: 1,
     alignItems: "center",
     justifyContent: "center",
@@ -386,13 +392,13 @@ const styles = StyleSheet.create({
     fontSize: 11,
   },
   progressTrack: {
-    height: 3,
+    height: 2.5,
     marginTop: 8,
     borderRadius: 2,
     overflow: "hidden",
   },
   progressFill: {
-    height: 3,
+    height: 2.5,
     borderRadius: 2,
   },
   expandedSection: {
@@ -411,9 +417,9 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   stepDot: {
-    width: 5,
-    height: 5,
-    borderRadius: 2.5,
+    width: 4.5,
+    height: 4.5,
+    borderRadius: 2.25,
   },
   stepRowText: {
     fontSize: 11,

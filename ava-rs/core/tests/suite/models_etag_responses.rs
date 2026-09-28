@@ -65,7 +65,7 @@ async fn refresh_models_on_models_etag_mismatch_and_avoid_duplicate_models_fetch
         });
 
     let test = builder.build(&server).await?;
-    let ava = Arc::clone(&test.ava-code);
+    let ava = Arc::clone(&test.ava);
     let cwd = Arc::clone(&test.cwd);
     let session_model = test.session_configured.model.clone();
     let cwd_path = cwd.abs();

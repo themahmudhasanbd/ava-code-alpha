@@ -58,10 +58,10 @@ async fn compaction_preserves_updated_summary(mode: CompactionMode) -> Result<()
         })
         .build_with_auto_env(&server)
         .await?;
-    let pause = start_paused_turn(&test.ava-code).await?;
+    let pause = start_paused_turn(&test.ava).await?;
     assert_eq!(
         submit_turn_settings(
-            &test.ava-code,
+            &test.ava,
             &pause.turn_id,
             TurnSettingsUpdate {
                 summary: Some(ReasoningSummary::Detailed),
@@ -71,12 +71,12 @@ async fn compaction_preserves_updated_summary(mode: CompactionMode) -> Result<()
         .await?,
         TurnSettingsUpdateOutcome::Applied
     );
-    answer_paused_turn(&test.ava-code, &pause.turn_id).await?;
-    wait_for_event(&test.ava-code, |event| {
+    answer_paused_turn(&test.ava, &pause.turn_id).await?;
+    wait_for_event(&test.ava, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;
-    test.ava-code.shutdown_and_wait().await?;
+    test.ava.shutdown_and_wait().await?;
 
     let requests = responses.requests();
     assert_eq!(

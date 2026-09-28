@@ -175,8 +175,8 @@ async fn delayed_score_only_covers_the_tool_call_it_classified() -> Result<()> {
         })
         .build_with_auto_env(&server)
         .await?;
-    test.ava-code.ensure_rollout_materialized().await;
-    test.ava-code
+    test.ava.ensure_rollout_materialized().await;
+    test.ava
         .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
             text: "Inspect the available permissions.".to_owned(),
             text_elements: Vec::new(),
@@ -210,7 +210,7 @@ async fn delayed_score_only_covers_the_tool_call_it_classified() -> Result<()> {
         // public result instead of reading or modifying the private score state.
         timeout(Duration::from_secs(30), async {
             loop {
-                let history = test.ava-code.load_history(/*include_archived*/ false).await?;
+                let history = test.ava.load_history(/*include_archived*/ false).await?;
                 if history.items.into_iter().any(
                     |item| matches!(item, RolloutItem::SecurityRiskScore(score) if score.call_id.as_deref() == Some(call_id)),
                 ) {
@@ -236,7 +236,7 @@ async fn delayed_score_only_covers_the_tool_call_it_classified() -> Result<()> {
 
     let mut review_reasons = Vec::new();
     loop {
-        match wait_for_event(&test.ava-code, |_| true).await {
+        match wait_for_event(&test.ava, |_| true).await {
             EventMsg::GuardianAssessment(event)
                 if event.status == GuardianAssessmentStatus::Denied =>
             {
@@ -282,7 +282,7 @@ async fn delayed_score_only_covers_the_tool_call_it_classified() -> Result<()> {
         );
     }
 
-    test.ava-code.shutdown_and_wait().await?;
+    test.ava.shutdown_and_wait().await?;
     parent_server.shutdown().await;
     classifier_server.shutdown().await;
     Ok(())

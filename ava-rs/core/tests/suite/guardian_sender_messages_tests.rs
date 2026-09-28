@@ -39,7 +39,7 @@ async fn guardian_receives_sender_user_messages() -> Result<()> {
     let receiver = test
         .thread_manager
         .start_thread(StartThreadOptions {
-            environments: Some(test.ava-code.environment_selections().await),
+            environments: Some(test.ava.environment_selections().await),
             ..StartThreadOptions::new(test.config.clone())
         })
         .await?

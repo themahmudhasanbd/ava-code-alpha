@@ -306,7 +306,7 @@ async fn run_unavailable_code_mode_turn(
     )
     .await;
 
-    test.ava-code
+    test.ava
         .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
             text: "list available tools".to_string(),
             text_elements: Vec::new(),
@@ -315,7 +315,7 @@ async fn run_unavailable_code_mode_turn(
 
     let mut warnings = Vec::new();
     loop {
-        match wait_for_event(&test.ava-code, |_| true).await {
+        match wait_for_event(&test.ava, |_| true).await {
             EventMsg::Warning(warning) => warnings.push(warning.message),
             EventMsg::TurnComplete(_) => break,
             _ => {}
@@ -691,7 +691,7 @@ async fn run_code_mode_turn_with_rmcp_config(
             .expect("test mcp servers should accept any configuration");
     });
     let test = builder.build(server).await?;
-    wait_for_mcp_server(&test.ava-code, "rmcp").await?;
+    wait_for_mcp_server(&test.ava, "rmcp").await?;
 
     responses::mount_sse_once(
         server,
@@ -787,11 +787,11 @@ async fn code_mode_exec_holds_captured_result_during_elicitation() -> Result<()>
     .await;
 
     assert_eq!(
-        test.ava-code.increment_out_of_band_elicitation_count().await?,
+        test.ava.increment_out_of_band_elicitation_count().await?,
         1
     );
     assert_eq!(
-        test.ava-code.increment_out_of_band_elicitation_count().await?,
+        test.ava.increment_out_of_band_elicitation_count().await?,
         2
     );
     let release_elicitation = async {
@@ -808,7 +808,7 @@ async fn code_mode_exec_holds_captured_result_during_elicitation() -> Result<()>
             "captured exec result should not return during an elicitation"
         );
         assert_eq!(
-            test.ava-code.decrement_out_of_band_elicitation_count().await?,
+            test.ava.decrement_out_of_band_elicitation_count().await?,
             1
         );
         tokio::time::sleep(Duration::from_millis(100)).await;
@@ -817,7 +817,7 @@ async fn code_mode_exec_holds_captured_result_during_elicitation() -> Result<()>
             "captured exec result should wait for every elicitation"
         );
         assert_eq!(
-            test.ava-code.decrement_out_of_band_elicitation_count().await?,
+            test.ava.decrement_out_of_band_elicitation_count().await?,
             0
         );
         Ok::<(), anyhow::Error>(())
@@ -970,9 +970,9 @@ async fn code_mode_excludes_mcp_servers_using_their_configured_identity() -> Res
                 })
                 .await?;
             let mut test = base_test;
-            test.ava-code = new_thread.thread;
+            test.ava = new_thread.thread;
             test.session_configured = new_thread.session_configured;
-            wait_for_mcp_server(&test.ava-code, "rmcp").await?;
+            wait_for_mcp_server(&test.ava, "rmcp").await?;
             test.submit_turn("inspect the directly callable MCP tool")
                 .await?;
 
@@ -1175,7 +1175,7 @@ async fn mcp_code_mode_exclusion_does_not_change_direct_mode_tool_exposure() -> 
                         .expect("test config should allow MCP servers");
                 });
             let test = builder.build_with_auto_env(&server).await?;
-            wait_for_mcp_server(&test.ava-code, "rmcp").await?;
+            wait_for_mcp_server(&test.ava, "rmcp").await?;
             test.submit_turn("inspect ordinary direct-mode MCP tool exposure")
                 .await?;
 
@@ -1409,8 +1409,8 @@ await new Promise(() => {});
                 ]),
             )
             .await;
-            test.ava-code.submit(Op::Compact).await?;
-            wait_for_event(&test.ava-code, |event| {
+            test.ava.submit(Op::Compact).await?;
+            wait_for_event(&test.ava, |event| {
                 matches!(event, EventMsg::TurnComplete(_))
             })
             .await;
@@ -1522,15 +1522,15 @@ async fn code_mode_compaction_request_preserves_tool_inventory(
     });
     let compact =
         responses::mount_sse_once(&server, sse(vec![summary, ev_completed("resp-compact")])).await;
-    test.ava-code.submit(Op::Compact).await?;
-    wait_for_event(&test.ava-code, |event| {
+    test.ava.submit(Op::Compact).await?;
+    wait_for_event(&test.ava, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;
     let request = compact.single_request();
     assert_eq!(request.inputs_of_type("compaction_trigger").len(), 1);
     assert_eq!(request.custom_tool_call_output("call-exec"), original);
-    test.ava-code.shutdown_and_wait().await?;
+    test.ava.shutdown_and_wait().await?;
     Ok(())
 }
 
@@ -1614,8 +1614,8 @@ async fn code_mode_wait_id_stays_known_after_compaction(
         ]),
     )
     .await;
-    test.ava-code.submit(Op::Compact).await?;
-    wait_for_event(&test.ava-code, |event| {
+    test.ava.submit(Op::Compact).await?;
+    wait_for_event(&test.ava, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;
@@ -1660,7 +1660,7 @@ async fn code_mode_wait_id_stays_known_after_compaction(
         metadata.get("executed_tool_calls").cloned(),
         expected_complete.map(|_| serde_json::json!([])),
     );
-    test.ava-code.shutdown_and_wait().await?;
+    test.ava.shutdown_and_wait().await?;
     Ok(())
 }
 
@@ -1864,8 +1864,8 @@ text("done");"#,
         ]),
     )
     .await;
-    test.ava-code.submit(Op::Compact).await?;
-    wait_for_event(&test.ava-code, |event| {
+    test.ava.submit(Op::Compact).await?;
+    wait_for_event(&test.ava, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;
@@ -1921,7 +1921,7 @@ text("done");"#,
             }),
         );
     }
-    test.ava-code.shutdown_and_wait().await?;
+    test.ava.shutdown_and_wait().await?;
     Ok(())
 }
 
@@ -2061,7 +2061,7 @@ async fn result_metadata_follows_call_binding(
         );
         run_code_mode_turn_with_builder(&server, "Search a connected app", &code, builder).await?
     };
-    assert_eq!(test.ava-code.analytics_enabled(), effective_analytics_enabled);
+    assert_eq!(test.ava.analytics_enabled(), effective_analytics_enabled);
     let request = follow_up.single_request();
     assert_eq!(recorded_apps_tool_calls(&server).await.len(), 1);
     let output = if direct {
@@ -2092,7 +2092,7 @@ async fn result_metadata_follows_call_binding(
         result_metadata_fixture_calls(&request.input()).count(),
         usize::from(metadata_enabled),
     );
-    let captured = ava_core::test_support::history_with_tool_call_metadata(&test.ava-code).await;
+    let captured = ava_core::test_support::history_with_tool_call_metadata(&test.ava).await;
     if direct {
         let result = captured
             .iter()
@@ -2169,7 +2169,7 @@ async fn code_mode_result_metadata_follows_runtime_recording_enablement() -> Res
                 .features
                 .enable(Feature::ExecutedToolCallMetadata)
                 .unwrap();
-            test.ava-code.refresh_runtime_config(config).await;
+            test.ava.refresh_runtime_config(config).await;
             // Runtime recording changes without updating the session's execution features.
             assert!(
                 !test
@@ -2220,7 +2220,7 @@ async fn code_mode_result_metadata_follows_runtime_recording_enablement() -> Res
         }
     }
     assert_eq!(recorded_apps_tool_calls(&server).await.len(), 2);
-    let captured = ava_core::test_support::history_with_tool_call_metadata(&test.ava-code).await;
+    let captured = ava_core::test_support::history_with_tool_call_metadata(&test.ava).await;
     let captured = serde_json::to_value(captured)?;
     let captured_output = captured
         .as_array()
@@ -2332,7 +2332,7 @@ async fn code_mode_result_metadata_keeps_prepared_call_binding_across_runtime_re
             /*originator*/ None,
         )),
     };
-    test.ava-code.refresh_runtime_config(test.config.clone()).await;
+    test.ava.refresh_runtime_config(test.config.clone()).await;
     release_tx.send(()).unwrap();
     let wait = responses::mount_function_call_agent_response(
         &server,
@@ -2360,7 +2360,7 @@ async fn code_mode_result_metadata_keeps_prepared_call_binding_across_runtime_re
         2,
         "late results must not duplicate the call"
     );
-    let captured = ava_core::test_support::history_with_tool_call_metadata(&test.ava-code).await;
+    let captured = ava_core::test_support::history_with_tool_call_metadata(&test.ava).await;
     let captured = serde_json::to_value(captured)?;
     // A's accepted result must update the output that first reported it, not the final wait.
     let expected_metadata = Some(original_metadata);
@@ -2548,7 +2548,7 @@ async fn code_mode_resumed_wait_does_not_certify_a_reused_runtime_cell() -> Resu
     );
     assert_eq!(metadata["cell_id"], "call-fresh");
     assert_eq!(metadata["tool_calls_complete"], true);
-    resumed.ava-code.shutdown_and_wait().await?;
+    resumed.ava.shutdown_and_wait().await?;
     Ok(())
 }
 
@@ -2639,7 +2639,7 @@ async fn code_mode_recovers_complete_inventory_after_orphaned_mapping_pressure()
         .await?;
     test.submit_turn("Record a fresh call after orphaned mapping pressure")
         .await?;
-    test.ava-code.shutdown_and_wait().await?;
+    test.ava.shutdown_and_wait().await?;
 
     let requests = server.requests().await;
     assert_eq!(requests.len(), 3);
@@ -2707,7 +2707,7 @@ async fn code_mode_complete_call_survives_unrelated_truncation() -> Result<()> {
     )
     .await;
     test.submit_turn("Record a complete call").await?;
-    test.ava-code.shutdown_and_wait().await?;
+    test.ava.shutdown_and_wait().await?;
 
     let request = follow_up.single_request();
     let overflow =
@@ -3722,13 +3722,13 @@ async fn code_mode_wait_timeout_reconnects_on_next_exec() -> Result<()> {
     .await
     .completion;
 
-    test.ava-code
+    test.ava
         .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
             text: "wait for the stalled cell".to_string(),
             text_elements: Vec::new(),
         }]))
         .await?;
-    wait_for_event_match(&test.ava-code, |event| match event {
+    wait_for_event_match(&test.ava, |event| match event {
         EventMsg::RawResponseItem(raw) => match &raw.item {
             ResponseItem::FunctionCall { call_id, .. } if call_id == "call-2" => Some(()),
             _ => None,
@@ -3748,7 +3748,7 @@ async fn code_mode_wait_timeout_reconnects_on_next_exec() -> Result<()> {
         }
     }
     tokio::time::resume();
-    wait_for_event(&test.ava-code, |event| {
+    wait_for_event(&test.ava, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;
@@ -5082,7 +5082,7 @@ async fn code_mode_interrupt_terminates_active_cells_and_nested_tools() -> Resul
     )
     .await;
 
-    test.ava-code
+    test.ava
         .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
             text: "start a long-running nested tool".to_string(),
             text_elements: Vec::new(),
@@ -5090,8 +5090,8 @@ async fn code_mode_interrupt_terminates_active_cells_and_nested_tools() -> Resul
         .await?;
     let active_cell_id = tokio::time::timeout(Duration::from_secs(10), started_rx).await??;
 
-    test.ava-code.submit(Op::Interrupt).await?;
-    wait_for_event(&test.ava-code, |event| {
+    test.ava.submit(Op::Interrupt).await?;
+    wait_for_event(&test.ava, |event| {
         matches!(event, EventMsg::TurnAborted(_))
     })
     .await;
@@ -5973,7 +5973,7 @@ async fn code_mode_node_repl_screenshots_can_be_captured_without_guardian_transc
             .expect("configure REPL MCP server");
     });
     let test = builder.build_with_auto_env(&server).await?;
-    core_test_support::wait_for_mcp_server(&test.ava-code, repl_server).await?;
+    core_test_support::wait_for_mcp_server(&test.ava, repl_server).await?;
     let evidence = test
         .ava-code
         .thread_extension_data()
@@ -6069,7 +6069,7 @@ async fn code_mode_node_repl_image_flag_without_enhanced_stays_disabled(
                 .expect("configure REPL MCP server");
         });
     let test = builder.build_with_auto_env(&server).await?;
-    wait_for_mcp_server(&test.ava-code, repl_server).await?;
+    wait_for_mcp_server(&test.ava, repl_server).await?;
 
     let code = r#"
 await tools.mcp__node_repl__js({ code: 'await nodeRepl.emitImage(await tab.screenshot())' });
@@ -6242,7 +6242,7 @@ async fn code_mode_node_repl_text_evidence_is_visible_only_to_guardian(
                 .expect("configure MCP servers");
         });
     let test = builder.build_with_auto_env(&server).await?;
-    wait_for_mcp_server(&test.ava-code, repl_server).await?;
+    wait_for_mcp_server(&test.ava, repl_server).await?;
     let images_enabled = auto_review_required || (enhanced_transcripts && transcript_images);
     let reviewer_images = images_enabled && (reviewer_constraint.is_none() || reviewer_compaction);
     let snapshot_padding = if images_enabled && reviewer_constraint != Some("large_prompt") {
@@ -7055,7 +7055,7 @@ async fn code_mode_uses_the_first_dynamic_tool_for_a_normalized_name() -> Result
             })
             .await?;
         let mut test = base_test;
-        test.ava-code = new_thread.thread;
+        test.ava = new_thread.thread;
         test.session_configured = new_thread.session_configured;
 
         let first_response = if use_responses_lite {
@@ -7102,7 +7102,7 @@ text(JSON.stringify({
         let cwd = test.config.cwd.clone();
         let (sandbox_policy, permission_profile) =
             turn_permission_fields(PermissionProfile::Disabled, cwd.as_path());
-        test.ava-code
+        test.ava
             .start_or_steer_turn(
                 TurnInputRequest::user_input(vec![UserInput::Text {
                     text: "inspect and call normalized dynamic tools".to_string(),
@@ -7129,13 +7129,13 @@ text(JSON.stringify({
             )
             .await?;
 
-        let turn_id = wait_for_event_match(&test.ava-code, |event| match event {
+        let turn_id = wait_for_event_match(&test.ava, |event| match event {
             EventMsg::TurnStarted(event) => Some(event.turn_id.clone()),
             _ => None,
         })
         .await;
         if use_responses_lite {
-            let request = wait_for_event_match(&test.ava-code, |event| match event {
+            let request = wait_for_event_match(&test.ava, |event| match event {
                 EventMsg::DynamicToolCallRequest(request) => Some(request.clone()),
                 _ => None,
             })
@@ -7143,7 +7143,7 @@ text(JSON.stringify({
             assert_eq!(request.namespace, None);
             assert_eq!(request.tool, "foo-bar");
             assert_eq!(request.arguments, serde_json::json!({}));
-            test.ava-code
+            test.ava
                 .submit(Op::DynamicToolResponse {
                     id: request.call_id,
                     response: DynamicToolResponse {
@@ -7155,7 +7155,7 @@ text(JSON.stringify({
                 })
                 .await?;
         }
-        wait_for_event(&test.ava-code, |event| match event {
+        wait_for_event(&test.ava, |event| match event {
             EventMsg::TurnComplete(event) => event.turn_id == turn_id,
             _ => false,
         })
@@ -7315,7 +7315,7 @@ async fn code_mode_renders_local_refs_in_outbound_exec_description() -> Result<(
         })
         .await?;
     let mut test = base_test;
-    test.ava-code = new_thread.thread;
+    test.ava = new_thread.thread;
     test.session_configured = new_thread.session_configured;
 
     test.submit_turn("inspect the tool schema").await?;
@@ -7371,7 +7371,7 @@ async fn code_mode_can_call_hidden_dynamic_tools() -> Result<()> {
         })
         .await?;
     let mut test = base_test;
-    test.ava-code = new_thread.thread;
+    test.ava = new_thread.thread;
     test.session_configured = new_thread.session_configured;
 
     let code = r#"
@@ -7409,7 +7409,7 @@ text(
     let (sandbox_policy, permission_profile) =
         turn_permission_fields(PermissionProfile::Disabled, cwd.as_path());
 
-    test.ava-code
+    test.ava
         .start_or_steer_turn(
             TurnInputRequest::user_input(vec![UserInput::Text {
                 text: "use exec to inspect and call hidden tools".into(),
@@ -7436,12 +7436,12 @@ text(
         )
         .await?;
 
-    let turn_id = wait_for_event_match(&test.ava-code, |event| match event {
+    let turn_id = wait_for_event_match(&test.ava, |event| match event {
         EventMsg::TurnStarted(event) => Some(event.turn_id.clone()),
         _ => None,
     })
     .await;
-    let request = wait_for_event_match(&test.ava-code, |event| match event {
+    let request = wait_for_event_match(&test.ava, |event| match event {
         EventMsg::DynamicToolCallRequest(request) => Some(request.clone()),
         _ => None,
     })
@@ -7449,7 +7449,7 @@ text(
     assert_eq!(request.namespace.as_deref(), Some("ava_app"));
     assert_eq!(request.tool, "hidden_dynamic_tool");
     assert_eq!(request.arguments, serde_json::json!({ "city": "Paris" }));
-    test.ava-code
+    test.ava
         .submit(Op::DynamicToolResponse {
             id: request.call_id,
             response: DynamicToolResponse {
@@ -7460,7 +7460,7 @@ text(
             },
         })
         .await?;
-    wait_for_event(&test.ava-code, |event| match event {
+    wait_for_event(&test.ava, |event| match event {
         EventMsg::TurnComplete(event) => event.turn_id == turn_id,
         _ => false,
     })
@@ -7535,7 +7535,7 @@ async fn code_mode_excludes_configured_nested_tool_namespaces() -> Result<()> {
         })
         .await?;
     let mut test = base_test;
-    test.ava-code = new_thread.thread;
+    test.ava = new_thread.thread;
     test.session_configured = new_thread.session_configured;
 
     let first_mock = responses::mount_sse_once(
@@ -7629,7 +7629,7 @@ async fn code_mode_omits_configured_mcp_server_tools() -> Result<()> {
                 .expect("test config should allow MCP servers");
         });
     let test = builder.build_with_auto_env(&server).await?;
-    wait_for_mcp_server(&test.ava-code, "rmcp").await?;
+    wait_for_mcp_server(&test.ava, "rmcp").await?;
 
     let first_mock = responses::mount_sse_once(
         &server,
@@ -7721,7 +7721,7 @@ async fn code_mode_only_keeps_mcp_tools_direct_when_nested_exposure_is_omitted()
                 .expect("test config should allow MCP servers");
         });
     let test = builder.build_with_auto_env(&server).await?;
-    wait_for_mcp_server(&test.ava-code, "rmcp").await?;
+    wait_for_mcp_server(&test.ava, "rmcp").await?;
 
     let first_mock = responses::mount_sse_once(
         &server,
@@ -7816,7 +7816,7 @@ async fn code_mode_only_can_call_mcp_tools_hidden_from_direct_and_deferred_expos
                 .expect("test config should allow MCP servers");
         });
     let test = builder.build_with_auto_env(&server).await?;
-    wait_for_mcp_server(&test.ava-code, "rmcp").await?;
+    wait_for_mcp_server(&test.ava, "rmcp").await?;
 
     let first_mock = responses::mount_sse_once(
         &server,

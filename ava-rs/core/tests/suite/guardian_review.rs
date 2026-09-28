@@ -221,7 +221,7 @@ async fn guardian_session_inherits_parent_http_fallback(
     )
     .await?;
 
-    test.ava-code
+    test.ava
         .start_or_steer_turn(
             TurnInputRequest::user_input(vec![UserInput::Text {
                 text: "run a command".into(),
@@ -233,7 +233,7 @@ async fn guardian_session_inherits_parent_http_fallback(
             }),
         )
         .await?;
-    wait_for_event(&test.ava-code, |event| {
+    wait_for_event(&test.ava, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;
@@ -308,7 +308,7 @@ async fn guardian_session_inherits_parent_http_fallback(
         )),
         "Guardian omitted the executor-native cwd from its planned action: {guardian_context}"
     );
-    test.ava-code.shutdown_and_wait().await?;
+    test.ava.shutdown_and_wait().await?;
 
     Ok(())
 }
@@ -431,7 +431,7 @@ for (const phase of ["before", "after"]) {
         })
         .build_with_auto_env(&server)
         .await?;
-    test.ava-code
+    test.ava
         .start_or_steer_turn(
             TurnInputRequest::user_input(vec![UserInput::Text {
                 text: "Start the cell and review both commands.".into(),
@@ -452,19 +452,19 @@ for (const phase of ["before", "after"]) {
         pause.finished.notified().await;
 
         release_created.send(()).unwrap();
-        wait_for_event(&test.ava-code, |event| {
+        wait_for_event(&test.ava, |event| {
             matches!(event, EventMsg::AgentMessage(message) if message.message == "B is ready")
         }).await;
         pause.started.notified().await;
         pause.resume.notify_one();
         pause.finished.notified().await;
         release_completed.send(()).unwrap();
-        wait_for_event(&test.ava-code, |event| {
+        wait_for_event(&test.ava, |event| {
             matches!(event, EventMsg::TurnComplete(_))
         })
         .await;
 
-        test.ava-code
+        test.ava
             .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
                 text: "Start a fresh turn.".into(),
                 text_elements: Vec::new(),
@@ -472,7 +472,7 @@ for (const phase of ["before", "after"]) {
             .await?;
         pause.started.notified().await;
         pause.resume.notify_one();
-        wait_for_event(&test.ava-code, |event| {
+        wait_for_event(&test.ava, |event| {
             matches!(event, EventMsg::TurnComplete(_))
         })
         .await;
@@ -491,7 +491,7 @@ for (const phase of ["before", "after"]) {
         reviews,
         vec![Some(json!("parent-a")), Some(json!("parent-b")), None]
     );
-    test.ava-code.shutdown_and_wait().await?;
+    test.ava.shutdown_and_wait().await?;
     streaming.shutdown().await;
     Ok(())
 }
@@ -960,7 +960,7 @@ async fn guardian_session_prewarms_and_is_reused_for_first_review(
         .as_str()
         .expect("guardian thread id");
 
-    test.ava-code
+    test.ava
         .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
             text: "run a command that requires Guardian review".into(),
             text_elements: Vec::new(),
@@ -1066,10 +1066,10 @@ async fn guardian_session_prewarms_and_is_reused_for_first_review(
         .guardian_trunk_rollout_path()
         .await
         .expect("guardian trunk rollout path");
-    test.ava-code.shutdown_and_wait().await?;
+    test.ava.shutdown_and_wait().await?;
     // Parent stop joins ThreadManager cleanup through the real extension registration.
     assert!(
-        test.ava-code
+        test.ava
             .thread_extension_data()
             .get::<ava_guardian_reviewer::ReviewerTasks>()
             .expect("Guardian tasks")
@@ -1193,7 +1193,7 @@ async fn guardian_node_repl_policy_follows_production_approval_path(
                 .expect("configure REPL MCP test server");
         });
     let test = builder.build_with_auto_env(&server).await?;
-    wait_for_mcp_server(&test.ava-code, repl_server).await?;
+    wait_for_mcp_server(&test.ava, repl_server).await?;
 
     let actions: &[&str] = if scenario == "shell_then_nodes" {
         &["shell", "node-first", "node-second"]
@@ -1378,20 +1378,20 @@ async fn guardian_reviews_delayed_and_new_actions_after_catalog_refresh() -> Res
     }
     events.push(sse(vec![ev_response_created("done"), ev_completed("done")]));
     let responses = mount_sse_sequence(&server, events).await;
-    test.ava-code
+    test.ava
         .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
             text: "run both protected commands".to_string(),
             text_elements: Vec::new(),
         }]))
         .await?;
-    let turn_id = wait_for_event_match(&test.ava-code, |event| match event {
+    let turn_id = wait_for_event_match(&test.ava, |event| match event {
         EventMsg::TurnStarted(event) => Some(event.turn_id.clone()),
         _ => None,
     })
     .await;
     tokio::time::timeout(Duration::from_secs(10), pause.started.notified()).await?;
     let (reply, outcome) = tokio::sync::oneshot::channel();
-    test.ava-code
+    test.ava
         .submit(Op::TurnSettings {
             turn_id,
             update: ava_protocol::protocol::TurnSettingsUpdate {
@@ -1435,7 +1435,7 @@ async fn guardian_reviews_delayed_and_new_actions_after_catalog_refresh() -> Res
         catalog
     );
     pause.resume.notify_one();
-    wait_for_event(&test.ava-code, |event| {
+    wait_for_event(&test.ava, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;
@@ -1655,7 +1655,7 @@ async fn guardian_session_is_reused_for_consecutive_tool_reviews_without_prewarm
         .expect("local environment selection")
         .config = EnvironmentConfigState::Ready(parent_environment_config);
 
-    test.ava-code
+    test.ava
         .start_or_steer_turn(
             TurnInputRequest::user_input(vec![UserInput::Text {
                 text: "run the first command that requires Guardian review".into(),
@@ -1669,11 +1669,11 @@ async fn guardian_session_is_reused_for_consecutive_tool_reviews_without_prewarm
             }),
         )
         .await?;
-    wait_for_event(&test.ava-code, |event| {
+    wait_for_event(&test.ava, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;
-    test.ava-code
+    test.ava
         .start_or_steer_turn(
             TurnInputRequest::user_input(vec![UserInput::Text {
                 text: "run the second command that requires Guardian review".into(),
@@ -1685,7 +1685,7 @@ async fn guardian_session_is_reused_for_consecutive_tool_reviews_without_prewarm
             }),
         )
         .await?;
-    wait_for_event(&test.ava-code, |event| {
+    wait_for_event(&test.ava, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;
@@ -1855,13 +1855,13 @@ async fn interrupted_guardian_review_across_model_change_does_not_execute_the_co
         .build_with_auto_env(&server)
         .await?;
 
-    test.ava-code
+    test.ava
         .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
             text: "interrupt a Guardian-reviewed command".into(),
             text_elements: Vec::new(),
         }]))
         .await?;
-    let turn_id = wait_for_event_match(&test.ava-code, |event| match event {
+    let turn_id = wait_for_event_match(&test.ava, |event| match event {
         EventMsg::TurnStarted(event) => Some(event.turn_id.clone()),
         _ => None,
     })
@@ -1874,7 +1874,7 @@ async fn interrupted_guardian_review_across_model_change_does_not_execute_the_co
     .context("timed out waiting for Guardian review request")?;
 
     let (reply, outcome) = tokio::sync::oneshot::channel();
-    test.ava-code
+    test.ava
         .submit(Op::TurnSettings {
             turn_id,
             update: ava_protocol::protocol::TurnSettingsUpdate {
@@ -1888,8 +1888,8 @@ async fn interrupted_guardian_review_across_model_change_does_not_execute_the_co
         tokio::time::timeout(Duration::from_secs(10), outcome).await??,
         ava_protocol::protocol::TurnSettingsUpdateOutcome::Applied
     );
-    test.ava-code.submit(Op::Interrupt).await?;
-    wait_for_event(&test.ava-code, |event| {
+    test.ava.submit(Op::Interrupt).await?;
+    wait_for_event(&test.ava, |event| {
         matches!(event, EventMsg::TurnAborted(_))
     })
     .await;
@@ -1898,7 +1898,7 @@ async fn interrupted_guardian_review_across_model_change_does_not_execute_the_co
         .expect("release interrupted review response");
     // The cancelled connection may close before the server finishes writing.
     let _ = tokio::time::timeout(Duration::from_secs(5), completions.remove(1)).await?;
-    test.ava-code
+    test.ava
         .start_or_steer_turn(
             TurnInputRequest::user_input(vec![UserInput::Text {
                 text: "verify Guardian cancellation left the next turn clean".into(),
@@ -1910,7 +1910,7 @@ async fn interrupted_guardian_review_across_model_change_does_not_execute_the_co
             }),
         )
         .await?;
-    wait_for_event(&test.ava-code, |event| {
+    wait_for_event(&test.ava, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;
@@ -2081,7 +2081,7 @@ async fn guardian_denial_rejects_tool_call_with_rationale(
     )
     .await;
 
-    test.ava-code
+    test.ava
         .start_or_steer_turn(
             TurnInputRequest::user_input(vec![UserInput::Text {
                 text: "run a command that Guardian should deny".into(),
@@ -2095,7 +2095,7 @@ async fn guardian_denial_rejects_tool_call_with_rationale(
             }),
         )
         .await?;
-    wait_for_event(&test.ava-code, |event| {
+    wait_for_event(&test.ava, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;
@@ -2276,13 +2276,13 @@ async fn guardian_timeout_rejects_tool_call_with_acting_model_instructions(
     )
     .await;
 
-    test.ava-code
+    test.ava
         .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
             text: "run a command whose approval review will time out".into(),
             text_elements: Vec::new(),
         }]))
         .await?;
-    wait_for_event(&test.ava-code, |event| {
+    wait_for_event(&test.ava, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;
@@ -2409,7 +2409,7 @@ async fn cyber_model_guardian_denial_interrupts_turn_immediately(
     )
     .await;
 
-    test.ava-code
+    test.ava
         .start_or_steer_turn(
             TurnInputRequest::user_input(vec![UserInput::Text {
                 text: "run a command that Guardian should deny for a cyber model".into(),
@@ -2425,7 +2425,7 @@ async fn cyber_model_guardian_denial_interrupts_turn_immediately(
         .await?;
 
     let mut assessments = Vec::new();
-    let warning = wait_for_event(&test.ava-code, |event| {
+    let warning = wait_for_event(&test.ava, |event| {
         match event {
             EventMsg::GuardianAssessment(event) => assessments.push(event.clone()),
             EventMsg::GuardianWarning(warning)
@@ -2468,7 +2468,7 @@ async fn cyber_model_guardian_denial_interrupts_turn_immediately(
             .contains("1 consecutive, 1 in the last 50 reviews")
     );
 
-    let aborted = wait_for_event(&test.ava-code, |event| {
+    let aborted = wait_for_event(&test.ava, |event| {
         matches!(event, EventMsg::TurnAborted(_))
     })
     .await;
@@ -2565,7 +2565,7 @@ printf '%s\n' "${@: -1}" >> "${payload_path}""#,
     )
     .await;
 
-    test.ava-code
+    test.ava
         .start_or_steer_turn(
             TurnInputRequest::user_input(vec![UserInput::Text {
                 text: "run a command that requires Guardian review".into(),
@@ -2580,7 +2580,7 @@ printf '%s\n' "${@: -1}" >> "${payload_path}""#,
             }),
         )
         .await?;
-    wait_for_event(&test.ava-code, |event| {
+    wait_for_event(&test.ava, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;
@@ -2732,7 +2732,7 @@ for (let index = 0; index < 6; index++) {{
         ]),
     )
     .await;
-    test.ava-code
+    test.ava
         .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
             text: "Run B and wait for A.".into(),
             text_elements: Vec::new(),
@@ -2742,7 +2742,7 @@ for (let index = 0; index < 6; index++) {{
     let mut warning_id = None;
     loop {
         let event =
-            tokio::time::timeout(Duration::from_secs(60), test.ava-code.next_event()).await??;
+            tokio::time::timeout(Duration::from_secs(60), test.ava.next_event()).await??;
         match event.msg {
             EventMsg::TurnStarted(_) => active_id = Some(event.id),
             EventMsg::GuardianWarning(warning)

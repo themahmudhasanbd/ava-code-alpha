@@ -566,13 +566,13 @@ async fn amazon_bedrock_aws_auth_refresh_resigns() -> anyhow::Result<()> {
         });
     let test = builder.build_with_auto_env(&server).await?;
     if persistent_export_failure {
-        test.ava-code
+        test.ava
             .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
                 text: "fail export even after login".into(),
                 text_elements: Vec::new(),
             }]))
             .await?;
-        let EventMsg::TurnComplete(completed) = wait_for_event(&test.ava-code, |event| {
+        let EventMsg::TurnComplete(completed) = wait_for_event(&test.ava, |event| {
             matches!(event, EventMsg::TurnComplete(_))
         })
         .await
@@ -606,7 +606,7 @@ async fn amazon_bedrock_aws_auth_refresh_resigns() -> anyhow::Result<()> {
         server.verify().await;
         return Ok(());
     }
-    test.ava-code
+    test.ava
         .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
             text: "hello".to_string(),
             text_elements: Vec::new(),
@@ -615,7 +615,7 @@ async fn amazon_bedrock_aws_auth_refresh_resigns() -> anyhow::Result<()> {
 
     let mut recovery_events = Vec::new();
     loop {
-        match core_test_support::wait_for_event(&test.ava-code, |_| true).await {
+        match core_test_support::wait_for_event(&test.ava, |_| true).await {
             EventMsg::AuthRecoveryStarted(event) => recovery_events.push(("started", event)),
             EventMsg::AuthRecoveryCompleted(event) => recovery_events.push(("completed", event)),
             EventMsg::TurnComplete(_) => break,
@@ -670,19 +670,19 @@ async fn amazon_bedrock_aws_auth_refresh_resigns() -> anyhow::Result<()> {
         ],
     )
     .await;
-    test.ava-code
+    test.ava
         .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
             text: "reject the refreshed credentials too".into(),
             text_elements: Vec::new(),
         }]))
         .await?;
     let EventMsg::Error(error) =
-        wait_for_event(&test.ava-code, |event| matches!(event, EventMsg::Error(_))).await
+        wait_for_event(&test.ava, |event| matches!(event, EventMsg::Error(_))).await
     else {
         unreachable!("predicate guarantees an error event");
     };
     assert!(error.message.contains("ExpiredTokenException"), "{error:?}");
-    let EventMsg::TurnComplete(completed) = wait_for_event(&test.ava-code, |event| {
+    let EventMsg::TurnComplete(completed) = wait_for_event(&test.ava, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await

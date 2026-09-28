@@ -54,7 +54,7 @@ async fn ava_delegate_ignores_legacy_deltas() {
     let test = builder.build(&server).await.expect("build test ava");
 
     // Kick off review (delegated).
-    test.ava-code
+    test.ava
         .submit(Op::Review {
             review_request: ReviewRequest {
                 target: ReviewTarget::Custom {
@@ -69,7 +69,7 @@ async fn ava_delegate_ignores_legacy_deltas() {
     let mut reasoning_delta_count = 0;
 
     loop {
-        let ev = wait_for_event(&test.ava-code, |_| true).await;
+        let ev = wait_for_event(&test.ava, |_| true).await;
         match ev {
             EventMsg::ReasoningContentDelta(_) => reasoning_delta_count += 1,
             EventMsg::TurnComplete(_) => break,
@@ -112,7 +112,7 @@ async fn ava_delegate_rejects_escalation_requests_when_parent_can_prompt() {
         .await
         .expect("build review delegate with escalation support");
 
-    test.ava-code
+    test.ava
         .submit(Op::Review {
             review_request: ReviewRequest {
                 target: ReviewTarget::Custom {
@@ -124,7 +124,7 @@ async fn ava_delegate_rejects_escalation_requests_when_parent_can_prompt() {
         .await
         .expect("submit review");
 
-    let event = wait_for_event(&test.ava-code, |event| {
+    let event = wait_for_event(&test.ava, |event| {
         matches!(
             event,
             EventMsg::ExecApprovalRequest(_) | EventMsg::TurnComplete(_)
@@ -209,7 +209,7 @@ default_tools_approval_mode = "prompt"
         .await
         .expect("build review delegate with legacy MCP approvals");
 
-    test.ava-code
+    test.ava
         .submit(Op::Review {
             review_request: ReviewRequest {
                 target: ReviewTarget::Custom {
@@ -221,7 +221,7 @@ default_tools_approval_mode = "prompt"
         .await
         .expect("submit review");
 
-    let event = wait_for_event(&test.ava-code, |event| {
+    let event = wait_for_event(&test.ava, |event| {
         matches!(
             event,
             EventMsg::RequestUserInput(_)
@@ -306,7 +306,7 @@ async fn ava_delegate_rejects_skill_mcp_dependency_installation_without_promptin
         .await
         .expect("build review delegate with a missing skill MCP dependency");
 
-    test.ava-code
+    test.ava
         .submit(Op::Review {
             review_request: ReviewRequest {
                 target: ReviewTarget::Custom {
@@ -318,7 +318,7 @@ async fn ava_delegate_rejects_skill_mcp_dependency_installation_without_promptin
         .await
         .expect("submit review");
 
-    let event = wait_for_event(&test.ava-code, |event| {
+    let event = wait_for_event(&test.ava, |event| {
         matches!(
             event,
             EventMsg::RequestUserInput(_) | EventMsg::TurnComplete(_)
@@ -411,7 +411,7 @@ async fn guardian_delegate_rejects_escalation_requests_without_prompting() {
     )
     .await;
 
-    test.ava-code
+    test.ava
         .start_or_steer_turn(
             TurnInputRequest::user_input(vec![UserInput::Text {
                 text: "Trigger Guardian review of an escalated command".to_string(),
@@ -426,7 +426,7 @@ async fn guardian_delegate_rejects_escalation_requests_without_prompting() {
         .await
         .expect("submit guardian-reviewed command");
 
-    let event = wait_for_event(&test.ava-code, |event| {
+    let event = wait_for_event(&test.ava, |event| {
         matches!(
             event,
             EventMsg::ExecApprovalRequest(_) | EventMsg::TurnComplete(_)

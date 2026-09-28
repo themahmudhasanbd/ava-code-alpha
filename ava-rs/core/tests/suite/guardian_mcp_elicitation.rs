@@ -122,7 +122,7 @@ async fn interrupt_aborts_server_initiated_mcp_guardian_review() -> Result<()> {
             .expect("set MCP fixture");
     });
     let test = builder.build_with_auto_env(&server).await?;
-    wait_for_mcp_server(&test.ava-code, "elicitation").await?;
+    wait_for_mcp_server(&test.ava, "elicitation").await?;
     responses::mount_sse_once(
         &server,
         responses::sse(vec![
@@ -162,7 +162,7 @@ async fn interrupt_aborts_server_initiated_mcp_guardian_review() -> Result<()> {
     )
     .await;
 
-    test.ava-code
+    test.ava
         .start_or_steer_turn(
             TurnInputRequest::user_input(vec![UserInput::Text {
                 text: "Run the tool that requests server-side approval.".into(),
@@ -187,12 +187,12 @@ async fn interrupt_aborts_server_initiated_mcp_guardian_review() -> Result<()> {
             .body_contains_text("write_record")
     );
 
-    test.ava-code.submit(Op::Interrupt).await?;
+    test.ava.submit(Op::Interrupt).await?;
     tokio::time::timeout(Duration::from_secs(10), async {
         let mut guardian_aborted = false;
         let mut parent_aborted = false;
         while !guardian_aborted || !parent_aborted {
-            match test.ava-code.next_event().await?.msg {
+            match test.ava.next_event().await?.msg {
                 EventMsg::GuardianAssessment(assessment)
                     if assessment.status == GuardianAssessmentStatus::Aborted =>
                 {
@@ -206,7 +206,7 @@ async fn interrupt_aborts_server_initiated_mcp_guardian_review() -> Result<()> {
     })
     .await
     .context("turn interruption did not abort the MCP elicitation review")??;
-    test.ava-code.shutdown_and_wait().await?;
+    test.ava.shutdown_and_wait().await?;
     Ok(())
 }
 
@@ -288,7 +288,7 @@ async fn server_initiated_mcp_elicitation_can_require_synchronous_auto_review(
                 .expect("set MCP fixture");
         });
     let test = builder.build_with_auto_env(&server).await?;
-    wait_for_mcp_server(&test.ava-code, "elicitation").await?;
+    wait_for_mcp_server(&test.ava, "elicitation").await?;
     responses::mount_sse_once(
         &server,
         responses::sse(vec![
@@ -366,7 +366,7 @@ async fn server_initiated_mcp_elicitation_can_require_synchronous_auto_review(
     if requires_sync {
         assert!(guardian_requests[0].body_contains_text("write_record"));
     }
-    test.ava-code.shutdown_and_wait().await?;
+    test.ava.shutdown_and_wait().await?;
     Ok(())
 }
 
@@ -457,7 +457,7 @@ async fn node_elicitations_attribute_independent_reviews_without_changing_action
             .expect("set MCP fixture");
     });
     let test = builder.build_with_auto_env(&server).await?;
-    wait_for_mcp_server(&test.ava-code, server_name).await?;
+    wait_for_mcp_server(&test.ava, server_name).await?;
     if matches!(
         call_id_source,
         CallIdSource::WrongServer | CallIdSource::PreviousTurn
@@ -530,7 +530,7 @@ async fn node_elicitations_attribute_independent_reviews_without_changing_action
         responses::sse(vec![responses::ev_completed("parent-complete")]),
     )
     .await;
-    test.ava-code
+    test.ava
         .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
             text: "Run the JavaScript invocation with two reviewed inner actions.".into(),
             text_elements: Vec::new(),
@@ -539,7 +539,7 @@ async fn node_elicitations_attribute_independent_reviews_without_changing_action
     let mut assessments = Vec::new();
     let mut tool_items = Vec::new();
     loop {
-        let event = tokio::time::timeout(Duration::from_secs(30), test.ava-code.next_event())
+        let event = tokio::time::timeout(Duration::from_secs(30), test.ava.next_event())
             .await
             .context("timed out waiting for independent MCP Guardian reviews")??;
         match event.msg {
@@ -657,7 +657,7 @@ async fn node_elicitations_attribute_independent_reviews_without_changing_action
             .expect("Guardian rejection reason")
             .contains("Independent inner action decision.")
     );
-    test.ava-code.shutdown_and_wait().await?;
+    test.ava.shutdown_and_wait().await?;
     Ok(())
 }
 
@@ -702,7 +702,7 @@ async fn user_review_preserves_unsupported_guardian_elicitations(mode: &str) -> 
         })
         .build_with_auto_env(&server)
         .await?;
-    wait_for_mcp_server(&test.ava-code, "elicitation").await?;
+    wait_for_mcp_server(&test.ava, "elicitation").await?;
     responses::mount_sse_once(
         &server,
         responses::sse(vec![
@@ -721,13 +721,13 @@ async fn user_review_preserves_unsupported_guardian_elicitations(mode: &str) -> 
         responses::sse(vec![responses::ev_completed("parent-complete")]),
     )
     .await;
-    test.ava-code
+    test.ava
         .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
             text: "Run the tool and ask me for its approval.".into(),
             text_elements: Vec::new(),
         }]))
         .await?;
-    let event = wait_for_event(&test.ava-code, |event| {
+    let event = wait_for_event(&test.ava, |event| {
         matches!(
             event,
             EventMsg::ElicitationRequest(_)
@@ -750,7 +750,7 @@ async fn user_review_preserves_unsupported_guardian_elicitations(mode: &str) -> 
         }
         other => panic!("unexpected elicitation: {other:?}"),
     }
-    test.ava-code
+    test.ava
         .submit(Op::ResolveElicitation {
             server_name: request.server_name,
             request_id: request.id,
@@ -759,7 +759,7 @@ async fn user_review_preserves_unsupported_guardian_elicitations(mode: &str) -> 
             meta: None,
         })
         .await?;
-    wait_for_event(&test.ava-code, |event| {
+    wait_for_event(&test.ava, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;
@@ -770,7 +770,7 @@ async fn user_review_preserves_unsupported_guardian_elicitations(mode: &str) -> 
             .to_string()
             .contains("decline")
     );
-    test.ava-code.shutdown_and_wait().await?;
+    test.ava.shutdown_and_wait().await?;
     Ok(())
 }
 
@@ -809,7 +809,7 @@ async fn yielded_code_mode_elicitation_keeps_live_invocation_metadata() -> Resul
             config.mcp_servers.set(mcp_servers).unwrap();
         });
     let test = builder.build_with_auto_env(&server).await?;
-    wait_for_mcp_server(&test.ava-code, "node_repl").await?;
+    wait_for_mcp_server(&test.ava, "node_repl").await?;
     let barrier = r#"await tools.test_sync_tool({barrier: {
         id: "elicitation-origin", participants: 2, timeout_ms: 60000
     }});"#;
@@ -882,7 +882,7 @@ async fn yielded_code_mode_elicitation_keeps_live_invocation_metadata() -> Resul
         responses::sse(vec![responses::ev_completed("b-finished")]),
     )
     .await;
-    test.ava-code
+    test.ava
         .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
             text: "Run B and wait for A.".into(),
             text_elements: Vec::new(),
@@ -892,7 +892,7 @@ async fn yielded_code_mode_elicitation_keeps_live_invocation_metadata() -> Resul
     let mut assessment_target = None;
     loop {
         let event =
-            tokio::time::timeout(Duration::from_secs(60), test.ava-code.next_event()).await??;
+            tokio::time::timeout(Duration::from_secs(60), test.ava.next_event()).await??;
         match event.msg {
             EventMsg::ItemCompleted(event) => {
                 if let TurnItem::McpToolCall(item) = event.item {

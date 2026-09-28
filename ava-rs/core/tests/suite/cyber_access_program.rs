@@ -55,14 +55,14 @@ async fn recover_turn_restores_cyber_access_program_without_making_it_sticky() -
         panic!("expected a new turn");
     };
     initial_server.wait_for_request_count(/*count*/ 1).await;
-    initial.ava-code.submit(Op::Interrupt).await?;
-    wait_for_event(&initial.ava-code, |event| {
+    initial.ava.submit(Op::Interrupt).await?;
+    wait_for_event(&initial.ava, |event| {
         matches!(event, EventMsg::TurnAborted(_))
     })
     .await;
     drop(release_response);
     initial_server.shutdown().await;
-    initial.ava-code.flush_rollout().await?;
+    initial.ava.flush_rollout().await?;
 
     let server = responses::start_mock_server().await;
     let test = builder.restart(&server, &initial).await?;
@@ -107,7 +107,7 @@ async fn recover_turn_restores_cyber_access_program_without_making_it_sticky() -
             turn_id: turn_id.clone(),
         }
     );
-    wait_for_event(&test.ava-code, |event| {
+    wait_for_event(&test.ava, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;
@@ -143,7 +143,7 @@ async fn recover_turn_restores_cyber_access_program_without_making_it_sticky() -
         panic!("expected a new turn");
     };
     assert_ne!(next_turn_id, turn_id);
-    wait_for_event(&test.ava-code, |event| {
+    wait_for_event(&test.ava, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;
@@ -154,7 +154,7 @@ async fn recover_turn_restores_cyber_access_program_without_making_it_sticky() -
             .get("access_programs"),
         None
     );
-    test.ava-code.shutdown_and_wait().await?;
+    test.ava.shutdown_and_wait().await?;
     Ok(())
 }
 
@@ -447,13 +447,13 @@ async fn cyber_access_program_changes_on_one_websocket_with_response_reuse() -> 
             .map(|id| Some(json!(id)))
             .collect::<Vec<_>>()
     );
-    test.ava-code.shutdown_and_wait().await?;
+    test.ava.shutdown_and_wait().await?;
     server.shutdown().await;
     Ok(())
 }
 
 async fn submit(test: &TestAva, program: Option<CyberAccessProgram>) -> Result<()> {
-    test.ava-code
+    test.ava
         .start_or_steer_turn(
             TurnInputRequest::user_input(vec![UserInput::Text {
                 text: "hello".to_owned(),
@@ -465,7 +465,7 @@ async fn submit(test: &TestAva, program: Option<CyberAccessProgram>) -> Result<(
             }),
         )
         .await?;
-    let event = wait_for_event(&test.ava-code, |event| {
+    let event = wait_for_event(&test.ava, |event| {
         matches!(event, EventMsg::TurnComplete(_) | EventMsg::Error(_))
     })
     .await;

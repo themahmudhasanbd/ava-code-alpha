@@ -58,7 +58,7 @@ async fn existing_call_uses_selected_endpoint_and_runtime_auth(
         });
     let test = builder.build_with_auto_env(&server).await?;
 
-    test.ava-code
+    test.ava
         .submit(Op::RealtimeConversationStart(ConversationStartParams {
             client_managed_handoffs: false,
             delegation_ack_filler: None,
@@ -87,7 +87,7 @@ async fn existing_call_uses_selected_endpoint_and_runtime_auth(
         }))
         .await?;
 
-    wait_for_event_match(&test.ava-code, |event| match event {
+    wait_for_event_match(&test.ava, |event| match event {
         EventMsg::RealtimeConversationStarted(_) => Some(Ok(())),
         EventMsg::Error(error) => Some(Err(anyhow::anyhow!("{error:?}"))),
         _ => None,
@@ -113,12 +113,12 @@ async fn existing_call_uses_selected_endpoint_and_runtime_auth(
     );
     assert!(unused.handshakes().is_empty());
 
-    test.ava-code.submit(Op::RealtimeConversationClose).await?;
-    wait_for_event(&test.ava-code, |event| {
+    test.ava.submit(Op::RealtimeConversationClose).await?;
+    wait_for_event(&test.ava, |event| {
         matches!(event, EventMsg::RealtimeConversationClosed(_))
     })
     .await;
-    test.ava-code.shutdown_and_wait().await?;
+    test.ava.shutdown_and_wait().await?;
     configured_endpoint.shutdown().await;
     call_endpoint.shutdown().await;
     Ok(())

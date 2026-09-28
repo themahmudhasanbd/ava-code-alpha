@@ -113,7 +113,7 @@ async fn windows_exec_server_runs_with_native_shell_and_cwd() -> Result<()> {
                 }],
             );
 
-            test.ava-code
+            test.ava
                 .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
                         text: "run the Windows smoke command".to_string(),
                         text_elements: Vec::new(),
@@ -139,7 +139,7 @@ async fn windows_exec_server_runs_with_native_shell_and_cwd() -> Result<()> {
             let mut patch_end = None;
             let mut turn_complete = false;
             loop {
-                match wait_for_event(&test.ava-code, |_| true).await {
+                match wait_for_event(&test.ava, |_| true).await {
                     EventMsg::ExecCommandBegin(event) if event.call_id == CALL_ID => {
                         begin = Some(event)
                     }

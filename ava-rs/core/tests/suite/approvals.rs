@@ -670,7 +670,7 @@ async fn submit_turn(
 ) -> Result<()> {
     let session_model = test.session_configured.model.clone();
 
-    test.ava-code
+    test.ava
         .start_or_steer_turn(
             TurnInputRequest::user_input(vec![UserInput::Text {
                 text: prompt.into(),
@@ -704,7 +704,7 @@ async fn submit_turn_preserving_active_permission_profile(
 ) -> Result<()> {
     let session_model = test.session_configured.model.clone();
 
-    test.ava-code
+    test.ava
         .start_or_steer_turn(
             TurnInputRequest::user_input(vec![UserInput::Text {
                 text: prompt.into(),
@@ -784,7 +784,7 @@ async fn expect_exec_approval(
     test: &TestAva,
     expected_command: &str,
 ) -> ExecApprovalRequestEvent {
-    let event = wait_for_event(&test.ava-code, |event| {
+    let event = wait_for_event(&test.ava, |event| {
         matches!(
             event,
             EventMsg::ExecApprovalRequest(_) | EventMsg::TurnComplete(_)
@@ -812,7 +812,7 @@ async fn expect_patch_approval(
     expected_call_id: &str,
 ) -> ApplyPatchApprovalRequestEvent {
     let event = wait_for_event_with_timeout(
-        &test.ava-code,
+        &test.ava,
         |event| {
             matches!(
                 event,
@@ -839,7 +839,7 @@ async fn expect_patch_approval(
 }
 
 async fn wait_for_completion_without_approval(test: &TestAva) {
-    let event = wait_for_event(&test.ava-code, |event| {
+    let event = wait_for_event(&test.ava, |event| {
         matches!(
             event,
             EventMsg::ExecApprovalRequest(_) | EventMsg::TurnComplete(_)
@@ -857,7 +857,7 @@ async fn wait_for_completion_without_approval(test: &TestAva) {
 }
 
 async fn wait_for_completion(test: &TestAva) {
-    wait_for_event(&test.ava-code, |event| {
+    wait_for_event(&test.ava, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;
@@ -2054,7 +2054,7 @@ async fn run_scenario(scenario: &ScenarioSpec) -> Result<()> {
                     scenario.name
                 );
             }
-            test.ava-code
+            test.ava
                 .submit(Op::ExecApproval {
                     id: approval.effective_approval_id(),
                     turn_id: None,
@@ -2094,7 +2094,7 @@ async fn run_scenario(scenario: &ScenarioSpec) -> Result<()> {
                 "unexpected execpolicy amendment for {}",
                 scenario.name
             );
-            test.ava-code
+            test.ava
                 .submit(Op::ExecApproval {
                     id: approval.effective_approval_id(),
                     turn_id: None,
@@ -2116,7 +2116,7 @@ async fn run_scenario(scenario: &ScenarioSpec) -> Result<()> {
                     scenario.name
                 );
             }
-            test.ava-code
+            test.ava
                 .submit(Op::PatchApproval {
                     id: approval.call_id,
                     decision: decision.clone(),
@@ -2138,7 +2138,7 @@ async fn run_scenario(scenario: &ScenarioSpec) -> Result<()> {
         scenario.name, result.exit_code, result.stdout
     );
     let verification_result = scenario.expectation.verify(&test, &result);
-    test.ava-code.shutdown_and_wait().await?;
+    test.ava.shutdown_and_wait().await?;
     verification_result
 }
 
@@ -2202,7 +2202,7 @@ async fn approving_apply_patch_for_session_skips_future_prompts_for_same_file() 
     )
     .await?;
     let approval = expect_patch_approval(&test, call_id_1).await;
-    test.ava-code
+    test.ava
         .submit(Op::PatchApproval {
             id: approval.call_id,
             decision: ReviewDecision::ApprovedForSession,
@@ -2237,7 +2237,7 @@ async fn approving_apply_patch_for_session_skips_future_prompts_for_same_file() 
     )
     .await?;
 
-    let event = wait_for_event(&test.ava-code, |event| {
+    let event = wait_for_event(&test.ava, |event| {
         matches!(
             event,
             EventMsg::ApplyPatchApprovalRequest(_) | EventMsg::TurnComplete(_)
@@ -2347,7 +2347,7 @@ async fn assert_execpolicy_amendment_context(
         approval.proposed_execpolicy_amendment,
         Some(expected_execpolicy_amendment.clone())
     );
-    test.ava-code
+    test.ava
         .submit(Op::ExecApproval {
             id: approval.effective_approval_id(),
             turn_id: None,
@@ -2444,7 +2444,7 @@ async fn approving_execpolicy_amendment_persists_policy_and_skips_future_prompts
         Some(expected_execpolicy_amendment.clone())
     );
 
-    test.ava-code
+    test.ava
         .submit(Op::ExecApproval {
             id: approval.effective_approval_id(),
             turn_id: None,
@@ -2991,7 +2991,7 @@ ZDOTDIR = "{}"
     if request_extra_permissions {
         let mut approvals = 0;
         loop {
-            let event = wait_for_event(&test.ava-code, |event| {
+            let event = wait_for_event(&test.ava, |event| {
                 matches!(
                     event,
                     EventMsg::ExecApprovalRequest(_) | EventMsg::TurnComplete(_)
@@ -3002,7 +3002,7 @@ ZDOTDIR = "{}"
                 break;
             };
             approvals += 1;
-            test.ava-code
+            test.ava
                 .submit(Op::ExecApproval {
                     id: approval.effective_approval_id(),
                     turn_id: None,
@@ -3520,7 +3520,7 @@ async fn env_zsh_script_spawned_by_python_can_request_escalation_under_zsh_fork(
     let session_model = test.session_configured.model.clone();
     let (sandbox_policy, permission_profile) =
         turn_permission_fields(permission_profile, test.cwd.path());
-    test.ava-code
+    test.ava
         .start_or_steer_turn(
             TurnInputRequest::user_input(vec![UserInput::Text {
                 text: "run nested env zsh script through python".into(),
@@ -3546,7 +3546,7 @@ async fn env_zsh_script_spawned_by_python_can_request_escalation_under_zsh_fork(
         .await?;
 
     let approval_event = wait_for_event_with_timeout(
-        &test.ava-code,
+        &test.ava,
         |event| {
             matches!(
                 event,
@@ -3569,7 +3569,7 @@ async fn env_zsh_script_spawned_by_python_can_request_escalation_under_zsh_fork(
         approval.command
     );
 
-    test.ava-code
+    test.ava
         .submit(Op::ExecApproval {
             id: approval.effective_approval_id(),
             turn_id: None,
@@ -3661,7 +3661,7 @@ async fn matched_prefix_rule_runs_unsandboxed_under_zsh_fork() -> Result<()> {
     let session_model = test.session_configured.model.clone();
     let (sandbox_policy, permission_profile) =
         turn_permission_fields(permission_profile, test.cwd.path());
-    test.ava-code
+    test.ava
         .start_or_steer_turn(
             TurnInputRequest::user_input(vec![UserInput::Text {
                 text: "run allowed touch under zsh fork".into(),
@@ -4122,7 +4122,7 @@ async fn approving_fallback_rule_for_compound_command_works() -> Result<()> {
         .expect("should have a proposed execpolicy amendment");
     assert!(amendment.command.contains(&command.to_string()));
 
-    test.ava-code
+    test.ava
         .submit(Op::ExecApproval {
             id: approval_id,
             turn_id: None,
@@ -4282,7 +4282,7 @@ allow_local_binding = true
             .checked_duration_since(std::time::Instant::now())
             .expect("timed out waiting for network approval request");
         let event = wait_for_event_with_timeout(
-            &test.ava-code,
+            &test.ava,
             |event| {
                 matches!(
                     event,
@@ -4299,7 +4299,7 @@ allow_local_binding = true
                 {
                     break approval;
                 }
-                test.ava-code
+                test.ava
                     .submit(Op::ExecApproval {
                         id: approval.effective_approval_id(),
                         turn_id: None,
@@ -4337,7 +4337,7 @@ allow_local_binding = true
         .find(|amendment| amendment.action == NetworkPolicyRuleAction::Deny)
         .expect("expected deny network policy amendment");
 
-    test.ava-code
+    test.ava
         .submit(Op::ExecApproval {
             id: approval.effective_approval_id(),
             turn_id: None,
@@ -4428,7 +4428,7 @@ allow_local_binding = true
             .checked_duration_since(std::time::Instant::now())
             .expect("timed out waiting for second turn completion");
         let event = wait_for_event_with_timeout(
-            &test.ava-code,
+            &test.ava,
             |event| {
                 matches!(
                     event,
@@ -4448,7 +4448,7 @@ allow_local_binding = true
                         approval.command
                     );
                 }
-                test.ava-code
+                test.ava
                     .submit(Op::ExecApproval {
                         id: approval.effective_approval_id(),
                         turn_id: None,
@@ -4575,7 +4575,7 @@ allow_local_binding = true
     let (turn_sandbox_policy, turn_permission_profile) =
         turn_permission_fields(permission_profile, test.config.cwd.as_path());
     let session_model = test.session_configured.model.clone();
-    test.ava-code
+    test.ava
         .start_or_steer_turn(
             TurnInputRequest::user_input(vec![UserInput::Text {
                 text: "deny-read network retry".into(),
@@ -4607,7 +4607,7 @@ allow_local_binding = true
             .checked_duration_since(std::time::Instant::now())
             .expect("timed out waiting for network approval request");
         let event = wait_for_event_with_timeout(
-            &test.ava-code,
+            &test.ava,
             |event| {
                 matches!(
                     event,
@@ -4629,7 +4629,7 @@ allow_local_binding = true
                     command_approval_count, 1,
                     "expected only the outer explicit escalation approval"
                 );
-                test.ava-code
+                test.ava
                     .submit(Op::ExecApproval {
                         id: approval.effective_approval_id(),
                         turn_id: None,
@@ -4657,7 +4657,7 @@ allow_local_binding = true
         .find(|amendment| amendment.action == NetworkPolicyRuleAction::Allow)
         .expect("expected allow network policy amendment");
 
-    test.ava-code
+    test.ava
         .submit(Op::ExecApproval {
             id: approval.effective_approval_id(),
             turn_id: None,
@@ -4770,7 +4770,7 @@ allow_local_binding = true
             .checked_duration_since(std::time::Instant::now())
             .expect("timed out waiting for network approval request");
         let event = wait_for_event_with_timeout(
-            &test.ava-code,
+            &test.ava,
             |event| {
                 matches!(
                     event,
@@ -4787,7 +4787,7 @@ allow_local_binding = true
                 {
                     break approval;
                 }
-                test.ava-code
+                test.ava
                     .submit(Op::ExecApproval {
                         id: approval.effective_approval_id(),
                         turn_id: None,
@@ -4808,7 +4808,7 @@ allow_local_binding = true
         .expect("expected network approval context");
     assert_eq!(network_context.protocol, NetworkApprovalProtocol::Http);
 
-    test.ava-code
+    test.ava
         .submit(Op::ExecApproval {
             id: approval.effective_approval_id(),
             turn_id: None,
@@ -4880,7 +4880,7 @@ async fn compound_command_with_one_safe_command_still_requires_approval() -> Res
     .await?;
 
     let approval = expect_exec_approval(&test, expected_command.as_str()).await;
-    test.ava-code
+    test.ava
         .submit(Op::ExecApproval {
             id: approval.effective_approval_id(),
             turn_id: None,

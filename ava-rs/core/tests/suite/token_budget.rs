@@ -580,20 +580,20 @@ async fn token_budget_defaults_follow_the_active_model(activation: Feature) -> R
 
     test.submit_turn("inspect first-model guidance").await?;
     core_test_support::submit_thread_settings(
-        &test.ava-code,
+        &test.ava,
         ThreadSettingsOverrides {
             model: Some("gpt-5.4".to_string()),
             ..Default::default()
         },
     )
     .await?;
-    test.ava-code
+    test.ava
         .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
             text: "inspect second-model guidance".to_string(),
             text_elements: Vec::new(),
         }]))
         .await?;
-    wait_for_event(&test.ava-code, |event| {
+    wait_for_event(&test.ava, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;
@@ -773,7 +773,7 @@ async fn token_budget_context_injects_plain_thread_hint_text() -> Result<()> {
         })
         .build(&server)
         .await?;
-    wait_for_mcp_server(&test.ava-code, "notes").await?;
+    wait_for_mcp_server(&test.ava, "notes").await?;
     let responses = mount_sse_sequence(
         &server,
         vec![sse(vec![
@@ -1155,7 +1155,7 @@ async fn token_budget_context_uses_new_window_after_compaction(
         .await?;
 
     if retain_client_developer_messages {
-        test.ava-code
+        test.ava
             .inject_response_items(vec![serde_json::from_value(json!({
                 "type": "message",
                 "role": "developer",
@@ -1164,8 +1164,8 @@ async fn token_budget_context_uses_new_window_after_compaction(
             .await?;
     }
     test.submit_turn("before compact").await?;
-    test.ava-code.submit(Op::Compact).await?;
-    assert_context_compaction_item_lifecycle(&test.ava-code).await;
+    test.ava.submit(Op::Compact).await?;
+    assert_context_compaction_item_lifecycle(&test.ava).await;
     test.submit_turn("after compact").await?;
 
     let requests = responses.requests();
@@ -1247,9 +1247,9 @@ async fn token_budget_compaction_runs_compact_hooks() -> Result<()> {
         .build(&server)
         .await?;
 
-    test.ava-code.submit(Op::Compact).await?;
+    test.ava.submit(Op::Compact).await?;
 
-    let pre_compact = wait_for_event_match(&test.ava-code, |event| match event {
+    let pre_compact = wait_for_event_match(&test.ava, |event| match event {
         EventMsg::HookCompleted(completed)
             if completed.run.event_name == HookEventName::PreCompact =>
         {
@@ -1260,7 +1260,7 @@ async fn token_budget_compaction_runs_compact_hooks() -> Result<()> {
     .await;
     assert_eq!(pre_compact.run.status, HookRunStatus::Completed);
 
-    let post_compact = wait_for_event_match(&test.ava-code, |event| match event {
+    let post_compact = wait_for_event_match(&test.ava, |event| match event {
         EventMsg::HookCompleted(completed)
             if completed.run.event_name == HookEventName::PostCompact =>
         {
@@ -1270,7 +1270,7 @@ async fn token_budget_compaction_runs_compact_hooks() -> Result<()> {
     })
     .await;
     assert_eq!(post_compact.run.status, HookRunStatus::Completed);
-    wait_for_event(&test.ava-code, |event| {
+    wait_for_event(&test.ava, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;
@@ -1340,7 +1340,7 @@ async fn token_budget_mid_turn_auto_compaction_resets_before_active_follow_up(
         .await?;
 
     if retain_client_developer_messages {
-        test.ava-code
+        test.ava
             .inject_response_items(vec![serde_json::from_value(json!({
                 "type": "message",
                 "role": "developer",

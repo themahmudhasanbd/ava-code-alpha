@@ -332,7 +332,7 @@ async fn retained_instructions_keep_identity_across_compaction_and_resume(
         ])
     }));
     let response_mock = mount_sse_sequence(&server, responses).await;
-    test.ava-code
+    test.ava
         .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
             text: initial.clone(),
             text_elements: Vec::new(),
@@ -340,20 +340,20 @@ async fn retained_instructions_keep_identity_across_compaction_and_resume(
         .await?;
     let mut answers = Vec::new();
     for (call_id, question, answer) in questions {
-        let request = wait_for_event_match(&test.ava-code, |event| match event {
+        let request = wait_for_event_match(&test.ava, |event| match event {
             EventMsg::RequestUserInput(request) => Some(request.clone()),
             _ => None,
         })
         .await;
         if answers.is_empty() {
-            test.ava-code
+            test.ava
                 .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
                     text: STEER.to_owned(),
                     text_elements: Vec::new(),
                 }]))
                 .await?;
         }
-        test.ava-code
+        test.ava
             .submit(Op::UserInputAnswer {
                 id: request.turn_id.clone(),
                 response: RequestUserInputResponse {
@@ -375,13 +375,13 @@ async fn retained_instructions_keep_identity_across_compaction_and_resume(
             }],
         });
     }
-    wait_for_event(&test.ava-code, |event| {
+    wait_for_event(&test.ava, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;
     // Rebuild from source events before there is a compaction checkpoint. The answer
     // was persisted first, but the accepted steering instruction must retain order 1.
-    let thread = resume(&test, &test.ava-code).await?;
+    let thread = resume(&test, &test.ava).await?;
     assert_eq!(answers[0].turn_id, answers[1].turn_id);
     let requests = response_mock.requests();
     assert_eq!(requests.len(), 3);
@@ -596,7 +596,7 @@ async fn legacy_checkpoint_recovers_root_excerpt_before_discarding_backup(
         ],
     )
     .await;
-    test.ava-code
+    test.ava
         .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
             text: format!(
                 "Never publish publicly.\n{}\nNever upload logs.",
@@ -605,18 +605,18 @@ async fn legacy_checkpoint_recovers_root_excerpt_before_discarding_backup(
             text_elements: Vec::new(),
         }]))
         .await?;
-    wait_for_event(&test.ava-code, |event| {
+    wait_for_event(&test.ava, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;
-    let snapshot = test.ava-code.conversation_history_snapshot().await;
+    let snapshot = test.ava.conversation_history_snapshot().await;
     let source = snapshot
         .items()
         .find(|item| matches!(item, ResponseItem::Message { role, .. } if role == "user"))
         .cloned()
         .context("original instruction")?;
-    let mut expected = compact_and_assert_answers(&test, &test.ava-code, &[]).await?;
-    let mut checkpoint = load_context(&test, &test.ava-code)
+    let mut expected = compact_and_assert_answers(&test, &test.ava, &[]).await?;
+    let mut checkpoint = load_context(&test, &test.ava)
         .await?
         .into_iter()
         .rev()
@@ -652,10 +652,10 @@ async fn legacy_checkpoint_recovers_root_excerpt_before_discarding_backup(
         LegacyInstructionSource::ModelWindow => window.push(source.into()),
         LegacyInstructionSource::Missing => expected = legacy,
     }
-    test.ava-code
+    test.ava
         .append_rollout_items(&[RolloutItem::Compacted(checkpoint)])
         .await?;
-    let resumed = resume(&test, &test.ava-code).await?;
+    let resumed = resume(&test, &test.ava).await?;
     assert_eq!(
         resumed
             .conversation_history_snapshot()
@@ -714,26 +714,26 @@ async fn disabled_capture_stays_incomplete_after_compaction_and_enabled_resume()
         ],
     )
     .await;
-    test.ava-code
+    test.ava
         .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
             text: "Never publish publicly.".to_owned(),
             text_elements: Vec::new(),
         }]))
         .await?;
-    wait_for_event(&test.ava-code, |event| {
+    wait_for_event(&test.ava, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;
 
-    let checkpoint = compact_and_assert_answers(&test, &test.ava-code, &[]).await?;
+    let checkpoint = compact_and_assert_answers(&test, &test.ava, &[]).await?;
     assert!(!checkpoint.user_messages_complete());
     assert_eq!(checkpoint.ordered_entries().count(), 0);
 
-    let thread_id = test.ava-code.startup_metadata().thread_id;
-    test.ava-code.shutdown_and_wait().await?;
+    let thread_id = test.ava.startup_metadata().thread_id;
+    test.ava.shutdown_and_wait().await?;
     test.thread_manager.remove_thread(&thread_id).await;
     let items: Vec<RolloutItem> = serde_json::from_value(serde_json::to_value(
-        load_context(&test, &test.ava-code).await?,
+        load_context(&test, &test.ava).await?,
     )?)?;
     let mut config = test.config.clone();
     config
@@ -820,7 +820,7 @@ async fn legacy_rollback_replay_retains_only_surviving_steered_answers() -> Resu
         .collect::<Vec<_>>();
     responses.push(sse(vec![ev_completed("done")]));
     let response_mock = mount_sse_sequence(&server, responses).await;
-    test.ava-code
+    test.ava
         .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
             text: "Check whether to publish.".to_owned(),
             text_elements: Vec::new(),
@@ -828,20 +828,20 @@ async fn legacy_rollback_replay_retains_only_surviving_steered_answers() -> Resu
         .await?;
     let mut answers = Vec::new();
     for (call_id, question, answer) in questions {
-        let request = wait_for_event_match(&test.ava-code, |event| match event {
+        let request = wait_for_event_match(&test.ava, |event| match event {
             EventMsg::RequestUserInput(request) => Some(request.clone()),
             _ => None,
         })
         .await;
         if answers.is_empty() {
-            test.ava-code
+            test.ava
                 .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
                     text: "Also inspect the README.".to_owned(),
                     text_elements: Vec::new(),
                 }]))
                 .await?;
         }
-        test.ava-code
+        test.ava
             .submit(Op::UserInputAnswer {
                 id: request.turn_id.clone(),
                 response: RequestUserInputResponse {
@@ -863,7 +863,7 @@ async fn legacy_rollback_replay_retains_only_surviving_steered_answers() -> Resu
             }],
         });
     }
-    wait_for_event(&test.ava-code, |event| {
+    wait_for_event(&test.ava, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;
@@ -891,7 +891,7 @@ async fn legacy_rollback_replay_retains_only_surviving_steered_answers() -> Resu
             );
         }
     }
-    test.ava-code
+    test.ava
         .append_rollout_items(
             &answers
                 .iter()
@@ -905,7 +905,7 @@ async fn legacy_rollback_replay_retains_only_surviving_steered_answers() -> Resu
                 .collect::<Vec<_>>(),
         )
         .await?;
-    let mut thread = resume(&test, &test.ava-code).await?;
+    let mut thread = resume(&test, &test.ava).await?;
     compact_and_assert_answers(&test, &thread, &answers).await?;
     for expected in [&answers[..1], &[]] {
         thread
@@ -986,13 +986,13 @@ async fn standalone_fork_retains_inherited_user_instructions(
             sse(vec![ev_completed("worker-complete")]),
         ],
     ).await;
-    test.ava-code
+    test.ava
         .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
             text: instruction.clone(),
             text_elements: Vec::new(),
         }]))
         .await?;
-    wait_for_event(&test.ava-code, |event| {
+    wait_for_event(&test.ava, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;
@@ -1001,7 +1001,7 @@ async fn standalone_fork_retains_inherited_user_instructions(
         .get_thread(created.recv().await?)
         .await?;
     wait_for_event(&worker, |event| matches!(event, EventMsg::TurnComplete(_))).await;
-    test.ava-code.shutdown_and_wait().await?;
+    test.ava.shutdown_and_wait().await?;
     let local_instruction = if compacted {
         // Leave less than Guardian's 900-token budget for the inherited source
         // within local compaction's 20K user-message budget.
@@ -1176,24 +1176,24 @@ async fn forked_parent_instructions_do_not_become_local_authorization(
         .build_with_auto_env(&server)
         .await?;
     mount_sse_sequence(&server, vec![sse(vec![ev_completed("initial")])]).await;
-    test.ava-code
+    test.ava
         .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
             text: "Inspect the project.".to_owned(),
             text_elements: Vec::new(),
         }]))
         .await?;
-    wait_for_event(&test.ava-code, |event| {
+    wait_for_event(&test.ava, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;
-    wait_for_thread_idle(&test.ava-code).await;
+    wait_for_thread_idle(&test.ava).await;
     if compact_parent {
-        test.ava-code.submit(Op::Compact).await?;
-        wait_for_event(&test.ava-code, |event| {
+        test.ava.submit(Op::Compact).await?;
+        wait_for_event(&test.ava, |event| {
             matches!(event, EventMsg::TurnComplete(_))
         })
         .await;
-        wait_for_thread_idle(&test.ava-code).await;
+        wait_for_thread_idle(&test.ava).await;
     }
 
     let mut created = test.thread_manager.subscribe_thread_created();
@@ -1246,13 +1246,13 @@ async fn forked_parent_instructions_do_not_become_local_authorization(
     )
     .await;
     // This grant is either in uncompacted history or in the checkpoint's replay suffix.
-    test.ava-code
+    test.ava
         .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
             text: PARENT_GRANT.to_owned(),
             text_elements: Vec::new(),
         }]))
         .await?;
-    wait_for_event(&test.ava-code, |event| {
+    wait_for_event(&test.ava, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;
@@ -1339,7 +1339,7 @@ async fn forked_parent_instructions_do_not_become_local_authorization(
         expected.as_ref()
     );
     child.shutdown_and_wait().await?;
-    test.ava-code.shutdown_and_wait().await?;
+    test.ava.shutdown_and_wait().await?;
     Ok(())
 }
 
@@ -1373,14 +1373,14 @@ async fn retained_answers_cross_real_session_boundaries(
         .build_with_auto_env(&server)
         .await?;
     let before = record_answer(
-        &test.ava-code,
+        &test.ava,
         &server,
         "before-compact",
         "Only publish privately.",
         /*acceptance_order*/ 1,
     )
     .await?;
-    let thread = resume(&test, &test.ava-code).await?;
+    let thread = resume(&test, &test.ava).await?;
     compact_and_assert_answers(&test, &thread, std::slice::from_ref(&before)).await?;
 
     let after = record_answer(

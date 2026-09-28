@@ -234,7 +234,7 @@ async fn unified_exec_zsh_fork_parent_approval_keeps_explicit_prompt_rule() -> R
     let mut intercepted_approval_ids = Vec::new();
     for _ in 0..2 {
         let approval_event = wait_for_event_with_timeout(
-            &test.ava-code,
+            &test.ava,
             |event| {
                 matches!(
                     event,
@@ -376,7 +376,7 @@ async fn unified_exec_zsh_fork_guardian_reviews_intercepted_execve() -> Result<(
 
     let mut intercepted_assessments = Vec::new();
     loop {
-        let event = tokio::time::timeout(Duration::from_secs(30), test.ava-code.next_event())
+        let event = tokio::time::timeout(Duration::from_secs(30), test.ava.next_event())
             .await
             .context("timed out waiting for intercepted execve Guardian review")??;
         match event.msg {
@@ -548,7 +548,7 @@ async fn unified_exec_zsh_fork_guardian_reviews_persistent_terminal_in_current_t
     )
     .await?;
     approve_expected_exec(&test, open_command).await?;
-    let first_completion = wait_for_event(&test.ava-code, |event| {
+    let first_completion = wait_for_event(&test.ava, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;
@@ -563,7 +563,7 @@ async fn unified_exec_zsh_fork_guardian_reviews_persistent_terminal_in_current_t
         denied_read_permission_profile(next_denied_path.as_path())?,
         next_cwd.as_path(),
     );
-    test.ava-code
+    test.ava
         .start_or_steer_turn(
             TurnInputRequest::user_input(vec![UserInput::Text {
                 text: "run a command in the persistent terminal with Guardian approvals".into(),
@@ -583,7 +583,7 @@ async fn unified_exec_zsh_fork_guardian_reviews_persistent_terminal_in_current_t
     let mut stdin_assessment = None;
     let mut intercepted_assessment = None;
     loop {
-        let event = tokio::time::timeout(Duration::from_secs(30), test.ava-code.next_event())
+        let event = tokio::time::timeout(Duration::from_secs(30), test.ava.next_event())
             .await
             .context("timed out waiting for current-turn intercepted execve Guardian review")??;
         match event.msg {
@@ -819,7 +819,7 @@ async fn submit_turn_with_session_permissions(
         test.session_configured.permission_profile.clone(),
         test.cwd.path(),
     );
-    test.ava-code
+    test.ava
         .start_or_steer_turn(
             TurnInputRequest::user_input(vec![UserInput::Text {
                 text: prompt.into(),
@@ -853,7 +853,7 @@ async fn approve_expected_exec(test: &TestAva, expected_command: &str) -> Result
 }
 
 async fn approve_exec(test: &TestAva, approval_id: String) -> Result<()> {
-    test.ava-code
+    test.ava
         .submit(Op::ExecApproval {
             id: approval_id,
             turn_id: None,
@@ -930,7 +930,7 @@ async fn expect_exec_approval(
     test: &TestAva,
     expected_command: &str,
 ) -> ExecApprovalRequestEvent {
-    let event = wait_for_event(&test.ava-code, |event| {
+    let event = wait_for_event(&test.ava, |event| {
         matches!(
             event,
             EventMsg::ExecApprovalRequest(_) | EventMsg::TurnComplete(_)
@@ -957,7 +957,7 @@ async fn expect_exec_approval(
 }
 
 async fn wait_for_completion_without_approval(test: &TestAva) {
-    let event = wait_for_event(&test.ava-code, |event| {
+    let event = wait_for_event(&test.ava, |event| {
         matches!(
             event,
             EventMsg::ExecApprovalRequest(_) | EventMsg::TurnComplete(_)
@@ -975,7 +975,7 @@ async fn wait_for_completion_without_approval(test: &TestAva) {
 }
 
 async fn wait_for_completion(test: &TestAva) {
-    wait_for_event(&test.ava-code, |event| {
+    wait_for_event(&test.ava, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;

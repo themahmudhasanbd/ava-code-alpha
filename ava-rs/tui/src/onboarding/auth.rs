@@ -765,7 +765,7 @@ wire_api = "responses"
             spans.push("Finish signing in via your browser".into());
         }
 
-        let mut lines = vec![
+        let lines = vec![
             spans.into(),
             "".into(),
             "  A browser window should open automatically to Google sign-in.".into(),

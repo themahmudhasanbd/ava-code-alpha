@@ -155,6 +155,6 @@ async fn mcp_user_verification_rejects_configured_servers(source: CapabilitySour
         json!({"code": -32601, "message": "openai/elicitation/create"})
     );
     thread.shutdown_and_wait().await?;
-    test.ava-code.shutdown_and_wait().await?;
+    test.ava.shutdown_and_wait().await?;
     Ok(())
 }

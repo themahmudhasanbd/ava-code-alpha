@@ -562,7 +562,7 @@ async fn summarize_context_three_requests_and_instructions(
         config.model_auto_compact_token_limit = Some(200_000);
     });
     let test = builder.build(&server).await?;
-    let ava = test.ava-code.clone();
+    let ava = test.ava.clone();
     let rollout_path = test.session_configured.rollout_path.expect("rollout path");
 
     // 1) Normal user input – should hit server once.
@@ -804,7 +804,7 @@ async fn manual_pre_compact_block_decision_does_not_block_compaction() {
             set_test_compact_prompt(config);
         });
     let test = builder.build(&server).await.expect("create conversation");
-    let ava = test.ava-code.clone();
+    let ava = test.ava.clone();
 
     ava
         .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
@@ -871,7 +871,7 @@ async fn compact_hooks_respect_matchers_and_post_runs_after_compaction() {
             set_test_compact_prompt(config);
         });
     let test = builder.build(&server).await.expect("create conversation");
-    let ava = test.ava-code.clone();
+    let ava = test.ava.clone();
 
     ava
         .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
@@ -1054,7 +1054,7 @@ async fn reasoning_effort_override_remote_v2_compaction_resets_pinned_effort(
 
     test.submit_text_turn("first message").await?;
     core_test_support::submit_thread_settings(
-        &test.ava-code,
+        &test.ava,
         ThreadSettingsOverrides {
             effort: Some(Some(ReasoningEffort::High)),
             ..Default::default()
@@ -1062,18 +1062,18 @@ async fn reasoning_effort_override_remote_v2_compaction_resets_pinned_effort(
     )
     .await?;
     test.submit_text_turn("second message").await?;
-    test.ava-code.submit(Op::Compact).await?;
+    test.ava.submit(Op::Compact).await?;
     if fail_compaction {
-        wait_for_event(&test.ava-code, |event| matches!(event, EventMsg::Error(_))).await;
+        wait_for_event(&test.ava, |event| matches!(event, EventMsg::Error(_))).await;
     }
-    wait_for_event(&test.ava-code, |event| {
+    wait_for_event(&test.ava, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;
     test.submit_text_turn("after compaction").await?;
     test.submit_text_turn("unchanged effort").await?;
     core_test_support::submit_thread_settings(
-        &test.ava-code,
+        &test.ava,
         ThreadSettingsOverrides {
             effort: Some(Some(ReasoningEffort::Low)),
             ..Default::default()
@@ -1162,8 +1162,8 @@ async fn manual_compact_records_durable_and_local_token_usage() {
         set_test_compact_prompt(config);
     });
     let test = builder.build(&server).await.unwrap();
-    let rollout_path = test.ava-code.rollout_path().expect("rollout path");
-    let ava = test.ava-code;
+    let rollout_path = test.ava.rollout_path().expect("rollout path");
+    let ava = test.ava;
 
     // Trigger manual compact and collect TokenCount events for the compact turn.
     ava.submit(Op::Compact).await.unwrap();
@@ -1414,7 +1414,7 @@ async fn multiple_auto_compact_per_task_runs_after_token_limit_hit() {
     let request_log = mount_sse_sequence(&server, bodies).await;
 
     // Start the conversation with the user message
-    test.ava-code
+    test.ava
         .start_or_steer_turn(disabled_permission_user_turn(
             user_message,
             test.cwd.path().to_path_buf(),
@@ -1422,7 +1422,7 @@ async fn multiple_auto_compact_per_task_runs_after_token_limit_hit() {
         ))
         .await
         .expect("submit user input");
-    wait_for_event(&test.ava-code, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
+    wait_for_event(&test.ava, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
 
     // collect the requests payloads from the model
     let requests_payloads = request_log.requests();
@@ -2255,11 +2255,11 @@ async fn auto_compact_runs_after_resume_when_token_usage_is_over_limit() {
         .await
         .unwrap();
 
-    wait_for_event(&resumed.ava-code, |event| {
+    wait_for_event(&resumed.ava, |event| {
         matches!(event, EventMsg::ContextCompacted(_))
     })
     .await;
-    wait_for_event(&resumed.ava-code, |event| {
+    wait_for_event(&resumed.ava, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;
@@ -2330,7 +2330,7 @@ async fn pre_sampling_compact_runs_on_switch_to_smaller_context_model() {
         });
     let test = builder.build(&server).await.expect("build test ava");
 
-    test.ava-code
+    test.ava
         .start_or_steer_turn(disabled_permission_user_turn(
             "before switch",
             test.cwd.path().to_path_buf(),
@@ -2338,12 +2338,12 @@ async fn pre_sampling_compact_runs_on_switch_to_smaller_context_model() {
         ))
         .await
         .expect("submit first user turn");
-    wait_for_event(&test.ava-code, |event| {
+    wait_for_event(&test.ava, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;
 
-    test.ava-code
+    test.ava
         .start_or_steer_turn(disabled_permission_user_turn(
             "after switch",
             test.cwd.path().to_path_buf(),
@@ -2351,7 +2351,7 @@ async fn pre_sampling_compact_runs_on_switch_to_smaller_context_model() {
         ))
         .await
         .expect("submit second user turn");
-    assert_compaction_uses_turn_lifecycle_id(&test.ava-code).await;
+    assert_compaction_uses_turn_lifecycle_id(&test.ava).await;
 
     let requests = request_log.requests();
     assert_eq!(models_mock.requests().len(), 1);
@@ -2432,7 +2432,7 @@ async fn pre_sampling_compact_runs_when_comp_hash_changes() {
         });
     let test = builder.build(&server).await.expect("build test ava");
 
-    test.ava-code
+    test.ava
         .start_or_steer_turn(disabled_permission_user_turn(
             "before switch",
             test.cwd.path().to_path_buf(),
@@ -2440,12 +2440,12 @@ async fn pre_sampling_compact_runs_when_comp_hash_changes() {
         ))
         .await
         .expect("submit first user turn");
-    wait_for_event(&test.ava-code, |event| {
+    wait_for_event(&test.ava, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;
 
-    test.ava-code
+    test.ava
         .start_or_steer_turn(disabled_permission_user_turn(
             "after switch",
             test.cwd.path().to_path_buf(),
@@ -2453,7 +2453,7 @@ async fn pre_sampling_compact_runs_when_comp_hash_changes() {
         ))
         .await
         .expect("submit second user turn");
-    assert_compaction_uses_turn_lifecycle_id(&test.ava-code).await;
+    assert_compaction_uses_turn_lifecycle_id(&test.ava).await;
 
     let requests = request_log.requests();
     assert_eq!(models_mock.requests().len(), 1);
@@ -2520,7 +2520,7 @@ async fn previous_model_compaction_resolves_selected_settings() -> Result<()> {
         .build_with_auto_env(&server)
         .await?;
     test.submit_text_turn("before switch").await?;
-    test.ava-code
+    test.ava
         .start_or_steer_turn(
             TurnInputRequest::user_input(vec![UserInput::Text {
                 text: "after switch".to_string(),
@@ -2532,7 +2532,7 @@ async fn previous_model_compaction_resolves_selected_settings() -> Result<()> {
             }),
         )
         .await?;
-    wait_for_event(&test.ava-code, |event| {
+    wait_for_event(&test.ava, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;
@@ -2639,7 +2639,7 @@ async fn pre_sampling_compact_falls_back_from_retired_previous_model_after_renam
         ))
         .await
         .expect("submit first user turn");
-    wait_for_event(&initial.ava-code, |event| {
+    wait_for_event(&initial.ava, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;
@@ -2649,7 +2649,7 @@ async fn pre_sampling_compact_falls_back_from_retired_previous_model_after_renam
         .submit(Op::Shutdown)
         .await
         .expect("shutdown initial session");
-    wait_for_event(&initial.ava-code, |event| {
+    wait_for_event(&initial.ava, |event| {
         matches!(event, EventMsg::ShutdownComplete)
     })
     .await;
@@ -2676,7 +2676,7 @@ async fn pre_sampling_compact_falls_back_from_retired_previous_model_after_renam
         ))
         .await
         .expect("submit renamed-model turn");
-    assert_compaction_uses_turn_lifecycle_id(&resumed.ava-code).await;
+    assert_compaction_uses_turn_lifecycle_id(&resumed.ava).await;
 
     let requests = request_log.requests();
     assert_eq!(models_mock.requests().len(), 1);
@@ -2778,7 +2778,7 @@ async fn pre_sampling_compact_falls_back_when_previous_model_is_not_found() {
         ))
         .await
         .expect("submit first user turn");
-    wait_for_event(&initial.ava-code, |event| {
+    wait_for_event(&initial.ava, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;
@@ -2788,7 +2788,7 @@ async fn pre_sampling_compact_falls_back_when_previous_model_is_not_found() {
         .submit(Op::Shutdown)
         .await
         .expect("shutdown initial session");
-    wait_for_event(&initial.ava-code, |event| {
+    wait_for_event(&initial.ava, |event| {
         matches!(event, EventMsg::ShutdownComplete)
     })
     .await;
@@ -2816,7 +2816,7 @@ async fn pre_sampling_compact_falls_back_when_previous_model_is_not_found() {
         ))
         .await
         .expect("submit renamed-model turn");
-    assert_compaction_uses_turn_lifecycle_id(&resumed.ava-code).await;
+    assert_compaction_uses_turn_lifecycle_id(&resumed.ava).await;
 
     let requests = request_log.requests();
     assert_eq!(models_mock.requests().len(), 1);
@@ -2905,7 +2905,7 @@ async fn pre_sampling_compact_falls_back_after_previous_model_invalid_request_on
         });
     let test = builder.build(&server).await.expect("build test ava");
 
-    test.ava-code
+    test.ava
         .start_or_steer_turn(disabled_permission_user_turn(
             "before switch",
             test.cwd.path().to_path_buf(),
@@ -2913,12 +2913,12 @@ async fn pre_sampling_compact_falls_back_after_previous_model_invalid_request_on
         ))
         .await
         .expect("submit first user turn");
-    wait_for_event(&test.ava-code, |event| {
+    wait_for_event(&test.ava, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;
 
-    test.ava-code
+    test.ava
         .start_or_steer_turn(disabled_permission_user_turn(
             "after switch",
             test.cwd.path().to_path_buf(),
@@ -2926,7 +2926,7 @@ async fn pre_sampling_compact_falls_back_after_previous_model_invalid_request_on
         ))
         .await
         .expect("submit smaller-model turn");
-    assert_compaction_uses_turn_lifecycle_id(&test.ava-code).await;
+    assert_compaction_uses_turn_lifecycle_id(&test.ava).await;
 
     let requests = request_log.requests();
     assert_eq!(models_mock.requests().len(), 1);
@@ -3019,7 +3019,7 @@ async fn pre_sampling_compact_falls_back_after_previous_model_stream_retries_are
         });
     let test = builder.build(&server).await.expect("build test ava");
 
-    test.ava-code
+    test.ava
         .start_or_steer_turn(disabled_permission_user_turn(
             "before switch",
             test.cwd.path().to_path_buf(),
@@ -3027,12 +3027,12 @@ async fn pre_sampling_compact_falls_back_after_previous_model_stream_retries_are
         ))
         .await
         .expect("submit first user turn");
-    wait_for_event(&test.ava-code, |event| {
+    wait_for_event(&test.ava, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;
 
-    test.ava-code
+    test.ava
         .start_or_steer_turn(disabled_permission_user_turn(
             "after switch",
             test.cwd.path().to_path_buf(),
@@ -3040,7 +3040,7 @@ async fn pre_sampling_compact_falls_back_after_previous_model_stream_retries_are
         ))
         .await
         .expect("submit selected-model turn");
-    assert_compaction_uses_turn_lifecycle_id(&test.ava-code).await;
+    assert_compaction_uses_turn_lifecycle_id(&test.ava).await;
 
     let actual_models = request_log
         .requests()
@@ -3112,7 +3112,7 @@ async fn pre_sampling_compact_keeps_unknown_previous_model_for_api_key_auth_and_
         });
     let test = builder.build(&server).await.expect("build test ava");
 
-    test.ava-code
+    test.ava
         .start_or_steer_turn(disabled_permission_user_turn(
             "before switch",
             test.cwd.path().to_path_buf(),
@@ -3120,12 +3120,12 @@ async fn pre_sampling_compact_keeps_unknown_previous_model_for_api_key_auth_and_
         ))
         .await
         .expect("submit first user turn");
-    wait_for_event(&test.ava-code, |event| {
+    wait_for_event(&test.ava, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;
 
-    test.ava-code
+    test.ava
         .start_or_steer_turn(disabled_permission_user_turn(
             "after switch",
             test.cwd.path().to_path_buf(),
@@ -3133,7 +3133,7 @@ async fn pre_sampling_compact_keeps_unknown_previous_model_for_api_key_auth_and_
         ))
         .await
         .expect("submit next-model turn");
-    wait_for_event(&test.ava-code, |event| {
+    wait_for_event(&test.ava, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;
@@ -3202,7 +3202,7 @@ async fn pre_sampling_compact_skips_when_either_comp_hash_is_missing() {
         });
     let test = builder.build(&server).await.expect("build test ava");
 
-    test.ava-code
+    test.ava
         .start_or_steer_turn(disabled_permission_user_turn(
             "before hash",
             test.cwd.path().to_path_buf(),
@@ -3210,12 +3210,12 @@ async fn pre_sampling_compact_skips_when_either_comp_hash_is_missing() {
         ))
         .await
         .expect("submit first user turn");
-    wait_for_event(&test.ava-code, |event| {
+    wait_for_event(&test.ava, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;
 
-    test.ava-code
+    test.ava
         .start_or_steer_turn(disabled_permission_user_turn(
             "hash introduced",
             test.cwd.path().to_path_buf(),
@@ -3223,12 +3223,12 @@ async fn pre_sampling_compact_skips_when_either_comp_hash_is_missing() {
         ))
         .await
         .expect("submit second user turn");
-    wait_for_event(&test.ava-code, |event| {
+    wait_for_event(&test.ava, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;
 
-    test.ava-code
+    test.ava
         .start_or_steer_turn(disabled_permission_user_turn(
             "hash removed",
             test.cwd.path().to_path_buf(),
@@ -3236,7 +3236,7 @@ async fn pre_sampling_compact_skips_when_either_comp_hash_is_missing() {
         ))
         .await
         .expect("submit third user turn");
-    wait_for_event(&test.ava-code, |event| {
+    wait_for_event(&test.ava, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;
@@ -3311,7 +3311,7 @@ async fn body_after_prefix_model_switch_budget_compacts_with_next_model() {
         });
     let test = builder.build(&server).await.expect("build test ava");
 
-    test.ava-code
+    test.ava
         .start_or_steer_turn(disabled_permission_user_turn(
             "before switch",
             test.cwd.path().to_path_buf(),
@@ -3319,12 +3319,12 @@ async fn body_after_prefix_model_switch_budget_compacts_with_next_model() {
         ))
         .await
         .expect("submit first user turn");
-    wait_for_event(&test.ava-code, |event| {
+    wait_for_event(&test.ava, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;
 
-    test.ava-code
+    test.ava
         .start_or_steer_turn(disabled_permission_user_turn(
             "after switch",
             test.cwd.path().to_path_buf(),
@@ -3332,7 +3332,7 @@ async fn body_after_prefix_model_switch_budget_compacts_with_next_model() {
         ))
         .await
         .expect("submit second user turn");
-    assert_compaction_uses_turn_lifecycle_id(&test.ava-code).await;
+    assert_compaction_uses_turn_lifecycle_id(&test.ava).await;
 
     let requests = request_log.requests();
     assert_eq!(models_mock.requests().len(), 1);
@@ -3419,7 +3419,7 @@ async fn pre_sampling_compact_runs_after_resume_and_switch_to_smaller_model() {
         ))
         .await
         .expect("submit pre-resume turn");
-    wait_for_event(&initial.ava-code, |event| {
+    wait_for_event(&initial.ava, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;
@@ -3429,7 +3429,7 @@ async fn pre_sampling_compact_runs_after_resume_and_switch_to_smaller_model() {
         .submit(Op::Shutdown)
         .await
         .expect("shutdown initial session");
-    wait_for_event(&initial.ava-code, |event| {
+    wait_for_event(&initial.ava, |event| {
         matches!(event, EventMsg::ShutdownComplete)
     })
     .await;
@@ -3456,7 +3456,7 @@ async fn pre_sampling_compact_runs_after_resume_and_switch_to_smaller_model() {
         ))
         .await
         .expect("submit resumed user turn");
-    assert_compaction_uses_turn_lifecycle_id(&resumed.ava-code).await;
+    assert_compaction_uses_turn_lifecycle_id(&resumed.ava).await;
 
     let requests = request_log.requests();
     assert_eq!(models_mock.requests().len(), 1);
@@ -3540,7 +3540,7 @@ async fn pre_sampling_compact_recovers_comp_hash_after_resume() {
         ))
         .await
         .expect("submit pre-resume turn");
-    wait_for_event(&initial.ava-code, |event| {
+    wait_for_event(&initial.ava, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;
@@ -3550,7 +3550,7 @@ async fn pre_sampling_compact_recovers_comp_hash_after_resume() {
         .submit(Op::Shutdown)
         .await
         .expect("shutdown initial session");
-    wait_for_event(&initial.ava-code, |event| {
+    wait_for_event(&initial.ava, |event| {
         matches!(event, EventMsg::ShutdownComplete)
     })
     .await;
@@ -3587,7 +3587,7 @@ async fn pre_sampling_compact_recovers_comp_hash_after_resume() {
         ))
         .await
         .expect("submit resumed user turn");
-    assert_compaction_uses_turn_lifecycle_id(&resumed.ava-code).await;
+    assert_compaction_uses_turn_lifecycle_id(&resumed.ava).await;
 
     let requests = request_log.requests();
     assert_eq!(models_mock.requests().len(), 1);
@@ -3667,7 +3667,7 @@ async fn pre_sampling_compact_skips_missing_comp_hash_after_resume() {
         ))
         .await
         .expect("submit pre-resume turn");
-    wait_for_event(&initial.ava-code, |event| {
+    wait_for_event(&initial.ava, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;
@@ -3677,7 +3677,7 @@ async fn pre_sampling_compact_skips_missing_comp_hash_after_resume() {
         .submit(Op::Shutdown)
         .await
         .expect("shutdown initial session");
-    wait_for_event(&initial.ava-code, |event| {
+    wait_for_event(&initial.ava, |event| {
         matches!(event, EventMsg::ShutdownComplete)
     })
     .await;
@@ -3712,7 +3712,7 @@ async fn pre_sampling_compact_skips_missing_comp_hash_after_resume() {
         ))
         .await
         .expect("submit resumed user turn");
-    wait_for_event(&resumed.ava-code, |event| {
+    wait_for_event(&resumed.ava, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;
@@ -3796,7 +3796,7 @@ async fn auto_compact_persists_rollout_entries() {
         config.model_auto_compact_token_limit = Some(200_000);
     });
     let test = builder.build(&server).await.unwrap();
-    let ava = test.ava-code.clone();
+    let ava = test.ava.clone();
     let session_configured = test.session_configured;
 
     ava
@@ -5029,7 +5029,7 @@ async fn snapshot_request_shape_pre_turn_compaction_strips_incoming_model_switch
         .await
         .expect("build ava");
 
-    test.ava-code
+    test.ava
         .start_or_steer_turn(disabled_permission_user_turn(
             "BEFORE_SWITCH_USER",
             test.cwd.path().to_path_buf(),
@@ -5037,12 +5037,12 @@ async fn snapshot_request_shape_pre_turn_compaction_strips_incoming_model_switch
         ))
         .await
         .expect("submit first user turn");
-    wait_for_event(&test.ava-code, |event| {
+    wait_for_event(&test.ava, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;
 
-    test.ava-code
+    test.ava
         .start_or_steer_turn(disabled_permission_user_turn(
             "AFTER_SWITCH_USER",
             test.cwd.path().to_path_buf(),
@@ -5050,7 +5050,7 @@ async fn snapshot_request_shape_pre_turn_compaction_strips_incoming_model_switch
         ))
         .await
         .expect("submit second user turn");
-    wait_for_event(&test.ava-code, |event| {
+    wait_for_event(&test.ava, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;
@@ -5273,7 +5273,7 @@ async fn manual_compaction_refreshes_global_instructions_for_next_turn() -> Resu
 
     // Assert the pre-compaction source list points at the creation-time file.
     assert_eq!(
-        test.ava-code.instruction_sources().await,
+        test.ava.instruction_sources().await,
         vec![PathUri::from_abs_path(&source)],
         "thread reports the creation-time global source before compaction"
     );
@@ -5287,8 +5287,8 @@ async fn manual_compaction_refreshes_global_instructions_for_next_turn() -> Resu
     )?;
     assert_eq!(source, rewritten_source);
 
-    test.ava-code.submit(Op::Compact).await?;
-    wait_for_event(&test.ava-code, |event| {
+    test.ava.submit(Op::Compact).await?;
+    wait_for_event(&test.ava, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;
@@ -5303,7 +5303,7 @@ async fn manual_compaction_refreshes_global_instructions_for_next_turn() -> Resu
     assert_single_instruction_fragment(&requests[1], &old_fragment);
     assert_single_instruction_fragment(&requests[2], &new_fragment);
     assert_eq!(
-        test.ava-code.instruction_sources().await,
+        test.ava.instruction_sources().await,
         vec![PathUri::from_abs_path(&source)],
         "refreshing same-path instructions preserves their source"
     );
@@ -5353,7 +5353,7 @@ async fn mid_turn_compaction_uses_refreshed_global_instructions() -> Result<()> 
 
     // Assert the pre-compaction source list points at the creation-time file.
     assert_eq!(
-        test.ava-code.instruction_sources().await,
+        test.ava.instruction_sources().await,
         vec![PathUri::from_abs_path(&source)],
         "thread reports the creation-time global source before mid-turn compaction"
     );
@@ -5375,7 +5375,7 @@ async fn mid_turn_compaction_uses_refreshed_global_instructions() -> Result<()> 
     assert_single_instruction_fragment(&requests[1], &expected_fragment);
     assert_single_instruction_fragment(&requests[2], &expected_fragment);
     assert_eq!(
-        test.ava-code.instruction_sources().await,
+        test.ava.instruction_sources().await,
         vec![PathUri::from_abs_path(&new_source)],
         "thread reports the refreshed global override after mid-turn compaction"
     );
@@ -5428,13 +5428,13 @@ async fn remote_v2_compaction_refreshes_instructions_and_preserves_them_on_cold_
         NEW_GLOBAL_INSTRUCTIONS,
     )?;
     assert_eq!(source, rewritten_source);
-    test.ava-code.submit(Op::Compact).await?;
-    wait_for_event(&test.ava-code, |event| {
+    test.ava.submit(Op::Compact).await?;
+    wait_for_event(&test.ava, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;
     test.submit_turn("after remote v2 compaction").await?;
-    test.ava-code.flush_rollout().await?;
+    test.ava.flush_rollout().await?;
 
     // Compaction summarizes the existing history; the follow-up injects the refreshed instructions.
     let requests = response_mock.requests();
@@ -5449,7 +5449,7 @@ async fn remote_v2_compaction_refreshes_instructions_and_preserves_them_on_cold_
         Some(&json!({"type": "compaction_trigger"})),
         "remote-v2 compact request should append exactly one compaction trigger"
     );
-    let rollout_path = test.ava-code.rollout_path().expect("rollout path");
+    let rollout_path = test.ava.rollout_path().expect("rollout path");
     let replacement_history = replacement_history_from_rollout(&rollout_path)?;
     assert_eq!(
         instruction_fragments_in_items(&replacement_history),
@@ -5457,7 +5457,7 @@ async fn remote_v2_compaction_refreshes_instructions_and_preserves_them_on_cold_
         "remote-v2 replacement history currently omits the global-instruction fragment"
     );
     assert_eq!(
-        test.ava-code.instruction_sources().await,
+        test.ava.instruction_sources().await,
         vec![PathUri::from_abs_path(&source)],
         "running thread retains the selected same-path source"
     );
@@ -5468,8 +5468,8 @@ async fn remote_v2_compaction_refreshes_instructions_and_preserves_them_on_cold_
     );
 
     // Cold-resume the persisted replacement history with freshly loaded same-path configuration.
-    test.ava-code.submit(Op::Shutdown).await?;
-    wait_for_event(&test.ava-code, |event| {
+    test.ava.submit(Op::Shutdown).await?;
+    wait_for_event(&test.ava, |event| {
         matches!(event, EventMsg::ShutdownComplete)
     })
     .await;
@@ -5502,7 +5502,7 @@ async fn remote_v2_compaction_refreshes_instructions_and_preserves_them_on_cold_
         "remote-v2 cold resume should replay the complete post-compaction structured prefix"
     );
     assert_eq!(
-        resumed.ava-code.instruction_sources().await,
+        resumed.ava.instruction_sources().await,
         vec![PathUri::from_abs_path(&source)],
         "cold-resumed thread reports the same rewritten source path"
     );

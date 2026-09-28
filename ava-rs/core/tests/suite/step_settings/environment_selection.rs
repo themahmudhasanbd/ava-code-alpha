@@ -60,9 +60,9 @@ async fn model_update_preserves_active_environment_and_next_turn_uses_new_select
         .await?;
     let next_marker = next_environment.cwd.join("marker.txt")?;
 
-    let paused = start_paused_turn(&test.ava-code).await?;
+    let paused = start_paused_turn(&test.ava).await?;
     submit_thread_settings(
-        &test.ava-code,
+        &test.ava,
         ThreadSettingsOverrides {
             environments: Some(TurnEnvironmentSelections::new(
                 test.config.cwd.join("future-environment"),
@@ -73,7 +73,7 @@ async fn model_update_preserves_active_environment_and_next_turn_uses_new_select
     )
     .await?;
     apply_turn_settings(
-        &test.ava-code,
+        &test.ava,
         &paused.turn_id,
         TurnSettingsUpdate {
             model: Some(MODEL_B.to_string()),
@@ -81,8 +81,8 @@ async fn model_update_preserves_active_environment_and_next_turn_uses_new_select
         },
     )
     .await?;
-    answer_paused_turn(&test.ava-code, &paused.turn_id).await?;
-    wait_for_event(&test.ava-code, |event| {
+    answer_paused_turn(&test.ava, &paused.turn_id).await?;
+    wait_for_event(&test.ava, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;

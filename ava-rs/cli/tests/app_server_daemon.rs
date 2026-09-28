@@ -56,7 +56,7 @@ impl TestDaemon {
     }
 
     fn command(&self) -> Command {
-        let mut command = Command::new(&self.ava-code);
+        let mut command = Command::new(&self.ava);
         command.env("AVA_HOME", self.home.path());
         command
     }
@@ -483,8 +483,8 @@ fn packaged_daemon_launch(action: &str, initial: InitialDaemon) -> Result<()> {
     for directory in ["bin", "ava-path", "ava-resources"] {
         std::fs::create_dir_all(package.join(directory))?;
     }
-    std::fs::copy(&daemon.ava-code, package.join("bin/ava"))?;
-    daemon.ava-code = package.join("bin/ava");
+    std::fs::copy(&daemon.ava, package.join("bin/ava"))?;
+    daemon.ava = package.join("bin/ava");
     for helper in [
         "bin/ava-code-mode-host",
         "ava-path/rg",
@@ -523,7 +523,7 @@ fn packaged_daemon_launch(action: &str, initial: InitialDaemon) -> Result<()> {
         state.join("settings.json"),
         br#"{"shutdownGraceSeconds":0}"#,
     )?;
-    let cli_before = daemon.ava-code.canonicalize()?;
+    let cli_before = daemon.ava.canonicalize()?;
     let mut command = daemon.command();
     command.args(["app-server", "daemon", action]);
     // A freshly copied executable can briefly remain busy on Linux CI workers.
@@ -567,7 +567,7 @@ fn packaged_daemon_launch(action: &str, initial: InitialDaemon) -> Result<()> {
             .to_str()
             .context("managed path is not UTF-8")?
     );
-    assert_eq!(daemon.ava-code.canonicalize()?, cli_before);
+    assert_eq!(daemon.ava.canonicalize()?, cli_before);
     assert_eq!(standalone.join("current").canonicalize()?, cli_selection);
     assert!(state.join(initial_pid_file).exists());
     let legacy_updater = match initial {

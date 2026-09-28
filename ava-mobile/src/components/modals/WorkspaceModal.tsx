@@ -2,6 +2,8 @@ import React, { useMemo, useState } from "react";
 import { BlurView } from "expo-blur";
 import {
   ActivityIndicator,
+  Animated,
+  Easing,
   Modal,
   Platform,
   ScrollView,
@@ -86,22 +88,63 @@ export function WorkspaceModal({
   };
 
   const { isDark } = useTheme();
+  const slideAnim = React.useRef(new Animated.Value(320)).current;
+  const fadeAnim = React.useRef(new Animated.Value(0)).current;
+  const [mounted, setMounted] = React.useState(open);
 
-  if (!open) return null;
+  React.useEffect(() => {
+    if (open) {
+      setMounted(true);
+      Animated.parallel([
+        Animated.timing(fadeAnim, {
+          toValue: 1,
+          duration: 200,
+          easing: Easing.out(Easing.cubic),
+          useNativeDriver: Platform.OS !== "web",
+        }),
+        Animated.spring(slideAnim, {
+          toValue: 0,
+          damping: 24,
+          stiffness: 280,
+          mass: 0.8,
+          useNativeDriver: Platform.OS !== "web",
+        }),
+      ]).start();
+    } else {
+      Animated.parallel([
+        Animated.timing(fadeAnim, {
+          toValue: 0,
+          duration: 160,
+          easing: Easing.in(Easing.cubic),
+          useNativeDriver: Platform.OS !== "web",
+        }),
+        Animated.timing(slideAnim, {
+          toValue: 320,
+          duration: 160,
+          easing: Easing.in(Easing.cubic),
+          useNativeDriver: Platform.OS !== "web",
+        }),
+      ]).start(() => {
+        setMounted(false);
+      });
+    }
+  }, [open, fadeAnim, slideAnim]);
+
+  if (!mounted) return null;
 
   return (
     <Modal
-      visible={open}
+      visible={mounted}
       transparent
       statusBarTranslucent
-      animationType="fade"
+      animationType="none"
       onRequestClose={onClose}
     >
       <TouchableWithoutFeedback onPress={onClose}>
-        <View style={styles.backdrop}>
+        <Animated.View style={[styles.backdrop, { opacity: fadeAnim }]}>
           <BlurView intensity={85} tint={isDark ? "dark" : "light"} style={StyleSheet.absoluteFill} />
           <TouchableWithoutFeedback>
-            <View style={styles.modalCard}>
+            <Animated.View style={[styles.modalCard, { transform: [{ translateY: slideAnim }] }]}>
               {/* Drag Handle */}
               <View style={styles.dragHandle} />
 
@@ -336,9 +379,9 @@ export function WorkspaceModal({
                   </TouchableOpacity>
                 </View>
               </View>
-            </View>
+            </Animated.View>
           </TouchableWithoutFeedback>
-        </View>
+        </Animated.View>
       </TouchableWithoutFeedback>
     </Modal>
   );

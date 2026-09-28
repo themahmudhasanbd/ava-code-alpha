@@ -2,7 +2,7 @@ import "@/polyfills";
 import "react-native-gesture-handler";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import React, { useEffect, useMemo, useState } from "react";
-import { ActivityIndicator, LogBox, StyleSheet, View } from "react-native";
+import { ActivityIndicator, LogBox, Platform, StyleSheet, View } from "react-native";
 import {
   NavigationContainer,
   DefaultTheme,
@@ -124,26 +124,31 @@ export default function App() {
   useEffect(() => {
     async function prepare() {
       try {
-        await Promise.all([
-          initStorage(),
-          Font.loadAsync({
-            PlusJakartaSans_400Regular,
-            PlusJakartaSans_500Medium,
-            PlusJakartaSans_600SemiBold,
-            PlusJakartaSans_700Bold,
-            PlusJakartaSans_800ExtraBold,
-            HindSiliguri_400Regular,
-            HindSiliguri_500Medium,
-            HindSiliguri_600SemiBold,
-            HindSiliguri_700Bold,
-            JetBrainsMono_400Regular,
-            JetBrainsMono_500Medium,
-            JetBrainsMono_700Bold,
-          }),
-        ]);
+        await initStorage();
+        const fontPromise = Font.loadAsync({
+          PlusJakartaSans_400Regular,
+          PlusJakartaSans_500Medium,
+          PlusJakartaSans_600SemiBold,
+          PlusJakartaSans_700Bold,
+          PlusJakartaSans_800ExtraBold,
+          HindSiliguri_400Regular,
+          HindSiliguri_500Medium,
+          HindSiliguri_600SemiBold,
+          HindSiliguri_700Bold,
+          JetBrainsMono_400Regular,
+          JetBrainsMono_500Medium,
+          JetBrainsMono_700Bold,
+        }).catch((e) => console.warn("Font loading background warning:", e));
+
+        if (Platform.OS === "web") {
+          // On web, immediately mount and render UI with font-display: swap without splash block
+          setReady(true);
+        } else {
+          await fontPromise;
+          setReady(true);
+        }
       } catch (err) {
         console.warn("Init or font loading error:", err);
-      } finally {
         setReady(true);
       }
     }

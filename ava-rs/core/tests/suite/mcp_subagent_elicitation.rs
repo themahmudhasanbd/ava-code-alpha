@@ -283,6 +283,6 @@ pub(super) async fn mcp_server_elicitation_scenario(
     }
     requests.extend(follow_up.requests());
     thread.shutdown_and_wait().await?;
-    test.ava-code.shutdown_and_wait().await?;
+    test.ava.shutdown_and_wait().await?;
     Ok(requests)
 }

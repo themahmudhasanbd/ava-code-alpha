@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from "react";
 import {
   ActivityIndicator,
+  Alert,
   Modal,
   Platform,
   ScrollView,
@@ -12,22 +13,30 @@ import {
   View,
 } from "react-native";
 import { BlurView } from "expo-blur";
+import * as DocumentPicker from "expo-document-picker";
+import * as ImagePicker from "expo-image-picker";
+import { File } from "expo-file-system";
 import {
+  ArrowUp,
   Check,
-  ChevronLeft,
+  CheckCircle2,
   ChevronRight,
-  CornerLeftUp,
+  File as FileIcon,
   FileAudio,
   FileCode,
   FileQuestion,
   FileText,
   FileVideo,
   Folder,
+  FolderGit2,
   FolderOpen,
+  HardDrive,
   Image as ImageIcon,
+  Images,
   RefreshCw,
   Search,
   Server,
+  UploadCloud,
   X,
   type LucideIcon,
 } from "lucide-react-native";
@@ -50,9 +59,10 @@ interface ServerMediaModalProps {
   onClose: () => void;
   onSelect: (media: ServerSelectedMedia) => void;
   initialDirectory?: string;
+  allowUpload?: boolean;
 }
 
-type MediaFilterCategory = "all" | "image" | "video" | "audio" | "code" | "doc";
+type MediaFilterCategory = "all" | "media" | "docs" | "code";
 
 const EXT_TO_KIND: Record<string, ServerSelectedMedia["kind"]> = {
   png: "image",
@@ -62,6 +72,7 @@ const EXT_TO_KIND: Record<string, ServerSelectedMedia["kind"]> = {
   webp: "image",
   svg: "image",
   bmp: "image",
+  ico: "image",
   mp4: "video",
   mov: "video",
   webm: "video",
@@ -87,12 +98,15 @@ const EXT_TO_KIND: Record<string, ServerSelectedMedia["kind"]> = {
   yaml: "code",
   yml: "code",
   sql: "code",
+  php: "code",
+  dart: "code",
   pdf: "document",
   txt: "document",
   md: "document",
   doc: "document",
   docx: "document",
   csv: "document",
+  xlsx: "document",
   zip: "file",
   tar: "file",
   gz: "file",
@@ -101,6 +115,23 @@ const EXT_TO_KIND: Record<string, ServerSelectedMedia["kind"]> = {
 export function getFileKind(fileName: string): ServerSelectedMedia["kind"] {
   const ext = fileName.split(".").pop()?.toLowerCase() || "";
   return EXT_TO_KIND[ext] || "file";
+}
+
+export function getKindColor(kind: ServerSelectedMedia["kind"]): string {
+  switch (kind) {
+    case "image":
+      return "#10B981"; // emerald
+    case "video":
+      return "#F59E0B"; // amber
+    case "audio":
+      return "#EC4899"; // pink
+    case "code":
+      return "#6366F1"; // indigo
+    case "document":
+      return "#EF4444"; // red
+    default:
+      return "#6B7280"; // slate
+  }
 }
 
 export function getKindIcon(kind: ServerSelectedMedia["kind"]): LucideIcon {
@@ -125,13 +156,21 @@ export function ServerMediaModal({
   onClose,
   onSelect,
   initialDirectory = APP.mediaDir || "/root/shared-media",
+  allowUpload = true,
 }: ServerMediaModalProps) {
-  const { rpc, status } = useAva();
+  const { rpc } = useAva();
   const { isDark } = useTheme();
 
   const [currentDir, setCurrentDir] = useState<string>(initialDirectory);
   const [searchQuery, setSearchQuery] = useState("");
   const [activeCategory, setActiveCategory] = useState<MediaFilterCategory>("all");
+  const [selectedFile, setSelectedFile] = useState<{
+    name: string;
+    path: string;
+    kind: ServerSelectedMedia["kind"];
+  } | null>(null);
+
+  const [isUploading, setIsUploading] = useState(false);
 
   const {
     data: entries = [],
@@ -149,22 +188,72 @@ export function ServerMediaModal({
     const parent = parts.join("/") || "/";
     setCurrentDir(parent);
     setSearchQuery("");
+    setSelectedFile(null);
   };
 
   const handleEnterFolder = (folderPath: string) => {
     setCurrentDir(folderPath);
     setSearchQuery("");
+    setSelectedFile(null);
   };
 
-  const handleSelectFile = (file: { name: string; path: string }) => {
+  const handleSelectFileItem = (file: { name: string; path: string }) => {
     const kind = getFileKind(file.name);
-    onSelect({
-      id: `${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+    setSelectedFile({
       name: file.name,
-      remotePath: file.path,
+      path: file.path,
       kind,
     });
+  };
+
+  const handleConfirmAttach = () => {
+    if (!selectedFile) return;
+    onSelect({
+      id: `${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+      name: selectedFile.name,
+      remotePath: selectedFile.path,
+      kind: selectedFile.kind,
+    });
     onClose();
+  };
+
+  // Direct upload to current browsing directory inspired by Flutter ServerFilePickerModal
+  const handleUploadToCurrentDir = async () => {
+    try {
+      const result = await DocumentPicker.getDocumentAsync({
+        copyToCacheDirectory: true,
+        type: "*/*",
+      });
+
+      if (!result.canceled && result.assets && result.assets[0]) {
+        const doc = result.assets[0];
+        setIsUploading(true);
+        const cleanName = doc.name.replace(/[^a-zA-Z0-9._-]/g, "_");
+        const targetPath = `${currentDir.replace(/\/$/, "")}/${cleanName}`;
+
+        if (rpc && rpc.status === "online") {
+          const localFile = new File(doc.uri);
+          const base64 = await localFile.base64();
+          await rpc.call("fs/writeFile", {
+            path: targetPath,
+            dataBase64: base64,
+          });
+        }
+
+        setIsUploading(false);
+        const kind = getFileKind(cleanName);
+        setSelectedFile({
+          name: cleanName,
+          path: targetPath,
+          kind,
+        });
+        refetch();
+        Alert.alert("Uploaded", `Successfully uploaded "${cleanName}" to ${currentDir}`);
+      }
+    } catch (e: any) {
+      setIsUploading(false);
+      Alert.alert("Upload Error", e?.message || "Failed to upload file to current server directory.");
+    }
   };
 
   const filteredEntries = useMemo(() => {
@@ -177,13 +266,11 @@ export function ServerMediaModal({
 
     if (activeCategory !== "all") {
       result = result.filter((e) => {
-        if (e.isDirectory) return true; // keep folders visible
+        if (e.isDirectory) return true;
         const kind = getFileKind(e.name);
-        if (activeCategory === "image") return kind === "image";
-        if (activeCategory === "video") return kind === "video";
-        if (activeCategory === "audio") return kind === "audio";
+        if (activeCategory === "media") return kind === "image" || kind === "video" || kind === "audio";
+        if (activeCategory === "docs") return kind === "document";
         if (activeCategory === "code") return kind === "code";
-        if (activeCategory === "doc") return kind === "document";
         return true;
       });
     }
@@ -195,10 +282,13 @@ export function ServerMediaModal({
   const files = filteredEntries.filter((e) => !e.isDirectory);
 
   const shortcutDirs = [
-    { label: "Shared Media", path: APP.mediaDir || "/root/shared-media" },
-    { label: "Project Code", path: APP.defaultCwd || "/var/www/ava-code" },
-    { label: "Temp Files", path: "/tmp" },
+    { label: "Shared Media", path: APP.mediaDir || "/root/shared-media", icon: Images },
+    { label: "Workspace", path: APP.defaultCwd || "/var/www/ava-code", icon: FolderGit2 },
+    { label: "Root /", path: "/", icon: HardDrive },
+    { label: "Temp", path: "/tmp", icon: Folder },
   ];
+
+  const pathSegments = currentDir.split("/").filter((s) => s.length > 0);
 
   return (
     <Modal
@@ -217,298 +307,399 @@ export function ServerMediaModal({
           />
           <TouchableWithoutFeedback onPress={() => {}}>
             <View style={styles.sheetCard}>
-              {/* Top Handle Bar */}
+              {/* Drag Handle Bar */}
               <View style={styles.handleBar} />
 
-              {/* Header */}
+              {/* Modal Top Bar */}
               <View style={styles.headerRow}>
                 <View style={styles.headerLeft}>
                   <View style={styles.headerIconBox}>
-                    <Server size={17} color={COLORS.primary} />
+                    <Server size={18} color="#6366F1" />
                   </View>
                   <View>
-                    <Text style={[styles.headerTitle, font("semibold")]}>
-                      Select from Server
+                    <Text style={[styles.headerTitle, font("bold")]}>
+                      Select Server File
                     </Text>
                     <Text style={[styles.headerSubtitle, font("regular")]}>
-                      Browse & pick media on VPS storage
+                      Pick media or documents to attach to prompt
                     </Text>
                   </View>
                 </View>
 
                 <View style={styles.headerActions}>
-                  <TouchableOpacity
-                    style={styles.actionBtn}
-                    onPress={() => refetch()}
-                    disabled={isLoading || isRefetching}
-                    activeOpacity={0.7}
-                  >
-                    <RefreshCw
-                      size={15}
-                      color={
-                        isLoading || isRefetching
-                          ? COLORS.primary
-                          : COLORS.mutedForeground
-                      }
-                    />
-                  </TouchableOpacity>
+                  {allowUpload && (
+                    <TouchableOpacity
+                      style={styles.actionBtn}
+                      onPress={handleUploadToCurrentDir}
+                      disabled={isUploading}
+                      activeOpacity={0.7}
+                      hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                    >
+                      {isUploading ? (
+                        <ActivityIndicator size="small" color="#6366F1" />
+                      ) : (
+                        <UploadCloud size={17} color="#6366F1" />
+                      )}
+                    </TouchableOpacity>
+                  )}
                   <TouchableOpacity
                     style={styles.actionBtn}
                     onPress={onClose}
                     activeOpacity={0.7}
-                  >
-                    <X size={16} color={COLORS.mutedForeground} />
-                  </TouchableOpacity>
-                </View>
-              </View>
-
-              {/* Current Directory & Breadcrumbs */}
-              <View style={styles.pathBar}>
-                {canGoUp && (
-                  <TouchableOpacity
-                    style={styles.goUpBtn}
-                    onPress={handleGoUp}
-                    activeOpacity={0.7}
-                  >
-                    <CornerLeftUp size={14} color={COLORS.primary} />
-                    <Text style={[styles.goUpText, font("medium")]}>Up</Text>
-                  </TouchableOpacity>
-                )}
-                <View style={styles.pathPill}>
-                  <FolderOpen size={13} color={COLORS.primary} />
-                  <Text
-                    style={[styles.pathText, mono("regular")]}
-                    numberOfLines={1}
-                    ellipsizeMode="head"
-                  >
-                    {currentDir}
-                  </Text>
-                </View>
-              </View>
-
-              {/* Quick Preset Directories */}
-              <ScrollView
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                contentContainerStyle={styles.presetsRow}
-              >
-                {shortcutDirs.map((dir) => {
-                  const isActive = currentDir === dir.path;
-                  return (
-                    <TouchableOpacity
-                      key={dir.path}
-                      style={[
-                        styles.presetChip,
-                        isActive && styles.presetChipActive,
-                      ]}
-                      onPress={() => {
-                        setCurrentDir(dir.path);
-                        setSearchQuery("");
-                      }}
-                      activeOpacity={0.7}
-                    >
-                      <Text
-                        style={[
-                          styles.presetChipText,
-                          font(isActive ? "semibold" : "regular"),
-                          isActive && styles.presetChipTextActive,
-                        ]}
-                      >
-                        {dir.label}
-                      </Text>
-                    </TouchableOpacity>
-                  );
-                })}
-              </ScrollView>
-
-              {/* Search Bar */}
-              <View style={styles.searchBar}>
-                <Search size={14} color={COLORS.mutedForeground} />
-                <TextInput
-                  style={[styles.searchInput, font("regular")]}
-                  value={searchQuery}
-                  onChangeText={setSearchQuery}
-                  placeholder="Filter server files by name…"
-                  placeholderTextColor={COLORS.mutedForeground}
-                  autoCapitalize="none"
-                  autoCorrect={false}
-                />
-                {searchQuery.length > 0 && (
-                  <TouchableOpacity
-                    onPress={() => setSearchQuery("")}
                     hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                   >
-                    <X size={14} color={COLORS.mutedForeground} />
+                    <X size={17} color={COLORS.mutedForeground} />
                   </TouchableOpacity>
+                </View>
+              </View>
+
+              {/* Location Shortcuts Row matching Flutter ServerFilePickerModal */}
+              <View style={styles.shortcutsWrapper}>
+                <ScrollView
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  contentContainerStyle={styles.shortcutsRow}
+                >
+                  {shortcutDirs.map((sc) => {
+                    const isActive = currentDir === sc.path;
+                    const IconComp = sc.icon;
+                    return (
+                      <TouchableOpacity
+                        key={sc.path}
+                        style={[
+                          styles.shortcutChip,
+                          isActive && styles.shortcutChipActive,
+                        ]}
+                        onPress={() => {
+                          setCurrentDir(sc.path);
+                          setSearchQuery("");
+                          setSelectedFile(null);
+                        }}
+                        activeOpacity={0.7}
+                      >
+                        <IconComp
+                          size={13}
+                          color={isActive ? "#6366F1" : COLORS.mutedForeground}
+                        />
+                        <Text
+                          style={[
+                            styles.shortcutChipText,
+                            isActive && styles.shortcutChipTextActive,
+                            font("medium"),
+                          ]}
+                        >
+                          {sc.label}
+                        </Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </ScrollView>
+              </View>
+
+              {/* Breadcrumb Navigation Bar */}
+              <View style={styles.breadcrumbBar}>
+                <TouchableOpacity
+                  style={[styles.upBtn, !canGoUp && styles.upBtnDisabled]}
+                  onPress={handleGoUp}
+                  disabled={!canGoUp}
+                  activeOpacity={0.7}
+                >
+                  <ArrowUp
+                    size={15}
+                    color={canGoUp ? "#6366F1" : COLORS.mutedForeground}
+                  />
+                </TouchableOpacity>
+
+                <ScrollView
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  contentContainerStyle={styles.breadcrumbScroll}
+                >
+                  <TouchableOpacity
+                    onPress={() => {
+                      setCurrentDir("/");
+                      setSearchQuery("");
+                      setSelectedFile(null);
+                    }}
+                    activeOpacity={0.7}
+                  >
+                    <Text
+                      style={[
+                        styles.breadcrumbSegment,
+                        currentDir === "/" && styles.breadcrumbSegmentActive,
+                        mono("medium"),
+                      ]}
+                    >
+                      /
+                    </Text>
+                  </TouchableOpacity>
+
+                  {pathSegments.map((segment, index) => {
+                    const pathUpToSegment = "/" + pathSegments.slice(0, index + 1).join("/");
+                    const isLast = index === pathSegments.length - 1;
+                    return (
+                      <React.Fragment key={pathUpToSegment}>
+                        <Text style={[styles.breadcrumbDivider, mono("regular")]}>/</Text>
+                        <TouchableOpacity
+                          onPress={() => {
+                            setCurrentDir(pathUpToSegment);
+                            setSearchQuery("");
+                            setSelectedFile(null);
+                          }}
+                          activeOpacity={0.7}
+                        >
+                          <Text
+                            style={[
+                              styles.breadcrumbSegment,
+                              isLast && styles.breadcrumbSegmentActive,
+                              mono(isLast ? "bold" : "regular"),
+                            ]}
+                          >
+                            {segment}
+                          </Text>
+                        </TouchableOpacity>
+                      </React.Fragment>
+                    );
+                  })}
+                </ScrollView>
+
+                <TouchableOpacity
+                  style={styles.refreshBtn}
+                  onPress={() => refetch()}
+                  disabled={isLoading || isRefetching}
+                  activeOpacity={0.7}
+                >
+                  <RefreshCw
+                    size={14}
+                    color={
+                      isLoading || isRefetching
+                        ? "#6366F1"
+                        : COLORS.mutedForeground
+                    }
+                  />
+                </TouchableOpacity>
+              </View>
+
+              {/* Search & Filter Category Row matching Flutter */}
+              <View style={styles.searchFilterRow}>
+                <View style={styles.searchBox}>
+                  <Search size={14} color={COLORS.mutedForeground} />
+                  <TextInput
+                    style={[styles.searchInput, font("regular")]}
+                    placeholder="Filter files in this folder..."
+                    placeholderTextColor={COLORS.mutedForeground}
+                    value={searchQuery}
+                    onChangeText={setSearchQuery}
+                    autoCorrect={false}
+                    autoCapitalize="none"
+                  />
+                  {searchQuery.length > 0 && (
+                    <TouchableOpacity
+                      onPress={() => setSearchQuery("")}
+                      hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                    >
+                      <X size={14} color={COLORS.mutedForeground} />
+                    </TouchableOpacity>
+                  )}
+                </View>
+
+                {/* Filter Pills: All, Media, Docs, Code */}
+                <View style={styles.categoryPills}>
+                  {(["all", "media", "docs", "code"] as MediaFilterCategory[]).map((cat) => {
+                    const active = activeCategory === cat;
+                    const label = cat === "all" ? "All" : cat === "media" ? "Media" : cat === "docs" ? "Docs" : "Code";
+                    return (
+                      <TouchableOpacity
+                        key={cat}
+                        style={[styles.catPill, active && styles.catPillActive]}
+                        onPress={() => setActiveCategory(cat)}
+                        activeOpacity={0.7}
+                      >
+                        <Text
+                          style={[
+                            styles.catPillText,
+                            active && styles.catPillTextActive,
+                            font("medium"),
+                          ]}
+                        >
+                          {label}
+                        </Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
+              </View>
+
+              {/* Directory Content List */}
+              <View style={styles.listContainer}>
+                {isLoading ? (
+                  <View style={styles.centerBox}>
+                    <ActivityIndicator size="small" color="#6366F1" />
+                    <Text style={[styles.loadingText, font("regular")]}>
+                      Loading directory contents…
+                    </Text>
+                  </View>
+                ) : filteredEntries.length === 0 ? (
+                  <View style={styles.centerBox}>
+                    <FolderOpen size={36} color={COLORS.mutedForeground} />
+                    <Text style={[styles.emptyTitle, font("medium")]}>
+                      No files found in this folder
+                    </Text>
+                    {allowUpload && (
+                      <TouchableOpacity
+                        style={styles.emptyUploadBtn}
+                        onPress={handleUploadToCurrentDir}
+                        activeOpacity={0.7}
+                      >
+                        <UploadCloud size={14} color="#6366F1" />
+                        <Text style={[styles.emptyUploadBtnText, font("medium")]}>
+                          Upload File Here
+                        </Text>
+                      </TouchableOpacity>
+                    )}
+                  </View>
+                ) : (
+                  <ScrollView
+                    style={styles.itemsList}
+                    contentContainerStyle={styles.itemsContent}
+                    showsVerticalScrollIndicator={false}
+                  >
+                    {/* Folders first */}
+                    {folders.map((folder) => (
+                      <TouchableOpacity
+                        key={folder.path}
+                        style={styles.folderRow}
+                        onPress={() => handleEnterFolder(folder.path)}
+                        activeOpacity={0.7}
+                      >
+                        <View style={styles.folderIconBox}>
+                          <Folder size={17} color="#F59E0B" />
+                        </View>
+                        <View style={styles.itemMeta}>
+                          <Text
+                            style={[styles.itemName, font("semibold")]}
+                            numberOfLines={1}
+                          >
+                            {folder.name}
+                          </Text>
+                          <Text style={[styles.itemSub, font("regular")]}>
+                            Folder
+                          </Text>
+                        </View>
+                        <ChevronRight size={15} color={COLORS.mutedForeground} />
+                      </TouchableOpacity>
+                    ))}
+
+                    {/* Files */}
+                    {files.map((file) => {
+                      const kind = getFileKind(file.name);
+                      const IconComp = getKindIcon(kind);
+                      const color = getKindColor(kind);
+                      const isSelected = selectedFile?.path === file.path;
+
+                      return (
+                        <TouchableOpacity
+                          key={file.path}
+                          style={[
+                            styles.fileRow,
+                            isSelected && styles.fileRowSelected,
+                          ]}
+                          onPress={() => handleSelectFileItem(file)}
+                          activeOpacity={0.7}
+                        >
+                          <View
+                            style={[
+                              styles.fileIconBox,
+                              { backgroundColor: `${color}18` },
+                            ]}
+                          >
+                            <IconComp size={17} color={color} />
+                          </View>
+                          <View style={styles.itemMeta}>
+                            <Text
+                              style={[
+                                styles.itemName,
+                                isSelected && { color: "#6366F1" },
+                                font(isSelected ? "bold" : "medium"),
+                              ]}
+                              numberOfLines={1}
+                            >
+                              {file.name}
+                            </Text>
+                            <Text style={[styles.itemSub, mono("regular")]}>
+                              {kind.toUpperCase()}
+                            </Text>
+                          </View>
+
+                          {/* Selection indicator */}
+                          {isSelected ? (
+                            <CheckCircle2 size={18} color="#10B981" />
+                          ) : (
+                            <View style={styles.unselectedCircle} />
+                          )}
+                        </TouchableOpacity>
+                      );
+                    })}
+                  </ScrollView>
                 )}
               </View>
 
-              {/* Category Filter Chips */}
-              <View style={styles.categoryRow}>
-                {(
-                  [
-                    { key: "all", label: "All" },
-                    { key: "image", label: "Images" },
-                    { key: "video", label: "Videos" },
-                    { key: "audio", label: "Audio" },
-                    { key: "code", label: "Code" },
-                    { key: "doc", label: "Docs" },
-                  ] as const
-                ).map((cat) => {
-                  const isSelected = activeCategory === cat.key;
-                  return (
-                    <TouchableOpacity
-                      key={cat.key}
-                      style={[
-                        styles.categoryChip,
-                        isSelected && styles.categoryChipActive,
-                      ]}
-                      onPress={() => setActiveCategory(cat.key)}
-                      activeOpacity={0.7}
+              {/* Bottom Action Bar matching Flutter */}
+              <View style={styles.bottomBar}>
+                <View style={styles.bottomMeta}>
+                  <Text
+                    style={[
+                      styles.bottomSelectedTitle,
+                      selectedFile && { color: COLORS.foreground },
+                      font("bold"),
+                    ]}
+                    numberOfLines={1}
+                  >
+                    {selectedFile
+                      ? `Selected: ${selectedFile.name}`
+                      : "No file selected"}
+                  </Text>
+                  {selectedFile ? (
+                    <Text
+                      style={[styles.bottomSelectedPath, mono("regular")]}
+                      numberOfLines={1}
                     >
-                      <Text
-                        style={[
-                          styles.categoryChipText,
-                          font(isSelected ? "semibold" : "regular"),
-                          isSelected && styles.categoryChipTextActive,
-                        ]}
-                      >
-                        {cat.label}
-                      </Text>
-                    </TouchableOpacity>
-                  );
-                })}
+                      {selectedFile.path}
+                    </Text>
+                  ) : (
+                    <Text style={[styles.bottomSelectedHint, font("regular")]}>
+                      Tap any file to select it
+                    </Text>
+                  )}
+                </View>
+
+                <View style={styles.bottomActions}>
+                  <TouchableOpacity
+                    style={styles.cancelBtn}
+                    onPress={onClose}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={[styles.cancelBtnText, font("medium")]}>
+                      Cancel
+                    </Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    style={[
+                      styles.attachBtn,
+                      !selectedFile && styles.attachBtnDisabled,
+                    ]}
+                    onPress={handleConfirmAttach}
+                    disabled={!selectedFile}
+                    activeOpacity={0.8}
+                  >
+                    <Check size={15} color="#FFF" />
+                    <Text style={[styles.attachBtnText, font("bold")]}>
+                      Attach File
+                    </Text>
+                  </TouchableOpacity>
+                </View>
               </View>
-
-              {/* Content Area */}
-              {isLoading ? (
-                <View style={styles.centerState}>
-                  <ActivityIndicator size="small" color={COLORS.primary} />
-                  <Text style={[styles.stateText, font("medium")]}>
-                    Reading server directory…
-                  </Text>
-                </View>
-              ) : status !== "online" && !rpc ? (
-                <View style={styles.centerState}>
-                  <Server size={28} color={COLORS.mutedForeground} />
-                  <Text style={[styles.stateTitle, font("semibold")]}>
-                    Server RPC Offline
-                  </Text>
-                  <Text style={[styles.stateText, font("regular")]}>
-                    Connect to AvA backend to browse server files.
-                  </Text>
-                </View>
-              ) : folders.length === 0 && files.length === 0 ? (
-                <View style={styles.centerState}>
-                  <FolderOpen size={32} color={COLORS.mutedForeground} />
-                  <Text style={[styles.stateTitle, font("semibold")]}>
-                    No files found
-                  </Text>
-                  <Text style={[styles.stateText, font("regular")]}>
-                    {searchQuery
-                      ? `No matches for "${searchQuery}"`
-                      : "This directory has no matching media or files"}
-                  </Text>
-                </View>
-              ) : (
-                <ScrollView
-                  style={styles.fileListScroll}
-                  contentContainerStyle={styles.fileListContent}
-                  showsVerticalScrollIndicator={false}
-                >
-                  {/* Folders List */}
-                  {folders.length > 0 && (
-                    <View style={styles.sectionBlock}>
-                      <Text style={[styles.sectionTitle, font("semibold")]}>
-                        FOLDERS ({folders.length})
-                      </Text>
-                      {folders.map((folder) => (
-                        <TouchableOpacity
-                          key={folder.path}
-                          style={styles.folderRow}
-                          onPress={() => handleEnterFolder(folder.path)}
-                          activeOpacity={0.7}
-                        >
-                          <View style={styles.folderIconBox}>
-                            <Folder size={16} color={COLORS.primary} />
-                          </View>
-                          <View style={styles.entryInfo}>
-                            <Text
-                              style={[styles.entryName, font("semibold")]}
-                              numberOfLines={1}
-                            >
-                              {folder.name}
-                            </Text>
-                            <Text
-                              style={[styles.entrySub, mono("regular")]}
-                              numberOfLines={1}
-                            >
-                              Directory
-                            </Text>
-                          </View>
-                          <ChevronRight size={16} color={COLORS.mutedForeground} />
-                        </TouchableOpacity>
-                      ))}
-                    </View>
-                  )}
-
-                  {/* Files List */}
-                  {files.length > 0 && (
-                    <View style={styles.sectionBlock}>
-                      <Text style={[styles.sectionTitle, font("semibold")]}>
-                        FILES ({files.length})
-                      </Text>
-                      {files.map((file) => {
-                        const kind = getFileKind(file.name);
-                        const IconComponent = getKindIcon(kind);
-                        const ext =
-                          file.name.split(".").pop()?.toUpperCase() || "FILE";
-
-                        return (
-                          <TouchableOpacity
-                            key={file.path}
-                            style={styles.fileRow}
-                            onPress={() => handleSelectFile(file)}
-                            activeOpacity={0.7}
-                          >
-                            <View style={styles.fileIconBox}>
-                              <IconComponent size={16} color={COLORS.primary} />
-                            </View>
-                            <View style={styles.entryInfo}>
-                              <Text
-                                style={[styles.entryName, font("semibold")]}
-                                numberOfLines={1}
-                              >
-                                {file.name}
-                              </Text>
-                              <View style={styles.fileMetaRow}>
-                                <View style={styles.kindBadge}>
-                                  <Text
-                                    style={[styles.kindBadgeText, mono("bold")]}
-                                  >
-                                    {ext}
-                                  </Text>
-                                </View>
-                                <Text
-                                  style={[styles.entrySub, mono("regular")]}
-                                  numberOfLines={1}
-                                >
-                                  {file.path}
-                                </Text>
-                              </View>
-                            </View>
-                            <View style={styles.selectBtn}>
-                              <Text style={[styles.selectBtnText, font("semibold")]}>
-                                Attach
-                              </Text>
-                            </View>
-                          </TouchableOpacity>
-                        );
-                      })}
-                    </View>
-                  )}
-                </ScrollView>
-              )}
             </View>
           </TouchableWithoutFeedback>
         </View>
@@ -525,15 +716,14 @@ const styles = StyleSheet.create({
   },
   sheetCard: {
     backgroundColor: COLORS.card,
-    borderTopLeftRadius: 26,
-    borderTopRightRadius: 26,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
     borderWidth: 1,
     borderColor: COLORS.glassBorder,
     borderTopColor: COLORS.border,
     paddingTop: 10,
-    paddingBottom: Platform.OS === "ios" ? 36 : 20,
-    paddingHorizontal: 16,
-    maxHeight: "90%",
+    maxHeight: "88%",
+    height: "82%",
     shadowColor: COLORS.glassShadow,
     shadowOffset: { width: 0, height: -6 },
     shadowOpacity: 0.35,
@@ -546,15 +736,14 @@ const styles = StyleSheet.create({
     borderRadius: 2,
     backgroundColor: COLORS.border,
     alignSelf: "center",
-    marginBottom: 12,
+    marginBottom: 8,
   },
   headerRow: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
+    paddingHorizontal: 16,
     paddingBottom: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.border,
   },
   headerLeft: {
     flexDirection: "row",
@@ -565,17 +754,17 @@ const styles = StyleSheet.create({
   headerIconBox: {
     width: 34,
     height: 34,
-    borderRadius: 10,
-    backgroundColor: COLORS.secondary,
+    borderRadius: 9,
+    backgroundColor: "rgba(99, 102, 241, 0.12)",
     alignItems: "center",
     justifyContent: "center",
   },
   headerTitle: {
-    fontSize: 15,
+    fontSize: 16,
     color: COLORS.foreground,
   },
   headerSubtitle: {
-    fontSize: 11.5,
+    fontSize: 11,
     color: COLORS.mutedForeground,
     marginTop: 1,
   },
@@ -589,161 +778,187 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     backgroundColor: COLORS.secondary,
   },
-  pathBar: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-    marginTop: 10,
-    marginBottom: 6,
-  },
-  goUpBtn: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 4,
-    paddingHorizontal: 8,
-    paddingVertical: 5,
-    borderRadius: 8,
-    backgroundColor: COLORS.secondary,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-  },
-  goUpText: {
-    fontSize: 12,
-    color: COLORS.primary,
-  },
-  pathPill: {
-    flex: 1,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    backgroundColor: COLORS.secondary,
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-  },
-  pathText: {
-    fontSize: 11.5,
-    color: COLORS.foreground,
-    flex: 1,
-  },
-  presetsRow: {
-    gap: 6,
-    paddingVertical: 6,
-  },
-  presetChip: {
-    paddingHorizontal: 10,
+  shortcutsWrapper: {
+    paddingHorizontal: 14,
     paddingVertical: 4,
+  },
+  shortcutsRow: {
+    flexDirection: "row",
+    gap: 6,
+  },
+  shortcutChip: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
     borderRadius: 8,
     backgroundColor: COLORS.secondary,
     borderWidth: 1,
     borderColor: COLORS.border,
   },
-  presetChipActive: {
-    borderColor: COLORS.primary,
-    backgroundColor: COLORS.accent,
+  shortcutChipActive: {
+    backgroundColor: "rgba(99, 102, 241, 0.12)",
+    borderColor: "rgba(99, 102, 241, 0.3)",
   },
-  presetChipText: {
+  shortcutChipText: {
     fontSize: 11.5,
     color: COLORS.mutedForeground,
   },
-  presetChipTextActive: {
-    color: COLORS.primary,
+  shortcutChipTextActive: {
+    color: "#6366F1",
+    fontWeight: "600",
   },
-  searchBar: {
+  breadcrumbBar: {
     flexDirection: "row",
     alignItems: "center",
+    marginHorizontal: 14,
+    marginTop: 6,
+    paddingHorizontal: 8,
+    paddingVertical: 6,
+    borderRadius: 10,
     backgroundColor: COLORS.secondary,
     borderWidth: 1,
     borderColor: COLORS.border,
-    borderRadius: 10,
-    paddingHorizontal: 10,
-    height: 36,
+    gap: 6,
+  },
+  upBtn: {
+    padding: 4,
+    borderRadius: 6,
+  },
+  upBtnDisabled: {
+    opacity: 0.35,
+  },
+  breadcrumbScroll: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 2,
+    flexGrow: 1,
+  },
+  breadcrumbSegment: {
+    fontSize: 12,
+    color: COLORS.foreground,
+    paddingHorizontal: 2,
+  },
+  breadcrumbSegmentActive: {
+    color: "#6366F1",
+    fontWeight: "700",
+  },
+  breadcrumbDivider: {
+    fontSize: 12,
+    color: COLORS.mutedForeground,
+    marginHorizontal: 1,
+  },
+  refreshBtn: {
+    padding: 4,
+  },
+  searchFilterRow: {
+    flexDirection: "row",
+    alignItems: "center",
     gap: 8,
-    marginTop: 6,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+  },
+  searchBox: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    height: 34,
+    paddingHorizontal: 10,
+    borderRadius: 8,
+    backgroundColor: COLORS.secondary,
+    borderWidth: 1,
+    borderColor: COLORS.border,
   },
   searchInput: {
     flex: 1,
-    fontSize: 12.5,
+    fontSize: 12,
     color: COLORS.foreground,
     paddingVertical: 0,
   },
-  categoryRow: {
+  categoryPills: {
     flexDirection: "row",
-    gap: 6,
-    marginTop: 8,
-    marginBottom: 8,
+    gap: 4,
   },
-  categoryChip: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    paddingVertical: 5,
+  catPill: {
+    paddingHorizontal: 8,
+    paddingVertical: 6,
     borderRadius: 8,
     backgroundColor: COLORS.secondary,
     borderWidth: 1,
     borderColor: COLORS.border,
   },
-  categoryChipActive: {
-    backgroundColor: COLORS.primary,
-    borderColor: COLORS.primary,
+  catPillActive: {
+    backgroundColor: "rgba(99, 102, 241, 0.12)",
+    borderColor: "rgba(99, 102, 241, 0.3)",
   },
-  categoryChipText: {
+  catPillText: {
     fontSize: 11,
     color: COLORS.mutedForeground,
   },
-  categoryChipTextActive: {
-    color: COLORS.primaryForeground,
+  catPillTextActive: {
+    color: "#6366F1",
+    fontWeight: "700",
   },
-  centerState: {
+  listContainer: {
+    flex: 1,
+    borderTopWidth: 1,
+    borderTopColor: COLORS.border,
+  },
+  itemsList: {
+    flex: 1,
+  },
+  itemsContent: {
+    paddingHorizontal: 14,
+    paddingVertical: 6,
+    gap: 4,
+  },
+  centerBox: {
+    flex: 1,
     alignItems: "center",
     justifyContent: "center",
-    paddingVertical: 36,
+    padding: 24,
     gap: 8,
   },
-  stateTitle: {
-    fontSize: 14,
-    color: COLORS.foreground,
-    marginTop: 4,
-  },
-  stateText: {
+  loadingText: {
     fontSize: 12,
     color: COLORS.mutedForeground,
-    textAlign: "center",
   },
-  fileListScroll: {
-    maxHeight: 380,
-  },
-  fileListContent: {
-    gap: 12,
-    paddingBottom: 16,
-  },
-  sectionBlock: {
-    gap: 6,
-  },
-  sectionTitle: {
-    fontSize: 11,
+  emptyTitle: {
+    fontSize: 13,
     color: COLORS.mutedForeground,
-    letterSpacing: 0.5,
+  },
+  emptyUploadBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: "rgba(99, 102, 241, 0.3)",
+    backgroundColor: "rgba(99, 102, 241, 0.08)",
     marginTop: 4,
-    marginBottom: 2,
+  },
+  emptyUploadBtnText: {
+    fontSize: 12,
+    color: "#6366F1",
   },
   folderRow: {
     flexDirection: "row",
     alignItems: "center",
     gap: 10,
-    padding: 10,
-    borderRadius: 12,
-    backgroundColor: COLORS.secondary,
-    borderWidth: 1,
-    borderColor: COLORS.border,
+    paddingVertical: 9,
+    paddingHorizontal: 10,
+    borderRadius: 10,
+    backgroundColor: "transparent",
   },
   folderIconBox: {
     width: 32,
     height: 32,
     borderRadius: 8,
-    backgroundColor: COLORS.accent,
+    backgroundColor: "rgba(245, 158, 11, 0.1)",
     alignItems: "center",
     justifyContent: "center",
   },
@@ -751,56 +966,97 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 10,
-    padding: 10,
-    borderRadius: 12,
-    backgroundColor: COLORS.secondary,
-    borderWidth: 1,
-    borderColor: COLORS.border,
+    paddingVertical: 9,
+    paddingHorizontal: 10,
+    borderRadius: 10,
+    backgroundColor: "transparent",
+  },
+  fileRowSelected: {
+    backgroundColor: "rgba(99, 102, 241, 0.08)",
   },
   fileIconBox: {
     width: 32,
     height: 32,
     borderRadius: 8,
-    backgroundColor: COLORS.accent,
     alignItems: "center",
     justifyContent: "center",
   },
-  entryInfo: {
+  itemMeta: {
     flex: 1,
   },
-  entryName: {
+  itemName: {
     fontSize: 13,
     color: COLORS.foreground,
   },
-  entrySub: {
+  itemSub: {
     fontSize: 10.5,
     color: COLORS.mutedForeground,
     marginTop: 1,
   },
-  fileMetaRow: {
+  unselectedCircle: {
+    width: 17,
+    height: 17,
+    borderRadius: 9,
+    borderWidth: 1.2,
+    borderColor: COLORS.mutedForeground,
+    opacity: 0.4,
+  },
+  bottomBar: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: 16,
+    paddingTop: 10,
+    paddingBottom: Platform.OS === "ios" ? 32 : 14,
+    borderTopWidth: 1,
+    borderTopColor: COLORS.border,
+    backgroundColor: COLORS.secondary,
+  },
+  bottomMeta: {
+    flex: 1,
+    marginRight: 10,
+  },
+  bottomSelectedTitle: {
+    fontSize: 12,
+    color: COLORS.mutedForeground,
+  },
+  bottomSelectedPath: {
+    fontSize: 10,
+    color: COLORS.mutedForeground,
+    marginTop: 1,
+  },
+  bottomSelectedHint: {
+    fontSize: 10.5,
+    color: COLORS.mutedForeground,
+    marginTop: 1,
+  },
+  bottomActions: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  cancelBtn: {
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+  },
+  cancelBtnText: {
+    fontSize: 12.5,
+    color: COLORS.mutedForeground,
+  },
+  attachBtn: {
     flexDirection: "row",
     alignItems: "center",
     gap: 6,
-    marginTop: 2,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 9,
+    backgroundColor: "#6366F1",
   },
-  kindBadge: {
-    paddingHorizontal: 4,
-    paddingVertical: 1,
-    borderRadius: 4,
-    backgroundColor: COLORS.accent,
+  attachBtnDisabled: {
+    opacity: 0.4,
   },
-  kindBadgeText: {
-    fontSize: 9,
-    color: COLORS.primary,
-  },
-  selectBtn: {
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 8,
-    backgroundColor: COLORS.primary,
-  },
-  selectBtnText: {
-    fontSize: 11.5,
-    color: COLORS.primaryForeground,
+  attachBtnText: {
+    fontSize: 12.5,
+    color: "#FFF",
   },
 });

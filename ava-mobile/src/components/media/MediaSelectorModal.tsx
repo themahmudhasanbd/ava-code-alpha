@@ -17,16 +17,15 @@ import { File } from "expo-file-system";
 import { BlurView } from "expo-blur";
 import {
   ChevronRight,
-  Plus,
+  Paperclip,
   Server,
-  Smartphone,
   UploadCloud,
   X,
 } from "lucide-react-native";
 import { useAva } from "@/state/ava-provider";
 import { COLORS, useTheme } from "@/theme/colors";
 import { font, mono } from "@/theme/fonts";
-import { ServerMediaModal } from "./ServerMediaModal";
+import { ServerMediaModal, type ServerSelectedMedia } from "./ServerMediaModal";
 
 export interface SelectedMedia {
   id: string;
@@ -88,161 +87,139 @@ export function MediaSelectorModal({
     };
   };
 
-  // 1. Device: Camera
-  const handleCamera = async () => {
-    try {
-      const { status } = await ImagePicker.requestCameraPermissionsAsync();
-      if (status !== "granted") {
-        Alert.alert("Permission needed", "Camera permission is required.");
-        return;
-      }
+  // 1. Device: Pick Document or Media
+  const handleSelectFromDevice = async () => {
+    const pickDocument = async () => {
+      try {
+        const result = await DocumentPicker.getDocumentAsync({
+          copyToCacheDirectory: true,
+          type: "*/*",
+        });
 
-      const result = await ImagePicker.launchCameraAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.All,
-        quality: 0.85,
-      });
+        if (!result.canceled && result.assets && result.assets[0]) {
+          const doc = result.assets[0];
+          setUploading(true);
+          const ext = doc.name.split(".").pop()?.toLowerCase() || "";
+          let kind: SelectedMedia["kind"] = "document";
+          if (["png", "jpg", "jpeg", "webp", "gif"].includes(ext)) kind = "image";
+          else if (["mp4", "mov", "webm"].includes(ext)) kind = "video";
+          else if (["mp3", "wav", "m4a"].includes(ext)) kind = "audio";
+          else if (["ts", "tsx", "js", "jsx", "py", "sh", "json"].includes(ext)) kind = "code";
 
-      if (!result.canceled && result.assets && result.assets[0]) {
-        const asset = result.assets[0];
-        setUploading(true);
-        const ext = asset.type === "video" ? "mp4" : "jpg";
-        const kind = asset.type === "video" ? "video" : "image";
-        const name = `camera_${Date.now()}.${ext}`;
-
-        const media = await uploadFileToServer(asset.uri, name, kind);
+          const media = await uploadFileToServer(doc.uri, doc.name, kind);
+          setUploading(false);
+          setUploadStatus(null);
+          onSelect(media);
+          onClose();
+        }
+      } catch (e: any) {
         setUploading(false);
-        onSelect(media);
-        onClose();
+        setUploadStatus(null);
+        Alert.alert("File Picker Error", e?.message || "Failed to pick file.");
       }
-    } catch (e: any) {
-      setUploading(false);
-      Alert.alert("Camera Error", e?.message || "Failed to capture photo.");
-    }
-  };
+    };
 
-  // 2. Device: Photo & Video Library
-  const handleGallery = async () => {
-    try {
-      const { status } =
-        await ImagePicker.requestMediaLibraryPermissionsAsync();
-      if (status !== "granted") {
-        Alert.alert(
-          "Permission needed",
-          "Photo gallery permission is required."
-        );
-        return;
-      }
+    const pickGallery = async () => {
+      try {
+        const result = await ImagePicker.launchImageLibraryAsync({
+          mediaTypes: ImagePicker.MediaTypeOptions.All,
+          quality: 0.85,
+        });
 
-      const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.All,
-        quality: 0.85,
-        allowsMultipleSelection: false,
-      });
+        if (!result.canceled && result.assets && result.assets[0]) {
+          const asset = result.assets[0];
+          setUploading(true);
+          const ext = asset.type === "video" ? "mp4" : "jpg";
+          const kind = asset.type === "video" ? "video" : "image";
+          const rawName = asset.fileName || `media_${Date.now()}.${ext}`;
 
-      if (!result.canceled && result.assets && result.assets[0]) {
-        const asset = result.assets[0];
-        setUploading(true);
-        const ext = asset.uri.split(".").pop() || "jpg";
-        const isVid =
-          asset.type === "video" ||
-          ["mp4", "mov", "webm"].includes(ext.toLowerCase());
-        const kind = isVid ? "video" : "image";
-        const name = asset.fileName || `media_${Date.now()}.${ext}`;
-
-        const media = await uploadFileToServer(asset.uri, name, kind);
+          const media = await uploadFileToServer(asset.uri, rawName, kind);
+          setUploading(false);
+          setUploadStatus(null);
+          onSelect(media);
+          onClose();
+        }
+      } catch (e: any) {
         setUploading(false);
-        onSelect(media);
-        onClose();
+        setUploadStatus(null);
+        Alert.alert("Gallery Error", e?.message || "Failed to pick from gallery.");
       }
-    } catch (e: any) {
-      setUploading(false);
-      Alert.alert("Gallery Error", e?.message || "Failed to pick from gallery.");
-    }
-  };
+    };
 
-  // 3. Device: Document / Files
-  const handleDocument = async () => {
-    try {
-      const result = await DocumentPicker.getDocumentAsync({
-        type: "*/*",
-        copyToCacheDirectory: true,
-      });
+    const pickCamera = async () => {
+      try {
+        const { status } = await ImagePicker.requestCameraPermissionsAsync();
+        if (status !== "granted") {
+          Alert.alert("Permission needed", "Camera permission is required.");
+          return;
+        }
 
-      if (!result.canceled && result.assets && result.assets[0]) {
-        const doc = result.assets[0];
-        setUploading(true);
-        const ext = doc.name.split(".").pop()?.toLowerCase() || "";
-        const isImg = ["png", "jpg", "jpeg", "webp", "gif", "svg"].includes(
-          ext
-        );
-        const isVid = ["mp4", "mov", "webm", "mkv"].includes(ext);
-        const isAud = ["mp3", "wav", "ogg", "m4a", "aac"].includes(ext);
-        const isCode = [
-          "ts",
-          "tsx",
-          "js",
-          "jsx",
-          "py",
-          "rs",
-          "json",
-          "html",
-          "css",
-          "md",
-          "sh",
-        ].includes(ext);
+        const result = await ImagePicker.launchCameraAsync({
+          mediaTypes: ImagePicker.MediaTypeOptions.All,
+          quality: 0.85,
+        });
 
-        const kind = isImg
-          ? "image"
-          : isVid
-          ? "video"
-          : isAud
-          ? "audio"
-          : isCode
-          ? "code"
-          : "document";
+        if (!result.canceled && result.assets && result.assets[0]) {
+          const asset = result.assets[0];
+          setUploading(true);
+          const ext = asset.type === "video" ? "mp4" : "jpg";
+          const kind = asset.type === "video" ? "video" : "image";
+          const name = `camera_${Date.now()}.${ext}`;
 
-        const media = await uploadFileToServer(doc.uri, doc.name, kind);
+          const media = await uploadFileToServer(asset.uri, name, kind);
+          setUploading(false);
+          setUploadStatus(null);
+          onSelect(media);
+          onClose();
+        }
+      } catch (e: any) {
         setUploading(false);
-        onSelect(media);
-        onClose();
+        setUploadStatus(null);
+        Alert.alert("Camera Error", e?.message || "Failed to capture photo.");
       }
-    } catch (e: any) {
-      setUploading(false);
-      Alert.alert("File Picker Error", e?.message || "Failed to pick document.");
-    }
-  };
+    };
 
-  // Trigger Device Selection Options
-  const handleSelectFromDevice = () => {
     if (Platform.OS === "ios") {
       ActionSheetIOS.showActionSheetWithOptions(
         {
-          options: [
-            "Cancel",
-            "Photo & Video Library",
-            "Browse Files & Documents",
-            "Take Photo / Video",
-          ],
+          options: ["Cancel", "Photo Library", "Choose Document / File", "Take Photo or Video"],
           cancelButtonIndex: 0,
         },
         (buttonIndex) => {
-          if (buttonIndex === 1) handleGallery();
-          else if (buttonIndex === 2) handleDocument();
-          else if (buttonIndex === 3) handleCamera();
+          if (buttonIndex === 1) pickGallery();
+          else if (buttonIndex === 2) pickDocument();
+          else if (buttonIndex === 3) pickCamera();
         }
       );
     } else {
-      Alert.alert("Select from device", "Choose how you want to select files", [
-        { text: "Photos & Videos", onPress: handleGallery },
-        { text: "Files & Documents", onPress: handleDocument },
-        { text: "Camera", onPress: handleCamera },
-        { text: "Cancel", style: "cancel" },
-      ]);
+      Alert.alert(
+        "Select from Device",
+        "Choose file source",
+        [
+          { text: "Photo / Video Library", onPress: pickGallery },
+          { text: "Files & Documents", onPress: pickDocument },
+          { text: "Camera", onPress: pickCamera },
+          { text: "Cancel", style: "cancel" },
+        ],
+        { cancelable: true }
+      );
     }
   };
 
-  const handleOpenServerSelector = () => {
+  const handleSelectFromServer = () => {
     setServerModalOpen(true);
+  };
+
+  const handleServerFileSelected = (media: ServerSelectedMedia) => {
+    setServerModalOpen(false);
+    onSelect({
+      id: media.id,
+      name: media.name,
+      remotePath: media.remotePath,
+      kind: media.kind,
+      size: media.size,
+    });
+    onClose();
   };
 
   return (
@@ -257,91 +234,85 @@ export function MediaSelectorModal({
         <TouchableWithoutFeedback onPress={onClose}>
           <View style={styles.backdrop}>
             <BlurView
-              intensity={85}
+              intensity={80}
               tint={isDark ? "dark" : "light"}
               style={StyleSheet.absoluteFill}
             />
             <TouchableWithoutFeedback onPress={() => {}}>
               <View style={styles.sheetCard}>
-                {/* Handle Bar */}
+                {/* Drag Handle */}
                 <View style={styles.handleBar} />
 
-                {/* Header */}
+                {/* Header matching Flutter ChatAddFilesModal */}
                 <View style={styles.headerRow}>
                   <View style={styles.headerLeft}>
                     <View style={styles.headerIconBox}>
-                      <UploadCloud size={18} color={COLORS.primary} />
+                      <Paperclip size={18} color="#6366F1" />
                     </View>
-                    <View>
-                      <Text style={[styles.headerTitle, font("semibold")]}>
-                        Attach Media & Files
-                      </Text>
-                      <Text style={[styles.headerSubtitle, font("regular")]}>
-                        Select source to attach to prompt
-                      </Text>
-                    </View>
+                    <Text style={[styles.headerTitle, font("bold")]}>Add files</Text>
                   </View>
                   <TouchableOpacity
                     style={styles.closeBtn}
                     onPress={onClose}
+                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                     activeOpacity={0.7}
                   >
                     <X size={16} color={COLORS.mutedForeground} />
                   </TouchableOpacity>
                 </View>
 
-                {/* Uploading Status Overlay */}
+                {/* Upload Indicator if uploading */}
                 {uploading && (
                   <View style={styles.uploadingBox}>
-                    <ActivityIndicator size="small" color={COLORS.primary} />
+                    <ActivityIndicator size="small" color="#6366F1" />
                     <Text style={[styles.uploadingText, font("medium")]}>
-                      {uploadStatus || "Uploading to server…"}
+                      {uploadStatus || "Uploading to VPS server…"}
                     </Text>
                   </View>
                 )}
 
-                {/* ONLY TWO OPTIONS: 1) Select from device, 2) Select from server */}
+                {/* 2 Primary Options inspired by Flutter ChatAddFilesModal */}
                 <View style={styles.optionsContainer}>
-                  {/* Option 1: Select from Device */}
+                  {/* Option 1: Select from your device */}
                   <TouchableOpacity
                     style={styles.optionCard}
                     onPress={handleSelectFromDevice}
-                    activeOpacity={0.7}
                     disabled={uploading}
+                    activeOpacity={0.7}
                   >
-                    <View style={styles.optionIconBox}>
-                      <Smartphone size={20} color={COLORS.primary} />
+                    <View style={[styles.optionIconBox, { backgroundColor: "rgba(99, 102, 241, 0.12)" }]}>
+                      <UploadCloud size={20} color="#6366F1" />
                     </View>
                     <View style={styles.optionContent}>
                       <Text style={[styles.optionTitle, font("semibold")]}>
-                        Select from device
+                        Select from your device
                       </Text>
                       <Text style={[styles.optionSubtitle, font("regular")]}>
-                        Pick photos, videos, or documents from this device
+                        Upload images or documents from this device to server media library
                       </Text>
                     </View>
-                    <ChevronRight size={17} color={COLORS.mutedForeground} />
+                    <ChevronRight size={16} color={COLORS.mutedForeground} />
                   </TouchableOpacity>
 
-                  {/* Option 2: Select from Server */}
+                  {/* Option 2: Select from the server */}
                   <TouchableOpacity
                     style={styles.optionCard}
-                    onPress={handleOpenServerSelector}
-                    activeOpacity={0.7}
+                    onPress={handleSelectFromServer}
                     disabled={uploading}
+                    activeOpacity={0.7}
                   >
-                    <View style={styles.optionIconBox}>
-                      <Server size={20} color={COLORS.primary} />
+                    <View style={[styles.optionIconBox, { backgroundColor: "rgba(16, 185, 129, 0.12)" }]}>
+                      <Server size={20} color="#10B981" />
                     </View>
                     <View style={styles.optionContent}>
                       <Text style={[styles.optionTitle, font("semibold")]}>
-                        Select from server
+                        Select from the server
                       </Text>
                       <Text style={[styles.optionSubtitle, font("regular")]}>
-                        Browse & attach files stored on the VPS server
+                        Browse server files & media library ({serverDirectory})
                       </Text>
                     </View>
-                    <ChevronRight size={17} color={COLORS.mutedForeground} />
+                    <ChevronRight size={16} color={COLORS.mutedForeground} />
                   </TouchableOpacity>
                 </View>
               </View>
@@ -350,18 +321,11 @@ export function MediaSelectorModal({
         </TouchableWithoutFeedback>
       </Modal>
 
-      {/* Dedicated Server Media Selector Modal */}
+      {/* Dedicated Server Media Picker Modal */}
       <ServerMediaModal
         open={serverModalOpen}
-        onClose={() => {
-          setServerModalOpen(false);
-          onClose();
-        }}
-        onSelect={(media) => {
-          setServerModalOpen(false);
-          onSelect(media);
-          onClose();
-        }}
+        onClose={() => setServerModalOpen(false)}
+        onSelect={handleServerFileSelected}
         initialDirectory={serverDirectory}
       />
     </>
@@ -376,13 +340,13 @@ const styles = StyleSheet.create({
   },
   sheetCard: {
     backgroundColor: COLORS.card,
-    borderTopLeftRadius: 26,
-    borderTopRightRadius: 26,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
     borderWidth: 1,
     borderColor: COLORS.glassBorder,
     borderTopColor: COLORS.border,
     paddingTop: 10,
-    paddingBottom: Platform.OS === "ios" ? 36 : 22,
+    paddingBottom: Platform.OS === "ios" ? 36 : 24,
     paddingHorizontal: 16,
     shadowColor: COLORS.glassShadow,
     shadowOffset: { width: 0, height: -6 },
@@ -391,7 +355,7 @@ const styles = StyleSheet.create({
     elevation: 12,
   },
   handleBar: {
-    width: 38,
+    width: 36,
     height: 4,
     borderRadius: 2,
     backgroundColor: COLORS.border,
@@ -402,21 +366,20 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    paddingBottom: 14,
+    paddingBottom: 12,
     borderBottomWidth: 1,
     borderBottomColor: COLORS.border,
   },
   headerLeft: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 10,
-    flex: 1,
+    gap: 8,
   },
   headerIconBox: {
-    width: 36,
-    height: 36,
-    borderRadius: 10,
-    backgroundColor: COLORS.secondary,
+    width: 32,
+    height: 32,
+    borderRadius: 8,
+    backgroundColor: "rgba(99, 102, 241, 0.12)",
     alignItems: "center",
     justifyContent: "center",
   },
@@ -424,13 +387,8 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: COLORS.foreground,
   },
-  headerSubtitle: {
-    fontSize: 11.5,
-    color: COLORS.mutedForeground,
-    marginTop: 1,
-  },
   closeBtn: {
-    padding: 7,
+    padding: 6,
     borderRadius: 8,
     backgroundColor: COLORS.secondary,
   },
@@ -438,14 +396,16 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 8,
-    backgroundColor: COLORS.accent,
+    backgroundColor: "rgba(99, 102, 241, 0.08)",
     padding: 10,
     borderRadius: 10,
     marginTop: 10,
+    borderWidth: 1,
+    borderColor: "rgba(99, 102, 241, 0.2)",
   },
   uploadingText: {
     fontSize: 12,
-    color: COLORS.primary,
+    color: "#6366F1",
   },
   optionsContainer: {
     gap: 10,
@@ -465,7 +425,6 @@ const styles = StyleSheet.create({
     width: 42,
     height: 42,
     borderRadius: 12,
-    backgroundColor: COLORS.accent,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -473,12 +432,13 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   optionTitle: {
-    fontSize: 14.5,
+    fontSize: 14,
     color: COLORS.foreground,
   },
   optionSubtitle: {
-    fontSize: 11.5,
+    fontSize: 11,
     color: COLORS.mutedForeground,
     marginTop: 2,
+    lineHeight: 15,
   },
 });

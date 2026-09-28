@@ -136,6 +136,108 @@ export function SkeletonCard({
   );
 }
 
+/**
+ * Sleek skeleton placeholder for the session screen while loading chat history.
+ */
+export function ChatSessionSkeleton() {
+  return (
+    <View style={styles.chatSkeletonWrap}>
+      {/* User message skeleton */}
+      <View style={styles.userMsgSkeleton}>
+        <View style={styles.userSkeletonHeader}>
+          <Skeleton style={{ width: 38, height: 11, borderRadius: 5 }} />
+          <Skeleton style={{ width: 22, height: 22, borderRadius: 11 }} />
+        </View>
+        <Skeleton style={{ width: 220, height: 38, borderRadius: 14 }} />
+      </View>
+
+      {/* Assistant message skeleton */}
+      <View style={styles.assistantMsgSkeleton}>
+        <View style={styles.assistantSkeletonHeader}>
+          <Skeleton style={{ width: 34, height: 34, borderRadius: 17 }} />
+          <View style={{ gap: 6, flex: 1 }}>
+            <Skeleton style={{ width: "35%", height: 13, borderRadius: 6 }} />
+            <Skeleton style={{ width: "22%", height: 10, borderRadius: 5 }} />
+          </View>
+        </View>
+
+        {/* Workflow trace step skeleton box */}
+        <View style={styles.workflowStepSkeleton}>
+          <Skeleton style={{ width: 18, height: 18, borderRadius: 6 }} />
+          <Skeleton style={{ width: "60%", height: 12, borderRadius: 6 }} />
+        </View>
+
+        {/* Text lines */}
+        <View style={{ gap: 8, marginTop: 4 }}>
+          <Skeleton style={{ width: "95%", height: 13, borderRadius: 6 }} />
+          <Skeleton style={{ width: "85%", height: 13, borderRadius: 6 }} />
+          <Skeleton style={{ width: "60%", height: 13, borderRadius: 6 }} />
+        </View>
+      </View>
+
+      {/* Second User turn skeleton */}
+      <View style={styles.userMsgSkeleton}>
+        <View style={styles.userSkeletonHeader}>
+          <Skeleton style={{ width: 38, height: 11, borderRadius: 5 }} />
+          <Skeleton style={{ width: 22, height: 22, borderRadius: 11 }} />
+        </View>
+        <Skeleton style={{ width: 170, height: 32, borderRadius: 14 }} />
+      </View>
+
+      {/* Second Assistant turn skeleton */}
+      <View style={styles.assistantMsgSkeleton}>
+        <View style={styles.assistantSkeletonHeader}>
+          <Skeleton style={{ width: 34, height: 34, borderRadius: 17 }} />
+          <View style={{ gap: 6, flex: 1 }}>
+            <Skeleton style={{ width: "30%", height: 13, borderRadius: 6 }} />
+            <Skeleton style={{ width: "18%", height: 10, borderRadius: 5 }} />
+          </View>
+        </View>
+        <View style={{ gap: 8, marginTop: 4 }}>
+          <Skeleton style={{ width: "90%", height: 13, borderRadius: 6 }} />
+          <Skeleton style={{ width: "75%", height: 13, borderRadius: 6 }} />
+        </View>
+      </View>
+    </View>
+  );
+}
+
+/**
+ * Skeleton placeholder for session lists in drawer and workspace views.
+ */
+export function DrawerSessionsSkeleton({ count = 2 }: { count?: number }) {
+  return (
+    <View style={styles.drawerSessionsSkeleton}>
+      {Array.from({ length: count }).map((_, groupIdx) => (
+        <View key={groupIdx} style={styles.drawerGroupSkeleton}>
+          {/* Group Header */}
+          <View style={styles.drawerGroupHeaderSkeleton}>
+            <Skeleton style={{ width: 14, height: 14, borderRadius: 4 }} />
+            <Skeleton style={{ width: 16, height: 16, borderRadius: 4 }} />
+            <View style={{ flex: 1, gap: 5 }}>
+              <Skeleton style={{ width: `${50 + (groupIdx * 15)}%`, height: 13, borderRadius: 6 }} />
+              <Skeleton style={{ width: `${30 + (groupIdx * 10)}%`, height: 9, borderRadius: 4 }} />
+            </View>
+            <Skeleton style={{ width: 20, height: 14, borderRadius: 4 }} />
+          </View>
+
+          {/* Child Session Rows */}
+          <View style={styles.drawerChildListSkeleton}>
+            <View style={styles.drawerSessionRowSkeleton}>
+              <Skeleton style={{ width: 6, height: 6, borderRadius: 3 }} />
+              <Skeleton style={{ width: "75%", height: 12, borderRadius: 6 }} />
+            </View>
+            <View style={styles.drawerSessionRowSkeleton}>
+              <Skeleton style={{ width: 6, height: 6, borderRadius: 3 }} />
+              <Skeleton style={{ width: "55%", height: 12, borderRadius: 6 }} />
+            </View>
+          </View>
+        </View>
+      ))}
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
   skeleton: {
     backgroundColor: COLORS.muted,
@@ -161,5 +263,76 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 10,
+  },
+  chatSkeletonWrap: {
+    paddingVertical: 12,
+    gap: 18,
+  },
+  userMsgSkeleton: {
+    alignSelf: "flex-end",
+    alignItems: "flex-end",
+    gap: 6,
+    width: "100%",
+  },
+  userSkeletonHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+  },
+  assistantMsgSkeleton: {
+    width: "100%",
+    gap: 10,
+    backgroundColor: COLORS.card,
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    padding: 14,
+  },
+  assistantSkeletonHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+  },
+  workflowStepSkeleton: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    backgroundColor: COLORS.secondary,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+  },
+  drawerSessionsSkeleton: {
+    gap: 10,
+    paddingVertical: 4,
+  },
+  drawerGroupSkeleton: {
+    backgroundColor: COLORS.secondary,
+    borderRadius: 12,
+    padding: 10,
+    gap: 8,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+  },
+  drawerGroupHeaderSkeleton: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  drawerChildListSkeleton: {
+    marginLeft: 22,
+    borderLeftWidth: 1.5,
+    borderLeftColor: "rgba(66, 64, 225, 0.2)",
+    paddingLeft: 8,
+    gap: 6,
+    paddingVertical: 2,
+  },
+  drawerSessionRowSkeleton: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    paddingVertical: 4,
   },
 });

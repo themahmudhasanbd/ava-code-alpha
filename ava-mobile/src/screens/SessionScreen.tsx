@@ -13,7 +13,7 @@ import {
 } from "react-native";
 import { AppShell } from "@/components/layout/AppShell";
 import { Shimmer } from "@/components/ai-elements/shimmer";
-import { AvaMascot } from "@/components/kit";
+import { AvaMascot, ChatSessionSkeleton } from "@/components/kit";
 import { APP } from "@/config/app";
 import { useAva } from "@/state/ava-provider";
 import { useSessions } from "@/state/queries";
@@ -266,7 +266,9 @@ export function SessionScreen({
           keyboardShouldPersistTaps="handled"
           keyboardDismissMode="on-drag"
           ListEmptyComponent={
-            loadingHistory ? null : (
+            loadingHistory ? (
+              <ChatSessionSkeleton />
+            ) : (
               <View style={styles.emptyContainer}>
                 <View
                   style={[

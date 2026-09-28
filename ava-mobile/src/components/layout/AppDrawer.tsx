@@ -30,7 +30,7 @@ import {
   User,
   X,
 } from "lucide-react-native";
-import { StatusDot } from "@/components/kit";
+import { StatusDot, DrawerSessionsSkeleton } from "@/components/kit";
 import { WorkspaceModal } from "@/components/modals/WorkspaceModal";
 import { APP } from "@/config/app";
 import { NAV_SECTIONS, type AppScreenName } from "@/config/navigation";
@@ -409,9 +409,7 @@ export function AppDrawer(props: DrawerContentComponentProps) {
                     Waiting for server connection…
                   </Text>
                 )}
-                {isLoading && (
-                  <Text style={[styles.hintText, font("regular")]}>Loading sessions…</Text>
-                )}
+                {isLoading && <DrawerSessionsSkeleton count={2} />}
                 {!isLoading && sessions.length === 0 && (
                   <Text style={[styles.hintText, font("regular")]}>No sessions yet.</Text>
                 )}

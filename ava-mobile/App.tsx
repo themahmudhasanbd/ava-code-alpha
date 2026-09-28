@@ -7,6 +7,7 @@ import {
   NavigationContainer,
   DefaultTheme,
   DarkTheme,
+  type LinkingOptions,
 } from "@react-navigation/native";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -51,6 +52,44 @@ const queryClient = new QueryClient({
   },
 });
 
+const linking: LinkingOptions<any> = {
+  prefixes: [
+    "https://ava.mahmudhasan.pro",
+    "http://localhost:8081",
+    "http://localhost:19006",
+    "ava://",
+  ],
+  config: {
+    screens: {
+      Login: "login",
+      Main: {
+        screens: {
+          Chat: "",
+          Session: "session/:sessionId?",
+          Files: "files",
+          Terminal: "terminal",
+          Browser: "browser",
+          Desktop: "desktop",
+          Models: "models",
+          System: "system",
+          Mcp: "mcp",
+          Tasks: "tasks",
+          Media: "media",
+          Settings: "settings",
+          NotificationSettings: "settings/notifications",
+          Profile: "profile",
+        },
+      },
+      Timeline: "timeline/:sessionId?",
+      AppearanceSettings: "settings/appearance",
+      WorkspaceSettings: "settings/workspace",
+      ServerSettings: "settings/server",
+      PermissionsSettings: "settings/permissions",
+      StorageSettings: "settings/storage",
+    },
+  },
+};
+
 function AppContent() {
   const { isDark, colors, resolvedTheme } = useTheme();
 
@@ -72,7 +111,7 @@ function AppContent() {
   }, [isDark, colors]);
 
   return (
-    <NavigationContainer theme={navTheme} key={resolvedTheme}>
+    <NavigationContainer linking={linking} theme={navTheme} key={resolvedTheme}>
       <StatusBar style={isDark ? "light" : "dark"} />
       <RootNavigator />
     </NavigationContainer>

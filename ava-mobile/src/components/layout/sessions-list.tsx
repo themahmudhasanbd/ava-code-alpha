@@ -21,7 +21,7 @@ import {
   PinOff,
 } from "lucide-react-native";
 import { Button } from "@/components/ui/button";
-import { GlassCapsule, SkeletonRows } from "@/components/kit";
+import { GlassCapsule, SkeletonRows, DrawerSessionsSkeleton } from "@/components/kit";
 import { storage } from "@/core/storage";
 import { useAva } from "@/state/ava-provider";
 import { useSessions, useDeleteSession, useRenameSession } from "@/state/queries";
@@ -181,7 +181,7 @@ export function SessionsList({
         <Text style={styles.infoText}>Connecting to server...</Text>
       )}
 
-      {isLoading && <SkeletonRows count={3} />}
+      {isLoading && <DrawerSessionsSkeleton count={2} />}
 
       {error && <Text style={styles.errorText}>Could not load sessions.</Text>}
 

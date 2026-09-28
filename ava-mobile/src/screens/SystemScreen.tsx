@@ -989,10 +989,10 @@ export function SystemScreen() {
               </View>
               <View style={styles.ecoInfo}>
                 <Text style={[styles.ecoTitle, font("semibold")]}>
-                  OmniRoute AI Gateway
+                  AI Gateway Router
                 </Text>
                 <Text style={[styles.ecoSub, mono("regular")]}>
-                  Port 2087 · Multi-Provider Router
+                  Multi-Provider Gateway
                 </Text>
               </View>
               <GlassCapsule label="RUNNING" variant="success" size="xs" />

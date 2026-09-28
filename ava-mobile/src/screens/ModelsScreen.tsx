@@ -203,7 +203,7 @@ export function ModelsScreen() {
       else if (p === "deepseek") p = "DeepSeek";
       else if (p === "groq") p = "Groq";
       else if (p === "openrouter") p = "OpenRouter";
-      else if (p === "server" || p === "omniroute") p = "AvA Core Server";
+      else if (p === "server") p = "AvA Core Server";
 
       if (!groups[p]) groups[p] = [];
       groups[p].push(m);

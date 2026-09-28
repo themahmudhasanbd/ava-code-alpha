@@ -120,10 +120,10 @@ impl<'de> Deserialize<'de> for WireApi {
         D: serde::Deserializer<'de>,
     {
         let value = String::deserialize(deserializer)?;
-        match value.as_str() {
-            "responses" => Ok(Self::Responses),
-            "chat" => Err(serde::de::Error::custom(CHAT_WIRE_API_REMOVED_ERROR)),
-            _ => Err(serde::de::Error::unknown_variant(&value, &["responses"])),
+        match value.to_lowercase().as_str() {
+            "responses" | "openai" => Ok(Self::Responses),
+            "chat" | "chat_completions" => Err(serde::de::Error::custom("wire_api = \"chat\" is not directly supported; AvA core requires an OpenAI Responses-compatible endpoint (`/v1/responses`). Use an endpoint or proxy supporting Responses, or set wire_api = \"responses\".")),
+            other => Err(serde::de::Error::custom(format!("unsupported wire_api: \"{other}\". Supported value is \"responses\" (OpenAI Responses API)"))),
         }
     }
 }
@@ -876,7 +876,7 @@ pub fn merge_configured_model_providers(
                 }
             }
         } else {
-            model_providers.entry(key).or_insert(provider);
+            model_providers.insert(key, provider);
         }
     }
 

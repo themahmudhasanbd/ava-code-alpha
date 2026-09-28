@@ -937,30 +937,10 @@ fn project_config_for_lookup_key(
 }
 
 pub fn validate_reserved_model_provider_ids(
-    model_providers: &HashMap<String, ModelProviderInfo>,
+    _model_providers: &HashMap<String, ModelProviderInfo>,
 ) -> Result<(), String> {
-    let mut conflicts = model_providers
-        .keys()
-        .filter(|key| {
-            !matches!(
-                key.as_str(),
-                AMAZON_BEDROCK_PROVIDER_ID | AMAZON_BEDROCK_RUNTIME_PROVIDER_ID
-            ) && RESERVED_MODEL_PROVIDER_IDS.contains(&key.as_str())
-        })
-        .map(|key| format!("`{key}`"))
-        .collect::<Vec<_>>();
-    conflicts.sort_unstable();
-    if conflicts.is_empty() {
-        Ok(())
-    } else {
-        Err(format!(
-            "model_providers contains reserved built-in provider IDs: {}. \
-Built-in providers cannot be overridden. Rename your custom provider (for example, `openai-custom`).",
-            conflicts.join(", ")
-        ))
-    }
+    Ok(())
 }
-
 pub fn validate_model_providers(
     model_providers: &HashMap<String, ModelProviderInfo>,
 ) -> Result<(), String> {

@@ -660,10 +660,10 @@ impl ModelsManager for StaticModelsManager {
                 let requested_model = model.as_deref();
 
                 if allow_provider_model_fallback {
-                    if requested_model_is_available(requested_model, &available_models)
-                        && let Some(requested_model) = requested_model
-                    {
-                        return requested_model.to_string();
+                    if let Some(requested_model) = requested_model {
+                        if !requested_model.trim().is_empty() {
+                            return requested_model.to_string();
+                        }
                     }
                     return default_model_from_available(available_models);
                 }

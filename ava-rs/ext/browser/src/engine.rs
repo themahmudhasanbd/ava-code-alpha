@@ -519,14 +519,27 @@ impl BrowserEngine {
                 let uFound = false;
                 let pFound = false;
 
+                const setValue = (el, val) => {{
+                    const valueSetter = Object.getOwnPropertyDescriptor(el, 'value')?.set;
+                    const prototype = Object.getPrototypeOf(el);
+                    const prototypeValueSetter = Object.getOwnPropertyDescriptor(prototype, 'value')?.set;
+                    if (prototypeValueSetter && valueSetter !== prototypeValueSetter) {{
+                        prototypeValueSetter.call(el, val);
+                    }} else if (valueSetter) {{
+                        valueSetter.call(el, val);
+                    }} else {{
+                        el.value = val;
+                    }}
+                    el.dispatchEvent(new Event('input', {{ bubbles: true }}));
+                    el.dispatchEvent(new Event('change', {{ bubbles: true }}));
+                }};
+
                 const userSelectors = ['input[type="email"]', 'input[name*="user"]', 'input[name*="email"]', 'input[name*="login"]', 'input[type="text"]'];
                 for (const sel of userSelectors) {{
                     const el = document.querySelector(sel);
-                    if (el && el.offsetParent !== null) {{
+                    if (el && (el.offsetParent !== null || el.tagName === 'BODY' || true)) {{
                         el.focus();
-                        el.value = {u:?};
-                        el.dispatchEvent(new Event('input', {{ bubbles: true }}));
-                        el.dispatchEvent(new Event('change', {{ bubbles: true }}));
+                        setValue(el, {u:?});
                         uFound = true;
                         break;
                     }}
@@ -535,11 +548,9 @@ impl BrowserEngine {
                 const passSelectors = ['input[type="password"]', 'input[name*="pass"]'];
                 for (const sel of passSelectors) {{
                     const el = document.querySelector(sel);
-                    if (el && el.offsetParent !== null) {{
+                    if (el && (el.offsetParent !== null || el.tagName === 'BODY' || true)) {{
                         el.focus();
-                        el.value = {p:?};
-                        el.dispatchEvent(new Event('input', {{ bubbles: true }}));
-                        el.dispatchEvent(new Event('change', {{ bubbles: true }}));
+                        setValue(el, {p:?});
                         pFound = true;
                         break;
                     }}
@@ -734,7 +745,16 @@ impl BrowserEngine {
                         el.value = {val:?};
                     }}
                 }} else {{
-                    el.value = {val:?};
+                    const valueSetter = Object.getOwnPropertyDescriptor(el, 'value')?.set;
+                    const prototype = Object.getPrototypeOf(el);
+                    const prototypeValueSetter = Object.getOwnPropertyDescriptor(prototype, 'value')?.set;
+                    if (prototypeValueSetter && valueSetter !== prototypeValueSetter) {{
+                        prototypeValueSetter.call(el, {val:?});
+                    }} else if (valueSetter) {{
+                        valueSetter.call(el, {val:?});
+                    }} else {{
+                        el.value = {val:?};
+                    }}
                 }}
                 el.dispatchEvent(new Event('input', {{ bubbles: true }}));
                 el.dispatchEvent(new Event('change', {{ bubbles: true }}));

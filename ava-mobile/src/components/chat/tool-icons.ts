@@ -89,7 +89,13 @@ export function displayToolName(name?: string): string {
 
   // Strip default_api:, mcp_, vps_, etc.
   cleaned = cleaned.replace(/^default_api:/i, "");
-  cleaned = cleaned.replace(/^(?:vps|mcp)[_:\s-]+/i, "");
+  cleaned = cleaned.replace(/^mcp_puppeteer_puppeteer_/i, "puppeteer: ");
+  cleaned = cleaned.replace(/^mcp_puppeteer_/i, "puppeteer: ");
+  cleaned = cleaned.replace(/^(?:vps|mcp)[_:s-]+/i, "");
+  cleaned = cleaned.replace(/^puppeteer_puppeteer_/i, "puppeteer: ");
+  cleaned = cleaned.replace(/^puppeteer_/i, "puppeteer: ");
+  cleaned = cleaned.replace(/^browser_/i, "browser: ");
+  cleaned = cleaned.replace(/^omniroute_web_search/i, "web search");
   cleaned = cleaned.replace(/^cf_/i, "cloudflare_");
   cleaned = cleaned.replace(/^cpanel_/i, "cpanel: ");
   cleaned = cleaned.replace(/^cloudflare_/i, "cloudflare: ");
@@ -98,8 +104,9 @@ export function displayToolName(name?: string): string {
   cleaned = cleaned.replace(/^mail_/i, "mail: ");
   cleaned = cleaned.replace(/^memory_/i, "memory: ");
   cleaned = cleaned.replace(/^mem_/i, "memory: ");
+  cleaned = cleaned.replace(/^meta_ads_meta_/i, "meta: ");
+  cleaned = cleaned.replace(/^meta_facebook_instagram_meta_/i, "meta: ");
   cleaned = cleaned.replace(/^meta_/i, "meta: ");
-  cleaned = cleaned.replace(/^puppeteer_/i, "puppeteer: ");
 
   // Convert snake_case to Title Case words
   if (!cleaned.includes(" ")) {
@@ -112,14 +119,15 @@ export function displayToolName(name?: string): string {
 
   // Handle prefix styling for nice badges
   cleaned = cleaned
-    .replace(/^Cpanel:\s*/i, "cPanel · ")
-    .replace(/^Cloudflare:\s*/i, "Cloudflare · ")
-    .replace(/^Github:\s*/i, "GitHub · ")
-    .replace(/^Mysql:\s*/i, "MySQL · ")
-    .replace(/^Mail:\s*/i, "Mail · ")
-    .replace(/^Memory:\s*/i, "Memory · ")
-    .replace(/^Meta:\s*/i, "Meta · ")
-    .replace(/^Puppeteer:\s*/i, "Puppeteer · ");
+    .replace(/^Cpanel:s*/i, "cPanel · ")
+    .replace(/^Cloudflare:s*/i, "Cloudflare · ")
+    .replace(/^Github:s*/i, "GitHub · ")
+    .replace(/^Mysql:s*/i, "MySQL · ")
+    .replace(/^Mail:s*/i, "Mail · ")
+    .replace(/^Memory:s*/i, "Memory · ")
+    .replace(/^Meta:s*/i, "Meta · ")
+    .replace(/^Puppeteer:s*/i, "Puppeteer · ")
+    .replace(/^Browser:s*/i, "Browser · ");
 
   if (cleaned.toLowerCase() === "exec command" || cleaned.toLowerCase() === "execute command") {
     return "Terminal Command";
@@ -137,7 +145,7 @@ export function getToolIcon(toolName?: string, meta?: MessagePart["meta"]): Luci
     if (s.includes("mail") || s.includes("smtp") || s.includes("postfix")) return Mail;
     if (s.includes("cloudflare") || s.includes("cf") || s.includes("dns")) return Globe;
     if (s.includes("memory") || s.includes("mem")) return Brain;
-    if (s.includes("puppeteer") || s.includes("browser")) return Globe;
+    if (s.includes("puppeteer") || s.includes("browser") || s.includes("playwright") || s.includes("web")) return Globe;
     return Plug;
   }
 
@@ -145,13 +153,33 @@ export function getToolIcon(toolName?: string, meta?: MessagePart["meta"]): Luci
   const raw = toolName.toLowerCase().trim();
   const name = displayToolName(toolName).toLowerCase().trim();
 
+  // Browser, Puppeteer & Web Tools
+  if (
+    raw.includes("puppeteer") ||
+    raw.includes("browser") ||
+    raw.includes("playwright") ||
+    raw.includes("navigate") ||
+    raw.includes("web_search") ||
+    raw.includes("omniroute_web_search") ||
+    name.includes("puppeteer") ||
+    name.includes("browser") ||
+    name.includes("web search") ||
+    name.includes("navigate") ||
+    name.includes("fetch web") ||
+    name.includes("browse")
+  ) {
+    if (raw.includes("screenshot") && !raw.includes("puppeteer") && !raw.includes("browser")) {
+      return Image;
+    }
+    return Globe;
+  }
+
   // MCP specific tool checks
   if (raw.includes("mysql") || name.includes("mysql")) return Database;
   if (raw.includes("cpanel") || name.includes("cpanel")) return Server;
   if (raw.includes("mail") || name.includes("mail")) return Mail;
   if (raw.includes("memory") || name.includes("memory") || raw.includes("mem_")) return Brain;
   if (raw.includes("cloudflare") || name.includes("cloudflare")) return Globe;
-  if (raw.includes("puppeteer") || name.includes("puppeteer")) return Globe;
 
   // Terminal & command execution
   if (
@@ -221,19 +249,6 @@ export function getToolIcon(toolName?: string, meta?: MessagePart["meta"]): Luci
   // Images & Media
   if (name.includes("image") || name.includes("screenshot") || name === "view_image") {
     return Image;
-  }
-
-  // Web search & browser / Puppeteer
-  if (
-    name === "web search" ||
-    name === "web_search" ||
-    name.includes("fetch_web") ||
-    name.includes("puppeteer") ||
-    name.includes("browse") ||
-    name.includes("navigate") ||
-    name.includes("url")
-  ) {
-    return Globe;
   }
 
   // Git & Version Control

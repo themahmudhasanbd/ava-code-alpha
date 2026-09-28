@@ -221,11 +221,6 @@ export function TimelineScreen({ route, navigation }: Props) {
       if (msg.stats?.durationMs) dur += msg.stats.durationMs;
       if (msg.stats?.totalTokens) tokens += msg.stats.totalTokens;
 
-      const textParts = msg.parts.filter(
-        (p) => p.kind === "text" && (p.text?.trim() || p.status === "running")
-      );
-      const lastTextPart = textParts.length > 0 ? textParts[textParts.length - 1] : null;
-
       for (let pIdx = 0; pIdx < msg.parts.length; pIdx++) {
         const part = msg.parts[pIdx]!;
         if (part.kind === "text") {
@@ -234,18 +229,12 @@ export function TimelineScreen({ route, navigation }: Props) {
             finalOutput = rawText.trim();
           }
 
-          const isLastText = part === lastTextPart;
-          const isStreaming =
-            part.status === "running" || status === "submitted" || status === "streaming";
-
-          if (!isLastText || isStreaming) {
-            parts.push({
-              ...part,
-              turnId: msg.id,
-              nodeType: "text",
-              hasExpandableContent: false,
-            });
-          }
+          parts.push({
+            ...part,
+            turnId: msg.id,
+            nodeType: "text",
+            hasExpandableContent: false,
+          });
           continue;
         }
 
@@ -673,17 +662,110 @@ export function TimelineScreen({ route, navigation }: Props) {
                 ) : (
                   <>
                     {/* Execution Timeline Tree */}
-                    {allParts.filter((p) => p.nodeType !== "text").length > 0 && (
+                    {allParts.length > 0 && (
                       <View style={styles.timelineWrapper}>
                         {/* Continuous spine line */}
                         <View style={[styles.timelineSpine, { backgroundColor: colors.border }]} />
 
                         {(isReversed ? [...allParts].reverse() : allParts).map((part, pIdx) => {
-                          if (part.nodeType === "text") return null;
-
                           const isExpanded = !!expandedNodes[part.id];
                           const isErr = part.status === "error";
                           const isRunning = part.status === "running";
+
+                          // Direct text response node in timeline sequence
+                          if (part.nodeType === "text") {
+                            if (!part.text && !isRunning) return null;
+
+                            return (
+                              <View key={`node_${part.id}_${pIdx}`} style={styles.nodeRow}>
+                                {/* Left Spine Bullet */}
+                                <View style={styles.nodeSpineCol}>
+                                  <View
+                                    style={[
+                                      styles.nodeBullet,
+                                      {
+                                        backgroundColor: colors.card,
+                                        borderColor: isRunning ? colors.primary : colors.border,
+                                      },
+                                    ]}
+                                  >
+                                    {isRunning ? (
+                                      <ActivityIndicator size={10} color={colors.primary} />
+                                    ) : (
+                                      <MessageSquare size={11} color={colors.primary} />
+                                    )}
+                                  </View>
+                                </View>
+
+                                {/* Right Content Box for Text Node */}
+                                <View style={styles.nodeBodyCol}>
+                                  <View
+                                    style={[
+                                      styles.outputCard,
+                                      {
+                                        backgroundColor: colors.card,
+                                        borderColor: colors.border,
+                                      },
+                                    ]}
+                                  >
+                                    <View style={styles.outputTopRow}>
+                                      {isRunning ? (
+                                        <View style={styles.streamingIndicator}>
+                                          <ActivityIndicator size={9} color={colors.primary} />
+                                          <Text
+                                            style={[
+                                              styles.streamingText,
+                                              mono("medium"),
+                                              { color: colors.primary },
+                                            ]}
+                                          >
+                                            streaming
+                                          </Text>
+                                        </View>
+                                      ) : <View style={{ flex: 1 }} />}
+
+                                      {part.text ? (
+                                        <TouchableOpacity
+                                          onPress={() => handleCopy(`text_${part.id}`, part.text!)}
+                                          style={styles.outputCopyBtn}
+                                          activeOpacity={0.7}
+                                        >
+                                          {copiedId === `text_${part.id}` ? (
+                                            <Check size={11} color={colors.success} />
+                                          ) : (
+                                            <Copy size={11} color={colors.mutedForeground} />
+                                          )}
+                                          <Text
+                                            style={[
+                                              styles.outputCopyText,
+                                              mono("medium"),
+                                              { color: colors.mutedForeground },
+                                            ]}
+                                          >
+                                            {copiedId === `text_${part.id}` ? "Copied" : "Copy"}
+                                          </Text>
+                                        </TouchableOpacity>
+                                      ) : null}
+                                    </View>
+
+                                    {part.text ? (
+                                      <RichResponse text={part.text} />
+                                    ) : isRunning ? (
+                                      <Text
+                                        style={[
+                                          styles.generatingPlaceholder,
+                                          font("regular"),
+                                          { color: colors.mutedForeground },
+                                        ]}
+                                      >
+                                        Generating response…
+                                      </Text>
+                                    ) : null}
+                                  </View>
+                                </View>
+                              </View>
+                            );
+                          }
 
                           let Icon: LucideIcon = Brain;
                           let iconColor = colors.mutedForeground;
@@ -773,17 +855,18 @@ export function TimelineScreen({ route, navigation }: Props) {
                                       </View>
                                     ) : null}
 
-                                    <Text
-                                      style={[
-                                        styles.nodeTitle,
-                                        font("regular"),
-                                        { color: colors.foreground },
-                                        isRunning && { color: colors.primary },
-                                      ]}
-                                      numberOfLines={1}
-                                    >
-                                      {titleText}
-                                    </Text>
+                                    <View style={{ flex: 1 }}>
+                                      <InlineText
+                                        text={titleText}
+                                        numberOfLines={isExpanded ? undefined : 1}
+                                        style={[
+                                          styles.nodeTitle,
+                                          font("regular"),
+                                          { color: colors.foreground, fontSize: 13 },
+                                          isRunning && { color: colors.primary },
+                                        ]}
+                                      />
+                                    </View>
                                   </View>
 
                                   <View style={styles.nodeHeaderMeta}>
@@ -819,11 +902,11 @@ export function TimelineScreen({ route, navigation }: Props) {
                                     ]}
                                   >
                                     {/* Reasoning Text */}
-                                    {part.text ? (
+                                    {part.text && part.nodeType !== "plan" ? (
                                       <View style={styles.textWrapper}>
                                         <InlineText
                                           text={part.text}
-                                          style={[font("regular"), { color: colors.foreground, fontSize: 12, lineHeight: 18 }]}
+                                          style={[font("regular"), { color: colors.foreground, fontSize: 13, lineHeight: 19 }]}
                                         />
                                       </View>
                                     ) : null}
@@ -929,7 +1012,7 @@ export function TimelineScreen({ route, navigation }: Props) {
                                                   text={st.text}
                                                   style={[
                                                     styles.planText,
-                                                    { color: colors.foreground },
+                                                    { color: colors.foreground, fontSize: 13 },
                                                     (st.status === "done" ||
                                                       st.status === "cancelled") &&
                                                       [styles.planTextDone, { color: colors.mutedForeground }],
@@ -949,39 +1032,6 @@ export function TimelineScreen({ route, navigation }: Props) {
                         })}
                       </View>
                     )}
-
-                    {/* ── Direct Output Card ── */}
-                    {finalOutputText ? (
-                      <View style={styles.outputBox}>
-                        <View
-                          style={[
-                            styles.outputCard,
-                            {
-                              backgroundColor: colors.card,
-                              borderColor: colors.border,
-                            },
-                          ]}
-                        >
-                          <View style={styles.outputTopRow}>
-                            <TouchableOpacity
-                              onPress={() => handleCopy("final_output", finalOutputText)}
-                              style={styles.outputCopyBtn}
-                              activeOpacity={0.7}
-                            >
-                              {copiedId === "final_output" ? (
-                                <Check size={11} color={colors.success} />
-                              ) : (
-                                <Copy size={11} color={colors.mutedForeground} />
-                              )}
-                              <Text style={[styles.outputCopyText, mono("medium"), { color: colors.mutedForeground }]}>
-                                {copiedId === "final_output" ? "Copied" : "Copy"}
-                              </Text>
-                            </TouchableOpacity>
-                          </View>
-                          <RichResponse text={finalOutputText} />
-                        </View>
-                      </View>
-                    ) : null}
                   </>
                 )}
               </ScrollView>
@@ -1397,6 +1447,18 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     borderWidth: 1,
     position: "relative",
+  },
+  streamingIndicator: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+  },
+  streamingText: {
+    fontSize: 10,
+  },
+  generatingPlaceholder: {
+    fontSize: 13,
+    fontStyle: "italic",
   },
   outputTopRow: {
     flexDirection: "row",

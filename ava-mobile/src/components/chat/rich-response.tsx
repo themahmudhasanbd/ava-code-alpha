@@ -116,10 +116,12 @@ export function InlineText({
   text,
   style,
   isUser = false,
+  numberOfLines,
 }: {
   text: string;
   style?: any;
   isUser?: boolean;
+  numberOfLines?: number;
 }) {
   const tokens = parseInlineFormatting(text);
 
@@ -131,6 +133,7 @@ export function InlineText({
 
   return (
     <Text
+      numberOfLines={numberOfLines}
       style={[
         styles.inlineBaseText,
         font("regular", text),

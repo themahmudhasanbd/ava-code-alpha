@@ -9,6 +9,7 @@ import {
   Text,
   TouchableOpacity,
   TouchableWithoutFeedback,
+  useWindowDimensions,
   View,
 } from "react-native";
 import * as ImagePicker from "expo-image-picker";
@@ -23,7 +24,7 @@ import {
   X,
 } from "lucide-react-native";
 import { useAva } from "@/state/ava-provider";
-import { COLORS, useTheme } from "@/theme/colors";
+import { useTheme } from "@/theme/colors";
 import { font, mono } from "@/theme/fonts";
 import { ServerMediaModal, type ServerSelectedMedia } from "./ServerMediaModal";
 
@@ -50,11 +51,16 @@ export function MediaSelectorModal({
   serverDirectory = "/root/shared-media",
 }: Props) {
   const { rpc } = useAva();
-  const { isDark } = useTheme();
+  const { colors, isDark } = useTheme();
+  const { width: windowWidth, height: windowHeight } = useWindowDimensions();
 
   const [uploading, setUploading] = useState(false);
   const [uploadStatus, setUploadStatus] = useState<string | null>(null);
   const [serverModalOpen, setServerModalOpen] = useState(false);
+
+  const isSmallMobile = windowWidth < 380;
+  const isTabletOrWeb = windowWidth >= 640;
+  const cardWidth = Math.min(windowWidth - (isSmallMobile ? 16 : 32), 480);
 
   const uploadFileToServer = async (
     localUri: string,
@@ -228,91 +234,138 @@ export function MediaSelectorModal({
         visible={open && !serverModalOpen}
         transparent
         statusBarTranslucent
-        animationType="slide"
+        animationType="fade"
         onRequestClose={onClose}
       >
         <TouchableWithoutFeedback onPress={onClose}>
-          <View style={styles.backdrop}>
+          <View
+            style={[
+              styles.backdrop,
+              isTabletOrWeb && styles.backdropCentered,
+              { backgroundColor: isDark ? "rgba(0, 0, 0, 0.70)" : "rgba(15, 23, 42, 0.45)" },
+            ]}
+          >
             <BlurView
-              intensity={80}
+              intensity={isDark ? 80 : 60}
               tint={isDark ? "dark" : "light"}
               style={StyleSheet.absoluteFill}
             />
             <TouchableWithoutFeedback onPress={() => {}}>
-              <View style={styles.sheetCard}>
+              <View
+                style={[
+                  styles.sheetCard,
+                  isTabletOrWeb && styles.floatingCard,
+                  {
+                    width: isTabletOrWeb ? cardWidth : "100%",
+                    backgroundColor: colors.card,
+                    borderColor: colors.border,
+                    shadowColor: isDark ? "#000" : "rgba(15, 23, 42, 0.35)",
+                  },
+                ]}
+              >
                 {/* Drag Handle */}
-                <View style={styles.handleBar} />
+                {!isTabletOrWeb && <View style={[styles.handleBar, { backgroundColor: colors.border }]} />}
 
-                {/* Header matching Flutter ChatAddFilesModal */}
-                <View style={styles.headerRow}>
+                {/* Header */}
+                <View style={[styles.headerRow, { borderBottomColor: colors.border }]}>
                   <View style={styles.headerLeft}>
-                    <View style={styles.headerIconBox}>
-                      <Paperclip size={18} color="#6366F1" />
+                    <View
+                      style={[
+                        styles.headerIconBox,
+                        {
+                          backgroundColor: `${colors.primary}1A`,
+                          borderColor: `${colors.primary}33`,
+                        },
+                      ]}
+                    >
+                      <Paperclip size={18} color={colors.primary} />
                     </View>
-                    <Text style={[styles.headerTitle, font("bold")]}>Add files</Text>
+                    <Text style={[styles.headerTitle, { color: colors.foreground }, font("bold")]}>
+                      Add files
+                    </Text>
                   </View>
                   <TouchableOpacity
-                    style={styles.closeBtn}
+                    style={[styles.closeBtn, { backgroundColor: colors.secondary, borderColor: colors.border }]}
                     onPress={onClose}
                     hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                     activeOpacity={0.7}
                   >
-                    <X size={16} color={COLORS.mutedForeground} />
+                    <X size={16} color={colors.mutedForeground} />
                   </TouchableOpacity>
                 </View>
 
                 {/* Upload Indicator if uploading */}
                 {uploading && (
-                  <View style={styles.uploadingBox}>
-                    <ActivityIndicator size="small" color="#6366F1" />
-                    <Text style={[styles.uploadingText, font("medium")]}>
+                  <View
+                    style={[
+                      styles.uploadingBox,
+                      {
+                        backgroundColor: `${colors.primary}14`,
+                        borderColor: `${colors.primary}40`,
+                      },
+                    ]}
+                  >
+                    <ActivityIndicator size="small" color={colors.primary} />
+                    <Text style={[styles.uploadingText, { color: colors.primary }, font("medium")]}>
                       {uploadStatus || "Uploading to VPS server…"}
                     </Text>
                   </View>
                 )}
 
-                {/* 2 Primary Options inspired by Flutter ChatAddFilesModal */}
+                {/* 2 Primary Options */}
                 <View style={styles.optionsContainer}>
                   {/* Option 1: Select from your device */}
                   <TouchableOpacity
-                    style={styles.optionCard}
+                    style={[
+                      styles.optionCard,
+                      {
+                        backgroundColor: colors.secondary,
+                        borderColor: colors.border,
+                      },
+                    ]}
                     onPress={handleSelectFromDevice}
                     disabled={uploading}
                     activeOpacity={0.7}
                   >
-                    <View style={[styles.optionIconBox, { backgroundColor: "rgba(99, 102, 241, 0.12)" }]}>
-                      <UploadCloud size={20} color="#6366F1" />
+                    <View style={[styles.optionIconBox, { backgroundColor: `${colors.primary}1A` }]}>
+                      <UploadCloud size={20} color={colors.primary} />
                     </View>
                     <View style={styles.optionContent}>
-                      <Text style={[styles.optionTitle, font("semibold")]}>
+                      <Text style={[styles.optionTitle, { color: colors.foreground }, font("semibold")]}>
                         Select from your device
                       </Text>
-                      <Text style={[styles.optionSubtitle, font("regular")]}>
+                      <Text style={[styles.optionSubtitle, { color: colors.mutedForeground }, font("regular")]}>
                         Upload images or documents from this device to server media library
                       </Text>
                     </View>
-                    <ChevronRight size={16} color={COLORS.mutedForeground} />
+                    <ChevronRight size={16} color={colors.mutedForeground} />
                   </TouchableOpacity>
 
                   {/* Option 2: Select from the server */}
                   <TouchableOpacity
-                    style={styles.optionCard}
+                    style={[
+                      styles.optionCard,
+                      {
+                        backgroundColor: colors.secondary,
+                        borderColor: colors.border,
+                      },
+                    ]}
                     onPress={handleSelectFromServer}
                     disabled={uploading}
                     activeOpacity={0.7}
                   >
-                    <View style={[styles.optionIconBox, { backgroundColor: "rgba(16, 185, 129, 0.12)" }]}>
+                    <View style={[styles.optionIconBox, { backgroundColor: "rgba(16, 185, 129, 0.14)" }]}>
                       <Server size={20} color="#10B981" />
                     </View>
                     <View style={styles.optionContent}>
-                      <Text style={[styles.optionTitle, font("semibold")]}>
+                      <Text style={[styles.optionTitle, { color: colors.foreground }, font("semibold")]}>
                         Select from the server
                       </Text>
-                      <Text style={[styles.optionSubtitle, font("regular")]}>
+                      <Text style={[styles.optionSubtitle, { color: colors.mutedForeground }, font("regular")]}>
                         Browse server files & media library ({serverDirectory})
                       </Text>
                     </View>
-                    <ChevronRight size={16} color={COLORS.mutedForeground} />
+                    <ChevronRight size={16} color={colors.mutedForeground} />
                   </TouchableOpacity>
                 </View>
               </View>
@@ -335,30 +388,38 @@ export function MediaSelectorModal({
 const styles = StyleSheet.create({
   backdrop: {
     flex: 1,
-    backgroundColor: "rgba(0, 0, 0, 0.55)",
     justifyContent: "flex-end",
   },
+  backdropCentered: {
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 16,
+  },
   sheetCard: {
-    backgroundColor: COLORS.card,
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     borderWidth: 1,
-    borderColor: COLORS.glassBorder,
-    borderTopColor: COLORS.border,
-    paddingTop: 10,
+    paddingTop: 12,
     paddingBottom: Platform.OS === "ios" ? 36 : 24,
     paddingHorizontal: 16,
-    shadowColor: COLORS.glassShadow,
     shadowOffset: { width: 0, height: -6 },
     shadowOpacity: 0.35,
     shadowRadius: 20,
     elevation: 12,
   },
+  floatingCard: {
+    borderRadius: 22,
+    paddingTop: 16,
+    paddingBottom: 20,
+    shadowOffset: { width: 0, height: 12 },
+    shadowOpacity: 0.45,
+    shadowRadius: 24,
+    elevation: 20,
+  },
   handleBar: {
     width: 36,
     height: 4,
     borderRadius: 2,
-    backgroundColor: COLORS.border,
     alignSelf: "center",
     marginBottom: 12,
   },
@@ -368,7 +429,6 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     paddingBottom: 12,
     borderBottomWidth: 1,
-    borderBottomColor: COLORS.border,
   },
   headerLeft: {
     flexDirection: "row",
@@ -376,36 +436,32 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   headerIconBox: {
-    width: 32,
-    height: 32,
-    borderRadius: 8,
-    backgroundColor: "rgba(99, 102, 241, 0.12)",
+    width: 34,
+    height: 34,
+    borderRadius: 9,
     alignItems: "center",
     justifyContent: "center",
+    borderWidth: 1,
   },
   headerTitle: {
     fontSize: 16,
-    color: COLORS.foreground,
   },
   closeBtn: {
     padding: 6,
     borderRadius: 8,
-    backgroundColor: COLORS.secondary,
+    borderWidth: 1,
   },
   uploadingBox: {
     flexDirection: "row",
     alignItems: "center",
     gap: 8,
-    backgroundColor: "rgba(99, 102, 241, 0.08)",
     padding: 10,
     borderRadius: 10,
     marginTop: 10,
     borderWidth: 1,
-    borderColor: "rgba(99, 102, 241, 0.2)",
   },
   uploadingText: {
     fontSize: 12,
-    color: "#6366F1",
   },
   optionsContainer: {
     gap: 10,
@@ -417,9 +473,7 @@ const styles = StyleSheet.create({
     gap: 12,
     padding: 14,
     borderRadius: 16,
-    backgroundColor: COLORS.secondary,
     borderWidth: 1,
-    borderColor: COLORS.border,
   },
   optionIconBox: {
     width: 42,
@@ -433,11 +487,9 @@ const styles = StyleSheet.create({
   },
   optionTitle: {
     fontSize: 14,
-    color: COLORS.foreground,
   },
   optionSubtitle: {
     fontSize: 11,
-    color: COLORS.mutedForeground,
     marginTop: 2,
     lineHeight: 15,
   },

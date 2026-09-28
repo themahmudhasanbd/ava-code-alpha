@@ -2,7 +2,6 @@ import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
-  Dimensions,
   Image as RNImage,
   Modal,
   Platform,
@@ -12,6 +11,7 @@ import {
   TextInput,
   TouchableOpacity,
   TouchableWithoutFeedback,
+  useWindowDimensions,
   View,
 } from "react-native";
 import { BlurView } from "expo-blur";
@@ -51,7 +51,7 @@ import {
 } from "lucide-react-native";
 import { useAva } from "@/state/ava-provider";
 import { useDirectory } from "@/state/queries";
-import { COLORS, useTheme } from "@/theme/colors";
+import { useTheme } from "@/theme/colors";
 import { font, mono } from "@/theme/fonts";
 import { APP } from "@/config/app";
 import { CodeBlock } from "@/components/ai-elements/code-block";
@@ -234,7 +234,11 @@ export function ServerMediaModal({
   allowUpload = true,
 }: ServerMediaModalProps) {
   const { rpc } = useAva();
-  const { isDark } = useTheme();
+  const { colors, isDark } = useTheme();
+  const { width: windowWidth, height: windowHeight } = useWindowDimensions();
+
+  const isSmallMobile = windowWidth < 380;
+  const isTabletOrWeb = windowWidth >= 640;
 
   const [currentDir, setCurrentDir] = useState<string>(initialDirectory);
   const [searchQuery, setSearchQuery] = useState("");
@@ -436,6 +440,12 @@ export function ServerMediaModal({
 
   const pathSegments = currentDir.split("/").filter((s) => s.length > 0);
 
+  // Responsive dynamic modal dimensions
+  const dialogWidth = Math.min(windowWidth - (isSmallMobile ? 12 : 24), 720);
+  const dialogHeight = Math.min(windowHeight - (isSmallMobile ? 16 : 32), 760);
+  const numGridCols = windowWidth >= 768 ? 3 : 2;
+  const gridItemWidth = (dialogWidth - 24 - (numGridCols - 1) * 10) / numGridCols;
+
   return (
     <Modal
       visible={open}
@@ -456,9 +466,9 @@ export function ServerMediaModal({
           else onClose();
         }}
       >
-        <View style={styles.backdrop}>
+        <View style={[styles.backdrop, { backgroundColor: isDark ? "rgba(0,0,0,0.72)" : "rgba(15,23,42,0.5)" }]}>
           <BlurView
-            intensity={80}
+            intensity={isDark ? 80 : 60}
             tint={isDark ? "dark" : "light"}
             style={StyleSheet.absoluteFill}
           />
@@ -467,34 +477,58 @@ export function ServerMediaModal({
               style={[
                 styles.floatingDialogCard,
                 {
-                  backgroundColor: isDark ? "#11131A" : "#FFFFFF",
-                  borderColor: isDark ? "rgba(255, 255, 255, 0.12)" : "rgba(0, 0, 0, 0.1)",
+                  width: dialogWidth,
+                  height: dialogHeight,
+                  backgroundColor: colors.card,
+                  borderColor: colors.border,
+                  shadowColor: isDark ? "#000000" : "rgba(15,23,42,0.3)",
                 },
               ]}
             >
               {/* Modal Top Header Bar */}
-              <View style={styles.headerRow}>
+              <View style={[styles.headerRow, { borderBottomColor: colors.border }]}>
                 <View style={styles.headerLeft}>
-                  <View style={styles.headerIconBox}>
-                    <Server size={18} color="#6366F1" />
+                  <View
+                    style={[
+                      styles.headerIconBox,
+                      {
+                        backgroundColor: `${colors.primary}1A`,
+                        borderColor: `${colors.primary}33`,
+                      },
+                    ]}
+                  >
+                    <Server size={17} color={colors.primary} />
                   </View>
                   <View style={styles.headerTitleWrap}>
-                    <Text style={[styles.headerTitle, font("bold")]} numberOfLines={1}>
+                    <Text
+                      style={[styles.headerTitle, { color: colors.foreground }, font("bold")]}
+                      numberOfLines={1}
+                    >
                       Select from Server
                     </Text>
-                    <Text style={[styles.headerSubtitle, font("regular")]} numberOfLines={1}>
-                      {currentDir} ({filteredEntries.length} items)
-                    </Text>
+                    {!isSmallMobile && (
+                      <Text
+                        style={[styles.headerSubtitle, { color: colors.mutedForeground }, font("regular")]}
+                        numberOfLines={1}
+                      >
+                        {currentDir} ({filteredEntries.length} items)
+                      </Text>
+                    )}
                   </View>
                 </View>
 
                 <View style={styles.headerActions}>
                   {/* View Mode Toggle Switcher: List vs Grid */}
-                  <View style={styles.viewToggleGroup}>
+                  <View
+                    style={[
+                      styles.viewToggleGroup,
+                      { backgroundColor: colors.secondary, borderColor: colors.border },
+                    ]}
+                  >
                     <TouchableOpacity
                       style={[
                         styles.viewToggleBtn,
-                        viewMode === "list" && styles.viewToggleBtnActive,
+                        viewMode === "list" && { backgroundColor: `${colors.primary}22` },
                       ]}
                       onPress={() => setViewMode("list")}
                       activeOpacity={0.7}
@@ -502,13 +536,13 @@ export function ServerMediaModal({
                     >
                       <LayoutList
                         size={15}
-                        color={viewMode === "list" ? "#6366F1" : COLORS.mutedForeground}
+                        color={viewMode === "list" ? colors.primary : colors.mutedForeground}
                       />
                     </TouchableOpacity>
                     <TouchableOpacity
                       style={[
                         styles.viewToggleBtn,
-                        viewMode === "grid" && styles.viewToggleBtnActive,
+                        viewMode === "grid" && { backgroundColor: `${colors.primary}22` },
                       ]}
                       onPress={() => setViewMode("grid")}
                       activeOpacity={0.7}
@@ -516,7 +550,7 @@ export function ServerMediaModal({
                     >
                       <LayoutGrid
                         size={15}
-                        color={viewMode === "grid" ? "#6366F1" : COLORS.mutedForeground}
+                        color={viewMode === "grid" ? colors.primary : colors.mutedForeground}
                       />
                     </TouchableOpacity>
                   </View>
@@ -524,23 +558,29 @@ export function ServerMediaModal({
                   {/* Direct Upload CTA */}
                   {allowUpload && (
                     <TouchableOpacity
-                      style={styles.actionBtn}
+                      style={[
+                        styles.actionBtn,
+                        { backgroundColor: colors.secondary, borderColor: colors.border },
+                      ]}
                       onPress={handleUploadToCurrentDir}
                       disabled={isUploading}
                       activeOpacity={0.7}
                       hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
                     >
                       {isUploading ? (
-                        <ActivityIndicator size="small" color="#6366F1" />
+                        <ActivityIndicator size="small" color={colors.primary} />
                       ) : (
-                        <UploadCloud size={16} color="#6366F1" />
+                        <UploadCloud size={16} color={colors.primary} />
                       )}
                     </TouchableOpacity>
                   )}
 
                   {/* Refresh */}
                   <TouchableOpacity
-                    style={styles.actionBtn}
+                    style={[
+                      styles.actionBtn,
+                      { backgroundColor: colors.secondary, borderColor: colors.border },
+                    ]}
                     onPress={() => refetch()}
                     disabled={isLoading || isRefetching}
                     activeOpacity={0.7}
@@ -549,25 +589,28 @@ export function ServerMediaModal({
                     <RefreshCw
                       size={15}
                       color={
-                        isLoading || isRefetching ? "#6366F1" : COLORS.mutedForeground
+                        isLoading || isRefetching ? colors.primary : colors.mutedForeground
                       }
                     />
                   </TouchableOpacity>
 
                   {/* Close Modal */}
                   <TouchableOpacity
-                    style={styles.closeBtn}
+                    style={[
+                      styles.closeBtn,
+                      { backgroundColor: colors.secondary, borderColor: colors.border },
+                    ]}
                     onPress={onClose}
                     activeOpacity={0.7}
                     hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                   >
-                    <X size={16} color={COLORS.mutedForeground} />
+                    <X size={16} color={colors.mutedForeground} />
                   </TouchableOpacity>
                 </View>
               </View>
 
               {/* Location Shortcuts Bar */}
-              <View style={styles.shortcutsWrapper}>
+              <View style={[styles.shortcutsWrapper, { borderBottomColor: colors.border }]}>
                 <ScrollView
                   horizontal
                   showsHorizontalScrollIndicator={false}
@@ -581,7 +624,11 @@ export function ServerMediaModal({
                         key={sc.path}
                         style={[
                           styles.shortcutChip,
-                          isActive && styles.shortcutChipActive,
+                          { backgroundColor: colors.secondary, borderColor: colors.border },
+                          isActive && {
+                            backgroundColor: `${colors.primary}1A`,
+                            borderColor: `${colors.primary}55`,
+                          },
                         ]}
                         onPress={() => {
                           setCurrentDir(sc.path);
@@ -592,13 +639,13 @@ export function ServerMediaModal({
                       >
                         <IconComp
                           size={13}
-                          color={isActive ? "#6366F1" : COLORS.mutedForeground}
+                          color={isActive ? colors.primary : colors.mutedForeground}
                         />
                         <Text
                           style={[
                             styles.shortcutChipText,
-                            isActive && styles.shortcutChipTextActive,
-                            font("medium"),
+                            { color: isActive ? colors.primary : colors.mutedForeground },
+                            font(isActive ? "bold" : "medium"),
                           ]}
                         >
                           {sc.label}
@@ -610,7 +657,12 @@ export function ServerMediaModal({
               </View>
 
               {/* Breadcrumb Navigation Bar */}
-              <View style={styles.breadcrumbBar}>
+              <View
+                style={[
+                  styles.breadcrumbBar,
+                  { backgroundColor: colors.secondary, borderColor: colors.border },
+                ]}
+              >
                 <TouchableOpacity
                   style={[styles.upBtn, !canGoUp && styles.upBtnDisabled]}
                   onPress={handleGoUp}
@@ -619,7 +671,7 @@ export function ServerMediaModal({
                 >
                   <ArrowUp
                     size={15}
-                    color={canGoUp ? "#6366F1" : COLORS.mutedForeground}
+                    color={canGoUp ? colors.primary : colors.mutedForeground}
                   />
                 </TouchableOpacity>
 
@@ -639,7 +691,7 @@ export function ServerMediaModal({
                     <Text
                       style={[
                         styles.breadcrumbSegment,
-                        currentDir === "/" && styles.breadcrumbSegmentActive,
+                        { color: currentDir === "/" ? colors.primary : colors.foreground },
                         mono("medium"),
                       ]}
                     >
@@ -652,7 +704,9 @@ export function ServerMediaModal({
                     const isLast = index === pathSegments.length - 1;
                     return (
                       <React.Fragment key={pathUpToSegment}>
-                        <Text style={[styles.breadcrumbDivider, mono("regular")]}>/</Text>
+                        <Text style={[styles.breadcrumbDivider, { color: colors.mutedForeground }, mono("regular")]}>
+                          /
+                        </Text>
                         <TouchableOpacity
                           onPress={() => {
                             setCurrentDir(pathUpToSegment);
@@ -664,7 +718,7 @@ export function ServerMediaModal({
                           <Text
                             style={[
                               styles.breadcrumbSegment,
-                              isLast && styles.breadcrumbSegmentActive,
+                              { color: isLast ? colors.primary : colors.foreground },
                               mono(isLast ? "bold" : "regular"),
                             ]}
                           >
@@ -679,12 +733,17 @@ export function ServerMediaModal({
 
               {/* Search & Filter Category Row */}
               <View style={styles.searchFilterRow}>
-                <View style={styles.searchBox}>
-                  <Search size={14} color={COLORS.mutedForeground} />
+                <View
+                  style={[
+                    styles.searchBox,
+                    { backgroundColor: colors.secondary, borderColor: colors.border },
+                  ]}
+                >
+                  <Search size={14} color={colors.mutedForeground} />
                   <TextInput
-                    style={[styles.searchInput, font("regular")]}
+                    style={[styles.searchInput, { color: colors.foreground }, font("regular")]}
                     placeholder="Search in folder..."
-                    placeholderTextColor={COLORS.mutedForeground}
+                    placeholderTextColor={colors.mutedForeground}
                     value={searchQuery}
                     onChangeText={setSearchQuery}
                     autoCorrect={false}
@@ -695,7 +754,7 @@ export function ServerMediaModal({
                       onPress={() => setSearchQuery("")}
                       hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                     >
-                      <X size={14} color={COLORS.mutedForeground} />
+                      <X size={14} color={colors.mutedForeground} />
                     </TouchableOpacity>
                   )}
                 </View>
@@ -722,15 +781,22 @@ export function ServerMediaModal({
                       return (
                         <TouchableOpacity
                           key={cat}
-                          style={[styles.catPill, active && styles.catPillActive]}
+                          style={[
+                            styles.catPill,
+                            { backgroundColor: colors.secondary, borderColor: colors.border },
+                            active && {
+                              backgroundColor: `${colors.primary}20`,
+                              borderColor: `${colors.primary}55`,
+                            },
+                          ]}
                           onPress={() => setActiveCategory(cat)}
                           activeOpacity={0.7}
                         >
                           <Text
                             style={[
                               styles.catPillText,
-                              active && styles.catPillTextActive,
-                              font("medium"),
+                              { color: active ? colors.primary : colors.mutedForeground },
+                              font(active ? "bold" : "medium"),
                             ]}
                           >
                             {label}
@@ -743,28 +809,34 @@ export function ServerMediaModal({
               </View>
 
               {/* Main Browsing Content Viewport */}
-              <View style={styles.contentContainer}>
+              <View style={[styles.contentContainer, { borderTopColor: colors.border }]}>
                 {isLoading ? (
                   <View style={styles.centerBox}>
-                    <ActivityIndicator size="small" color="#6366F1" />
-                    <Text style={[styles.loadingText, font("regular")]}>
+                    <ActivityIndicator size="small" color={colors.primary} />
+                    <Text style={[styles.loadingText, { color: colors.mutedForeground }, font("regular")]}>
                       Loading directory contents…
                     </Text>
                   </View>
                 ) : filteredEntries.length === 0 ? (
                   <View style={styles.centerBox}>
-                    <FolderOpen size={40} color={COLORS.mutedForeground} />
-                    <Text style={[styles.emptyTitle, font("medium")]}>
+                    <FolderOpen size={40} color={colors.mutedForeground} />
+                    <Text style={[styles.emptyTitle, { color: colors.mutedForeground }, font("medium")]}>
                       No files or folders found
                     </Text>
                     {allowUpload && (
                       <TouchableOpacity
-                        style={styles.emptyUploadBtn}
+                        style={[
+                          styles.emptyUploadBtn,
+                          {
+                            borderColor: `${colors.primary}44`,
+                            backgroundColor: `${colors.primary}14`,
+                          },
+                        ]}
                         onPress={handleUploadToCurrentDir}
                         activeOpacity={0.7}
                       >
-                        <UploadCloud size={14} color="#6366F1" />
-                        <Text style={[styles.emptyUploadBtnText, font("medium")]}>
+                        <UploadCloud size={14} color={colors.primary} />
+                        <Text style={[styles.emptyUploadBtnText, { color: colors.primary }, font("medium")]}>
                           Upload File Here
                         </Text>
                       </TouchableOpacity>
@@ -781,25 +853,25 @@ export function ServerMediaModal({
                     {folders.map((folder) => (
                       <TouchableOpacity
                         key={folder.path}
-                        style={styles.folderRow}
+                        style={[styles.folderRow, { backgroundColor: "transparent" }]}
                         onPress={() => handleEnterFolder(folder.path)}
                         activeOpacity={0.7}
                       >
-                        <View style={styles.folderIconBox}>
+                        <View style={[styles.folderIconBox, { backgroundColor: "rgba(245, 158, 11, 0.14)" }]}>
                           <Folder size={17} color="#F59E0B" />
                         </View>
                         <View style={styles.itemMeta}>
                           <Text
-                            style={[styles.itemName, font("semibold")]}
+                            style={[styles.itemName, { color: colors.foreground }, font("semibold")]}
                             numberOfLines={1}
                           >
                             {folder.name}
                           </Text>
-                          <Text style={[styles.itemSub, font("regular")]}>
+                          <Text style={[styles.itemSub, { color: colors.mutedForeground }, font("regular")]}>
                             Folder · Tap to open
                           </Text>
                         </View>
-                        <ChevronRight size={16} color={COLORS.mutedForeground} />
+                        <ChevronRight size={16} color={colors.mutedForeground} />
                       </TouchableOpacity>
                     ))}
 
@@ -817,7 +889,11 @@ export function ServerMediaModal({
                           key={file.path}
                           style={[
                             styles.fileRow,
-                            isSelected && styles.fileRowSelected,
+                            isSelected && {
+                              backgroundColor: `${colors.primary}18`,
+                              borderColor: `${colors.primary}44`,
+                              borderWidth: 1,
+                            },
                           ]}
                           onPress={() => handleSelectFileItem(file)}
                           activeOpacity={0.7}
@@ -825,7 +901,7 @@ export function ServerMediaModal({
                           <View
                             style={[
                               styles.fileIconBox,
-                              { backgroundColor: `${color}16` },
+                              { backgroundColor: `${color}18` },
                             ]}
                           >
                             {isImage ? (
@@ -843,7 +919,7 @@ export function ServerMediaModal({
                             <Text
                               style={[
                                 styles.itemName,
-                                isSelected && { color: "#6366F1" },
+                                { color: isSelected ? colors.primary : colors.foreground },
                                 font(isSelected ? "bold" : "medium"),
                               ]}
                               numberOfLines={1}
@@ -868,7 +944,7 @@ export function ServerMediaModal({
                                 </Text>
                               </View>
                               <Text
-                                style={[styles.itemSubPath, mono("regular")]}
+                                style={[styles.itemSubPath, { color: colors.mutedForeground }, mono("regular")]}
                                 numberOfLines={1}
                               >
                                 {file.path}
@@ -878,19 +954,24 @@ export function ServerMediaModal({
 
                           {/* Quick Preview Button */}
                           <TouchableOpacity
-                            style={styles.rowPreviewBtn}
+                            style={[styles.rowPreviewBtn, { backgroundColor: `${colors.primary}18` }]}
                             onPress={() => handleOpenPreview(file)}
                             hitSlop={{ top: 8, bottom: 8, left: 6, right: 6 }}
                             activeOpacity={0.7}
                           >
-                            <Eye size={14} color="#6366F1" />
+                            <Eye size={14} color={colors.primary} />
                           </TouchableOpacity>
 
                           {/* Selection indicator */}
                           {isSelected ? (
                             <CheckCircle2 size={19} color="#10B981" />
                           ) : (
-                            <View style={styles.unselectedCircle} />
+                            <View
+                              style={[
+                                styles.unselectedCircle,
+                                { borderColor: colors.mutedForeground },
+                              ]}
+                            />
                           )}
                         </TouchableOpacity>
                       );
@@ -908,7 +989,14 @@ export function ServerMediaModal({
                       {folders.map((folder) => (
                         <TouchableOpacity
                           key={folder.path}
-                          style={styles.gridFolderCard}
+                          style={[
+                            styles.gridFolderCard,
+                            {
+                              width: gridItemWidth,
+                              backgroundColor: colors.secondary,
+                              borderColor: colors.border,
+                            },
+                          ]}
                           onPress={() => handleEnterFolder(folder.path)}
                           activeOpacity={0.75}
                         >
@@ -916,7 +1004,7 @@ export function ServerMediaModal({
                             <Folder size={28} color="#F59E0B" />
                           </View>
                           <Text
-                            style={[styles.gridCardTitle, font("semibold")]}
+                            style={[styles.gridCardTitle, { color: colors.foreground }, font("semibold")]}
                             numberOfLines={1}
                           >
                             {folder.name}
@@ -943,7 +1031,15 @@ export function ServerMediaModal({
                             key={file.path}
                             style={[
                               styles.gridFileCard,
-                              isSelected && styles.gridFileCardSelected,
+                              {
+                                width: gridItemWidth,
+                                backgroundColor: colors.secondary,
+                                borderColor: isSelected ? colors.primary : colors.border,
+                              },
+                              isSelected && {
+                                borderWidth: 1.5,
+                                backgroundColor: `${colors.primary}12`,
+                              },
                             ]}
                             onPress={() => handleSelectFileItem(file)}
                             activeOpacity={0.75}
@@ -952,17 +1048,17 @@ export function ServerMediaModal({
                             <View
                               style={[
                                 styles.gridThumbnailBox,
-                                { backgroundColor: `${color}0F` },
+                                { backgroundColor: `${color}10` },
                               ]}
                             >
                               {isImage ? (
                                 <LazyImageThumbnail
                                   filePath={file.path}
                                   fileName={file.name}
-                                  size={76}
+                                  size={68}
                                 />
                               ) : (
-                                <IconComp size={32} color={color} />
+                                <IconComp size={30} color={color} />
                               )}
 
                               {/* Top-Left Floating Preview Button */}
@@ -995,11 +1091,11 @@ export function ServerMediaModal({
                             </View>
 
                             {/* Card Footer Info */}
-                            <View style={styles.gridCardFooter}>
+                            <View style={[styles.gridCardFooter, { borderTopColor: colors.border }]}>
                               <Text
                                 style={[
                                   styles.gridCardTitle,
-                                  isSelected && { color: "#6366F1" },
+                                  { color: isSelected ? colors.primary : colors.foreground },
                                   font(isSelected ? "bold" : "medium"),
                                 ]}
                                 numberOfLines={1}
@@ -1007,7 +1103,7 @@ export function ServerMediaModal({
                                 {file.name}
                               </Text>
                               <Text
-                                style={[styles.gridCardKind, mono("regular")]}
+                                style={[styles.gridCardKind, { color: colors.mutedForeground }, mono("regular")]}
                                 numberOfLines={1}
                               >
                                 {kind.toUpperCase()}
@@ -1022,13 +1118,18 @@ export function ServerMediaModal({
               </View>
 
               {/* Bottom Browser Action Bar */}
-              <View style={styles.bottomBar}>
+              <View
+                style={[
+                  styles.bottomBar,
+                  { backgroundColor: colors.secondary, borderTopColor: colors.border },
+                ]}
+              >
                 <View style={styles.bottomMeta}>
                   <View style={styles.bottomMetaHeader}>
                     <Text
                       style={[
                         styles.bottomSelectedTitle,
-                        selectedFile && { color: COLORS.foreground },
+                        { color: selectedFile ? colors.foreground : colors.mutedForeground },
                         font("bold"),
                       ]}
                       numberOfLines={1}
@@ -1039,12 +1140,18 @@ export function ServerMediaModal({
                     </Text>
                     {selectedFile && (
                       <TouchableOpacity
-                        style={styles.previewQuickPill}
+                        style={[
+                          styles.previewQuickPill,
+                          {
+                            backgroundColor: `${colors.primary}18`,
+                            borderColor: `${colors.primary}44`,
+                          },
+                        ]}
                         onPress={() => handleOpenPreview(selectedFile)}
                         activeOpacity={0.7}
                       >
-                        <Eye size={12} color="#6366F1" />
-                        <Text style={[styles.previewQuickPillText, font("semibold")]}>
+                        <Eye size={12} color={colors.primary} />
+                        <Text style={[styles.previewQuickPillText, { color: colors.primary }, font("semibold")]}>
                           Preview
                         </Text>
                       </TouchableOpacity>
@@ -1053,13 +1160,13 @@ export function ServerMediaModal({
 
                   {selectedFile ? (
                     <Text
-                      style={[styles.bottomSelectedPath, mono("regular")]}
+                      style={[styles.bottomSelectedPath, { color: colors.mutedForeground }, mono("regular")]}
                       numberOfLines={1}
                     >
                       {selectedFile.path}
                     </Text>
                   ) : (
-                    <Text style={[styles.bottomSelectedHint, font("regular")]}>
+                    <Text style={[styles.bottomSelectedHint, { color: colors.mutedForeground }, font("regular")]}>
                       Tap any file to select it, or tap Eye to preview
                     </Text>
                   )}
@@ -1071,7 +1178,7 @@ export function ServerMediaModal({
                     onPress={onClose}
                     activeOpacity={0.7}
                   >
-                    <Text style={[styles.cancelBtnText, font("medium")]}>
+                    <Text style={[styles.cancelBtnText, { color: colors.mutedForeground }, font("medium")]}>
                       Cancel
                     </Text>
                   </TouchableOpacity>
@@ -1079,14 +1186,15 @@ export function ServerMediaModal({
                   <TouchableOpacity
                     style={[
                       styles.attachBtn,
+                      { backgroundColor: colors.primary },
                       !selectedFile && styles.attachBtnDisabled,
                     ]}
                     onPress={() => handleConfirmAttach()}
                     disabled={!selectedFile}
                     activeOpacity={0.8}
                   >
-                    <Check size={15} color="#FFF" />
-                    <Text style={[styles.attachBtnText, font("bold")]}>
+                    <Check size={15} color={colors.primaryForeground || "#FFF"} />
+                    <Text style={[styles.attachBtnText, { color: colors.primaryForeground || "#FFF" }, font("bold")]}>
                       Attach File
                     </Text>
                   </TouchableOpacity>
@@ -1100,15 +1208,13 @@ export function ServerMediaModal({
                     style={[
                       styles.previewCard,
                       {
-                        backgroundColor: isDark ? "#161822" : "#FFFFFF",
-                        borderColor: isDark
-                          ? "rgba(255, 255, 255, 0.15)"
-                          : "rgba(0, 0, 0, 0.12)",
+                        backgroundColor: colors.card,
+                        borderColor: colors.border,
                       },
                     ]}
                   >
                     {/* Preview Top Header */}
-                    <View style={styles.previewHeader}>
+                    <View style={[styles.previewHeader, { borderBottomColor: colors.border }]}>
                       <View style={styles.previewTitleGroup}>
                         <View style={styles.previewBadgeRow}>
                           <View
@@ -1135,14 +1241,14 @@ export function ServerMediaModal({
                             </Text>
                           </View>
                           <Text
-                            style={[styles.previewFileName, font("bold")]}
+                            style={[styles.previewFileName, { color: colors.foreground }, font("bold")]}
                             numberOfLines={1}
                           >
                             {previewItem.name}
                           </Text>
                         </View>
                         <Text
-                          style={[styles.previewPathText, mono("regular")]}
+                          style={[styles.previewPathText, { color: colors.mutedForeground }, mono("regular")]}
                           numberOfLines={1}
                         >
                           {previewItem.path}
@@ -1150,12 +1256,12 @@ export function ServerMediaModal({
                       </View>
 
                       <TouchableOpacity
-                        style={styles.previewCloseBtn}
+                        style={[styles.previewCloseBtn, { backgroundColor: colors.secondary }]}
                         onPress={() => setPreviewItem(null)}
                         activeOpacity={0.7}
                         hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                       >
-                        <X size={16} color={COLORS.mutedForeground} />
+                        <X size={16} color={colors.mutedForeground} />
                       </TouchableOpacity>
                     </View>
 
@@ -1163,14 +1269,14 @@ export function ServerMediaModal({
                     <View style={styles.previewBody}>
                       {isLoadingPreview ? (
                         <View style={styles.previewCenterBox}>
-                          <ActivityIndicator size="small" color="#6366F1" />
-                          <Text style={[styles.previewLoadingText, font("regular")]}>
+                          <ActivityIndicator size="small" color={colors.primary} />
+                          <Text style={[styles.previewLoadingText, { color: colors.mutedForeground }, font("regular")]}>
                             Reading file content from VPS…
                           </Text>
                         </View>
                       ) : previewBase64 ? (
                         /* Image Viewer with Zoom Controls */
-                        <View style={styles.imageViewerWrap}>
+                        <View style={[styles.imageViewerWrap, { backgroundColor: isDark ? "#06080F" : "#F1F5F9" }]}>
                           <View style={styles.zoomControls}>
                             <TouchableOpacity
                               style={styles.zoomBtn}
@@ -1212,7 +1318,11 @@ export function ServerMediaModal({
                                 source={{ uri: previewBase64 }}
                                 style={[
                                   styles.fullPreviewImage,
-                                  { transform: [{ scale: previewZoom }] },
+                                  {
+                                    maxWidth: Math.min(dialogWidth - 32, 420),
+                                    maxHeight: Math.min(dialogHeight * 0.45, 320),
+                                    transform: [{ scale: previewZoom }],
+                                  },
                                 ]}
                                 resizeMode="contain"
                               />
@@ -1250,16 +1360,16 @@ export function ServerMediaModal({
                             ) : previewItem.kind === "document" ? (
                               <FileText size={42} color="#EF4444" />
                             ) : (
-                              <FileIcon size={42} color="#6366F1" />
+                              <FileIcon size={42} color={colors.primary} />
                             )}
                           </View>
-                          <Text style={[styles.genericFileName, font("bold")]}>
+                          <Text style={[styles.genericFileName, { color: colors.foreground }, font("bold")]}>
                             {previewItem.name}
                           </Text>
-                          <Text style={[styles.genericFileNotice, mono("regular")]}>
+                          <Text style={[styles.genericFileNotice, { color: colors.mutedForeground }, mono("regular")]}>
                             {previewItem.kind.toUpperCase()} file on VPS
                           </Text>
-                          <Text style={[styles.genericFileHelp, font("regular")]}>
+                          <Text style={[styles.genericFileHelp, { color: colors.mutedForeground }, font("regular")]}>
                             This file reference will be attached to your prompt for AvA to inspect or process.
                           </Text>
                         </View>
@@ -1267,18 +1377,26 @@ export function ServerMediaModal({
                     </View>
 
                     {/* Preview Bottom Action Bar */}
-                    <View style={styles.previewFooter}>
+                    <View
+                      style={[
+                        styles.previewFooter,
+                        { backgroundColor: colors.secondary, borderTopColor: colors.border },
+                      ]}
+                    >
                       <TouchableOpacity
-                        style={styles.previewCopyBtn}
+                        style={[
+                          styles.previewCopyBtn,
+                          { backgroundColor: colors.card, borderColor: colors.border },
+                        ]}
                         onPress={() => handleCopyFilePath(previewItem.path)}
                         activeOpacity={0.7}
                       >
                         {copiedPath ? (
                           <Check size={14} color="#10B981" />
                         ) : (
-                          <Copy size={14} color={COLORS.foreground} />
+                          <Copy size={14} color={colors.foreground} />
                         )}
-                        <Text style={[styles.previewCopyBtnText, font("medium")]}>
+                        <Text style={[styles.previewCopyBtnText, { color: colors.foreground }, font("medium")]}>
                           {copiedPath ? "Copied" : "Copy Path"}
                         </Text>
                       </TouchableOpacity>
@@ -1288,18 +1406,18 @@ export function ServerMediaModal({
                         onPress={() => setPreviewItem(null)}
                         activeOpacity={0.7}
                       >
-                        <Text style={[styles.previewBackBtnText, font("medium")]}>
+                        <Text style={[styles.previewBackBtnText, { color: colors.mutedForeground }, font("medium")]}>
                           Back to Files
                         </Text>
                       </TouchableOpacity>
 
                       <TouchableOpacity
-                        style={styles.previewAttachBtn}
+                        style={[styles.previewAttachBtn, { backgroundColor: colors.primary }]}
                         onPress={() => handleConfirmAttach(previewItem)}
                         activeOpacity={0.8}
                       >
-                        <Check size={15} color="#FFF" />
-                        <Text style={[styles.previewAttachBtnText, font("bold")]}>
+                        <Check size={15} color={colors.primaryForeground || "#FFF"} />
+                        <Text style={[styles.previewAttachBtnText, { color: colors.primaryForeground || "#FFF" }, font("bold")]}>
                           Attach This File
                         </Text>
                       </TouchableOpacity>
@@ -1318,22 +1436,16 @@ export function ServerMediaModal({
 const styles = StyleSheet.create({
   backdrop: {
     flex: 1,
-    backgroundColor: "rgba(0, 0, 0, 0.65)",
     justifyContent: "center",
     alignItems: "center",
-    padding: Platform.OS === "web" ? 16 : 10,
+    padding: 10,
   },
   floatingDialogCard: {
-    width: Platform.OS === "web" ? "92%" : "96%",
-    maxWidth: 680,
-    height: Platform.OS === "web" ? 720 : "88%",
-    maxHeight: 740,
     borderRadius: 22,
     borderWidth: 1,
     overflow: "hidden",
-    shadowColor: "#000",
     shadowOffset: { width: 0, height: 16 },
-    shadowOpacity: 0.5,
+    shadowOpacity: 0.45,
     shadowRadius: 32,
     elevation: 24,
     flexDirection: "column",
@@ -1343,11 +1455,10 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    paddingHorizontal: 16,
-    paddingTop: 14,
+    paddingHorizontal: 14,
+    paddingTop: 12,
     paddingBottom: 10,
     borderBottomWidth: 1,
-    borderBottomColor: COLORS.border,
   },
   headerLeft: {
     flexDirection: "row",
@@ -1356,25 +1467,21 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   headerIconBox: {
-    width: 36,
-    height: 36,
-    borderRadius: 10,
-    backgroundColor: "rgba(99, 102, 241, 0.14)",
+    width: 34,
+    height: 34,
+    borderRadius: 9,
     alignItems: "center",
     justifyContent: "center",
     borderWidth: 1,
-    borderColor: "rgba(99, 102, 241, 0.25)",
   },
   headerTitleWrap: {
     flex: 1,
   },
   headerTitle: {
-    fontSize: 15.5,
-    color: COLORS.foreground,
+    fontSize: 15,
   },
   headerSubtitle: {
-    fontSize: 11,
-    color: COLORS.mutedForeground,
+    fontSize: 10.5,
     marginTop: 1,
   },
   headerActions: {
@@ -1385,11 +1492,9 @@ const styles = StyleSheet.create({
   viewToggleGroup: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: COLORS.secondary,
     borderRadius: 9,
     padding: 2,
     borderWidth: 1,
-    borderColor: COLORS.border,
     marginRight: 2,
   },
   viewToggleBtn: {
@@ -1397,28 +1502,20 @@ const styles = StyleSheet.create({
     paddingVertical: 5,
     borderRadius: 7,
   },
-  viewToggleBtnActive: {
-    backgroundColor: "rgba(99, 102, 241, 0.16)",
-  },
   actionBtn: {
     padding: 7,
     borderRadius: 9,
-    backgroundColor: COLORS.secondary,
     borderWidth: 1,
-    borderColor: COLORS.border,
   },
   closeBtn: {
     padding: 7,
     borderRadius: 9,
-    backgroundColor: COLORS.secondary,
     borderWidth: 1,
-    borderColor: COLORS.border,
   },
   shortcutsWrapper: {
-    paddingHorizontal: 14,
+    paddingHorizontal: 12,
     paddingVertical: 6,
     borderBottomWidth: 1,
-    borderBottomColor: COLORS.border,
   },
   shortcutsRow: {
     flexDirection: "row",
@@ -1427,38 +1524,25 @@ const styles = StyleSheet.create({
   shortcutChip: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 6,
-    paddingHorizontal: 10,
+    gap: 5,
+    paddingHorizontal: 9,
     paddingVertical: 5,
     borderRadius: 8,
-    backgroundColor: COLORS.secondary,
     borderWidth: 1,
-    borderColor: COLORS.border,
-  },
-  shortcutChipActive: {
-    backgroundColor: "rgba(99, 102, 241, 0.14)",
-    borderColor: "rgba(99, 102, 241, 0.35)",
   },
   shortcutChipText: {
-    fontSize: 11.5,
-    color: COLORS.mutedForeground,
-  },
-  shortcutChipTextActive: {
-    color: "#6366F1",
-    fontWeight: "700",
+    fontSize: 11,
   },
   breadcrumbBar: {
     flexDirection: "row",
     alignItems: "center",
-    marginHorizontal: 14,
+    marginHorizontal: 12,
     marginTop: 8,
     paddingHorizontal: 8,
-    paddingVertical: 6,
-    borderRadius: 10,
-    backgroundColor: COLORS.secondary,
+    paddingVertical: 5,
+    borderRadius: 9,
     borderWidth: 1,
-    borderColor: COLORS.border,
-    gap: 6,
+    gap: 5,
   },
   upBtn: {
     padding: 4,
@@ -1474,24 +1558,18 @@ const styles = StyleSheet.create({
     flexGrow: 1,
   },
   breadcrumbSegment: {
-    fontSize: 12,
-    color: COLORS.foreground,
+    fontSize: 11.5,
     paddingHorizontal: 2,
   },
-  breadcrumbSegmentActive: {
-    color: "#6366F1",
-    fontWeight: "700",
-  },
   breadcrumbDivider: {
-    fontSize: 12,
-    color: COLORS.mutedForeground,
+    fontSize: 11.5,
     marginHorizontal: 1,
   },
   searchFilterRow: {
     flexDirection: "row",
     alignItems: "center",
     gap: 8,
-    paddingHorizontal: 14,
+    paddingHorizontal: 12,
     paddingVertical: 8,
   },
   searchBox: {
@@ -1502,14 +1580,11 @@ const styles = StyleSheet.create({
     height: 34,
     paddingHorizontal: 10,
     borderRadius: 9,
-    backgroundColor: COLORS.secondary,
     borderWidth: 1,
-    borderColor: COLORS.border,
   },
   searchInput: {
     flex: 1,
     fontSize: 12,
-    color: COLORS.foreground,
     paddingVertical: 0,
   },
   categoryPills: {
@@ -1520,26 +1595,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: 9,
     paddingVertical: 6,
     borderRadius: 8,
-    backgroundColor: COLORS.secondary,
     borderWidth: 1,
-    borderColor: COLORS.border,
-  },
-  catPillActive: {
-    backgroundColor: "rgba(99, 102, 241, 0.15)",
-    borderColor: "rgba(99, 102, 241, 0.35)",
   },
   catPillText: {
     fontSize: 11,
-    color: COLORS.mutedForeground,
-  },
-  catPillTextActive: {
-    color: "#6366F1",
-    fontWeight: "700",
   },
   contentContainer: {
     flex: 1,
     borderTopWidth: 1,
-    borderTopColor: COLORS.border,
   },
   scrollList: {
     flex: 1,
@@ -1558,11 +1621,9 @@ const styles = StyleSheet.create({
   },
   loadingText: {
     fontSize: 12,
-    color: COLORS.mutedForeground,
   },
   emptyTitle: {
     fontSize: 13,
-    color: COLORS.mutedForeground,
   },
   emptyUploadBtn: {
     flexDirection: "row",
@@ -1572,28 +1633,23 @@ const styles = StyleSheet.create({
     paddingVertical: 7,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: "rgba(99, 102, 241, 0.3)",
-    backgroundColor: "rgba(99, 102, 241, 0.08)",
     marginTop: 4,
   },
   emptyUploadBtnText: {
     fontSize: 12,
-    color: "#6366F1",
   },
   folderRow: {
     flexDirection: "row",
     alignItems: "center",
     gap: 10,
-    paddingVertical: 9,
+    paddingVertical: 8,
     paddingHorizontal: 10,
     borderRadius: 10,
-    backgroundColor: "transparent",
   },
   folderIconBox: {
     width: 34,
     height: 34,
     borderRadius: 9,
-    backgroundColor: "rgba(245, 158, 11, 0.12)",
     alignItems: "center",
     justifyContent: "center",
   },
@@ -1604,10 +1660,6 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     paddingHorizontal: 10,
     borderRadius: 10,
-    backgroundColor: "transparent",
-  },
-  fileRowSelected: {
-    backgroundColor: "rgba(99, 102, 241, 0.1)",
   },
   fileIconBox: {
     width: 34,
@@ -1622,7 +1674,6 @@ const styles = StyleSheet.create({
   },
   itemName: {
     fontSize: 13,
-    color: COLORS.foreground,
   },
   itemSubRow: {
     flexDirection: "row",
@@ -1639,26 +1690,22 @@ const styles = StyleSheet.create({
     fontSize: 9,
   },
   itemSubPath: {
-    fontSize: 10.5,
-    color: COLORS.mutedForeground,
+    fontSize: 10,
     flex: 1,
   },
   itemSub: {
     fontSize: 10.5,
-    color: COLORS.mutedForeground,
     marginTop: 1,
   },
   rowPreviewBtn: {
     padding: 6,
     borderRadius: 7,
-    backgroundColor: "rgba(99, 102, 241, 0.1)",
   },
   unselectedCircle: {
     width: 18,
     height: 18,
     borderRadius: 9,
     borderWidth: 1.4,
-    borderColor: COLORS.mutedForeground,
     opacity: 0.35,
   },
   gridContainer: {
@@ -1670,13 +1717,10 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   gridFolderCard: {
-    width: Platform.OS === "web" ? "31.5%" : "48%",
     aspectRatio: 1.1,
     borderRadius: 14,
-    backgroundColor: COLORS.secondary,
     borderWidth: 1,
-    borderColor: COLORS.border,
-    padding: 12,
+    padding: 10,
     alignItems: "center",
     justifyContent: "center",
     position: "relative",
@@ -1705,19 +1749,11 @@ const styles = StyleSheet.create({
     fontWeight: "700",
   },
   gridFileCard: {
-    width: Platform.OS === "web" ? "31.5%" : "48%",
     aspectRatio: 1.02,
     borderRadius: 14,
-    backgroundColor: COLORS.secondary,
     borderWidth: 1,
-    borderColor: COLORS.border,
     overflow: "hidden",
     justifyContent: "space-between",
-  },
-  gridFileCardSelected: {
-    borderColor: "#6366F1",
-    borderWidth: 1.5,
-    backgroundColor: "rgba(99, 102, 241, 0.08)",
   },
   gridThumbnailBox: {
     flex: 1,
@@ -1766,26 +1802,21 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     paddingVertical: 6,
     borderTopWidth: 1,
-    borderTopColor: COLORS.border,
   },
   gridCardTitle: {
     fontSize: 12,
-    color: COLORS.foreground,
   },
   gridCardKind: {
     fontSize: 9.5,
-    color: COLORS.mutedForeground,
     marginTop: 1,
   },
   bottomBar: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    paddingHorizontal: 14,
+    paddingHorizontal: 12,
     paddingVertical: 10,
     borderTopWidth: 1,
-    borderTopColor: COLORS.border,
-    backgroundColor: COLORS.secondary,
   },
   bottomMeta: {
     flex: 1,
@@ -1798,7 +1829,6 @@ const styles = StyleSheet.create({
   },
   bottomSelectedTitle: {
     fontSize: 12,
-    color: COLORS.mutedForeground,
     flexShrink: 1,
   },
   previewQuickPill: {
@@ -1808,28 +1838,23 @@ const styles = StyleSheet.create({
     paddingHorizontal: 7,
     paddingVertical: 2,
     borderRadius: 6,
-    backgroundColor: "rgba(99, 102, 241, 0.12)",
     borderWidth: 1,
-    borderColor: "rgba(99, 102, 241, 0.25)",
   },
   previewQuickPillText: {
     fontSize: 10.5,
-    color: "#6366F1",
   },
   bottomSelectedPath: {
-    fontSize: 10,
-    color: COLORS.mutedForeground,
+    fontSize: 9.5,
     marginTop: 1,
   },
   bottomSelectedHint: {
-    fontSize: 10.5,
-    color: COLORS.mutedForeground,
+    fontSize: 10,
     marginTop: 1,
   },
   bottomActions: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 8,
+    gap: 6,
   },
   cancelBtn: {
     paddingHorizontal: 8,
@@ -1837,7 +1862,6 @@ const styles = StyleSheet.create({
   },
   cancelBtnText: {
     fontSize: 12,
-    color: COLORS.mutedForeground,
   },
   attachBtn: {
     flexDirection: "row",
@@ -1846,14 +1870,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 7,
     borderRadius: 9,
-    backgroundColor: "#6366F1",
   },
   attachBtnDisabled: {
     opacity: 0.4,
   },
   attachBtnText: {
     fontSize: 12,
-    color: "#FFF",
   },
   /* Preview Overlay Styles */
   previewOverlay: {
@@ -1862,7 +1884,7 @@ const styles = StyleSheet.create({
     zIndex: 50,
     justifyContent: "center",
     alignItems: "center",
-    padding: 12,
+    padding: 10,
   },
   previewCard: {
     width: "100%",
@@ -1876,10 +1898,9 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    paddingHorizontal: 14,
+    paddingHorizontal: 12,
     paddingVertical: 10,
     borderBottomWidth: 1,
-    borderBottomColor: COLORS.border,
   },
   previewTitleGroup: {
     flex: 1,
@@ -1892,18 +1913,15 @@ const styles = StyleSheet.create({
   },
   previewFileName: {
     fontSize: 14,
-    color: COLORS.foreground,
     flex: 1,
   },
   previewPathText: {
-    fontSize: 10.5,
-    color: COLORS.mutedForeground,
+    fontSize: 10,
     marginTop: 2,
   },
   previewCloseBtn: {
     padding: 6,
     borderRadius: 8,
-    backgroundColor: COLORS.secondary,
   },
   previewBody: {
     flex: 1,
@@ -1918,13 +1936,11 @@ const styles = StyleSheet.create({
   },
   previewLoadingText: {
     fontSize: 12,
-    color: COLORS.mutedForeground,
   },
   imageViewerWrap: {
     flex: 1,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#05060A",
     position: "relative",
   },
   zoomControls: {
@@ -1972,17 +1988,14 @@ const styles = StyleSheet.create({
   },
   genericFileName: {
     fontSize: 14.5,
-    color: COLORS.foreground,
     textAlign: "center",
   },
   genericFileNotice: {
     fontSize: 11,
-    color: COLORS.mutedForeground,
     textAlign: "center",
   },
   genericFileHelp: {
     fontSize: 11.5,
-    color: COLORS.mutedForeground,
     textAlign: "center",
     maxWidth: 280,
     lineHeight: 16,
@@ -1996,8 +2009,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 10,
     borderTopWidth: 1,
-    borderTopColor: COLORS.border,
-    backgroundColor: COLORS.secondary,
   },
   previewCopyBtn: {
     flexDirection: "row",
@@ -2006,13 +2017,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     paddingVertical: 7,
     borderRadius: 8,
-    backgroundColor: COLORS.card,
     borderWidth: 1,
-    borderColor: COLORS.border,
   },
   previewCopyBtnText: {
     fontSize: 11.5,
-    color: COLORS.foreground,
   },
   previewBackBtn: {
     paddingHorizontal: 10,
@@ -2020,7 +2028,6 @@ const styles = StyleSheet.create({
   },
   previewBackBtnText: {
     fontSize: 12,
-    color: COLORS.mutedForeground,
   },
   previewAttachBtn: {
     flexDirection: "row",
@@ -2029,10 +2036,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 8,
     borderRadius: 9,
-    backgroundColor: "#6366F1",
   },
   previewAttachBtnText: {
     fontSize: 12,
-    color: "#FFF",
   },
 });

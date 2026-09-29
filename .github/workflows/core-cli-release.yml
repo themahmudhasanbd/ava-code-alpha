@@ -48,7 +48,7 @@ jobs:
           tar -czf "ava-core-x86_64-unknown-linux-gnu.tar.gz" -C dist .
 
       - name: Upload Artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: ava-core-x86_64-unknown-linux-gnu
           path: ava-core-x86_64-unknown-linux-gnu.tar.gz

@@ -84,7 +84,7 @@ jobs:
         run: ls -lh ava-desktop/apps/desktop/release/
 
       - name: Upload Linux DEB Artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: ava-desktop-linux-deb
           path: |

@@ -134,7 +134,7 @@ class AvaAgentModule(private val reactContext: ReactApplicationContext) :
 
             val powerManager = reactContext.getSystemService(Context.POWER_SERVICE) as? PowerManager
             val isBatteryOptIgnored = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && powerManager != null) {
-                powerManager.isIgnoringBatteryOptimization(reactContext.packageName)
+                powerManager.isIgnoringBatteryOptimizations(reactContext.packageName)
             } else true
 
             val result = Arguments.createMap()
@@ -152,7 +152,7 @@ class AvaAgentModule(private val reactContext: ReactApplicationContext) :
         try {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
                 val powerManager = reactContext.getSystemService(Context.POWER_SERVICE) as? PowerManager
-                if (powerManager != null && !powerManager.isIgnoringBatteryOptimization(reactContext.packageName)) {
+                if (powerManager != null && !powerManager.isIgnoringBatteryOptimizations(reactContext.packageName)) {
                     val intent = Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS).apply {
                         data = Uri.parse("package:${reactContext.packageName}")
                         addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)

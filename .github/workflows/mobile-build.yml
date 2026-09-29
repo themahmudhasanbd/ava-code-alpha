@@ -17,7 +17,7 @@ permissions:
 
 jobs:
   build-mobile:
-    name: Build Android APK & Web App
+    name: Build Android APK
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -36,12 +36,8 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
 
-      - name: Setup Flutter
-        uses: subosito/flutter-action@v2
-        with:
-          flutter-version: '3.29.x'
-          channel: 'stable'
-          cache: true
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
 
       - name: Install Mobile Node Dependencies
         run: |
@@ -53,30 +49,24 @@ jobs:
           cd ava-mobile
           npx tsc --noEmit
 
-      - name: Build Flutter v1 Android APK
-        run: |
-          if [ -d "ava-mobile/v1" ]; then
-            cd ava-mobile/v1
-            flutter pub get
-            flutter build apk --release || true
-          fi
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v3
 
-      - name: Prebuild & Assemble Android APK (Expo v2)
+      - name: Build Android Release APK
         run: |
-          cd ava-mobile
-          npx expo prebuild --platform android --clean || true
-          if [ -d "android" ] && [ -f "android/gradlew" ]; then
-            cd android
-            chmod +x gradlew
-            ./gradlew assembleRelease || ./gradlew assembleDebug || true
-          fi
+          cd ava-mobile/android
+          chmod +x gradlew
+          ./gradlew assembleRelease --no-daemon
 
-      - name: Upload Mobile Artifacts
+      - name: Find & Verify APK Outputs
+        run: |
+          echo "=== Built APK Outputs ==="
+          find ava-mobile/android/app/build/outputs/apk/ -name "*.apk" -ls
+
+      - name: Upload Android APK
         uses: actions/upload-artifact@v4
         with:
-          name: ava-mobile-artifacts
+          name: ava-code-mobile-android-apk
           path: |
             ava-mobile/android/app/build/outputs/apk/**/*.apk
-            ava-mobile/v1/build/app/outputs/flutter-apk/*.apk
-            ava-mobile/dist/
-          if-no-files-found: warn
+          if-no-files-found: error

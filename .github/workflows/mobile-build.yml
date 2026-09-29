@@ -36,9 +36,6 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
 
-      - name: Setup Android SDK
-        uses: android-actions/setup-android@v3
-
       - name: Install Mobile Node Dependencies
         run: |
           cd ava-mobile
@@ -53,6 +50,8 @@ jobs:
         uses: gradle/actions/setup-gradle@v3
 
       - name: Build Android Release APK
+        env:
+          ANDROID_HOME: /usr/local/lib/android/sdk
         run: |
           cd ava-mobile/android
           chmod +x gradlew

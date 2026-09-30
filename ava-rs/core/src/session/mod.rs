@@ -3850,6 +3850,7 @@ impl Session {
         )
         .or_cancel(cancellation_token)
         .await?;
+        let loaded_project_context = loaded_project_context?;
         let selected_capability_roots = self
             .resolve_selected_capability_roots_for_step(&environments)
             .await;

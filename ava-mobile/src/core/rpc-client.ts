@@ -17,6 +17,7 @@ export class RpcClient {
   private statusListeners = new Set<(s: ConnectionStatus) => void>();
   private opening: Promise<void> | null = null;
   private retry: ReturnType<typeof setTimeout> | null = null;
+  private heartbeat: ReturnType<typeof setInterval> | null = null;
   private closed = false;
   private attempts = 0;
   status: ConnectionStatus = "offline";
@@ -41,6 +42,38 @@ export class RpcClient {
   private setStatus(s: ConnectionStatus) {
     this.status = s;
     this.statusListeners.forEach((l) => l(s));
+  }
+
+  /**
+   * Keep the websocket alive: middleboxes (proxies, firewalls, mobile radios)
+   * silently drop idle connections, and without traffic the drop is invisible
+   * until the next user action. The AvA protocol has no ping method, so use a
+   * native WS ping frame where the runtime exposes one, else a cheap read-only
+   * RPC. Failures are swallowed - a dead socket surfaces via onclose/onerror.
+   */
+  private startHeartbeat() {
+    this.stopHeartbeat();
+    this.heartbeat = setInterval(() => {
+      const ws = this.ws;
+      if (!ws || ws.readyState !== WebSocket.OPEN) return;
+      const ping = (ws as unknown as { ping?: () => void }).ping;
+      if (typeof ping === "function") {
+        try {
+          ping.call(ws);
+        } catch {
+          /* ignore */
+        }
+        return;
+      }
+      this.send("server/diagnostics", {}, 10000).catch(() => {});
+    }, 25000);
+  }
+
+  private stopHeartbeat() {
+    if (this.heartbeat) {
+      clearInterval(this.heartbeat);
+      this.heartbeat = null;
+    }
   }
 
   connect(): Promise<void> {
@@ -70,6 +103,7 @@ export class RpcClient {
           });
           this.attempts = 0;
           this.setStatus("online");
+          this.startHeartbeat();
           resolve();
         } catch (e) {
           reject(e as Error);
@@ -80,14 +114,23 @@ export class RpcClient {
       ws.onmessage = (ev: any) => this.handle(ev.data);
       ws.onerror = () => {
         this.opening = null;
+        this.stopHeartbeat();
         reject(new Error("Could not reach AvA server"));
         try {
           ws.close();
         } catch {}
       };
-      ws.onclose = () => {
+      ws.onclose = (ev: any) => {
         this.opening = null;
         this.ws = null;
+        this.stopHeartbeat();
+        // Log code/reason so silent drops become diagnosable (1006 = abnormal
+        // closure, e.g. a proxy/firewall killed an idle socket).
+        console.warn(
+          "[rpc] server connection closed",
+          "code=" + (ev && ev.code !== undefined ? ev.code : "?") +
+            " reason=" + (ev && ev.reason ? ev.reason : "(none)")
+        );
         this.setStatus("offline");
         // Clear ALL pending timers before rejecting — prevents leaked setTimeout loops on reconnect
         this.pending.forEach((p) => {
@@ -179,6 +222,7 @@ export class RpcClient {
   close() {
     this.closed = true;
     if (this.retry) clearTimeout(this.retry);
+    this.stopHeartbeat();
     this.ws?.close();
   }
 }

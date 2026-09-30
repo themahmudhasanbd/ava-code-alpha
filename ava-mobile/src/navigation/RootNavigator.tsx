@@ -117,6 +117,11 @@ export function RootNavigator() {
             component={StorageSettingsScreen}
             options={{ animation: "slide_from_right" }}
           />
+          <Stack.Screen
+            name="SystemSettings"
+            component={SystemScreen}
+            options={{ animation: "slide_from_right" }}
+          />
         </>
       )}
     </Stack.Navigator>

@@ -180,9 +180,14 @@ function getServiceDescription(name: string): string {
 // ── Main Component ────────────────────────────────────────────────────────
 
 export function SystemScreen() {
-  const { status, auth } = useAva();
+  const { auth } = useAva();
   const diag = useDiagnostics();
   const runCmd = useRunCommand();
+
+  // Hero status derives from diagnostics freshness (single source of truth),
+  // not the flapping live socket: online when diagnostics refreshed recently.
+  const heroOnline =
+    diag.isSuccess && Date.now() - (diag.dataUpdatedAt ?? 0) < 30_000;
 
   const [autoRefresh, setAutoRefresh] = useState(true);
   const [hwStats, setHwStats] = useState<SystemHardwareStats | null>(null);
@@ -387,16 +392,16 @@ export function SystemScreen() {
         <Surface style={styles.heroCard}>
           <View style={styles.heroLeft}>
             <View style={styles.heroIconBox}>
-              <StatusDot status={status} size={10} />
+              <StatusDot status={heroOnline ? "online" : "offline"} size={10} />
             </View>
             <View style={{ flex: 1, gap: 4 }}>
               <View style={styles.heroTitleRow}>
                 <Text style={[styles.heroTitle, font("semibold")]}>
-                  {status === "online" ? "Host Connected" : `Server ${status}`}
+                  {heroOnline ? "Host Connected" : "Server offline"}
                 </Text>
                 <GlassCapsule
-                  label={status.toUpperCase()}
-                  variant={status === "online" ? "success" : "destructive"}
+                  label={heroOnline ? "ONLINE" : "OFFLINE"}
+                  variant={heroOnline ? "success" : "destructive"}
                   size="xs"
                 />
               </View>

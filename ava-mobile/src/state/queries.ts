@@ -21,24 +21,24 @@ export const keys = {
 };
 
 export function useDirectory(path: string) {
-  const { rpc, status } = useAva();
-  return useQuery({ queryKey: keys.dir(path), queryFn: () => readDirectory(rpc!, path), enabled: !!rpc && status === "online" });
+  const { rpc } = useAva();
+  return useQuery({ queryKey: keys.dir(path), queryFn: () => readDirectory(rpc!, path), enabled: !!rpc });
 }
 
 export function useFileContent(path: string | null) {
-  const { rpc, status } = useAva();
+  const { rpc } = useAva();
   return useQuery({
     queryKey: keys.file(path ?? ""),
     queryFn: async () => ({ text: await readTextFile(rpc!, path!), meta: await getMetadata(rpc!, path!) }),
-    enabled: !!rpc && !!path && status === "online",
+    enabled: !!rpc && !!path,
   });
 }
 
 export function useRunCommand() {
-  const { rpc, status } = useAva();
+  const { rpc } = useAva();
   return useMutation({
     mutationFn: (v: { command: string; cwd: string }) => {
-      if (!rpc || status !== "online") {
+      if (!rpc) {
         throw new Error("Terminal disconnected: AvA Core is offline or reconnecting.");
       }
       return runCommand(rpc, v.command, v.cwd);
@@ -47,18 +47,18 @@ export function useRunCommand() {
 }
 
 export function useDiagnostics() {
-  const { rpc, status } = useAva();
+  const { rpc } = useAva();
   return useQuery({
     queryKey: keys.diagnostics,
     queryFn: () => readDiagnostics(rpc!),
-    enabled: !!rpc && status === "online",
+    enabled: !!rpc,
     refetchInterval: 10_000,
   });
 }
 
 export function useServerConfig() {
-  const { rpc, status } = useAva();
-  return useQuery({ queryKey: keys.serverConfig, queryFn: () => readServerConfig(rpc!), enabled: !!rpc && status === "online" });
+  const { rpc } = useAva();
+  return useQuery({ queryKey: keys.serverConfig, queryFn: () => readServerConfig(rpc!), enabled: !!rpc });
 }
 
 export function useWriteConfig() {
@@ -98,8 +98,8 @@ export function useModels() {
 }
 
 export function useMcpServers() {
-  const { rpc, status } = useAva();
-  return useQuery({ queryKey: keys.mcp, queryFn: () => listMcpServers(rpc!), enabled: !!rpc && status === "online" });
+  const { rpc } = useAva();
+  return useQuery({ queryKey: keys.mcp, queryFn: () => listMcpServers(rpc!), enabled: !!rpc });
 }
 
 export function useReloadMcp() {
@@ -175,13 +175,13 @@ import { deleteTask, listTasks, runTaskNow, saveTask, type ScheduledTask, type T
 import { captureScreen, readDesktopStatus, sendDesktopInput } from "@/core/api/desktop";
 
 export function useMedia(dir: string) {
-  const { rpc, status } = useAva();
-  return useQuery({ queryKey: ["media", dir], queryFn: () => listMedia(rpc!, dir), enabled: !!rpc && status === "online" });
+  const { rpc } = useAva();
+  return useQuery({ queryKey: ["media", dir], queryFn: () => listMedia(rpc!, dir), enabled: !!rpc });
 }
 
 export function useMediaUrl(path: string | null) {
-  const { rpc, status } = useAva();
-  return useQuery({ queryKey: ["media-url", path], queryFn: () => readMediaUrl(rpc!, path!), enabled: !!rpc && !!path && status === "online", staleTime: Infinity });
+  const { rpc } = useAva();
+  return useQuery({ queryKey: ["media-url", path], queryFn: () => readMediaUrl(rpc!, path!), enabled: !!rpc && !!path, staleTime: Infinity });
 }
 
 export function useRemoveMedia() {
@@ -191,8 +191,8 @@ export function useRemoveMedia() {
 }
 
 export function useTasks() {
-  const { rpc, status } = useAva();
-  return useQuery({ queryKey: ["tasks"], queryFn: () => listTasks(rpc!), enabled: !!rpc && status === "online" });
+  const { rpc } = useAva();
+  return useQuery({ queryKey: ["tasks"], queryFn: () => listTasks(rpc!), enabled: !!rpc });
 }
 
 export function useSaveTask() {
@@ -213,8 +213,8 @@ export function useRunTask() {
 }
 
 export function useDesktopStatus() {
-  const { rpc, status } = useAva();
-  return useQuery({ queryKey: ["desktop"], queryFn: () => readDesktopStatus(rpc!), enabled: !!rpc && status === "online" });
+  const { rpc } = useAva();
+  return useQuery({ queryKey: ["desktop"], queryFn: () => readDesktopStatus(rpc!), enabled: !!rpc });
 }
 
 export function useCaptureScreen() {

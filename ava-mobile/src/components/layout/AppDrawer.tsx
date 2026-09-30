@@ -78,6 +78,18 @@ export function AppDrawer(props: DrawerContentComponentProps) {
   const [tab, setTab] = useState<"menu" | "sessions">("sessions");
   const [pins, setPins] = useState<string[]>([]);
   const [expandedDirs, setExpandedDirs] = useState<string[]>([]);
+  // Debounce the "Waiting for server connection..." banner: connection status
+  // flaps between online/connecting during reconnects, so only show the banner
+  // after status has been non-online for >3s continuously.
+  const [showConnBanner, setShowConnBanner] = useState(false);
+  useEffect(() => {
+    if (status === "online") {
+      setShowConnBanner(false);
+      return;
+    }
+    const t = setTimeout(() => setShowConnBanner(true), 3000);
+    return () => clearTimeout(t);
+  }, [status]);
   const [tabWidth, setTabWidth] = useState(0);
   const [workspaceModalOpen, setWorkspaceModalOpen] = useState(false);
 
@@ -403,7 +415,7 @@ export function AppDrawer(props: DrawerContentComponentProps) {
                   </Text>
                 </TouchableOpacity>
 
-                {status !== "online" && (
+                {showConnBanner && (
                   <Text style={[styles.hintText, font("regular")]}>
                     Waiting for server connection…
                   </Text>

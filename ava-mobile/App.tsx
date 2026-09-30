@@ -87,6 +87,7 @@ const linking: LinkingOptions<any> = {
       ServerSettings: "settings/server",
       PermissionsSettings: "settings/permissions",
       StorageSettings: "settings/storage",
+      SystemSettings: "settings/system",
     },
   },
 };

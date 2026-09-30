@@ -175,16 +175,20 @@ function AssistantTurn({
   // When a turn executes tool actions, any text generated BEFORE or DURING tool execution
   // is premature/interim commentary and must NOT be shown as the final response.
   // Only text produced AFTER all tools have finished counts as the final answer.
+  // Fallback: if no post-tool text exists, use the last non-empty text part
+  // regardless of position (final text may reuse the streaming item id/position).
   const finalPart = useMemo(() => {
+    let fallback: (typeof message.parts)[number] | null = null;
     for (let i = message.parts.length - 1; i >= 0; i--) {
       const p = message.parts[i]!;
       if (p.kind === "text" && p.text && p.text.trim()) {
+        if (!fallback) fallback = p;
         if (lastToolIdx === -1 || i > lastToolIdx) {
           return p;
         }
       }
     }
-    return null;
+    return fallback;
   }, [message.parts, lastToolIdx]);
 
   const finalText = finalPart?.text?.trim() ?? "";

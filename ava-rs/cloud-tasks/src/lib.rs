@@ -8,7 +8,6 @@ pub(crate) mod util;
 pub use cli::Cli;
 
 use anyhow::anyhow;
-use chrono::Utc;
 use ava_cloud_tasks_client::TaskStatus;
 use ava_git_utils::current_branch_name;
 use ava_git_utils::default_branch_name;
@@ -17,6 +16,7 @@ use ava_http_client::HttpClientFactory;
 use ava_http_client::OutboundProxyPolicy;
 use ava_http_client::RouteAwareClientPool;
 use ava_login::default_client::get_ava_user_agent;
+use chrono::Utc;
 use owo_colors::OwoColorize;
 use owo_colors::Stream;
 use std::cmp::Ordering;
@@ -616,10 +616,7 @@ async fn run_apply_command(args: crate::cli::ApplyCommand) -> anyhow::Result<()>
     )
     .await?;
     println!("{}", outcome.message);
-    if !matches!(
-        outcome.status,
-        ava_cloud_tasks_client::ApplyStatus::Success
-    ) {
+    if !matches!(outcome.status, ava_cloud_tasks_client::ApplyStatus::Success) {
         std::process::exit(1);
     }
     Ok(())

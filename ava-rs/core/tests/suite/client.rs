@@ -412,15 +412,15 @@ async fn non_openai_responses_requests_include_item_ids_without_passthrough_meta
         .build(&server)
         .await
         .unwrap()
-        .ava-code;
+        .ava
+        - code;
 
-    ava
-        .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
-            text: "hello".into(),
-            text_elements: Vec::new(),
-        }]))
-        .await
-        .unwrap();
+    ava.start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
+        text: "hello".into(),
+        text_elements: Vec::new(),
+    }]))
+    .await
+    .unwrap();
     wait_for_event(&ava, |event| matches!(event, EventMsg::TurnComplete(_))).await;
 
     let body = response_mock
@@ -466,15 +466,15 @@ async fn sends_audio_urls_to_responses() {
         .build(&server)
         .await
         .unwrap()
-        .ava-code;
+        .ava
+        - code;
     let audio_url = "data:audio/wav;base64,AAAA";
 
-    ava
-        .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Audio {
-            audio_url: audio_url.to_string(),
-        }]))
-        .await
-        .unwrap();
+    ava.start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Audio {
+        audio_url: audio_url.to_string(),
+    }]))
+    .await
+    .unwrap();
     wait_for_event(&ava, |event| matches!(event, EventMsg::TurnComplete(_))).await;
 
     let request = response_mock.single_request();
@@ -510,16 +510,16 @@ async fn sends_local_audio_to_responses() -> anyhow::Result<()> {
         })
         .build(&server)
         .await?
-        .ava-code;
+        .ava
+        - code;
     let temp_dir = tempfile::tempdir()?;
     let audio_path = temp_dir.path().join("recording.wav");
     std::fs::write(&audio_path, b"audio")?;
 
-    ava
-        .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::LocalAudio {
-            path: audio_path.clone(),
-        }]))
-        .await?;
+    ava.start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::LocalAudio {
+        path: audio_path.clone(),
+    }]))
+    .await?;
     wait_for_event(&ava, |event| matches!(event, EventMsg::TurnComplete(_))).await;
 
     let request = response_mock.single_request();
@@ -1034,13 +1034,12 @@ async fn resume_includes_initial_messages_and_sends_prior_items() {
     assert_eq!(initial_json, expected_initial_json);
 
     // 2) Submit new input; the request body must include the prior items, then initial context, then new user input.
-    ava
-        .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
-            text: "hello".into(),
-            text_elements: Vec::new(),
-        }]))
-        .await
-        .unwrap();
+    ava.start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
+        text: "hello".into(),
+        text_elements: Vec::new(),
+    }]))
+    .await
+    .unwrap();
     wait_for_event(&ava, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
 
     let request = resp_mock.single_request();
@@ -1430,13 +1429,12 @@ async fn includes_session_id_thread_id_and_model_headers_in_request() {
     let expected_session_id = test.session_configured.session_id;
     let expected_thread_id = test.session_configured.thread_id;
 
-    ava
-        .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
-            text: "hello".into(),
-            text_elements: Vec::new(),
-        }]))
-        .await
-        .unwrap();
+    ava.start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
+        text: "hello".into(),
+        text_elements: Vec::new(),
+    }]))
+    .await
+    .unwrap();
 
     wait_for_event(&ava, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
 
@@ -1638,8 +1636,7 @@ async fn send_request_with_provider(provider: ModelProviderInfo) {
     let model = ava_core::test_support::get_model_offline(config.model.as_deref());
     config.model = Some(model.clone());
     let config = Arc::new(config);
-    let model_info =
-        ava_core::test_support::construct_model_info_offline(model.as_str(), &config);
+    let model_info = ava_core::test_support::construct_model_info_offline(model.as_str(), &config);
     let thread_id = ThreadId::new();
     let session_telemetry = SessionTelemetry::new(
         thread_id,
@@ -1730,15 +1727,15 @@ async fn includes_base_instructions_override_in_request() {
         .build(&server)
         .await
         .expect("create new conversation")
-        .ava-code;
+        .ava
+        - code;
 
-    ava
-        .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
-            text: "hello".into(),
-            text_elements: Vec::new(),
-        }]))
-        .await
-        .unwrap();
+    ava.start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
+        text: "hello".into(),
+        text_elements: Vec::new(),
+    }]))
+    .await
+    .unwrap();
 
     wait_for_event(&ava, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
 
@@ -1783,13 +1780,12 @@ async fn chatgpt_auth_sends_correct_request() {
     let expected_session_id = test.session_configured.session_id;
     let expected_thread_id = test.session_configured.thread_id;
 
-    ava
-        .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
-            text: "hello".into(),
-            text_elements: Vec::new(),
-        }]))
-        .await
-        .unwrap();
+    ava.start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
+        text: "hello".into(),
+        text_elements: Vec::new(),
+    }]))
+    .await
+    .unwrap();
 
     wait_for_event(&ava, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
 
@@ -1917,13 +1913,12 @@ async fn prefers_apikey_when_config_prefers_apikey_even_with_chatgpt_tokens() {
         .await
         .expect("create new conversation");
 
-    ava
-        .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
-            text: "hello".into(),
-            text_elements: Vec::new(),
-        }]))
-        .await
-        .unwrap();
+    ava.start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
+        text: "hello".into(),
+        text_elements: Vec::new(),
+    }]))
+    .await
+    .unwrap();
 
     wait_for_event(&ava, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
 }
@@ -1950,13 +1945,12 @@ async fn includes_user_instructions_message_in_request() {
         .expect("create new conversation");
     let ava = test.ava.clone();
 
-    ava
-        .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
-            text: "hello".into(),
-            text_elements: Vec::new(),
-        }]))
-        .await
-        .unwrap();
+    ava.start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
+        text: "hello".into(),
+        text_elements: Vec::new(),
+    }]))
+    .await
+    .unwrap();
 
     wait_for_event(&ava, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
 
@@ -2036,15 +2030,15 @@ async fn includes_apps_guidance_as_developer_message_for_chatgpt_auth() {
         .build(&server)
         .await
         .expect("create new conversation")
-        .ava-code;
+        .ava
+        - code;
 
-    ava
-        .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
-            text: "hello".into(),
-            text_elements: Vec::new(),
-        }]))
-        .await
-        .unwrap();
+    ava.start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
+        text: "hello".into(),
+        text_elements: Vec::new(),
+    }]))
+    .await
+    .unwrap();
 
     wait_for_event(&ava, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
 
@@ -2093,15 +2087,15 @@ async fn omits_apps_guidance_for_api_key_auth_even_when_feature_enabled() {
         .build(&server)
         .await
         .expect("create new conversation")
-        .ava-code;
+        .ava
+        - code;
 
-    ava
-        .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
-            text: "hello".into(),
-            text_elements: Vec::new(),
-        }]))
-        .await
-        .unwrap();
+    ava.start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
+        text: "hello".into(),
+        text_elements: Vec::new(),
+    }]))
+    .await
+    .unwrap();
 
     wait_for_event(&ava, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
 
@@ -2146,15 +2140,15 @@ async fn omits_apps_guidance_when_configured_off() {
         .build(&server)
         .await
         .expect("create new conversation")
-        .ava-code;
+        .ava
+        - code;
 
-    ava
-        .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
-            text: "hello".into(),
-            text_elements: Vec::new(),
-        }]))
-        .await
-        .unwrap();
+    ava.start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
+        text: "hello".into(),
+        text_elements: Vec::new(),
+    }]))
+    .await
+    .unwrap();
 
     wait_for_event(&ava, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
 
@@ -2217,15 +2211,15 @@ async fn omits_apps_guidance_when_orchestrator_mcp_is_disabled() {
         .build(&server)
         .await
         .expect("create new conversation")
-        .ava-code;
+        .ava
+        - code;
 
-    ava
-        .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
-            text: "hello".into(),
-            text_elements: Vec::new(),
-        }]))
-        .await
-        .unwrap();
+    ava.start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
+        text: "hello".into(),
+        text_elements: Vec::new(),
+    }]))
+    .await
+    .unwrap();
 
     wait_for_event(&ava, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
 
@@ -2293,15 +2287,15 @@ async fn omits_environment_context_when_configured_off() {
         .build(&server)
         .await
         .expect("create new conversation")
-        .ava-code;
+        .ava
+        - code;
 
-    ava
-        .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
-            text: "hello".into(),
-            text_elements: Vec::new(),
-        }]))
-        .await
-        .unwrap();
+    ava.start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
+        text: "hello".into(),
+        text_elements: Vec::new(),
+    }]))
+    .await
+    .unwrap();
 
     wait_for_event(&ava, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
 
@@ -2374,13 +2368,12 @@ async fn includes_configured_max_effort_in_request() -> anyhow::Result<()> {
         .build(&server)
         .await?;
 
-    ava
-        .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
-            text: "hello".into(),
-            text_elements: Vec::new(),
-        }]))
-        .await
-        .unwrap();
+    ava.start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
+        text: "hello".into(),
+        text_elements: Vec::new(),
+    }]))
+    .await
+    .unwrap();
 
     wait_for_event(&ava, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
 
@@ -2411,13 +2404,12 @@ async fn includes_default_reasoning_effort_in_request_when_defined_by_model_info
     .await;
     let TestAva { ava, .. } = test_ava().with_model("gpt-5.5").build(&server).await?;
 
-    ava
-        .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
-            text: "hello".into(),
-            text_elements: Vec::new(),
-        }]))
-        .await
-        .unwrap();
+    ava.start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
+        text: "hello".into(),
+        text_elements: Vec::new(),
+    }]))
+    .await
+    .unwrap();
 
     wait_for_event(&ava, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
 
@@ -2456,26 +2448,25 @@ async fn user_turn_collaboration_mode_overrides_model_and_effort() -> anyhow::Re
         },
     };
 
-    ava
-        .start_or_steer_turn(
-            TurnInputRequest::user_input(vec![UserInput::Text {
-                text: "hello".into(),
-                text_elements: Vec::new(),
-            }])
-            .with_thread_settings(ThreadSettingsOverrides {
-                environments: Some(local_selections(config.cwd.clone())),
-                approval_policy: Some(config.permissions.approval_policy.value()),
-                sandbox_policy: Some(config.legacy_sandbox_policy()),
-                summary: Some(
-                    config
-                        .model_reasoning_summary
-                        .unwrap_or(ReasoningSummary::Auto),
-                ),
-                collaboration_mode: Some(collaboration_mode),
-                ..Default::default()
-            }),
-        )
-        .await?;
+    ava.start_or_steer_turn(
+        TurnInputRequest::user_input(vec![UserInput::Text {
+            text: "hello".into(),
+            text_elements: Vec::new(),
+        }])
+        .with_thread_settings(ThreadSettingsOverrides {
+            environments: Some(local_selections(config.cwd.clone())),
+            approval_policy: Some(config.permissions.approval_policy.value()),
+            sandbox_policy: Some(config.legacy_sandbox_policy()),
+            summary: Some(
+                config
+                    .model_reasoning_summary
+                    .unwrap_or(ReasoningSummary::Auto),
+            ),
+            collaboration_mode: Some(collaboration_mode),
+            ..Default::default()
+        }),
+    )
+    .await?;
 
     wait_for_event(&ava, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
 
@@ -2512,13 +2503,12 @@ async fn configured_reasoning_summary_is_sent() -> anyhow::Result<()> {
         .build(&server)
         .await?;
 
-    ava
-        .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
-            text: "hello".into(),
-            text_elements: Vec::new(),
-        }]))
-        .await
-        .unwrap();
+    ava.start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
+        text: "hello".into(),
+        text_elements: Vec::new(),
+    }]))
+    .await
+    .unwrap();
 
     wait_for_event(&ava, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
 
@@ -2581,12 +2571,11 @@ async fn model_without_summary_parameter_support_omits_configured_summary() -> a
         .build_with_auto_env(&server)
         .await?;
 
-    ava
-        .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
-            text: "hello".into(),
-            text_elements: Vec::new(),
-        }]))
-        .await?;
+    ava.start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
+        text: "hello".into(),
+        text_elements: Vec::new(),
+    }]))
+    .await?;
 
     wait_for_event(&ava, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
 
@@ -2622,13 +2611,12 @@ async fn sequential_cutoff_is_omitted_for_non_openai_provider() -> anyhow::Resul
         .build(&server)
         .await?;
 
-    ava
-        .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
-            text: "hello".into(),
-            text_elements: Vec::new(),
-        }]))
-        .await
-        .unwrap();
+    ava.start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
+        text: "hello".into(),
+        text_elements: Vec::new(),
+    }]))
+    .await
+    .unwrap();
 
     wait_for_event(&ava, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
 
@@ -2659,12 +2647,11 @@ async fn responses_lite_sets_all_turns_context_and_disables_parallel_tool_calls(
         .build(&server)
         .await?;
 
-    ava
-        .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
-            text: "hello".into(),
-            text_elements: Vec::new(),
-        }]))
-        .await?;
+    ava.start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
+        text: "hello".into(),
+        text_elements: Vec::new(),
+    }]))
+    .await?;
 
     wait_for_event(&ava, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
 
@@ -2714,30 +2701,29 @@ async fn user_turn_explicit_reasoning_summary_overrides_model_catalog_default() 
         .build(&server)
         .await?;
 
-    ava
-        .start_or_steer_turn(
-            TurnInputRequest::user_input(vec![UserInput::Text {
-                text: "hello".into(),
-                text_elements: Vec::new(),
-            }])
-            .with_thread_settings(ThreadSettingsOverrides {
-                environments: Some(local_selections(config.cwd.clone())),
-                approval_policy: Some(config.permissions.approval_policy.value()),
-                sandbox_policy: Some(config.legacy_sandbox_policy()),
-                summary: Some(ReasoningSummary::Concise),
-                collaboration_mode: Some(CollaborationMode {
-                    mode: ModeKind::Default,
-                    settings: Settings {
-                        model: session_configured.model,
-                        reasoning_effort: None,
-                        developer_instructions: None,
-                    },
-                }),
-                ..Default::default()
+    ava.start_or_steer_turn(
+        TurnInputRequest::user_input(vec![UserInput::Text {
+            text: "hello".into(),
+            text_elements: Vec::new(),
+        }])
+        .with_thread_settings(ThreadSettingsOverrides {
+            environments: Some(local_selections(config.cwd.clone())),
+            approval_policy: Some(config.permissions.approval_policy.value()),
+            sandbox_policy: Some(config.legacy_sandbox_policy()),
+            summary: Some(ReasoningSummary::Concise),
+            collaboration_mode: Some(CollaborationMode {
+                mode: ModeKind::Default,
+                settings: Settings {
+                    model: session_configured.model,
+                    reasoning_effort: None,
+                    developer_instructions: None,
+                },
             }),
-        )
-        .await
-        .unwrap();
+            ..Default::default()
+        }),
+    )
+    .await
+    .unwrap();
 
     wait_for_event(&ava, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
 
@@ -2771,13 +2757,12 @@ async fn reasoning_summary_is_omitted_when_disabled() -> anyhow::Result<()> {
         .build(&server)
         .await?;
 
-    ava
-        .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
-            text: "hello".into(),
-            text_elements: Vec::new(),
-        }]))
-        .await
-        .unwrap();
+    ava.start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
+        text: "hello".into(),
+        text_elements: Vec::new(),
+    }]))
+    .await
+    .unwrap();
 
     wait_for_event(&ava, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
 
@@ -2823,13 +2808,12 @@ async fn reasoning_summary_none_overrides_model_catalog_default() -> anyhow::Res
         .build(&server)
         .await?;
 
-    ava
-        .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
-            text: "hello".into(),
-            text_elements: Vec::new(),
-        }]))
-        .await
-        .unwrap();
+    ava.start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
+        text: "hello".into(),
+        text_elements: Vec::new(),
+    }]))
+    .await
+    .unwrap();
 
     wait_for_event(&ava, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
 
@@ -2856,13 +2840,12 @@ async fn includes_default_verbosity_in_request() -> anyhow::Result<()> {
     .await;
     let TestAva { ava, .. } = test_ava().with_model("gpt-5.5").build(&server).await?;
 
-    ava
-        .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
-            text: "hello".into(),
-            text_elements: Vec::new(),
-        }]))
-        .await
-        .unwrap();
+    ava.start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
+        text: "hello".into(),
+        text_elements: Vec::new(),
+    }]))
+    .await
+    .unwrap();
 
     wait_for_event(&ava, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
 
@@ -2898,13 +2881,12 @@ async fn configured_verbosity_not_sent_for_models_without_support() -> anyhow::R
         .build(&server)
         .await?;
 
-    ava
-        .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
-            text: "hello".into(),
-            text_elements: Vec::new(),
-        }]))
-        .await
-        .unwrap();
+    ava.start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
+        text: "hello".into(),
+        text_elements: Vec::new(),
+    }]))
+    .await
+    .unwrap();
 
     wait_for_event(&ava, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
 
@@ -2939,13 +2921,12 @@ async fn configured_verbosity_is_sent() -> anyhow::Result<()> {
         .build(&server)
         .await?;
 
-    ava
-        .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
-            text: "hello".into(),
-            text_elements: Vec::new(),
-        }]))
-        .await
-        .unwrap();
+    ava.start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
+        text: "hello".into(),
+        text_elements: Vec::new(),
+    }]))
+    .await
+    .unwrap();
 
     wait_for_event(&ava, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
 
@@ -2987,13 +2968,12 @@ async fn includes_developer_instructions_message_in_request() {
         .expect("create new conversation");
     let ava = test.ava.clone();
 
-    ava
-        .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
-            text: "hello".into(),
-            text_elements: Vec::new(),
-        }]))
-        .await
-        .unwrap();
+    ava.start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
+        text: "hello".into(),
+        text_elements: Vec::new(),
+    }]))
+    .await
+    .unwrap();
 
     wait_for_event(&ava, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
 
@@ -3135,8 +3115,7 @@ async fn azure_responses_request_does_not_store_and_preserves_prefixed_item_ids(
     let model = ava_core::test_support::get_model_offline(config.model.as_deref());
     config.model = Some(model.clone());
     let config = Arc::new(config);
-    let model_info =
-        ava_core::test_support::construct_model_info_offline(model.as_str(), &config);
+    let model_info = ava_core::test_support::construct_model_info_offline(model.as_str(), &config);
     let thread_id = ThreadId::new();
     let auth_manager =
         ava_core::test_support::auth_manager_from_auth(AvaAuth::from_api_key("Test API Key"));
@@ -3355,15 +3334,15 @@ async fn token_count_includes_rate_limits_snapshot() {
         .build(&server)
         .await
         .expect("create conversation")
-        .ava-code;
+        .ava
+        - code;
 
-    ava
-        .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
-            text: "hello".into(),
-            text_elements: Vec::new(),
-        }]))
-        .await
-        .unwrap();
+    ava.start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
+        text: "hello".into(),
+        text_elements: Vec::new(),
+    }]))
+    .await
+    .unwrap();
 
     let token_event = wait_for_event(
         &ava,
@@ -3578,21 +3557,19 @@ async fn context_window_error_sets_total_tokens_to_model_window() -> anyhow::Res
         .build(&server)
         .await?;
 
-    ava
-        .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
-            text: "seed turn".into(),
-            text_elements: Vec::new(),
-        }]))
-        .await?;
+    ava.start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
+        text: "seed turn".into(),
+        text_elements: Vec::new(),
+    }]))
+    .await?;
 
     wait_for_event(&ava, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
 
-    ava
-        .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
-            text: "trigger context window".into(),
-            text_elements: Vec::new(),
-        }]))
-        .await?;
+    ava.start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
+        text: "trigger context window".into(),
+        text_elements: Vec::new(),
+    }]))
+    .await?;
 
     let token_event = wait_for_event(&ava, |event| {
         matches!(
@@ -3666,12 +3643,11 @@ async fn incomplete_response_emits_content_filter_error_message() -> anyhow::Res
         })
         .build(&server)
         .await?;
-    ava
-        .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
-            text: "trigger incomplete".into(),
-            text_elements: Vec::new(),
-        }]))
-        .await?;
+    ava.start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
+        text: "trigger incomplete".into(),
+        text_elements: Vec::new(),
+    }]))
+    .await?;
 
     let error_event = wait_for_event(&ava, |ev| matches!(ev, EventMsg::Error(_))).await;
     assert!(
@@ -3772,15 +3748,15 @@ async fn azure_overrides_assign_properties_used_for_responses_url() {
         .build(&server)
         .await
         .expect("create new conversation")
-        .ava-code;
+        .ava
+        - code;
 
-    ava
-        .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
-            text: "hello".into(),
-            text_elements: Vec::new(),
-        }]))
-        .await
-        .unwrap();
+    ava.start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
+        text: "hello".into(),
+        text_elements: Vec::new(),
+    }]))
+    .await
+    .unwrap();
 
     wait_for_event(&ava, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
 }
@@ -3858,15 +3834,15 @@ async fn env_var_overrides_loaded_auth() {
         .build(&server)
         .await
         .expect("create new conversation")
-        .ava-code;
+        .ava
+        - code;
 
-    ava
-        .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
-            text: "hello".into(),
-            text_elements: Vec::new(),
-        }]))
-        .await
-        .unwrap();
+    ava.start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
+        text: "hello".into(),
+        text_elements: Vec::new(),
+    }]))
+    .await
+    .unwrap();
 
     wait_for_event(&ava, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
 
@@ -3917,36 +3893,34 @@ async fn history_dedupes_streamed_and_final_messages_across_turns() {
         .build(&server)
         .await
         .expect("create new conversation")
-        .ava-code;
+        .ava
+        - code;
 
     // Turn 1: user sends U1; wait for completion.
-    ava
-        .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
-            text: "U1".into(),
-            text_elements: Vec::new(),
-        }]))
-        .await
-        .unwrap();
+    ava.start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
+        text: "U1".into(),
+        text_elements: Vec::new(),
+    }]))
+    .await
+    .unwrap();
     wait_for_event(&ava, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
 
     // Turn 2: user sends U2; wait for completion.
-    ava
-        .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
-            text: "U2".into(),
-            text_elements: Vec::new(),
-        }]))
-        .await
-        .unwrap();
+    ava.start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
+        text: "U2".into(),
+        text_elements: Vec::new(),
+    }]))
+    .await
+    .unwrap();
     wait_for_event(&ava, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
 
     // Turn 3: user sends U3; wait for completion.
-    ava
-        .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
-            text: "U3".into(),
-            text_elements: Vec::new(),
-        }]))
-        .await
-        .unwrap();
+    ava.start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
+        text: "U3".into(),
+        text_elements: Vec::new(),
+    }]))
+    .await
+    .unwrap();
     wait_for_event(&ava, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
 
     // Inspect the three captured requests.

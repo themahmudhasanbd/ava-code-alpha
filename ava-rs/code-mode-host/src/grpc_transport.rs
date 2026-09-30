@@ -4,6 +4,8 @@ use std::net::SocketAddr;
 
 use anyhow::Context;
 use anyhow::Result;
+use ava_code_mode_protocol::grpc::code_mode_host_server::CodeModeHostServer;
+use ava_code_mode_protocol::host::MAX_FRAME_BYTES;
 use axum::extract::Request;
 use axum::http::Method;
 use axum::http::StatusCode;
@@ -11,8 +13,6 @@ use axum::http::Version;
 use axum::middleware;
 use axum::middleware::Next;
 use axum::routing::get;
-use ava_code_mode_protocol::grpc::code_mode_host_server::CodeModeHostServer;
-use ava_code_mode_protocol::host::MAX_FRAME_BYTES;
 use tokio::net::TcpListener;
 use tonic::service::Routes;
 use tonic::transport::Server;

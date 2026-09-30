@@ -18,8 +18,7 @@ use pretty_assertions::assert_eq;
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn remote_environment_reads_projected_executor_config() -> anyhow::Result<()> {
     let mut server = exec_server().await?;
-    let ava_home =
-        AbsolutePathBuf::from_absolute_path(std::fs::canonicalize(server.ava_home())?)?;
+    let ava_home = AbsolutePathBuf::from_absolute_path(std::fs::canonicalize(server.ava_home())?)?;
     let config_file = ava_home.join(CONFIG_TOML_FILE);
     let project = ava_home.join("project");
     let dot_ava = project.join(".ava-code");
@@ -100,8 +99,7 @@ unselected = "do not return"
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn environment_config_read_rejects_empty_selectors() -> anyhow::Result<()> {
     let mut server = exec_server().await?;
-    let ava_home =
-        AbsolutePathBuf::from_absolute_path(std::fs::canonicalize(server.ava_home())?)?;
+    let ava_home = AbsolutePathBuf::from_absolute_path(std::fs::canonicalize(server.ava_home())?)?;
     let environment = Environment::create_for_tests(Some(server.websocket_url().to_string()))?;
 
     for (config_paths, expected_message) in [

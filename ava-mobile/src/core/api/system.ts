@@ -1,5 +1,6 @@
 import type { RpcClient } from "../rpc-client";
 import type { ServerConfig, ServerDiagnostics } from "../types";
+import type { CustomProvider } from "../custom-models";
 
 export async function readDiagnostics(rpc: RpcClient): Promise<ServerDiagnostics> {
   const res = await rpc.call<{
@@ -66,4 +67,50 @@ export async function writeServerConfig(
       };
     }
   }
+}
+
+/**
+ * Push a custom provider to the AvA Core server so chat can actually route
+ * to it. The mobile app keeps providers in device AsyncStorage for the model
+ * picker, but the server only knows providers from its own config.toml —
+ * without this, selecting a custom-provider model sends a model id the
+ * server cannot resolve ("Model metadata for ... not found").
+ *
+ * Maps the mobile CustomProvider onto the server's `model_providers.<id>`
+ * schema (ava-rs/model-provider-info) via config/batchWrite with
+ * reloadUserConfig, so the provider is live immediately.
+ *
+ * OAuth providers (e.g. Antigravity) are skipped: the server ships its own
+ * native entry with special headers/auth flow. Keyless non-local providers
+ * are skipped too, so a keyless save never clobbers a built-in provider
+ * with an empty override.
+ */
+export async function pushCustomProviderToServer(
+  rpc: RpcClient,
+  provider: CustomProvider
+): Promise<{ ok: boolean; reason?: string }> {
+  if (!provider?.id) return { ok: false, reason: "missing provider id" };
+  if (provider.authType === "oauth") {
+    return { ok: false, reason: "oauth providers are handled natively by the server" };
+  }
+  const keys = Array.from(
+    new Set(
+      [...(provider.apiKeys ?? []), ...(provider.apiKey ? [provider.apiKey] : [])]
+        .map((k) => k.trim())
+        .filter(Boolean)
+    )
+  );
+  if (provider.authType !== "none" && keys.length === 0) {
+    return { ok: false, reason: "no API keys configured" };
+  }
+  const value: Record<string, unknown> = {
+    name: provider.name?.trim() || provider.id,
+    base_url: provider.baseUrl?.trim(),
+    // The server only speaks "responses" now (the "chat" wire api was removed).
+    wire_api: "responses",
+  };
+  if (keys.length > 0) value.api_keys = keys;
+  const res = await writeServerConfig(rpc, { [`model_providers.${provider.id}`]: value });
+  if (!res.success) return { ok: false, reason: res.error || "config write failed" };
+  return { ok: true };
 }

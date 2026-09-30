@@ -1,7 +1,5 @@
 use anyhow::Context;
 use anyhow::Result;
-use base64::Engine;
-use base64::engine::general_purpose::STANDARD as BASE64_STANDARD;
 use ava_api::AuthProvider;
 use ava_config::types::ApprovalsReviewer;
 use ava_core::AvaThreadSettingsOverrides;
@@ -78,6 +76,8 @@ use ava_protocol::request_user_input::RequestUserInputResponse;
 use ava_protocol::user_input::UserInput;
 use ava_utils_absolute_path::AbsolutePathBuf;
 use ava_utils_path_uri::PathUri;
+use base64::Engine;
+use base64::engine::general_purpose::STANDARD as BASE64_STANDARD;
 use core_test_support::PathBufExt;
 use core_test_support::PathExt;
 use core_test_support::TestTargetOs;
@@ -671,18 +671,18 @@ async fn environment_permissions_follow_configuration_ownership() -> Result<()> 
             .is_err(),
         "read-only attachment unexpectedly wrote {FILE_NAME}"
     );
-    let turn_context = test
-        .ava-code
-        .load_history(/*include_archived*/ false)
-        .await?
-        .items
-        .into_iter()
-        .rev()
-        .find_map(|item| match item {
-            RolloutItem::TurnContext(context) => Some(context),
-            _ => None,
-        })
-        .context("owner turn context")?;
+    let turn_context = test.ava
+        - code
+            .load_history(/*include_archived*/ false)
+            .await?
+            .items
+            .into_iter()
+            .rev()
+            .find_map(|item| match item {
+                RolloutItem::TurnContext(context) => Some(context),
+                _ => None,
+            })
+            .context("owner turn context")?;
     assert!(
         turn_context
             .workspace_roots
@@ -778,17 +778,17 @@ async fn executor_profile_roots_survive_settings_restore_and_turn_recording() ->
     test.submit_text_turn("record the executor profile").await?;
     response_mock.single_request();
     test.ava.flush_rollout().await?;
-    let context = test
-        .ava-code
-        .load_history(/*include_archived*/ false)
-        .await?
-        .items
-        .into_iter()
-        .find_map(|item| match item {
-            RolloutItem::TurnContext(context) => Some(context),
-            _ => None,
-        })
-        .context("recorded turn context")?;
+    let context = test.ava
+        - code
+            .load_history(/*include_archived*/ false)
+            .await?
+            .items
+            .into_iter()
+            .find_map(|item| match item {
+                RolloutItem::TurnContext(context) => Some(context),
+                _ => None,
+            })
+            .context("recorded turn context")?;
     // The rollout retains compiled permissions, not the unprojectable root list.
     assert_eq!(
         (
@@ -930,13 +930,13 @@ async fn settings_update_does_not_retarget_active_turn_environment() -> Result<(
         Some(initial_environments.clone())
     );
 
-    let preview = test
-        .ava-code
-        .preview_thread_settings_overrides(AvaThreadSettingsOverrides {
-            environments: Some(next_environments.clone()),
-            ..Default::default()
-        })
-        .await?;
+    let preview = test.ava
+        - code
+            .preview_thread_settings_overrides(AvaThreadSettingsOverrides {
+                environments: Some(next_environments.clone()),
+                ..Default::default()
+            })
+            .await?;
     assert_eq!(
         preview.environment_selections(),
         &next_environments.environments
@@ -1116,11 +1116,11 @@ async fn deferred_executor_promotes_primary_environment_when_startup_completes()
     })
     .await;
 
-    let active_environments = test
-        .ava-code
-        .active_turn_environment_selections()
-        .await
-        .context("active turn environments")?;
+    let active_environments = test.ava
+        - code
+            .active_turn_environment_selections()
+            .await
+            .context("active turn environments")?;
     assert_eq!(
         active_environments
             .iter()
@@ -1147,8 +1147,7 @@ async fn deferred_executor_promotes_primary_environment_when_startup_completes()
     let mut websocket = accept_initialized_exec_server(listener).await;
     // Forward MCP HTTP through the fake executor while keeping startup under test control.
     let http_client =
-        ava_exec_server::Environment::create_for_tests(/*exec_server_url*/ None)?
-            .get_http_client();
+        ava_exec_server::Environment::create_for_tests(/*exec_server_url*/ None)?.get_http_client();
     let executor = tokio::spawn(async move {
         loop {
             let request = read_exec_server_json(&mut websocket).await;
@@ -1464,13 +1463,13 @@ async fn shared_executor_keeps_ready_capability_roots_scoped_to_each_attachment(
     extensions.prompt_contributor(Arc::new(ReadyCapabilityRootsTestExtension::default()));
     let mut builder = test_ava().with_extensions(Arc::new(extensions.build()));
     let test = builder.build_with_auto_env(&server).await?;
-    let selection = test
-        .ava-code
-        .environment_selections()
-        .await
-        .into_iter()
-        .next()
-        .context("thread should select its executor environment")?;
+    let selection = test.ava
+        - code
+            .environment_selections()
+            .await
+            .into_iter()
+            .next()
+            .context("thread should select its executor environment")?;
     let root = |id: &str| SelectedCapabilityRoot {
         id: id.to_string(),
         location: CapabilityRootLocation::Environment {
@@ -1502,16 +1501,16 @@ async fn shared_executor_keeps_ready_capability_roots_scoped_to_each_attachment(
             config,
             ..selection.clone()
         };
-        let preview = test
-            .ava-code
-            .preview_thread_settings_overrides(AvaThreadSettingsOverrides {
-                environments: Some(TurnEnvironmentSelections::new(
-                    test.config.cwd.clone(),
-                    vec![selection_override],
-                )),
-                ..Default::default()
-            })
-            .await;
+        let preview = test.ava
+            - code
+                .preview_thread_settings_overrides(AvaThreadSettingsOverrides {
+                    environments: Some(TurnEnvironmentSelections::new(
+                        test.config.cwd.clone(),
+                        vec![selection_override],
+                    )),
+                    ..Default::default()
+                })
+                .await;
         assert_eq!(preview.is_ok(), should_succeed);
         assert_eq!(
             test.ava.environment_selections().await,
@@ -1705,26 +1704,26 @@ async fn owner_network_policy_rejects_unsupported_environment_authority() -> Res
         )),
         selected_capability_roots: Vec::new(),
     };
-    let preview_error = test
-        .ava-code
-        .preview_thread_settings_overrides(AvaThreadSettingsOverrides {
-            environments: Some(TurnEnvironmentSelections::new(
-                test.config.cwd.clone(),
-                vec![TurnEnvironmentSelection {
-                    config: EnvironmentConfigState::Ready(owner_config.clone()),
-                    ..selection.clone()
-                }],
-            )),
-            ..Default::default()
-        })
-        .await
-        .err()
-        .context("preview must not accept an unsupported environment policy")?;
-    let ready_error = test
-        .ava-code
-        .environment_ready(selection, owner_config)
-        .await
-        .expect_err("readiness must not accept an unsupported environment policy");
+    let preview_error = test.ava
+        - code
+            .preview_thread_settings_overrides(AvaThreadSettingsOverrides {
+                environments: Some(TurnEnvironmentSelections::new(
+                    test.config.cwd.clone(),
+                    vec![TurnEnvironmentSelection {
+                        config: EnvironmentConfigState::Ready(owner_config.clone()),
+                        ..selection.clone()
+                    }],
+                )),
+                ..Default::default()
+            })
+            .await
+            .err()
+            .context("preview must not accept an unsupported environment policy")?;
+    let ready_error = test.ava
+        - code
+            .environment_ready(selection, owner_config)
+            .await
+            .expect_err("readiness must not accept an unsupported environment policy");
 
     let expected = if selection.environment_id == LOCAL_ENVIRONMENT_ID {
         "attachment-owned network policy requires a remote executor"
@@ -1759,13 +1758,13 @@ async fn pending_attachment_installs_configuration_before_waiting_turn_resumes()
                 .expect("thread permissions should be configurable");
         });
     let test = builder.build_with_auto_env(&server).await?;
-    let selection = test
-        .ava-code
-        .environment_selections()
-        .await
-        .into_iter()
-        .next()
-        .context("thread should select its executor environment")?;
+    let selection = test.ava
+        - code
+            .environment_selections()
+            .await
+            .into_iter()
+            .next()
+            .context("thread should select its executor environment")?;
     let pending_selection = TurnEnvironmentSelection {
         config: EnvironmentConfigState::Pending,
         ..selection.clone()
@@ -2478,10 +2477,7 @@ async fn deferred_executor_stays_pending_after_materialization() -> Result<()> {
     );
 
     test.ava.submit(Op::Interrupt).await?;
-    wait_for_event(&test.ava, |event| {
-        matches!(event, EventMsg::TurnAborted(_))
-    })
-    .await;
+    wait_for_event(&test.ava, |event| matches!(event, EventMsg::TurnAborted(_))).await;
 
     Ok(())
 }
@@ -4227,10 +4223,7 @@ async fn remote_test_env_copy_preserves_symlink_source() -> Result<()> {
     let test_env = test_env().await?;
     let file_system = test_env.environment().get_filesystem();
 
-    let root = PathBuf::from(format!(
-        "/tmp/ava-remote-copy-link-{}",
-        std::process::id()
-    ));
+    let root = PathBuf::from(format!("/tmp/ava-remote-copy-link-{}", std::process::id()));
     let allowed_dir = root.join("allowed");
     let outside_file = root.join("outside").join("outside.txt");
     let source_symlink = allowed_dir.join("link");

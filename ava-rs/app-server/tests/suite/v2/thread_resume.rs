@@ -17,7 +17,6 @@ use app_test_support::rollout_path;
 use app_test_support::test_absolute_path;
 use app_test_support::to_response;
 use app_test_support::write_chatgpt_auth;
-use chrono::Utc;
 use ava_app_server_protocol::ActivePermissionProfile;
 use ava_app_server_protocol::ApprovalsReviewer;
 use ava_app_server_protocol::AskForApproval;
@@ -124,6 +123,7 @@ use ava_state::StateRuntime;
 use ava_utils_absolute_path::AbsolutePathBuf;
 use ava_utils_absolute_path::test_support::PathExt;
 use ava_utils_path_uri::LegacyAppPathString;
+use chrono::Utc;
 use core_test_support::responses;
 use core_test_support::skip_if_no_network;
 use core_test_support::skip_if_remote;
@@ -354,10 +354,7 @@ async fn assert_thread_resume_rejects_writer_owned_by_another_process(
     let secondary_sqlite_home_path = secondary_sqlite_home.path().to_string_lossy();
     let mut secondary = TestAppServer::builder()
         .with_ava_home(ava_home.path())
-        .with_env_overrides(&[(
-            "AVA_SQLITE_HOME",
-            Some(secondary_sqlite_home_path.as_ref()),
-        )])
+        .with_env_overrides(&[("AVA_SQLITE_HOME", Some(secondary_sqlite_home_path.as_ref()))])
         .build_initialized()
         .await?;
     let resume_id = secondary
@@ -2696,12 +2693,7 @@ async fn resume_redaction_fixture(client_name: Option<&str>) -> Result<ThreadRes
         Some("mock_provider"),
         /*git_info*/ None,
     )?;
-    append_resume_redaction_history(
-        ava_home.path(),
-        filename_ts,
-        meta_rfc3339,
-        &conversation_id,
-    )?;
+    append_resume_redaction_history(ava_home.path(), filename_ts, meta_rfc3339, &conversation_id)?;
 
     let mut mcp = TestAppServer::builder()
         .with_ava_home(ava_home.path())

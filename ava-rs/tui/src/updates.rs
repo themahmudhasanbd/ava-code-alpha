@@ -11,12 +11,12 @@ use crate::update_versions::is_source_build_version;
 use crate::updates_cache::VersionInfo;
 use crate::updates_cache::read_version_info;
 use crate::updates_cache::version_filepath;
-use chrono::Duration;
-use chrono::Utc;
 use ava_http_client::ClientRouteClass;
 use ava_http_client::HttpClientFactory;
 use ava_http_client::RouteAwareClientPool;
 use ava_login::default_client::default_headers;
+use chrono::Duration;
+use chrono::Utc;
 use serde::Deserialize;
 use std::path::Path;
 

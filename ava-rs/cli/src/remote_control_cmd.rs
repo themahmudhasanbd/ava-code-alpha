@@ -2,7 +2,6 @@ use std::io::Write;
 use std::time::Duration;
 
 use anyhow::Context;
-use clap::Args;
 use ava_app_server::AppServerRuntimeOptions;
 use ava_app_server::AppServerTransport;
 use ava_app_server::AppServerWebsocketAuthSettings;
@@ -19,6 +18,7 @@ use ava_config::LoaderOverrides;
 use ava_protocol::protocol::SessionSource;
 use ava_utils_absolute_path::AbsolutePathBuf;
 use ava_utils_cli::CliConfigOverrides;
+use clap::Args;
 use serde::Serialize;
 use tokio::sync::watch;
 use tokio::task::JoinHandle;

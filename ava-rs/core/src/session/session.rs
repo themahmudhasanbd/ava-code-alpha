@@ -73,8 +73,7 @@ pub(crate) struct Session {
     pub(crate) guardian_context_mode: GuardianContextMode,
     pub(super) isolation: ava_extension_api::SessionIsolation,
     pub(crate) allowed_tools: Option<Arc<ava_extension_api::AllowedTools>>,
-    pub(crate) windows_sandbox_proxy_settings_mode:
-        ava_sandboxing::WindowsSandboxProxySettingsMode,
+    pub(crate) windows_sandbox_proxy_settings_mode: ava_sandboxing::WindowsSandboxProxySettingsMode,
     pub(super) multi_agent_version: OnceLock<MultiAgentVersion>,
     /// Owns invalidation and serializes refreshes without blocking captured calls.
     pub(super) mcp_refresh: McpRefresh,

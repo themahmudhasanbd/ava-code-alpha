@@ -674,11 +674,7 @@ async fn memories_startup_phase1_uses_live_thread_service_tier_and_detached_meta
     )
     .await;
     context
-        .stream_stage_one_prompt(
-            &test.config,
-            &ava_core::Prompt::default(),
-            &request_context,
-        )
+        .stream_stage_one_prompt(&test.config, &ava_core::Prompt::default(), &request_context)
         .await?;
     let request = wait_for_single_request(&stage_one).await;
     let metadata_header = request
@@ -807,10 +803,10 @@ async fn run_memory_phase_one_model_request_test(
         test.config.model_provider.clone(),
         Some(test.thread_manager.auth_manager()),
     ));
-    let db = test
-        .ava-code
-        .state_db()
-        .ok_or_else(|| anyhow::anyhow!("state db should be enabled for memory startup test"))?;
+    let db = test.ava
+        - code
+            .state_db()
+            .ok_or_else(|| anyhow::anyhow!("state db should be enabled for memory startup test"))?;
     let source_id = seed_stage1_candidate(
         db.as_ref(),
         home.path(),
@@ -966,10 +962,10 @@ async fn run_memory_phase_two_model_request_test(
         test.config.model_provider.clone(),
         Some(test.thread_manager.auth_manager()),
     ));
-    let db = test
-        .ava-code
-        .state_db()
-        .ok_or_else(|| anyhow::anyhow!("state db should be enabled for memory startup test"))?;
+    let db = test.ava
+        - code
+            .state_db()
+            .ok_or_else(|| anyhow::anyhow!("state db should be enabled for memory startup test"))?;
     let source_id = seed_stage1_output(
         db.as_ref(),
         home.path(),
@@ -1192,8 +1188,7 @@ impl ModelProvider for MockMemoryModelProvider {
         ava_home: PathBuf,
         config_model_catalog: Option<ModelsResponse>,
     ) -> ava_models_manager::manager::SharedModelsManager {
-        self.delegate
-            .models_manager(ava_home, config_model_catalog)
+        self.delegate.models_manager(ava_home, config_model_catalog)
     }
 }
 

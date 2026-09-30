@@ -307,13 +307,11 @@ async fn root_service_tier_change_updates_existing_subagent(
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn evicted_role_subagent_uses_root_service_tier_after_reload() -> Result<()> {
     let server = start_mock_server().await;
-    let mut builder = test_ava()
-        .with_model("gpt-5.6-sol")
-        .with_config(|config| {
-            config.service_tier = Some("priority".to_string());
-            config.multi_agent_v2.max_concurrent_threads_per_session = 2;
-            configure_priority_role(config);
-        });
+    let mut builder = test_ava().with_model("gpt-5.6-sol").with_config(|config| {
+        config.service_tier = Some("priority".to_string());
+        config.multi_agent_v2.max_concurrent_threads_per_session = 2;
+        configure_priority_role(config);
+    });
     let test = builder.build_with_auto_env(&server).await?;
     let mut created_threads = test.thread_manager.subscribe_thread_created();
 

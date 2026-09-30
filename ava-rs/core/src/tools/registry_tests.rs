@@ -360,14 +360,13 @@ fn registry_records_reserved_exec_command_when_a_matching_tool_exists() {
 #[test]
 fn registry_allows_identical_names_in_different_namespaces() {
     let handler = |tool_name| Arc::new(TestHandler { tool_name }) as Arc<dyn CoreToolRuntime>;
-    let mut registry = ToolRegistry::from_tools([handler(ava_tools::ToolName::namespaced(
-        "first", "lookup",
-    ))]);
+    let mut registry =
+        ToolRegistry::from_tools([handler(ava_tools::ToolName::namespaced("first", "lookup"))]);
 
     assert!(
-        registry.register_external(handler(ava_tools::ToolName::namespaced(
-            "second", "lookup",
-        )))
+        registry.register_external(handler(
+            ava_tools::ToolName::namespaced("second", "lookup",)
+        ))
     );
     assert_eq!(registry.first_collision(), None);
 }

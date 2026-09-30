@@ -22,7 +22,7 @@ impl ChatWidget {
                 actions: vec![Box::new(|tx| {
                     tx.send(AppEvent::PersistProviderSelection {
                         provider: "antigravity".to_string(),
-                        model: Some("gemini-3.8-flash".to_string()),
+                        model: None,
                     });
                 })],
                 dismiss_on_select: true,
@@ -539,9 +539,7 @@ impl ChatWidget {
             let effort_label = Self::reasoning_effort_label(effort);
             format!("⚠ {effort_label} reasoning effort can quickly consume Plus plan rate limits.")
         });
-        let warn_for_model = preset.model.starts_with("gpt-5.1-ava")
-            || preset.model.starts_with("gpt-5.1-ava-max")
-            || preset.model.starts_with("gpt-5.2");
+        let warn_for_model = false;
 
         let mut all_choices: Vec<ReasoningEffortConfig> = supported
             .iter()

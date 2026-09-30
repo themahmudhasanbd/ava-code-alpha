@@ -68,6 +68,13 @@ pub trait AuthProvider: Send + Sync {
             Ok(request)
         })
     }
+
+    /// Advances to the next configured credential before a retry.
+    ///
+    /// Providers without credential rotation keep the default no-op behavior.
+    fn rotate_credentials(&self) -> bool {
+        false
+    }
 }
 
 pub type AuthProviderFuture<'a> =

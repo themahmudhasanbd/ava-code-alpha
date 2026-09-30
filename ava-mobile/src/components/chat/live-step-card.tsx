@@ -10,46 +10,60 @@ import {
 } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import {
-  Brain,
-  ChevronDown,
-  ChevronRight,
   CheckCircle2,
-  ListChecks,
-  AlertTriangle,
-  Zap,
+  ChevronRight,
+  OctagonX,
+  PauseCircle,
   type LucideIcon,
 } from "lucide-react-native";
-import { Shimmer } from "@/components/ai-elements/shimmer";
 import { RuntimeDottedIndicator } from "@/components/ai-elements/dotted-indicator";
 import { formatDuration } from "@/lib/format";
 import type { ChatMessage, MessagePart } from "@/core/types";
 import { useTheme } from "@/theme/colors";
-import { displayToolName, getToolIcon, getToolSubtitle } from "./tool-icons";
+import { displayToolName, getToolSubtitle } from "./tool-icons";
 import { font, mono } from "@/theme/fonts";
+import { completionText, stoppedText } from "./intent";
 
 interface Props {
   message: ChatMessage;
   live: boolean;
   sessionId?: string;
+  intent?: string;
+  summary?: string;
   onOpenTimeline?: (messageId?: string) => void;
 }
 
+type TurnStatus = "running" | "completed" | "stopped" | "failed";
+
+/**
+ * Simplified agent step overview card.
+ *
+ * Single-line summary: status pill + intent title + step count.
+ * Details (last steps) live behind an expand toggle; full detail in Timeline.
+ * - running: blue pulsing pill, intent as title, auto-expanded
+ * - completed: green pill, dynamic "{intent} completed" / core summary, auto-collapsed
+ * - stopped: amber pill, "{intent} — stopped (n/m steps)", auto-collapsed
+ * - failed: red pill, "{n} steps failed", auto-collapsed
+ */
 export function LiveStepOverviewCard({
   message,
   live,
   sessionId,
+  intent = "Working",
+  summary,
   onOpenTimeline,
 }: Props) {
-  const { colors, isDark } = useTheme();
+  const { colors } = useTheme();
   const navigation = useNavigation<any>();
 
-  // Extract genuine workflow parts (reasoning, tools, plans, errors/warnings)
+  // Genuine workflow parts (reasoning, tools, plans, error/warning notices)
   const workflowParts = message.parts.filter(
     (p) =>
       p.kind === "tool" ||
       p.kind === "reasoning" ||
       p.kind === "plan" ||
-      (p.kind === "notice" && (p.meta?.tone === "error" || p.meta?.tone === "warning" || p.status === "error"))
+      (p.kind === "notice" &&
+        (p.meta?.tone === "error" || p.meta?.tone === "warning" || p.status === "error")),
   );
 
   // Never render until at least one workflow step has actually started
@@ -57,9 +71,32 @@ export function LiveStepOverviewCard({
     return null;
   }
 
-  // Find latest active or last completed step
   const latestPart: MessagePart | undefined = workflowParts[workflowParts.length - 1];
   const isRunning = live && (latestPart?.status === "running" || latestPart == null);
+
+  const toolCount = workflowParts.filter((s) => s.kind === "tool").length;
+  const completedCount = workflowParts.filter((s) => s.status === "done").length;
+  const errorCount = workflowParts.filter((s) => s.status === "error").length;
+  const unfinishedCount = workflowParts.filter((s) => s.status === "running").length;
+  const duration = message.stats?.durationMs;
+
+  const hasFinalText = message.parts.some(
+    (p) => p.kind === "text" && p.text && p.text.trim().length > 0,
+  );
+  const wasStoppedFlag = message.parts.some((p) => p.meta?.stopped === true);
+  const isFatalFailure = !isRunning && !hasFinalText && errorCount > 0 && completedCount === 0;
+
+  // Derive turn status: running > failed > stopped > completed
+  let turnStatus: TurnStatus;
+  if (isRunning) {
+    turnStatus = "running";
+  } else if (isFatalFailure) {
+    turnStatus = "failed";
+  } else if (wasStoppedFlag || (!hasFinalText && unfinishedCount > 0)) {
+    turnStatus = "stopped";
+  } else {
+    turnStatus = "completed";
+  }
 
   // Auto-expanded while running; collapsed when complete (user can toggle)
   const [userExpanded, setUserExpanded] = useState<boolean | null>(null);
@@ -72,39 +109,35 @@ export function LiveStepOverviewCard({
     setUserExpanded((prev) => (prev === null ? !isRunning : !prev));
   };
 
-  // Derive step title and icon
-  let currentTitle = "Analyzing request…";
-  let StepIcon: LucideIcon = Zap;
+  // Status pill config
+  const statusConfig: Record<TurnStatus, { label: string; color: string; Icon: LucideIcon | null }> = {
+    running: { label: "Running", color: colors.primary, Icon: null },
+    completed: { label: "Completed", color: colors.success, Icon: CheckCircle2 },
+    stopped: { label: "Stopped", color: colors.warning, Icon: PauseCircle },
+    failed: { label: "Failed", color: colors.destructive, Icon: OctagonX },
+  };
+  const { label: statusLabel, color: statusColor, Icon: StatusIcon } = statusConfig[turnStatus];
 
-  if (latestPart) {
-    if (latestPart.kind === "reasoning") {
-      StepIcon = Brain;
-      currentTitle = isRunning ? "Thinking…" : "Reasoning complete";
-    } else if (latestPart.kind === "tool") {
-      StepIcon = getToolIcon(latestPart.toolName, latestPart.meta);
-      currentTitle = displayToolName(latestPart.toolName || "Terminal");
-    } else if (latestPart.kind === "plan") {
-      StepIcon = ListChecks;
-      currentTitle = latestPart.text || "Execution plan";
-    } else if (latestPart.kind === "notice") {
-      currentTitle = latestPart.text || "System notice";
-    }
+  // Title per status
+  let title: string;
+  if (turnStatus === "running") {
+    title = `${intent}…`;
+  } else if (turnStatus === "completed") {
+    title = completionText(intent, summary);
+  } else if (turnStatus === "stopped") {
+    title = stoppedText(intent, completedCount, workflowParts.length);
+  } else {
+    title = `${errorCount} step${errorCount === 1 ? "" : "s"} failed`;
   }
 
-  const duration = message.stats?.durationMs;
-  const toolCount = workflowParts.filter((s) => s.kind === "tool").length;
-  const completedCount = workflowParts.filter((s) => s.status === "done").length;
-  const errorCount = workflowParts.filter((s) => s.status === "error").length;
-
-  const plan = [...workflowParts].reverse().find((s) => s.kind === "plan");
-  const planSteps = plan?.meta?.steps ?? [];
-  const donePlanSteps = planSteps.filter((s) => s.status === "done").length;
-  const progressPercent = Math.round((completedCount / Math.max(1, workflowParts.length)) * 100);
-
-  // Check if turn ended with final text response or normal completion
-  const hasFinalText = message.parts.some((p) => p.kind === "text" && p.text && p.text.trim().length > 0);
-  const isFatalFailure = !isRunning && !hasFinalText && errorCount > 0 && completedCount === 0;
-  const isComplete = !isRunning && !isFatalFailure;
+  const subtitle =
+    turnStatus === "running"
+      ? `${completedCount}/${workflowParts.length} steps`
+      : turnStatus === "completed"
+      ? `${workflowParts.length} step${workflowParts.length === 1 ? "" : "s"}${duration ? ` · ${formatDuration(duration)}` : ""}`
+      : turnStatus === "stopped"
+      ? `${completedCount}/${workflowParts.length} steps done`
+      : `${errorCount} failed · ${completedCount} done`;
 
   const handleOpenTimeline = () => {
     if (onOpenTimeline) {
@@ -122,100 +155,50 @@ export function LiveStepOverviewCard({
       style={[
         styles.container,
         {
-          backgroundColor: "transparent",
           borderColor: colors.border,
+          ...(turnStatus === "running" ? { borderColor: colors.primary } : {}),
+          ...(turnStatus === "failed" ? { borderColor: "rgba(239, 68, 68, 0.3)" } : {}),
         },
-        isRunning && [
-          styles.containerRunning,
-          {
-            borderColor: colors.primary,
-            backgroundColor: "transparent",
-          },
-        ],
-        isFatalFailure && [
-          styles.containerFailed,
-          {
-            borderColor: "rgba(239, 68, 68, 0.3)",
-            backgroundColor: "transparent",
-          },
-        ],
       ]}
     >
-      {/* Top row: Icon + Info + Action */}
+      {/* Single-line header: status pill + intent + meta */}
       <TouchableOpacity
         style={styles.cardHeader}
         onPress={toggleExpand}
         activeOpacity={0.7}
       >
-        {/* Step Icon */}
-        <View
-          style={[
-            styles.iconWrapper,
-            {
-              backgroundColor: "transparent",
-              borderColor: colors.border,
-            },
-          ]}
-        >
-          <StepIcon
-            size={15}
-            color={
-              isRunning
-                ? colors.primary
-                : isFatalFailure
-                ? colors.destructive
-                : isComplete
-                ? colors.success
-                : colors.mutedForeground
-            }
-            strokeWidth={2}
-          />
-        </View>
-
-        {/* Step info */}
-        <View style={styles.centerInfo}>
-          <View style={styles.titleRow}>
-            {isRunning ? (
-              <Shimmer style={[styles.stepTitleLive, mono("bold"), { color: colors.primary }]}>
-                {currentTitle}
-              </Shimmer>
-            ) : (
-              <Text
-                style={[styles.stepTitle, mono("bold"), { color: colors.foreground }]}
-                numberOfLines={1}
-              >
-                {currentTitle}
-              </Text>
-            )}
-          </View>
-
-          <Text style={[styles.summaryText, font("regular"), { color: colors.mutedForeground }]}>
-            {isRunning
-              ? `${workflowParts.length} step${workflowParts.length === 1 ? "" : "s"} · working now`
-              : isFatalFailure
-              ? `${errorCount} step${errorCount === 1 ? "" : "s"} failed`
-              : `${completedCount} step${completedCount === 1 ? "" : "s"}${toolCount > 0 ? ` · ${toolCount} tool${toolCount === 1 ? "" : "s"}` : ""}${duration ? ` · ${formatDuration(duration)}` : ""}`}
+        {/* Status pill */}
+        <View style={[styles.statusPill, { borderColor: statusColor }]}>
+          {turnStatus === "running" ? (
+            <View style={[styles.pulseDot, { backgroundColor: statusColor }]} />
+          ) : StatusIcon ? (
+            <StatusIcon size={11} color={statusColor} strokeWidth={2.5} />
+          ) : null}
+          <Text style={[styles.statusPillText, mono("bold"), { color: statusColor }]}>
+            {statusLabel.toUpperCase()}
           </Text>
         </View>
 
-        {/* Right Action */}
-        <View style={styles.rightAction}>
-          {isRunning ? (
-            <ActivityIndicator size="small" color={colors.primary} />
-          ) : isFatalFailure ? (
-            <AlertTriangle size={15} color={colors.destructive} />
-          ) : isComplete ? (
-            <CheckCircle2 size={15} color={colors.success} />
-          ) : null}
+        {/* Intent title + subtitle */}
+        <View style={styles.centerInfo}>
+          <Text
+            style={[styles.title, font("medium"), { color: colors.foreground }]}
+            numberOfLines={1}
+          >
+            {title}
+          </Text>
+          <Text style={[styles.subtitle, font("regular"), { color: colors.mutedForeground }]}>
+            {subtitle}
+          </Text>
+        </View>
 
+        {/* Right: spinner / timeline link */}
+        <View style={styles.rightAction}>
+          {turnStatus === "running" && (
+            <ActivityIndicator size="small" color={colors.primary} />
+          )}
           <TouchableOpacity
-            style={[
-              styles.pillButton,
-              {
-                backgroundColor: "transparent",
-                borderColor: colors.border,
-              },
-            ]}
+            style={[styles.pillButton, { borderColor: colors.border }]}
             onPress={handleOpenTimeline}
             activeOpacity={0.7}
           >
@@ -233,29 +216,23 @@ export function LiveStepOverviewCard({
           style={[
             styles.progressFill,
             {
-              width: `${Math.max(4, isComplete ? 100 : progressPercent)}%`,
-              backgroundColor: isFatalFailure
-                ? colors.destructive
-                : isComplete
-                ? colors.success
-                : colors.primary,
+              width: `${Math.max(4, Math.round((completedCount / Math.max(1, workflowParts.length)) * 100))}%`,
+              backgroundColor: statusColor,
             },
           ]}
         />
       </View>
 
-      {/* Expanded details: auto-expanded when running, collapsed when complete */}
+      {/* Expanded: recent steps (collapsed by default when done) */}
       {isExpanded && (
         <View style={[styles.expandedSection, { borderTopColor: colors.border }]}>
-          {isRunning ? (
+          {turnStatus === "running" && latestPart && (
             <RuntimeDottedIndicator
-              label={currentTitle}
-              subLabel={getToolSubtitle(latestPart) || latestPart?.text || "Processing step…"}
+              label={displayToolName(latestPart.toolName || "tool", latestPart.meta)}
+              subLabel={getToolSubtitle(latestPart) || latestPart.text || "Processing step…"}
               size="sm"
             />
-          ) : null}
-
-          {/* Quick steps list */}
+          )}
           <View style={styles.stepsList}>
             {workflowParts.slice(-4).map((part, pIdx) => {
               const partRunning = live && part.status === "running";
@@ -282,7 +259,7 @@ export function LiveStepOverviewCard({
                     numberOfLines={1}
                   >
                     {part.kind === "tool"
-                      ? displayToolName(part.toolName || "tool")
+                      ? displayToolName(part.toolName || "tool", part.meta)
                       : part.kind === "reasoning"
                       ? "Reasoning"
                       : part.text || "Step"}
@@ -294,151 +271,101 @@ export function LiveStepOverviewCard({
           </View>
         </View>
       )}
-
-      {/* Bottom stats row — shown when complete */}
-      {!isRunning && duration ? (
-        <View style={[styles.statsRow, { borderTopColor: colors.border }]}>
-          <Text style={[styles.statItem, mono("regular"), { color: colors.mutedForeground }]}>
-            {formatDuration(duration)}
-          </Text>
-          <View style={[styles.statDot, { backgroundColor: colors.border }]} />
-          <Text style={[styles.statItem, mono("regular"), { color: colors.mutedForeground }]}>
-            {toolCount} tool{toolCount === 1 ? "" : "s"}
-          </Text>
-          {planSteps.length > 0 && (
-            <>
-              <View style={[styles.statDot, { backgroundColor: colors.border }]} />
-              <Text style={[styles.statItem, mono("regular"), { color: colors.mutedForeground }]}>
-                {donePlanSteps}/{planSteps.length} plan
-              </Text>
-            </>
-          )}
-          {message.stats?.totalTokens ? (
-            <>
-              <View style={[styles.statDot, { backgroundColor: colors.border }]} />
-              <Text style={[styles.statItem, mono("regular"), { color: colors.mutedForeground }]}>
-                {(message.stats.totalTokens / 1000).toFixed(1)}k tok
-              </Text>
-            </>
-          ) : null}
-        </View>
-      ) : null}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
+    borderWidth: 1,
     borderRadius: 12,
-    borderWidth: 1,
-    padding: 10,
-    marginVertical: 6,
-  },
-  containerRunning: {
-    borderWidth: 1,
-  },
-  containerFailed: {
-    borderWidth: 1,
+    overflow: "hidden",
+    marginTop: 8,
   },
   cardHeader: {
     flexDirection: "row",
     alignItems: "center",
+    paddingHorizontal: 12,
+    paddingVertical: 10,
     gap: 10,
   },
-  iconWrapper: {
-    width: 28,
-    height: 28,
-    borderRadius: 7,
-    borderWidth: 1,
+  statusPill: {
+    flexDirection: "row",
     alignItems: "center",
-    justifyContent: "center",
+    gap: 5,
+    borderWidth: 1,
+    borderRadius: 999,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+  },
+  statusPillText: {
+    fontSize: 10,
+    letterSpacing: 0.8,
+  },
+  pulseDot: {
+    width: 7,
+    height: 7,
+    borderRadius: 999,
   },
   centerInfo: {
     flex: 1,
-    gap: 2,
+    minWidth: 0,
   },
-  titleRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
+  title: {
+    fontSize: 15,
   },
-  stepTitle: {
-    fontSize: 12.5,
-    flex: 1,
-    fontWeight: "600",
-  },
-  stepTitleLive: {
-    fontSize: 12.5,
-    flex: 1,
-  },
-  summaryText: {
+  subtitle: {
     fontSize: 11,
+    marginTop: 2,
   },
   rightAction: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 6,
+    gap: 8,
   },
   pillButton: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 2,
-    paddingHorizontal: 8,
-    paddingVertical: 3.5,
-    borderRadius: 8,
     borderWidth: 1,
+    borderRadius: 999,
+    paddingHorizontal: 9,
+    paddingVertical: 5,
+    gap: 2,
   },
   pillButtonText: {
     fontSize: 11,
   },
   progressTrack: {
-    height: 2.5,
-    marginTop: 8,
-    borderRadius: 2,
+    height: 3,
+    marginHorizontal: 12,
+    borderRadius: 999,
     overflow: "hidden",
   },
   progressFill: {
-    height: 2.5,
-    borderRadius: 2,
+    height: "100%",
+    borderRadius: 999,
   },
   expandedSection: {
-    marginTop: 8,
-    paddingTop: 8,
-    borderTopWidth: StyleSheet.hairlineWidth,
-    gap: 6,
+    borderTopWidth: 1,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    gap: 8,
   },
   stepsList: {
-    gap: 4,
-    paddingTop: 4,
+    gap: 6,
   },
   stepRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 6,
+    gap: 8,
   },
   stepDot: {
-    width: 4.5,
-    height: 4.5,
-    borderRadius: 2.25,
+    width: 7,
+    height: 7,
+    borderRadius: 999,
   },
   stepRowText: {
-    fontSize: 11,
+    fontSize: 12,
     flex: 1,
-  },
-  statsRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    marginTop: 6,
-    paddingTop: 6,
-    borderTopWidth: StyleSheet.hairlineWidth,
-  },
-  statItem: {
-    fontSize: 10.5,
-  },
-  statDot: {
-    width: 3,
-    height: 3,
-    borderRadius: 1.5,
   },
 });

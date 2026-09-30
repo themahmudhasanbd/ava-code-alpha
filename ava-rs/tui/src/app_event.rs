@@ -100,13 +100,8 @@ pub(crate) struct ManagedWorktreeCreated {
     pub(crate) source_cwd: AbsolutePathBuf,
     pub(crate) mode: ManagedWorktreeMode,
     pub(crate) name: Option<String>,
-    pub(crate) result: Result<
-        (
-            ava_worktree::WorktreeManager,
-            ava_worktree::ManagedWorktree,
-        ),
-        String,
-    >,
+    pub(crate) result:
+        Result<(ava_worktree::WorktreeManager, ava_worktree::ManagedWorktree), String>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

@@ -5,7 +5,6 @@ use super::*;
 use crate::pager_overlay::TranscriptHistoryState;
 use app_test_support::create_fake_paginated_rollout;
 use app_test_support::rollout_path;
-use chrono::TimeZone;
 use ava_app_server_protocol::ThreadItemsListResponse;
 use ava_protocol::items::AgentMessageContent;
 use ava_protocol::items::AgentMessageItem;
@@ -15,6 +14,7 @@ use ava_protocol::protocol::ItemCompletedEvent;
 use ava_protocol::protocol::TurnCompleteEvent;
 use ava_protocol::user_input::UserInput as CoreUserInput;
 use ava_state::SqliteConfig;
+use chrono::TimeZone;
 use pretty_assertions::assert_eq;
 
 pub(super) async fn completed_history_app(

@@ -23,8 +23,7 @@ fn inject_permission_profile_env_overrides_policy_value() {
     );
 
     assert_eq!(
-        env.get(AVA_PERMISSION_PROFILE_ENV_VAR)
-            .map(String::as_str),
+        env.get(AVA_PERMISSION_PROFILE_ENV_VAR).map(String::as_str),
         Some("current-profile")
     );
 }

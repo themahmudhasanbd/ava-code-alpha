@@ -19,9 +19,9 @@ use age::secrecy::ExposeSecret;
 use age::secrecy::SecretString;
 use anyhow::Context;
 use anyhow::Result;
+use ava_keyring_store::KeyringStore;
 use base64::Engine as _;
 use base64::engine::general_purpose::STANDARD as BASE64_STANDARD;
-use ava_keyring_store::KeyringStore;
 use rand::TryRngCore;
 use rand::rngs::OsRng;
 use serde::Deserialize;
@@ -567,12 +567,7 @@ mod tests {
                 .exists()
         );
         assert!(!ava_home.path().join("secrets").join("local.age").exists());
-        assert!(
-            ava_home
-                .path()
-                .join("secrets/gateway_oauth.age")
-                .is_file()
-        );
+        assert!(ava_home.path().join("secrets/gateway_oauth.age").is_file());
         // Primary-auth key removal must not make the independent gateway file unreadable.
         keyring
             .delete(

@@ -135,10 +135,7 @@ async fn startup_submission_redirect_to_agents_preserves_only_editable_text() {
 async fn startup_submission_thread_change_preserves_only_editable_text() {
     let mut pump = tests::quiet_startup_test_pump();
     let mut tui = crate::tui::test_support::make_test_tui().expect("create test terminal");
-    for destination in [
-        ava_protocol::ThreadId::new(),
-        ava_protocol::ThreadId::new(),
-    ] {
+    for destination in [ava_protocol::ThreadId::new(), ava_protocol::ThreadId::new()] {
         let selection = SessionSelection::Resume(crate::resume_picker::SessionTarget {
             path: None,
             thread_id: destination,

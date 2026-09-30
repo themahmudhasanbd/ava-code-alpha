@@ -8,8 +8,7 @@ use super::*;
 
 #[tokio::test]
 async fn sqlite_sink_filters_noisy_targets_without_dropping_useful_diagnostics() {
-    let ava_home =
-        std::env::temp_dir().join(format!("ava-state-log-db-filter-{}", Uuid::new_v4()));
+    let ava_home = std::env::temp_dir().join(format!("ava-state-log-db-filter-{}", Uuid::new_v4()));
     let _cleanup = scopeguard::guard(ava_home.clone(), |ava_home| {
         let _ = std::fs::remove_dir_all(ava_home);
     });

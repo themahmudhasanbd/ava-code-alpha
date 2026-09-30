@@ -56,8 +56,7 @@ pub fn zsh_fork_runtime(test_name: &str) -> Result<Option<ZshForkRuntime>> {
         );
         return Ok(None);
     }
-    let Ok(main_execve_wrapper_exe) = ava_utils_cargo_bin::cargo_bin("ava-execve-wrapper")
-    else {
+    let Ok(main_execve_wrapper_exe) = ava_utils_cargo_bin::cargo_bin("ava-execve-wrapper") else {
         eprintln!("skipping {test_name}: unable to resolve `ava-execve-wrapper` binary");
         return Ok(None);
     };

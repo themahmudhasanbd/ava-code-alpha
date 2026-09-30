@@ -509,8 +509,7 @@ async fn run_cloud_plugin_projection_scenarios() -> anyhow::Result<()> {
             })
             .with_priority(1)
             .mount(&plugin_server).await;
-        let declaration =
-            json!({"url": format!("{}/api/ava/ps/mcp", plugin_mcp.chatgpt_base_url)});
+        let declaration = json!({"url": format!("{}/api/ava/ps/mcp", plugin_mcp.chatgpt_base_url)});
         let cloud = Arc::new(CloudCatalogFixture {
             reply: if cloud_empty {
                 Ok(PluginCatalog::default())
@@ -561,13 +560,13 @@ async fn run_cloud_plugin_projection_scenarios() -> anyhow::Result<()> {
             });
         let test = builder.build(&server).await?;
         if installed {
-            let selection = test
-                .ava-code
-                .environment_selections()
-                .await
-                .into_iter()
-                .next()
-                .context("selected environment missing")?;
+            let selection = test.ava
+                - code
+                    .environment_selections()
+                    .await
+                    .into_iter()
+                    .next()
+                    .context("selected environment missing")?;
             let root = selection.cwd.join("notes")?;
             let root_path = root.to_abs_path()?;
             fs::create_dir_all(root_path.join(".ava-plugin"))?;
@@ -672,11 +671,11 @@ async fn run_cloud_plugin_projection_scenarios() -> anyhow::Result<()> {
             usize::from(cloud_enabled),
             "{case}"
         );
-        let state = test
-            .ava-code
-            .thread_extension_data()
-            .get::<PluginsThreadState>()
-            .context("plugin state missing")?;
+        let state = test.ava
+            - code
+                .thread_extension_data()
+                .get::<PluginsThreadState>()
+                .context("plugin state missing")?;
         assert_eq!(
             state.cloud_catalog().is_some(),
             cloud_enabled && cloud_available,

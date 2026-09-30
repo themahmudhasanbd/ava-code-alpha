@@ -233,11 +233,7 @@ pub(crate) async fn prepare_exec_request_with_telemetry(
             helper_args.push(arg0.clone());
             helper_args.extend(params.argv.iter().cloned());
             (
-                runtime_paths
-                    .ava_self_exe
-                    .as_path()
-                    .as_os_str()
-                    .to_owned(),
+                runtime_paths.ava_self_exe.as_path().as_os_str().to_owned(),
                 helper_args,
             )
         },

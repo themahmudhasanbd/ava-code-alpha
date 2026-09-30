@@ -14,7 +14,6 @@ use std::path::Path;
 use std::path::PathBuf;
 use std::time::Duration;
 
-use chrono::DateTime;
 use ava_app_server_protocol::project_rollout_line;
 use ava_protocol::ThreadId;
 use ava_protocol::protocol::InternalSessionSource;
@@ -24,6 +23,7 @@ use ava_protocol::protocol::ThreadHistoryMode;
 use ava_protocol::protocol::ThreadSource;
 use ava_rollout::RolloutItem;
 use ava_rollout::RolloutLine;
+use chrono::DateTime;
 use serde::Serialize;
 use tokio::fs::File;
 use tokio::io::AsyncBufReadExt;
@@ -1293,9 +1293,7 @@ async fn find_rollout_paths(root: &Path) -> ThreadStoreResult<Vec<PathBuf>> {
 
 async fn find_all_rollout_paths(ava_home: &Path) -> ThreadStoreResult<Vec<PathBuf>> {
     let mut paths = find_rollout_paths(&ava_home.join(ava_rollout::SESSIONS_SUBDIR)).await?;
-    paths.extend(
-        find_rollout_paths(&ava_home.join(ava_rollout::ARCHIVED_SESSIONS_SUBDIR)).await?,
-    );
+    paths.extend(find_rollout_paths(&ava_home.join(ava_rollout::ARCHIVED_SESSIONS_SUBDIR)).await?);
     Ok(paths)
 }
 

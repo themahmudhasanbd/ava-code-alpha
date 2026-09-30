@@ -7,10 +7,7 @@ impl ChatWidget {
         Self::new_with_op_target(common, AvaOpTarget::AppEvent)
     }
 
-    pub(super) fn new_with_op_target(
-        common: ChatWidgetInit,
-        ava_op_target: AvaOpTarget,
-    ) -> Self {
+    pub(super) fn new_with_op_target(common: ChatWidgetInit, ava_op_target: AvaOpTarget) -> Self {
         let ChatWidgetInit {
             config,
             local_settings,

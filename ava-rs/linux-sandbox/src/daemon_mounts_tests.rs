@@ -89,30 +89,14 @@ fn unrelated_namespace_mount_does_not_hide_a_socket_alias() {
 #[test]
 fn rejects_alias_when_tmp_is_itself_a_bind_mount() {
     let mounts = b"1 0 0:1 / / rw - ext4 disk rw\n2 1 0:1 /backing/tmp /tmp rw - ext4 disk rw\n";
-    assert!(
-        check_mounts(
-            Path::new("/tmp/ava-daemon-1000"),
-            "0:1",
-            Some("2"),
-            mounts
-        )
-        .is_err()
-    );
+    assert!(check_mounts(Path::new("/tmp/ava-daemon-1000"), "0:1", Some("2"), mounts).is_err());
     // A hidden deeper mount must not override the actual /tmp backing location.
     let hidden = [
         mounts.as_slice(),
         b"3 1 0:1 /tmp/ava-daemon-1000 /tmp/ava-daemon-1000 rw - ext4 disk rw\n",
     ]
     .concat();
-    assert!(
-        check_mounts(
-            Path::new("/tmp/ava-daemon-1000"),
-            "0:1",
-            Some("2"),
-            &hidden
-        )
-        .is_err()
-    );
+    assert!(check_mounts(Path::new("/tmp/ava-daemon-1000"), "0:1", Some("2"), &hidden).is_err());
 }
 
 #[test]

@@ -63,10 +63,7 @@ fn command_scrubber_removes_names_from_real_child_environment() {
                 "OpenAI_Workload_Identity_Context",
                 r#"{"instance_id":"box-one"}"#,
             )
-            .env(
-                "Ava_Exec_Server_Noise_Auth_Token",
-                "inherited-noise-token",
-            )
+            .env("Ava_Exec_Server_Noise_Auth_Token", "inherited-noise-token")
             .output()
             .expect("run inherited-environment test process");
         assert!(

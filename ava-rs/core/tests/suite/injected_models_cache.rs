@@ -7,8 +7,6 @@ use std::sync::atomic::AtomicUsize;
 use std::sync::atomic::Ordering;
 
 use anyhow::Result;
-use base64::Engine;
-use chrono::Utc;
 use ava_http_client::HttpClientFactory;
 use ava_login::AuthManager;
 use ava_login::AvaAuth;
@@ -33,6 +31,8 @@ use ava_protocol::openai_models::ModelsResponse;
 use ava_protocol::protocol::EventMsg;
 use ava_protocol::protocol::ThreadSettingsOverrides;
 use ava_protocol::user_input::UserInput;
+use base64::Engine;
+use chrono::Utc;
 use core_test_support::responses;
 use core_test_support::responses::ev_assistant_message;
 use core_test_support::responses::ev_completed;

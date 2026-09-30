@@ -485,8 +485,7 @@ impl CompactionAnalyticsAttempt {
                 strategy: CompactionStrategy::Memento,
                 status,
                 ava_error_kind: ava_error.map(Into::into),
-                ava_error_http_status_code: ava_error
-                    .and_then(AvaErr::http_status_code_value),
+                ava_error_http_status_code: ava_error.and_then(AvaErr::http_status_code_value),
                 active_context_tokens_before,
                 active_context_tokens_after,
                 retained_image_count,

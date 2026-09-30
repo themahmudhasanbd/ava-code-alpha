@@ -22,6 +22,7 @@ use crate::tools::handlers::PlanHandler;
 use crate::tools::handlers::ReadMcpResourceHandler;
 use crate::tools::handlers::RequestPermissionsHandler;
 use crate::tools::handlers::RequestPluginInstallHandler;
+use crate::tools::handlers::AttachMediaHandler;
 use crate::tools::handlers::RequestUserInputAsyncHandler;
 use crate::tools::handlers::RequestUserInputHandler;
 use crate::tools::handlers::SendMessageToUserAsyncHandler;
@@ -1102,6 +1103,9 @@ fn add_core_utility_tools(context: &CoreToolPlanContext<'_>, registry: &mut Tool
         registry.add(PlanHandler);
         registry.add(TodoWriteHandler);
     }
+
+    // Agent media attachments for the final answer.
+    registry.add(AttachMediaHandler);
 
     if features.enabled(Feature::DeferredExecutor) {
         registry.add(

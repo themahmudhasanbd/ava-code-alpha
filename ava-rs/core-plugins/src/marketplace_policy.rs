@@ -294,8 +294,7 @@ pub(crate) fn configured_plugins_from_stack(
     config_layer_stack: &ConfigLayerStack,
     ava_home: &Path,
 ) -> HashMap<String, PluginConfig> {
-    let Some(effective_config) = policy_filtered_plugin_config(config_layer_stack, ava_home)
-    else {
+    let Some(effective_config) = policy_filtered_plugin_config(config_layer_stack, ava_home) else {
         return HashMap::new();
     };
     let Some(plugins_value) = effective_config.get("plugins") else {

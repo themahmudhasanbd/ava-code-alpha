@@ -112,18 +112,17 @@ async fn submit_turn(
     prompt: &str,
     effort: Option<ReasoningEffort>,
 ) -> Result<()> {
-    ava
-        .start_or_steer_turn(
-            TurnInputRequest::user_input(vec![UserInput::Text {
-                text: prompt.to_string(),
-                text_elements: Vec::new(),
-            }])
-            .with_thread_settings(ThreadSettingsOverrides {
-                effort: effort.map(Some),
-                ..Default::default()
-            }),
-        )
-        .await?;
+    ava.start_or_steer_turn(
+        TurnInputRequest::user_input(vec![UserInput::Text {
+            text: prompt.to_string(),
+            text_elements: Vec::new(),
+        }])
+        .with_thread_settings(ThreadSettingsOverrides {
+            effort: effort.map(Some),
+            ..Default::default()
+        }),
+    )
+    .await?;
     wait_for_event(ava, |event| matches!(event, EventMsg::TurnComplete(_))).await;
     Ok(())
 }

@@ -696,10 +696,7 @@ async fn compact_voice_meters_keep_real_speaker_history_when_the_microphone_is_m
     let meters = live.lines().find(|line| line.contains("mic")).unwrap();
     assert!(meters.contains("mic ▁▃▄▅▇█"));
     assert!(meters.contains("ava █▇▅▃▂▁"));
-    assert_eq!(
-        live.lines().filter(|line| line.contains("ava")).count(),
-        1
-    );
+    assert_eq!(live.lines().filter(|line| line.contains("ava")).count(), 1);
 
     chat.realtime_conversation.microphone_muted = true;
     for role in ["user", "assistant"] {

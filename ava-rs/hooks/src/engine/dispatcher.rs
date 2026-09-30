@@ -322,9 +322,7 @@ pub(crate) fn hook_source_label(source: ava_protocol::protocol::HookSource) -> &
         ava_protocol::protocol::HookSource::Plugin => "plugin",
         ava_protocol::protocol::HookSource::CloudRequirements => "cloud_requirements",
         ava_protocol::protocol::HookSource::CloudManagedConfig => "cloud_managed_config",
-        ava_protocol::protocol::HookSource::LegacyManagedConfigFile => {
-            "legacy_managed_config_file"
-        }
+        ava_protocol::protocol::HookSource::LegacyManagedConfigFile => "legacy_managed_config_file",
         ava_protocol::protocol::HookSource::LegacyManagedConfigMdm => "legacy_managed_config_mdm",
         ava_protocol::protocol::HookSource::Unknown => "unknown",
     }

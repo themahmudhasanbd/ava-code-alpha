@@ -1,6 +1,4 @@
 use anyhow::Result;
-use chrono::DateTime;
-use chrono::Utc;
 use ava_protocol::SanitizedGitUrl;
 use ava_protocol::ThreadId;
 use ava_protocol::openai_models::ReasoningEffort;
@@ -9,6 +7,8 @@ use ava_protocol::protocol::SandboxPolicy;
 use ava_protocol::protocol::SessionSource;
 use ava_protocol::protocol::ThreadHistoryMode;
 use ava_protocol::protocol::ThreadSource;
+use chrono::DateTime;
+use chrono::Utc;
 use serde::Deserialize;
 use serde::Serialize;
 use sqlx::Row;
@@ -716,12 +716,12 @@ pub struct BackfillStats {
 mod tests {
     use super::ThreadMetadata;
     use super::ThreadRow;
-    use chrono::DateTime;
-    use chrono::Utc;
     use ava_protocol::SanitizedGitUrl;
     use ava_protocol::ThreadId;
     use ava_protocol::openai_models::ReasoningEffort;
     use ava_protocol::protocol::ThreadHistoryMode;
+    use chrono::DateTime;
+    use chrono::Utc;
     use pretty_assertions::assert_eq;
     use std::path::PathBuf;
 

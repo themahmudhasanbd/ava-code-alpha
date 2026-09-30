@@ -515,11 +515,7 @@ async fn namespaced_custom_tool_call_preserves_namespace_through_dispatch_and_re
         &server,
         sse(vec![
             ev_response_created("resp-5"),
-            ev_custom_tool_call(
-                direct_exec_call_id,
-                ava_code_mode::PUBLIC_TOOL_NAME,
-                input,
-            ),
+            ev_custom_tool_call(direct_exec_call_id, ava_code_mode::PUBLIC_TOOL_NAME, input),
             ev_completed("resp-5"),
         ]),
     )
@@ -763,27 +759,25 @@ async fn exec_command_enforces_glob_deny_read_policy() -> Result<()> {
     skip_if_sandbox!(Ok(()));
 
     let server = start_mock_server().await;
-    let mut builder = test_ava()
-        .with_model("gpt-5.4")
-        .with_config(move |config| {
-            let mut file_system_sandbox_policy = FileSystemSandboxPolicy::default();
-            file_system_sandbox_policy
-                .entries
-                .push(FileSystemSandboxEntry {
-                    path: FileSystemPath::GlobPattern {
-                        pattern: format!("{}/**/*.env", config.cwd.as_path().display()),
-                    },
-                    access: FileSystemAccessMode::Deny,
-                    missing_path_behavior: None,
-                });
-            config
-                .permissions
-                .set_permission_profile(PermissionProfile::from_runtime_permissions(
-                    &file_system_sandbox_policy,
-                    NetworkSandboxPolicy::Restricted,
-                ))
-                .expect("set permission profile");
-        });
+    let mut builder = test_ava().with_model("gpt-5.4").with_config(move |config| {
+        let mut file_system_sandbox_policy = FileSystemSandboxPolicy::default();
+        file_system_sandbox_policy
+            .entries
+            .push(FileSystemSandboxEntry {
+                path: FileSystemPath::GlobPattern {
+                    pattern: format!("{}/**/*.env", config.cwd.as_path().display()),
+                },
+                access: FileSystemAccessMode::Deny,
+                missing_path_behavior: None,
+            });
+        config
+            .permissions
+            .set_permission_profile(PermissionProfile::from_runtime_permissions(
+                &file_system_sandbox_policy,
+                NetworkSandboxPolicy::Restricted,
+            ))
+            .expect("set permission profile");
+    });
     let fixture = builder.build(&server).await?;
 
     let fixture_dir = fixture.workspace_path("glob-deny-read");
@@ -880,16 +874,15 @@ async fn collect_tools(availability: CommandToolAvailability) -> Result<Vec<Stri
 
     let mut builder = match availability {
         CommandToolAvailability::Default => test_ava(),
-        CommandToolAvailability::ManagedUnifiedExecDisabled => test_ava()
-            .with_cloud_config_bundle(
-                CloudConfigBundleFixture::loader_with_enterprise_requirement(
-                    r#"
+        CommandToolAvailability::ManagedUnifiedExecDisabled => test_ava().with_cloud_config_bundle(
+            CloudConfigBundleFixture::loader_with_enterprise_requirement(
+                r#"
 [features]
 unified_exec = false
 shell_tool = true
 "#,
-                ),
             ),
+        ),
         CommandToolAvailability::ShellToolDisabled => test_ava().with_config(|config| {
             config
                 .features

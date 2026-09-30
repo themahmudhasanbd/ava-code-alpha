@@ -7,14 +7,6 @@ use std::sync::Arc;
 use std::time::Duration;
 
 use anyhow::Result;
-use axum::Json;
-use axum::Router;
-use axum::http::HeaderMap;
-use axum::http::StatusCode;
-use axum::response::IntoResponse;
-use axum::response::sse::Event;
-use axum::response::sse::Sse;
-use axum::routing::post;
 use ava_config::McpServerTransportConfig;
 use ava_core::config::ConfigBuilder;
 use ava_core::plugins_manager_for_config;
@@ -34,6 +26,14 @@ use ava_mcp::McpRuntimeInput;
 use ava_mcp::McpServerRegistration;
 use ava_mcp::McpStartupPolicy;
 use ava_mcp::ResolvedMcpCatalog;
+use axum::Json;
+use axum::Router;
+use axum::http::HeaderMap;
+use axum::http::StatusCode;
+use axum::response::IntoResponse;
+use axum::response::sse::Event;
+use axum::response::sse::Sse;
+use axum::routing::post;
 use futures::StreamExt;
 use pretty_assertions::assert_eq;
 use serde_json::Value;
@@ -218,13 +218,11 @@ async fn event_connections_open_after_runtime_shutdown_with_current_auth() -> Re
 
     fixture
         .auth
-        .set_external_auth(Arc::new(StaticAuth(
-            AvaAuth::from_external_chatgpt_tokens(
-                "header.e30.refreshed",
-                "account",
-                /*chatgpt_plan_type*/ None,
-            )?,
-        )))
+        .set_external_auth(Arc::new(StaticAuth(AvaAuth::from_external_chatgpt_tokens(
+            "header.e30.refreshed",
+            "account",
+            /*chatgpt_plan_type*/ None,
+        )?)))
         .await?;
     let mut stream = opener
         .open("test.event", &json!({}), /*request_meta*/ None)

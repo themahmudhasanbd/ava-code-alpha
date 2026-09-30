@@ -1,9 +1,6 @@
 use std::time::Duration;
 use std::time::Instant;
 
-use chrono::DateTime;
-use chrono::NaiveDateTime;
-use chrono::Utc;
 use ava_git_utils::collect_git_info;
 use ava_git_utils::get_git_repo_root;
 use ava_protocol::ThreadId;
@@ -17,6 +14,9 @@ use ava_protocol::protocol::strip_user_message_prefix;
 use ava_protocol::protocol::user_message_preview;
 use ava_rollout::RolloutItem;
 use ava_state::ThreadMetadata;
+use chrono::DateTime;
+use chrono::NaiveDateTime;
+use chrono::Utc;
 
 use crate::CreateThreadParams;
 use crate::GitInfoPatch;

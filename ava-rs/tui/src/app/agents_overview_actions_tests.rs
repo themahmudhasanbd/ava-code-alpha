@@ -450,15 +450,13 @@ async fn lifecycle_removes_background_and_current_tasks_without_losing_the_dashb
                     "Current child",
                     Some(&app.config.model_provider_id),
                     /*git_info*/ None,
-                    ava_protocol::protocol::SessionSource::SubAgent(
-                        SubAgentSource::ThreadSpawn {
-                            parent_thread_id: id,
-                            depth: 1,
-                            agent_path: None,
-                            agent_nickname: None,
-                            agent_role: None,
-                        },
-                    ),
+                    ava_protocol::protocol::SessionSource::SubAgent(SubAgentSource::ThreadSpawn {
+                        parent_thread_id: id,
+                        depth: 1,
+                        agent_path: None,
+                        agent_nickname: None,
+                        agent_role: None,
+                    }),
                     ava_protocol::SessionId::from(id),
                     id,
                 )

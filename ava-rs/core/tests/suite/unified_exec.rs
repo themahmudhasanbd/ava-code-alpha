@@ -466,54 +466,53 @@ async fn exec_command_uses_installed_environment_shell_policy_with_explicit_over
             r#set: HashMap::from([
                 ("KEEP".to_string(), "preserved".to_string()),
                 ("DROP".to_string(), "filtered".to_string()),
-                (
-                    "AVA_VERSION".to_string(),
-                    "configured-version".to_string(),
-                ),
+                ("AVA_VERSION".to_string(), "configured-version".to_string()),
             ]),
             ..Default::default()
         };
     });
     let harness = TestAvaHarness::with_auto_env_builder(builder).await?;
-    let selection = harness
-        .test()
-        .ava-code
-        .environment_selections()
-        .await
-        .into_iter()
-        .next()
-        .context("thread should select its executor environment")?;
-    harness
-        .test()
-        .ava-code
-        .environment_ready(
-            &selection,
-            EnvironmentConfig {
-                allow_login_shell: true,
-                workspace_roots: selection.workspace_roots.clone(),
-                permission_profile: PermissionProfileSnapshot::legacy(PermissionProfile::Disabled),
-                shell_environment_policy: ShellEnvironmentPolicy {
-                    inherit: ShellEnvironmentPolicyInherit::None,
-                    include_only: vec![EnvironmentVariablePattern::new_case_insensitive("KEEP")],
-                    r#set: harness
-                        .test()
-                        .config
-                        .permissions
-                        .shell_environment_policy
-                        .r#set
-                        .clone(),
-                    ..Default::default()
+    let selection = harness.test().ava
+        - code
+            .environment_selections()
+            .await
+            .into_iter()
+            .next()
+            .context("thread should select its executor environment")?;
+    harness.test().ava
+        - code
+            .environment_ready(
+                &selection,
+                EnvironmentConfig {
+                    allow_login_shell: true,
+                    workspace_roots: selection.workspace_roots.clone(),
+                    permission_profile: PermissionProfileSnapshot::legacy(
+                        PermissionProfile::Disabled,
+                    ),
+                    shell_environment_policy: ShellEnvironmentPolicy {
+                        inherit: ShellEnvironmentPolicyInherit::None,
+                        include_only: vec![EnvironmentVariablePattern::new_case_insensitive(
+                            "KEEP",
+                        )],
+                        r#set: harness
+                            .test()
+                            .config
+                            .permissions
+                            .shell_environment_policy
+                            .r#set
+                            .clone(),
+                        ..Default::default()
+                    },
+                    windows_sandbox_level: WindowsSandboxLevel::from_config(&harness.test().config),
+                    windows_sandbox_type: harness.test().config.permissions.windows_sandbox_type,
+                    use_legacy_landlock: harness.test().config.features.use_legacy_landlock(),
+                    exec_policy: None,
+                    mcp_policy: None,
+                    network_policy: None,
+                    selected_capability_roots: Vec::new(),
                 },
-                windows_sandbox_level: WindowsSandboxLevel::from_config(&harness.test().config),
-                windows_sandbox_type: harness.test().config.permissions.windows_sandbox_type,
-                use_legacy_landlock: harness.test().config.features.use_legacy_landlock(),
-                exec_policy: None,
-                mcp_policy: None,
-                network_policy: None,
-                selected_capability_roots: Vec::new(),
-            },
-        )
-        .await?;
+            )
+            .await?;
 
     let call_id = "exec-command-environment-shell-policy";
     let command = match core_test_support::test_target_os() {
@@ -600,29 +599,28 @@ async fn unified_exec_intercepts_apply_patch_exec_command() -> Result<()> {
     let (sandbox_policy, permission_profile) =
         turn_permission_fields(PermissionProfile::Disabled, &cwd);
 
-    ava
-        .start_or_steer_turn(
-            TurnInputRequest::user_input(vec![UserInput::Text {
-                text: "apply patch via unified exec".into(),
-                text_elements: Vec::new(),
-            }])
-            .with_thread_settings(ThreadSettingsOverrides {
-                environments: Some(local_selections(cwd)),
-                approval_policy: Some(AskForApproval::Never),
-                sandbox_policy: Some(sandbox_policy),
-                permission_profile,
-                collaboration_mode: Some(CollaborationMode {
-                    mode: ModeKind::Default,
-                    settings: Settings {
-                        model: session_model,
-                        reasoning_effort: None,
-                        developer_instructions: None,
-                    },
-                }),
-                ..Default::default()
+    ava.start_or_steer_turn(
+        TurnInputRequest::user_input(vec![UserInput::Text {
+            text: "apply patch via unified exec".into(),
+            text_elements: Vec::new(),
+        }])
+        .with_thread_settings(ThreadSettingsOverrides {
+            environments: Some(local_selections(cwd)),
+            approval_policy: Some(AskForApproval::Never),
+            sandbox_policy: Some(sandbox_policy),
+            permission_profile,
+            collaboration_mode: Some(CollaborationMode {
+                mode: ModeKind::Default,
+                settings: Settings {
+                    model: session_model,
+                    reasoning_effort: None,
+                    developer_instructions: None,
+                },
             }),
-        )
-        .await?;
+            ..Default::default()
+        }),
+    )
+    .await?;
 
     let mut saw_patch_begin = false;
     let mut patch_end = None;
@@ -2890,29 +2888,28 @@ async fn unified_exec_keeps_long_running_session_after_turn_end() -> Result<()> 
     let (sandbox_policy, permission_profile) =
         turn_permission_fields(PermissionProfile::Disabled, turn_cwd.as_path());
 
-    ava
-        .start_or_steer_turn(
-            TurnInputRequest::user_input(vec![UserInput::Text {
-                text: "keep unified exec process after turn end".into(),
-                text_elements: Vec::new(),
-            }])
-            .with_thread_settings(ThreadSettingsOverrides {
-                environments: Some(local_selections(turn_cwd)),
-                approval_policy: Some(AskForApproval::Never),
-                sandbox_policy: Some(sandbox_policy),
-                permission_profile,
-                collaboration_mode: Some(CollaborationMode {
-                    mode: ModeKind::Default,
-                    settings: Settings {
-                        model: session_model,
-                        reasoning_effort: None,
-                        developer_instructions: None,
-                    },
-                }),
-                ..Default::default()
+    ava.start_or_steer_turn(
+        TurnInputRequest::user_input(vec![UserInput::Text {
+            text: "keep unified exec process after turn end".into(),
+            text_elements: Vec::new(),
+        }])
+        .with_thread_settings(ThreadSettingsOverrides {
+            environments: Some(local_selections(turn_cwd)),
+            approval_policy: Some(AskForApproval::Never),
+            sandbox_policy: Some(sandbox_policy),
+            permission_profile,
+            collaboration_mode: Some(CollaborationMode {
+                mode: ModeKind::Default,
+                settings: Settings {
+                    model: session_model,
+                    reasoning_effort: None,
+                    developer_instructions: None,
+                },
             }),
-        )
-        .await?;
+            ..Default::default()
+        }),
+    )
+    .await?;
 
     let begin_event = wait_for_event_match(&ava, |msg| match msg {
         EventMsg::ExecCommandBegin(ev) if ev.call_id == call_id => Some(ev.clone()),
@@ -2984,29 +2981,28 @@ async fn unified_exec_interrupt_preserves_long_running_session() -> Result<()> {
     let (sandbox_policy, permission_profile) =
         turn_permission_fields(PermissionProfile::Disabled, turn_cwd.as_path());
 
-    ava
-        .start_or_steer_turn(
-            TurnInputRequest::user_input(vec![UserInput::Text {
-                text: "interrupt long-running unified exec".into(),
-                text_elements: Vec::new(),
-            }])
-            .with_thread_settings(ThreadSettingsOverrides {
-                environments: Some(local_selections(turn_cwd)),
-                approval_policy: Some(AskForApproval::Never),
-                sandbox_policy: Some(sandbox_policy),
-                permission_profile,
-                collaboration_mode: Some(CollaborationMode {
-                    mode: ModeKind::Default,
-                    settings: Settings {
-                        model: session_model,
-                        reasoning_effort: None,
-                        developer_instructions: None,
-                    },
-                }),
-                ..Default::default()
+    ava.start_or_steer_turn(
+        TurnInputRequest::user_input(vec![UserInput::Text {
+            text: "interrupt long-running unified exec".into(),
+            text_elements: Vec::new(),
+        }])
+        .with_thread_settings(ThreadSettingsOverrides {
+            environments: Some(local_selections(turn_cwd)),
+            approval_policy: Some(AskForApproval::Never),
+            sandbox_policy: Some(sandbox_policy),
+            permission_profile,
+            collaboration_mode: Some(CollaborationMode {
+                mode: ModeKind::Default,
+                settings: Settings {
+                    model: session_model,
+                    reasoning_effort: None,
+                    developer_instructions: None,
+                },
             }),
-        )
-        .await?;
+            ..Default::default()
+        }),
+    )
+    .await?;
 
     let _begin_event = wait_for_event_match(&ava, |msg| match msg {
         EventMsg::ExecCommandBegin(ev) if ev.call_id == call_id => Some(ev.clone()),
@@ -3439,10 +3435,7 @@ shell_tool = true
     let pid = wait_for_pid_file(&pid_path).await?;
 
     test.ava.submit(Op::Interrupt).await?;
-    wait_for_event(&test.ava, |event| {
-        matches!(event, EventMsg::TurnAborted(_))
-    })
-    .await;
+    wait_for_event(&test.ava, |event| matches!(event, EventMsg::TurnAborted(_))).await;
     wait_for_process_exit(&pid).await?;
 
     Ok(())
@@ -3585,29 +3578,28 @@ async fn unified_exec_runs_under_sandbox() -> Result<()> {
     let (sandbox_policy, permission_profile) =
         turn_permission_fields(PermissionProfile::read_only(), turn_cwd.as_path());
 
-    ava
-        .start_or_steer_turn(
-            TurnInputRequest::user_input(vec![UserInput::Text {
-                text: "summarize large output".into(),
-                text_elements: Vec::new(),
-            }])
-            .with_thread_settings(ThreadSettingsOverrides {
-                environments: Some(local_selections(turn_cwd)),
-                approval_policy: Some(AskForApproval::Never),
-                sandbox_policy: Some(sandbox_policy),
-                permission_profile,
-                collaboration_mode: Some(CollaborationMode {
-                    mode: ModeKind::Default,
-                    settings: Settings {
-                        model: session_model,
-                        reasoning_effort: None,
-                        developer_instructions: None,
-                    },
-                }),
-                ..Default::default()
+    ava.start_or_steer_turn(
+        TurnInputRequest::user_input(vec![UserInput::Text {
+            text: "summarize large output".into(),
+            text_elements: Vec::new(),
+        }])
+        .with_thread_settings(ThreadSettingsOverrides {
+            environments: Some(local_selections(turn_cwd)),
+            approval_policy: Some(AskForApproval::Never),
+            sandbox_policy: Some(sandbox_policy),
+            permission_profile,
+            collaboration_mode: Some(CollaborationMode {
+                mode: ModeKind::Default,
+                settings: Settings {
+                    model: session_model,
+                    reasoning_effort: None,
+                    developer_instructions: None,
+                },
             }),
-        )
-        .await?;
+            ..Default::default()
+        }),
+    )
+    .await?;
 
     wait_for_event(&ava, |event| matches!(event, EventMsg::TurnComplete(_))).await;
 
@@ -3701,29 +3693,28 @@ async fn unified_exec_enforces_glob_deny_read_policy() -> Result<()> {
     let turn_cwd = cwd.abs();
     let (sandbox_policy, permission_profile) =
         turn_permission_fields(PermissionProfile::read_only(), turn_cwd.as_path());
-    ava
-        .start_or_steer_turn(
-            TurnInputRequest::user_input(vec![UserInput::Text {
-                text: "read the fixture files".into(),
-                text_elements: Vec::new(),
-            }])
-            .with_thread_settings(ThreadSettingsOverrides {
-                environments: Some(local_selections(turn_cwd)),
-                approval_policy: Some(AskForApproval::Never),
-                sandbox_policy: Some(sandbox_policy),
-                permission_profile,
-                collaboration_mode: Some(CollaborationMode {
-                    mode: ModeKind::Default,
-                    settings: Settings {
-                        model: session_model,
-                        reasoning_effort: None,
-                        developer_instructions: None,
-                    },
-                }),
-                ..Default::default()
+    ava.start_or_steer_turn(
+        TurnInputRequest::user_input(vec![UserInput::Text {
+            text: "read the fixture files".into(),
+            text_elements: Vec::new(),
+        }])
+        .with_thread_settings(ThreadSettingsOverrides {
+            environments: Some(local_selections(turn_cwd)),
+            approval_policy: Some(AskForApproval::Never),
+            sandbox_policy: Some(sandbox_policy),
+            permission_profile,
+            collaboration_mode: Some(CollaborationMode {
+                mode: ModeKind::Default,
+                settings: Settings {
+                    model: session_model,
+                    reasoning_effort: None,
+                    developer_instructions: None,
+                },
             }),
-        )
-        .await?;
+            ..Default::default()
+        }),
+    )
+    .await?;
 
     wait_for_event(&ava, |event| matches!(event, EventMsg::TurnComplete(_))).await;
 
@@ -3830,29 +3821,28 @@ async fn unified_exec_python_prompt_under_seatbelt() -> Result<()> {
     let (sandbox_policy, permission_profile) =
         turn_permission_fields(PermissionProfile::read_only(), turn_cwd.as_path());
 
-    ava
-        .start_or_steer_turn(
-            TurnInputRequest::user_input(vec![UserInput::Text {
-                text: "start python under seatbelt".into(),
-                text_elements: Vec::new(),
-            }])
-            .with_thread_settings(ThreadSettingsOverrides {
-                environments: Some(local_selections(turn_cwd)),
-                approval_policy: Some(AskForApproval::Never),
-                sandbox_policy: Some(sandbox_policy),
-                permission_profile,
-                collaboration_mode: Some(CollaborationMode {
-                    mode: ModeKind::Default,
-                    settings: Settings {
-                        model: session_model,
-                        reasoning_effort: None,
-                        developer_instructions: None,
-                    },
-                }),
-                ..Default::default()
+    ava.start_or_steer_turn(
+        TurnInputRequest::user_input(vec![UserInput::Text {
+            text: "start python under seatbelt".into(),
+            text_elements: Vec::new(),
+        }])
+        .with_thread_settings(ThreadSettingsOverrides {
+            environments: Some(local_selections(turn_cwd)),
+            approval_policy: Some(AskForApproval::Never),
+            sandbox_policy: Some(sandbox_policy),
+            permission_profile,
+            collaboration_mode: Some(CollaborationMode {
+                mode: ModeKind::Default,
+                settings: Settings {
+                    model: session_model,
+                    reasoning_effort: None,
+                    developer_instructions: None,
+                },
             }),
-        )
-        .await?;
+            ..Default::default()
+        }),
+    )
+    .await?;
 
     wait_for_event(&ava, |event| matches!(event, EventMsg::TurnComplete(_))).await;
 

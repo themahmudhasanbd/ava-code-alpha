@@ -684,9 +684,8 @@ async fn resume_conversation(
     config: &Config,
     path: std::path::PathBuf,
 ) -> Arc<AvaThread> {
-    let auth_manager = ava_core::test_support::auth_manager_from_auth(
-        ava_login::AvaAuth::from_api_key("dummy"),
-    );
+    let auth_manager =
+        ava_core::test_support::auth_manager_from_auth(ava_login::AvaAuth::from_api_key("dummy"));
     Box::pin(manager.resume_thread_from_rollout(
         config.clone(),
         path,

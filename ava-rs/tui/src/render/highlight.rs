@@ -245,9 +245,7 @@ fn resolve_theme_with_override(name: Option<&str>, ava_home: Option<&Path>) -> T
 /// Extracted from the old `theme()` init closure so it can be reused.
 fn build_default_theme() -> Theme {
     let name = THEME_OVERRIDE.get().and_then(|name| name.as_deref());
-    let ava_home = AVA_HOME
-        .get()
-        .and_then(|ava_home| ava_home.as_deref());
+    let ava_home = AVA_HOME.get().and_then(|ava_home| ava_home.as_deref());
     resolve_theme_with_override(name, ava_home)
 }
 

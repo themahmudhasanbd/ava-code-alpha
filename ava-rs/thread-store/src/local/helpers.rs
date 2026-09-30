@@ -7,8 +7,6 @@ use std::path::Path;
 use std::path::PathBuf;
 use std::time::SystemTime;
 
-use chrono::DateTime;
-use chrono::Utc;
 use ava_git_utils::GitSha;
 use ava_protocol::SanitizedGitUrl;
 use ava_protocol::ThreadId;
@@ -24,6 +22,8 @@ use ava_rollout::RolloutReferenceIndex;
 use ava_rollout::ThreadItem;
 use ava_rollout::find_thread_names_by_ids;
 use ava_state::ThreadMetadata;
+use chrono::DateTime;
+use chrono::Utc;
 
 use super::LocalThreadStore;
 use crate::StoredThread;

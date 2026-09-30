@@ -1,6 +1,4 @@
 use anyhow::Context;
-use base64::Engine;
-use base64::engine::general_purpose::STANDARD as BASE64_STANDARD;
 use ava_attachment_store::AttachmentStore;
 use ava_attachment_store::AttachmentStoreError;
 use ava_attachment_store::AttachmentStoreErrorKind;
@@ -32,6 +30,8 @@ use ava_protocol::user_input::ByteRange;
 use ava_protocol::user_input::TextElement;
 use ava_protocol::user_input::UserInput;
 use ava_utils_image::data_url_from_bytes;
+use base64::Engine;
+use base64::engine::general_purpose::STANDARD as BASE64_STANDARD;
 use core_test_support::TempDirExt;
 use core_test_support::responses;
 use core_test_support::responses::ev_assistant_message;
@@ -175,35 +175,34 @@ async fn copy_paste_local_image_persists_rollout_request_shape() -> anyhow::Resu
     let (sandbox_policy, permission_profile) =
         turn_permission_fields(PermissionProfile::Disabled, cwd.path());
 
-    ava
-        .start_or_steer_turn(
-            TurnInputRequest::user_input(vec![
-                UserInput::LocalImage {
-                    path: abs_path.clone(),
-                    detail: None,
+    ava.start_or_steer_turn(
+        TurnInputRequest::user_input(vec![
+            UserInput::LocalImage {
+                path: abs_path.clone(),
+                detail: None,
+            },
+            UserInput::Text {
+                text: "pasted image".to_string(),
+                text_elements: Vec::new(),
+            },
+        ])
+        .with_thread_settings(ThreadSettingsOverrides {
+            environments: Some(local_selections(cwd.abs())),
+            approval_policy: Some(AskForApproval::Never),
+            sandbox_policy: Some(sandbox_policy),
+            permission_profile,
+            collaboration_mode: Some(CollaborationMode {
+                mode: ModeKind::Default,
+                settings: Settings {
+                    model: session_model,
+                    reasoning_effort: None,
+                    developer_instructions: None,
                 },
-                UserInput::Text {
-                    text: "pasted image".to_string(),
-                    text_elements: Vec::new(),
-                },
-            ])
-            .with_thread_settings(ThreadSettingsOverrides {
-                environments: Some(local_selections(cwd.abs())),
-                approval_policy: Some(AskForApproval::Never),
-                sandbox_policy: Some(sandbox_policy),
-                permission_profile,
-                collaboration_mode: Some(CollaborationMode {
-                    mode: ModeKind::Default,
-                    settings: Settings {
-                        model: session_model,
-                        reasoning_effort: None,
-                        developer_instructions: None,
-                    },
-                }),
-                ..Default::default()
             }),
-        )
-        .await?;
+            ..Default::default()
+        }),
+    )
+    .await?;
 
     wait_for_event(&ava, |event| matches!(event, EventMsg::TurnComplete(_))).await;
     ava.submit(Op::Shutdown).await?;
@@ -271,37 +270,36 @@ async fn drag_drop_image_persists_rollout_request_shape() -> anyhow::Result<()> 
     let (sandbox_policy, permission_profile) =
         turn_permission_fields(PermissionProfile::Disabled, cwd.path());
 
-    ava
-        .start_or_steer_turn(
-            TurnInputRequest::user_input(vec![
-                UserInput::Image {
-                    image: ImageReference::Inline {
-                        image_url: image_url.clone(),
-                    },
-                    detail: None,
+    ava.start_or_steer_turn(
+        TurnInputRequest::user_input(vec![
+            UserInput::Image {
+                image: ImageReference::Inline {
+                    image_url: image_url.clone(),
                 },
-                UserInput::Text {
-                    text: "dropped image".to_string(),
-                    text_elements: Vec::new(),
+                detail: None,
+            },
+            UserInput::Text {
+                text: "dropped image".to_string(),
+                text_elements: Vec::new(),
+            },
+        ])
+        .with_thread_settings(ThreadSettingsOverrides {
+            environments: Some(local_selections(cwd.abs())),
+            approval_policy: Some(AskForApproval::Never),
+            sandbox_policy: Some(sandbox_policy),
+            permission_profile,
+            collaboration_mode: Some(CollaborationMode {
+                mode: ModeKind::Default,
+                settings: Settings {
+                    model: session_model,
+                    reasoning_effort: None,
+                    developer_instructions: None,
                 },
-            ])
-            .with_thread_settings(ThreadSettingsOverrides {
-                environments: Some(local_selections(cwd.abs())),
-                approval_policy: Some(AskForApproval::Never),
-                sandbox_policy: Some(sandbox_policy),
-                permission_profile,
-                collaboration_mode: Some(CollaborationMode {
-                    mode: ModeKind::Default,
-                    settings: Settings {
-                        model: session_model,
-                        reasoning_effort: None,
-                        developer_instructions: None,
-                    },
-                }),
-                ..Default::default()
             }),
-        )
-        .await?;
+            ..Default::default()
+        }),
+    )
+    .await?;
 
     wait_for_event(&ava, |event| matches!(event, EventMsg::TurnComplete(_))).await;
     ava.submit(Op::Shutdown).await?;
@@ -661,15 +659,15 @@ async fn resumed_history_only_emits_resize_notices_for_new_images() -> anyhow::R
         ]),
     )
     .await;
-    resumed
-        .ava-code
-        .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Image {
-            image: ImageReference::Inline {
-                image_url: original_image_url.clone(),
-            },
-            detail: Some(ImageDetail::High),
-        }]))
-        .await?;
+    resumed.ava
+        - code
+            .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Image {
+                image: ImageReference::Inline {
+                    image_url: original_image_url.clone(),
+                },
+                detail: Some(ImageDetail::High),
+            }]))
+            .await?;
     wait_for_event(&resumed.ava, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
@@ -795,30 +793,31 @@ async fn resumed_history_only_emits_resize_notices_for_new_images() -> anyhow::R
         .restart(&server, &replayed)
         .await?;
     let existing_rollout_lines = fs::read_to_string(&rollout_path)?.lines().count();
-    replayed
-        .ava-code
-        .inject_response_items(vec![
-            ResponseInputItem::Message {
-                role: "user".to_string(),
-                content: vec![ContentItem::InputImage {
-                    image: ImageReference::Inline {
-                        image_url: original_image_url,
-                    },
-                    detail: Some(ImageDetail::High),
-                }],
-                phase: None,
-            }
-            .into(),
-            ResponseInputItem::Message {
-                role: "developer".to_string(),
-                content: vec![ContentItem::InputText {
-                    text: "<image_resize_notice>client message</image_resize_notice>".to_string(),
-                }],
-                phase: None,
-            }
-            .into(),
-        ])
-        .await?;
+    replayed.ava
+        - code
+            .inject_response_items(vec![
+                ResponseInputItem::Message {
+                    role: "user".to_string(),
+                    content: vec![ContentItem::InputImage {
+                        image: ImageReference::Inline {
+                            image_url: original_image_url,
+                        },
+                        detail: Some(ImageDetail::High),
+                    }],
+                    phase: None,
+                }
+                .into(),
+                ResponseInputItem::Message {
+                    role: "developer".to_string(),
+                    content: vec![ContentItem::InputText {
+                        text: "<image_resize_notice>client message</image_resize_notice>"
+                            .to_string(),
+                    }],
+                    phase: None,
+                }
+                .into(),
+            ])
+            .await?;
     let persisted_developer_metadata = fs::read_to_string(&rollout_path)?
         .lines()
         .skip(existing_rollout_lines)

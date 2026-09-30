@@ -82,10 +82,10 @@ use crate::facts::AnalyticsJsonRpcError;
 use crate::facts::AppMentionedInput;
 use crate::facts::AppUsedInput;
 use crate::facts::ArtifactOperationInput;
-use crate::facts::CodeModeToolCallFact;
-use crate::facts::CodeModeToolCallStatus;
 use crate::facts::AvaCompactionEvent;
 use crate::facts::AvaGoalEvent;
+use crate::facts::CodeModeToolCallFact;
+use crate::facts::CodeModeToolCallStatus;
 use crate::facts::ControlToolCallFact;
 use crate::facts::ControlToolCallStatus;
 use crate::facts::CustomAnalyticsFact;
@@ -125,9 +125,9 @@ use crate::now_unix_seconds;
 use crate::option_i64_to_u64;
 use crate::serialize_enum_as_string;
 use crate::usize_to_u64;
+use ava_app_server_protocol::AvaErrorInfo;
 use ava_app_server_protocol::ClientRequest;
 use ava_app_server_protocol::ClientResponse;
-use ava_app_server_protocol::AvaErrorInfo;
 use ava_app_server_protocol::CollabAgentStatus;
 use ava_app_server_protocol::CollabAgentTool;
 use ava_app_server_protocol::CollabAgentToolCallStatus;
@@ -233,10 +233,7 @@ struct ThreadAnalyticsState {
 }
 
 impl ThreadAnalyticsState {
-    fn app_server_client(
-        &self,
-        connection_state: &ConnectionState,
-    ) -> AvaAppServerClientMetadata {
+    fn app_server_client(&self, connection_state: &ConnectionState) -> AvaAppServerClientMetadata {
         let mut app_server_client = connection_state.app_server_client.clone();
         if let Some(originator) = self.originator.as_ref() {
             app_server_client.product_client_id.clone_from(originator);
@@ -675,9 +672,7 @@ impl AnalyticsReducer {
                         GuardianV2EventKind::Classification { .. } => {
                             "ava_guardian_v2_classification"
                         }
-                        GuardianV2EventKind::FastDecision { .. } => {
-                            "ava_guardian_v2_fast_decision"
-                        }
+                        GuardianV2EventKind::FastDecision { .. } => "ava_guardian_v2_fast_decision",
                     };
                     if let Some((connection, thread, metadata)) =
                         self.thread_context_or_warn(AnalyticsDropSite {
@@ -2238,11 +2233,10 @@ impl AnalyticsReducer {
         out: &mut Vec<TrackEventRequest>,
     ) {
         let session_source: SessionSource = thread.source.into();
-        let is_worktree =
-            ava_git_utils::repository_identity(thread.cwd.as_path()).and_then(|_| {
-                ava_git_utils::get_git_repo_root(thread.cwd.canonicalize().ok()?.as_path())
-                    .map(|root| root.join(".git").is_file())
-            });
+        let is_worktree = ava_git_utils::repository_identity(thread.cwd.as_path()).and_then(|_| {
+            ava_git_utils::get_git_repo_root(thread.cwd.canonicalize().ok()?.as_path())
+                .map(|root| root.join(".git").is_file())
+        });
         let session_id = thread.session_id;
         let thread_id = thread.id;
         let parent_thread_id = thread.parent_thread_id;
@@ -2895,23 +2889,21 @@ fn tool_item_event(input: ToolItemEventInput<'_>) -> Option<TrackEventRequest> {
                     review_summary,
                 },
             );
-            Some(TrackEventRequest::McpToolCall(
-                AvaMcpToolCallEventRequest {
-                    event_type: "ava_mcp_tool_call_event",
-                    event_params: AvaMcpToolCallEventParams {
-                        base,
-                        mcp_server_name: server.clone(),
-                        mcp_tool_name: tool.clone(),
-                        mcp_error_present: error.is_some(),
-                        plugin_id: plugin_id.clone(),
-                        connector_id: app_context
-                            .as_ref()
-                            .map(|app_context| app_context.connector_id.clone()),
-                        voice_session_id: None,
-                        elicitation_type,
-                    },
+            Some(TrackEventRequest::McpToolCall(AvaMcpToolCallEventRequest {
+                event_type: "ava_mcp_tool_call_event",
+                event_params: AvaMcpToolCallEventParams {
+                    base,
+                    mcp_server_name: server.clone(),
+                    mcp_tool_name: tool.clone(),
+                    mcp_error_present: error.is_some(),
+                    plugin_id: plugin_id.clone(),
+                    connector_id: app_context
+                        .as_ref()
+                        .map(|app_context| app_context.connector_id.clone()),
+                    voice_session_id: None,
+                    elicitation_type,
                 },
-            ))
+            }))
         }
         ThreadItem::DynamicToolCall {
             id,

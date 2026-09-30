@@ -14,8 +14,8 @@ mkdir -p "$AVA_CONFIG_DIR"
 if [ ! -f "$AVA_CONFIG_FILE" ]; then
     cat << 'EOF' > "$AVA_CONFIG_FILE"
 # AvA Configuration
-model_provider = "openai"
-model = "gpt-5"
+# model_provider = ""
+# model = ""
 
 EOF
 fi
@@ -49,7 +49,7 @@ case "$cmd" in
     set-model)
         model="$2"
         if [ -z "$model" ]; then
-            echo "Error: model name required. Example: ava-provider set-model claude-3.7-sonnet"
+            echo "Error: model name required. Example: ava-provider set-model your-model"
             exit 1
         fi
         if grep -q "^model =" "$AVA_CONFIG_FILE"; then
@@ -78,7 +78,7 @@ case "$cmd" in
         provider="$2"
         model="$3"
         if [ -z "$provider" ] || [ -z "$model" ]; then
-            echo "Error: provider and model required. Example: ava-provider use openrouter anthropic/claude-3.7-sonnet"
+            echo "Error: provider and model required. Example: ava-provider use openrouter your-model"
             exit 1
         fi
         "$0" set-provider "$provider"
@@ -89,7 +89,7 @@ case "$cmd" in
     setup-openrouter)
         shift
         key=""
-        model="anthropic/claude-3.7-sonnet"
+        model=""
         while [[ "$#" -gt 0 ]]; do
             case $1 in
                 --key) key="$2"; shift ;;

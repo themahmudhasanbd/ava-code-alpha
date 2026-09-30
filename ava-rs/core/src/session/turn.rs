@@ -775,10 +775,7 @@ pub(crate) async fn run_turn(
                 return Err(err);
             }
             Err(ava_error)
-                if matches!(
-                    ava_error.details(),
-                    AvaErrorDetails::InvalidImageRequest()
-                ) =>
+                if matches!(ava_error.details(), AvaErrorDetails::InvalidImageRequest()) =>
             {
                 sess.track_turn_ava_error(turn_context.as_ref(), &ava_error);
                 let error = AvaErrorInfo::BadRequest;
@@ -1638,14 +1635,15 @@ async fn run_sampling_request(
     let turn_context = Arc::clone(&step_context.turn);
     let base_instructions = sess.get_prompt_base_instructions().await;
 
-    let tool_runtime = ToolCallRuntime::new(
+    let mut current_step_context = Arc::clone(&step_context);
+    let mut tool_runtime = ToolCallRuntime::new(
         Arc::clone(&sess),
-        Arc::clone(&step_context),
+        Arc::clone(&current_step_context),
         Arc::clone(&turn_diff_tracker),
     );
     let _code_mode_worker = sess.services.code_mode_service.start_turn_worker(
         &sess,
-        Arc::clone(&step_context),
+        Arc::clone(&current_step_context),
         Arc::clone(&turn_diff_tracker),
     );
     let max_retries = turn_context.provider.info().stream_max_retries();
@@ -1653,6 +1651,10 @@ async fn run_sampling_request(
     let mut initial_input = Some(input);
     let mut original_input = None;
     let mut executed_tool_calls_by_output = HashMap::new();
+    let mut tried_models = HashSet::new();
+    tried_models.insert(current_step_context.settings.model_info.slug.clone());
+    tried_models.insert(current_step_context.settings.selected().collaboration_mode.model().to_string());
+
     loop {
         // Running code-mode cells can request review while this response is in flight.
         // Keep the latest received ID until response.created replaces it.
@@ -1661,7 +1663,7 @@ async fn run_sampling_request(
         } else {
             sess.clone_history()
                 .await
-                .for_prompt(&step_context.settings.model_info.input_modalities)
+                .for_prompt(&current_step_context.settings.model_info.input_modalities)
         };
         let mut prompt_input = prompt_input;
         sess.services
@@ -1669,7 +1671,7 @@ async fn run_sampling_request(
             .attach_to_prompt(&mut prompt_input, &mut executed_tool_calls_by_output);
         let prompt = build_prompt(
             prompt_input,
-            step_context.as_ref(),
+            current_step_context.as_ref(),
             base_instructions.clone(),
         );
         if crate::guardian::is_basic_session_source(&turn_context.session_source) {
@@ -1677,14 +1679,14 @@ async fn run_sampling_request(
                 &sess,
                 &prompt,
                 &turn_context.config,
-                &step_context.settings.model_info,
+                &current_step_context.settings.model_info,
                 responses_metadata,
             )?;
         }
         let err = match try_run_sampling_request(
             tool_runtime.clone(),
             Arc::clone(&sess),
-            Arc::clone(&step_context),
+            Arc::clone(&current_step_context),
             Arc::clone(&turn_store),
             client_session,
             responses_metadata,
@@ -1700,14 +1702,14 @@ async fn run_sampling_request(
             Err(err) => match err.details() {
                 AvaErrorDetails::ContextWindowExceeded => {
                     sess.set_total_tokens_full(&turn_context).await;
-                    return Err(err);
+                    err
                 }
                 AvaErrorDetails::UsageLimitReached(e) => {
                     let rate_limits = e.rate_limits.clone();
                     if let Some(rate_limits) = rate_limits {
                         sess.update_rate_limits(&turn_context, *rate_limits).await;
                     }
-                    return Err(err);
+                    err
                 }
                 _ => err,
             },
@@ -1717,7 +1719,7 @@ async fn run_sampling_request(
             original_input = Some(prompt.input);
         }
 
-        handle_response_stream_error(
+        if let Err(stream_err) = handle_response_stream_error(
             &mut retry_state,
             max_retries,
             err,
@@ -1726,7 +1728,121 @@ async fn run_sampling_request(
             &turn_context,
             ResponsesStreamRequest::Sampling,
         )
-        .await?;
+        .await
+        {
+            // Check fallback chain
+            let fallback_target = turn_context.config.model_fallback_chain.iter().find(|m| {
+                let m_str = m.trim();
+                !m_str.is_empty()
+                    && !tried_models.contains(m_str)
+                    && m_str != current_step_context.settings.model_info.slug.as_str()
+            }).cloned();
+
+            if let Some(next_model) = fallback_target {
+                let from_model = current_step_context.settings.model_info.slug.clone();
+                let to_model = next_model.clone();
+
+                let reason = match stream_err.details() {
+                    AvaErrorDetails::RateLimitExceeded(_) | AvaErrorDetails::UsageLimitReached(_) => {
+                        ava_protocol::protocol::ModelRerouteReason::RateLimitFallback
+                    }
+                    AvaErrorDetails::UnexpectedStatus(resp) if resp.status.as_u16() == 401 || resp.status.as_u16() == 403 => {
+                        ava_protocol::protocol::ModelRerouteReason::AuthFailureFallback
+                    }
+                    AvaErrorDetails::UnexpectedStatus(resp) if resp.status.is_server_error() => {
+                        ava_protocol::protocol::ModelRerouteReason::ServerErrorFallback
+                    }
+                    AvaErrorDetails::ServerOverloaded => {
+                        ava_protocol::protocol::ModelRerouteReason::ServerErrorFallback
+                    }
+                    _ => ava_protocol::protocol::ModelRerouteReason::ConfiguredFallbackChain,
+                };
+
+                warn!(
+                    turn_id = %turn_context.sub_id,
+                    from = %from_model,
+                    to = %to_model,
+                    error = %stream_err,
+                    "Model request failed; auto-rerouting to fallback chain model"
+                );
+
+                sess.send_event(
+                    &turn_context,
+                    ava_protocol::protocol::EventMsg::ModelReroute(ava_protocol::protocol::ModelRerouteEvent {
+                        from_model: from_model.clone(),
+                        to_model: to_model.clone(),
+                        reason,
+                    }),
+                )
+                .await;
+
+                sess.send_event(
+                    &turn_context,
+                    ava_protocol::protocol::EventMsg::Warning(ava_protocol::protocol::WarningEvent {
+                        message: format!("Model '{from_model}' request failed. Automatically rerouting to fallback model '{to_model}'."),
+                    }),
+                )
+                .await;
+
+                let mut selected = current_step_context.settings.selected().clone();
+                selected.collaboration_mode = selected.collaboration_mode.with_updates(
+                    Some(to_model.clone()),
+                    None,
+                    None,
+                );
+                let overrides = crate::session::step_settings::ModelInfoOverrides::from(turn_context.config.to_models_manager_config());
+                let new_model_info = Arc::new(selected.resolve_model_info(sess.services.models_manager.as_ref(), &overrides).await);
+                let new_resolved_settings = Arc::new(crate::session::step_settings::ResolvedStepSettings::new(
+                    Arc::new(selected),
+                    new_model_info,
+                    sess.features.enabled(ava_features::Feature::FastMode),
+                ));
+                let new_session_telemetry = new_resolved_settings.telemetry(&turn_context.session_telemetry);
+                let prepared_recommendations = PreparedToolRecommendations { auth: None, endpoint_candidates: None };
+                let new_tool_router = match built_tools(
+                    sess.as_ref(),
+                    turn_context.as_ref(),
+                    &new_resolved_settings.model_info,
+                    &current_step_context.environments,
+                    &current_step_context.mcp,
+                    &turn_store,
+                    prepared_recommendations,
+                )
+                .await
+                {
+                    Ok(router) => router,
+                    Err(_) => current_step_context.tool_router.clone(),
+                };
+
+                current_step_context = Arc::new(StepContext {
+                    turn: Arc::clone(&turn_context),
+                    settings: new_resolved_settings,
+                    token_budget: current_step_context.token_budget.clone(),
+                    session_telemetry: new_session_telemetry,
+                    environments: current_step_context.environments.clone(),
+                    selected_capability_roots: current_step_context.selected_capability_roots.clone(),
+                    executor_capability_discovery: current_step_context.executor_capability_discovery.clone(),
+                    mcp: Arc::clone(&current_step_context.mcp),
+                    tool_router: new_tool_router,
+                    loaded_agents_md: current_step_context.loaded_agents_md.clone(),
+                    loaded_project_context: current_step_context.loaded_project_context.clone(),
+                });
+
+                tool_runtime = ToolCallRuntime::new(
+                    Arc::clone(&sess),
+                    Arc::clone(&current_step_context),
+                    Arc::clone(&turn_diff_tracker),
+                );
+
+                tried_models.insert(to_model);
+                retry_state = ResponsesStreamRetryState::default();
+                initial_input = original_input.take();
+                continue;
+            }
+
+            return Err(stream_err);
+        }
+
         turn_context.turn_timing_state.record_sampling_retry();
     }
 }
@@ -2345,6 +2461,7 @@ async fn emit_agent_message_in_plan_mode(
                     memory_citation: None,
                     delivery: None,
                     questions: None,
+                    meta: None,
                 })
             });
         sess.emit_turn_item_started(turn_context, &start_item).await;

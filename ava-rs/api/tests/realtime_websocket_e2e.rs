@@ -70,6 +70,7 @@ fn test_provider(base_url: String) -> Provider {
             retry_429: false,
             retry_5xx: false,
             retry_transport: false,
+                retry_auth: false,
         },
         stream_idle_timeout: Duration::from_secs(5),
     }

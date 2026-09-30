@@ -5,8 +5,6 @@ mod fake_bwrap;
 
 #[cfg(target_os = "linux")]
 use anyhow::Context as _;
-use base64::Engine as _;
-use base64::engine::general_purpose::STANDARD;
 use ava_exec_server::CAPABILITY_ROOTS_DISCOVER_METHOD;
 use ava_exec_server::CapabilityRootDiscovery;
 use ava_exec_server::CapabilityRootsDiscoverParams;
@@ -39,6 +37,8 @@ use ava_protocol::permissions::FileSystemSpecialPath;
 use ava_protocol::permissions::NetworkSandboxPolicy;
 use ava_utils_absolute_path::AbsolutePathBuf;
 use ava_utils_path_uri::PathUri;
+use base64::Engine as _;
+use base64::engine::general_purpose::STANDARD;
 use common::exec_server::exec_server;
 #[cfg(target_os = "linux")]
 use common::exec_server::exec_server_with_env;

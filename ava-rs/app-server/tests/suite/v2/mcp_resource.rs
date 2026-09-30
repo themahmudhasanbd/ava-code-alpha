@@ -16,7 +16,6 @@ use app_test_support::create_fake_rollout;
 use app_test_support::create_mock_responses_server_repeating_assistant;
 use app_test_support::rollout_path;
 use app_test_support::write_chatgpt_auth;
-use axum::Router;
 use ava_app_server::in_process;
 use ava_app_server::in_process::InProcessServerEvent;
 use ava_app_server::in_process::InProcessStartArgs;
@@ -83,6 +82,7 @@ use ava_rollout::append_rollout_item_to_path;
 use ava_state::PINNED_THREAD_SECTION_ID;
 use ava_state::PINNED_THREAD_SECTION_NAME;
 use ava_utils_absolute_path::AbsolutePathBuf;
+use axum::Router;
 use core_test_support::responses;
 use futures::poll;
 use pretty_assertions::assert_eq;
@@ -828,8 +828,7 @@ async fn metadata_and_mcp_requests_complete_while_unrelated_resume_loads_config(
         entered: Notify::new(),
         release: Notify::new(),
     });
-    let client =
-        start_resource_in_process_client(ava_home.path(), blocked_resume.clone()).await?;
+    let client = start_resource_in_process_client(ava_home.path(), blocked_resume.clone()).await?;
     let sender = client.sender();
     let ThreadResumeResponse { thread, .. } = serde_json::from_value(
         timeout(
@@ -1026,12 +1025,10 @@ async fn resume_revalidates_persisted_thread_after_config_load(
         "2025-01-05T12:00:00Z",
         "Saved user message",
         Some("mock_provider"),
-        matches!(mutation, ResumeMutation::GitMetadata).then(|| {
-            ava_protocol::protocol::GitInfo {
-                commit_hash: None,
-                branch: Some("feature/before-resume".to_string()),
-                repository_url: None,
-            }
+        matches!(mutation, ResumeMutation::GitMetadata).then(|| ava_protocol::protocol::GitInfo {
+            commit_hash: None,
+            branch: Some("feature/before-resume".to_string()),
+            repository_url: None,
         }),
     )?;
     let path = rollout_path(ava_home.path(), filename_timestamp, &thread_id);
@@ -1312,8 +1309,7 @@ async fn resume_reloads_config_when_saved_workspace_roots_change() -> Result<()>
         entered: Notify::new(),
         release: Notify::new(),
     });
-    let client =
-        start_resource_in_process_client(ava_home.path(), blocked_resume.clone()).await?;
+    let client = start_resource_in_process_client(ava_home.path(), blocked_resume.clone()).await?;
     let sender = client.sender();
     let mut resume = pin!(sender.request(ClientRequest::ThreadResume {
         request_id: RequestId::Integer(1),

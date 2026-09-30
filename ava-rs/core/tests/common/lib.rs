@@ -260,10 +260,7 @@ pub fn find_ava_linux_sandbox_exe() -> Result<PathBuf, CargoBinError> {
     ava_utils_cargo_bin::cargo_bin("ava-linux-sandbox")
 }
 
-pub async fn wait_for_event<F>(
-    ava: &AvaThread,
-    predicate: F,
-) -> ava_protocol::protocol::EventMsg
+pub async fn wait_for_event<F>(ava: &AvaThread, predicate: F) -> ava_protocol::protocol::EventMsg
 where
     F: FnMut(&ava_protocol::protocol::EventMsg) -> bool,
 {
@@ -411,8 +408,7 @@ pub fn format_with_current_shell_display(command: &str) -> String {
 }
 
 pub fn format_with_current_shell_non_login(command: &str) -> Vec<String> {
-    ava_core::shell::default_user_shell()
-        .derive_exec_args(command, /*use_login_shell*/ false)
+    ava_core::shell::default_user_shell().derive_exec_args(command, /*use_login_shell*/ false)
 }
 
 pub fn format_with_current_shell_display_non_login(command: &str) -> String {

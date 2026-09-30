@@ -10,14 +10,6 @@ use app_test_support::ChatGptIdTokenClaims;
 use app_test_support::TestAppServer;
 use app_test_support::encode_id_token;
 use app_test_support::write_chatgpt_auth;
-use axum::Json;
-use axum::Router;
-use axum::extract::State;
-use axum::http::HeaderMap;
-use axum::http::StatusCode;
-use axum::http::header::AUTHORIZATION;
-use axum::routing::any;
-use axum::routing::post;
 use ava_app_server_protocol::AppsReadParams;
 use ava_app_server_protocol::AppsReadResponse;
 use ava_app_server_protocol::ConnectorMetadata;
@@ -27,6 +19,14 @@ use ava_app_server_protocol::RequestId;
 use ava_app_server_protocol::ThreadStartParams;
 use ava_app_server_protocol::ThreadStartResponse;
 use ava_config::types::AuthCredentialsStoreMode;
+use axum::Json;
+use axum::Router;
+use axum::extract::State;
+use axum::http::HeaderMap;
+use axum::http::StatusCode;
+use axum::http::header::AUTHORIZATION;
+use axum::routing::any;
+use axum::routing::post;
 use pretty_assertions::assert_eq;
 use serde_json::Value;
 use serde_json::json;
@@ -457,12 +457,7 @@ enabled = false
     )?;
     write_plugin_app(ava_home.path(), "alpha-z", "Alpha Z", "alpha")?;
     write_plugin_app(ava_home.path(), "alpha-a", "Alpha A", "alpha")?;
-    write_plugin_app(
-        ava_home.path(),
-        "disabled",
-        "Disabled Plugin",
-        "unclaimed",
-    )?;
+    write_plugin_app(ava_home.path(), "disabled", "Disabled Plugin", "unclaimed")?;
     write_auth(ava_home.path())?;
 
     let mut mcp = TestAppServer::builder()

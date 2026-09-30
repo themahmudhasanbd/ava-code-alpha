@@ -4,7 +4,6 @@ use crate::cache::ModelsCacheEntry;
 use crate::collaboration_mode_presets::builtin_collaboration_mode_presets;
 use crate::config::ModelsManagerConfig;
 use crate::model_info;
-use chrono::Utc;
 use ava_http_client::HttpClientFactory;
 use ava_login::AuthManager;
 use ava_protocol::auth::AuthMode;
@@ -14,6 +13,7 @@ use ava_protocol::openai_models::ModelInfo;
 use ava_protocol::openai_models::ModelPreset;
 use ava_protocol::openai_models::ModelVisibility;
 use ava_protocol::openai_models::ModelsResponse;
+use chrono::Utc;
 use std::fmt;
 use std::future::Future;
 use std::path::PathBuf;
@@ -608,8 +608,7 @@ impl OpenAiModelsManager {
         let Some(cache) = self.cache.as_ref() else {
             return false;
         };
-        let _timer =
-            ava_otel::start_global_timer("ava.remote_models.load_cache.duration_ms", &[]);
+        let _timer = ava_otel::start_global_timer("ava.remote_models.load_cache.duration_ms", &[]);
         let client_version = crate::client_version_to_whole();
         info!(client_version, "models cache: evaluating cache eligibility");
         let Some(identity) = self.endpoint_client.identity() else {

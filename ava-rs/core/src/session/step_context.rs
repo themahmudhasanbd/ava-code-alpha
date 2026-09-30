@@ -3,6 +3,7 @@
 use std::sync::Arc;
 
 use crate::agents_md::LoadedAgentsMd;
+use crate::project_context::LoadedProjectContext;
 use crate::config::TokenBudgetConfig;
 use crate::environment_selection::TurnEnvironmentSnapshot;
 use crate::session::step_settings::ResolvedStepSettings;
@@ -43,6 +44,8 @@ pub(crate) struct StepContext {
     pub(crate) tool_router: Arc<ToolRouter>,
     /// The canonical AGENTS.md value observed with this environment snapshot.
     pub(crate) loaded_agents_md: Option<Arc<LoadedAgentsMd>>,
+    /// The project `.ava-code/` context index observed with this environment snapshot.
+    pub(crate) loaded_project_context: Option<Arc<LoadedProjectContext>>,
 }
 
 impl StepContext {

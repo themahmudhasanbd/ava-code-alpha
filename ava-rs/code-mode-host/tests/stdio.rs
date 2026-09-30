@@ -792,8 +792,7 @@ async fn oversized_initial_response_does_not_close_the_shared_host() {
 #[cfg(unix)]
 #[tokio::test]
 async fn child_process_loss_cleans_up_and_rebuilds_the_shared_host() {
-    let host_program =
-        ava_utils_cargo_bin::cargo_bin("ava-code-mode-host").expect("host binary");
+    let host_program = ava_utils_cargo_bin::cargo_bin("ava-code-mode-host").expect("host binary");
     let proxy_dir = tempfile::tempdir().expect("create host proxy directory");
     let proxy_program = proxy_dir.path().join("host-proxy.sh");
     let pid_path = proxy_dir.path().join("host.pid");

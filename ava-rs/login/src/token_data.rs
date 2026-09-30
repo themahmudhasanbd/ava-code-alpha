@@ -1,7 +1,7 @@
+use ava_protocol::auth::PlanType;
 use base64::Engine;
 use chrono::DateTime;
 use chrono::Utc;
-use ava_protocol::auth::PlanType;
 use serde::Deserialize;
 use serde::Serialize;
 use serde::de::DeserializeOwned;

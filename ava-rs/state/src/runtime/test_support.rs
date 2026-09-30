@@ -1,8 +1,4 @@
 #[cfg(test)]
-use chrono::DateTime;
-#[cfg(test)]
-use chrono::Utc;
-#[cfg(test)]
 use ava_protocol::ThreadId;
 #[cfg(test)]
 use ava_protocol::openai_models::ReasoningEffort;
@@ -12,6 +8,10 @@ use ava_protocol::protocol::AskForApproval;
 use ava_protocol::protocol::SandboxPolicy;
 #[cfg(test)]
 use ava_protocol::protocol::ThreadHistoryMode;
+#[cfg(test)]
+use chrono::DateTime;
+#[cfg(test)]
+use chrono::Utc;
 #[cfg(test)]
 use std::path::Path;
 #[cfg(test)]
@@ -31,10 +31,7 @@ pub(crate) fn unique_temp_dir() -> PathBuf {
     let nanos = SystemTime::now()
         .duration_since(UNIX_EPOCH)
         .map_or(0, |duration| duration.as_nanos());
-    std::env::temp_dir().join(format!(
-        "ava-state-runtime-test-{nanos}-{}",
-        Uuid::new_v4()
-    ))
+    std::env::temp_dir().join(format!("ava-state-runtime-test-{nanos}-{}", Uuid::new_v4()))
 }
 
 #[cfg(test)]

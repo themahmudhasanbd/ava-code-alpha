@@ -3,7 +3,6 @@ use std::io::Write;
 use std::path::Path;
 use std::time::Duration;
 
-use chrono::Utc;
 use ava_app_server_protocol::ThreadItem;
 use ava_protocol::ThreadId;
 use ava_protocol::items::AgentMessageContent;
@@ -37,6 +36,7 @@ use ava_rollout::RolloutLine;
 use ava_rollout::RolloutRecorder;
 use ava_rollout::RolloutRecorderParams;
 use ava_utils_absolute_path::test_support::PathExt;
+use chrono::Utc;
 use pretty_assertions::assert_eq;
 use tempfile::TempDir;
 
@@ -2061,9 +2061,9 @@ async fn catch_up_skips_invalid_complete_suffixes_and_projects_later_history() {
             .await
             .expect("persist session metadata");
 
-        let pool = ava_state::open_thread_history_db(
-            &ava_state::SqliteConfig::new_for_testing(home.path().abs()),
-        )
+        let pool = ava_state::open_thread_history_db(&ava_state::SqliteConfig::new_for_testing(
+            home.path().abs(),
+        ))
         .await
         .expect("open thread history db");
         let before = projection_state(&pool, thread_id).await;

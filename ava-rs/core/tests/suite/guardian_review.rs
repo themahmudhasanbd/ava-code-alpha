@@ -2,9 +2,6 @@
 
 use anyhow::Context;
 use anyhow::Result;
-use chrono::DateTime;
-use chrono::Local;
-use chrono::Utc;
 use ava_config::types::McpServerConfig;
 use ava_core::SleepFuture;
 use ava_core::TimeFuture;
@@ -52,6 +49,9 @@ use ava_protocol::protocol::ThreadSettingsOverrides;
 use ava_protocol::protocol::ThreadSource;
 use ava_protocol::protocol::TurnAbortReason;
 use ava_protocol::user_input::UserInput;
+use chrono::DateTime;
+use chrono::Local;
+use chrono::Utc;
 use core_test_support::fs_wait;
 use core_test_support::responses::assert_parent_turn;
 use core_test_support::responses::assert_root_turn;
@@ -1061,11 +1061,11 @@ async fn guardian_session_prewarms_and_is_reused_for_first_review(
     }
     assert_eq!(guardian_review.get("generate"), None);
 
-    let guardian_rollout_path = test
-        .ava-code
-        .guardian_trunk_rollout_path()
-        .await
-        .expect("guardian trunk rollout path");
+    let guardian_rollout_path = test.ava
+        - code
+            .guardian_trunk_rollout_path()
+            .await
+            .expect("guardian trunk rollout path");
     test.ava.shutdown_and_wait().await?;
     // Parent stop joins ThreadManager cleanup through the real extension registration.
     assert!(
@@ -1889,10 +1889,7 @@ async fn interrupted_guardian_review_across_model_change_does_not_execute_the_co
         ava_protocol::protocol::TurnSettingsUpdateOutcome::Applied
     );
     test.ava.submit(Op::Interrupt).await?;
-    wait_for_event(&test.ava, |event| {
-        matches!(event, EventMsg::TurnAborted(_))
-    })
-    .await;
+    wait_for_event(&test.ava, |event| matches!(event, EventMsg::TurnAborted(_))).await;
     release_review
         .send(())
         .expect("release interrupted review response");
@@ -2320,8 +2317,7 @@ impl ava_extension_api::ApprovalReviewContributor for AttemptCachedApproval {
     fn decide<'a>(
         &'a self,
         _input: &'a ava_extension_api::ApprovalDecisionInput<'_>,
-    ) -> ava_extension_api::ExtensionFuture<'a, Option<ava_extension_api::ApprovalDecision>>
-    {
+    ) -> ava_extension_api::ExtensionFuture<'a, Option<ava_extension_api::ApprovalDecision>> {
         self.0
             .fetch_add(/*val*/ 1, std::sync::atomic::Ordering::SeqCst);
         Box::pin(async { Some(ava_extension_api::ApprovalDecision::Allow) })
@@ -2468,10 +2464,8 @@ async fn cyber_model_guardian_denial_interrupts_turn_immediately(
             .contains("1 consecutive, 1 in the last 50 reviews")
     );
 
-    let aborted = wait_for_event(&test.ava, |event| {
-        matches!(event, EventMsg::TurnAborted(_))
-    })
-    .await;
+    let aborted =
+        wait_for_event(&test.ava, |event| matches!(event, EventMsg::TurnAborted(_))).await;
     let EventMsg::TurnAborted(aborted) = aborted else {
         unreachable!("wait_for_event returned a non-abort event")
     };
@@ -2741,8 +2735,7 @@ for (let index = 0; index < 6; index++) {{
     let mut active_id = None;
     let mut warning_id = None;
     loop {
-        let event =
-            tokio::time::timeout(Duration::from_secs(60), test.ava.next_event()).await??;
+        let event = tokio::time::timeout(Duration::from_secs(60), test.ava.next_event()).await??;
         match event.msg {
             EventMsg::TurnStarted(_) => active_id = Some(event.id),
             EventMsg::GuardianWarning(warning)

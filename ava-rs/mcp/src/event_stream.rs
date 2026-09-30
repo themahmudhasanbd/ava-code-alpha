@@ -142,9 +142,7 @@ impl McpEventStreamOpener {
             (Some(AvaAuth::AgentIdentity(expected)), Some(AvaAuth::AgentIdentity(current))) => {
                 expected.record() == current.record()
             }
-            (Some(AvaAuth::AgentIdentity(_)), _) | (_, Some(AvaAuth::AgentIdentity(_))) => {
-                false
-            }
+            (Some(AvaAuth::AgentIdentity(_)), _) | (_, Some(AvaAuth::AgentIdentity(_))) => false,
             (Some(expected), Some(current)) => {
                 expected.get_account_id() == current.get_account_id()
                     && expected.get_chatgpt_user_id() == current.get_chatgpt_user_id()

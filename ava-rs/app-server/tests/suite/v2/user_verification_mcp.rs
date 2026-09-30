@@ -4,7 +4,6 @@ use std::sync::Arc;
 use std::time::Duration;
 
 use anyhow::Result;
-use axum::Router;
 use ava_config::Constrained;
 use ava_core::StartThreadOptions;
 use ava_core::config::Config;
@@ -22,6 +21,7 @@ use ava_protocol::protocol::AskForApproval;
 use ava_protocol::protocol::ElicitationAction;
 use ava_protocol::protocol::EventMsg;
 use ava_protocol::protocol::Op;
+use axum::Router;
 use core_test_support::apps_test_server::apps_enabled_builder;
 use core_test_support::responses::start_mock_server;
 use core_test_support::wait_for_event;

@@ -334,8 +334,7 @@ pub(crate) fn maybe_wrap_shell_lc_with_snapshot(
         && command[0] == shell_path.as_ref()
         && matches!(session_shell.shell_type, ShellType::Bash | ShellType::Zsh);
     let original_shell_is_zsh = command_uses_session_zsh
-        || ava_shell_command::shell_detect::detect_shell_type(&command[0])
-            == Some(ShellType::Zsh);
+        || ava_shell_command::shell_detect::detect_shell_type(&command[0]) == Some(ShellType::Zsh);
     let brokered_zsh_flag = if flag == "-lc" { "-lfc" } else { "-fc" };
     let original_shell_flag = if brokered && original_shell_is_zsh {
         brokered_zsh_flag

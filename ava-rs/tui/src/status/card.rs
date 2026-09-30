@@ -10,8 +10,6 @@ use crate::token_usage::TokenUsage;
 use crate::token_usage::TokenUsageInfo;
 use crate::version::AVA_CLI_VERSION;
 use crate::width::display_width;
-use chrono::DateTime;
-use chrono::Local;
 use ava_app_server_protocol::AskForApproval;
 use ava_model_provider_info::WireApi;
 use ava_protocol::ThreadId;
@@ -25,6 +23,8 @@ use ava_protocol::models::PermissionProfile;
 use ava_protocol::openai_models::ReasoningEffort;
 use ava_utils_path_uri::PathUri;
 use ava_utils_sandbox_summary::summarize_permission_profile;
+use chrono::DateTime;
+use chrono::Local;
 use ratatui::prelude::*;
 use ratatui::style::Stylize;
 use std::collections::BTreeSet;
@@ -118,10 +118,7 @@ impl StatusHistoryHandle {
         state.refreshing_rate_limits = false;
     }
 
-    pub(crate) fn set_thread_usage(
-        &self,
-        estimate: Option<ava_app_server_protocol::ThreadUsage>,
-    ) {
+    pub(crate) fn set_thread_usage(&self, estimate: Option<ava_app_server_protocol::ThreadUsage>) {
         self.card.thread_usage.set_estimate(estimate);
     }
 }

@@ -1,7 +1,5 @@
 //! Audio preparation and duration-based token estimates for model inputs.
 
-use base64::Engine;
-use base64::engine::general_purpose::STANDARD as BASE64_STANDARD;
 use ava_protocol::models::ContentItem;
 use ava_protocol::models::FunctionCallOutputContentItem;
 use ava_protocol::models::MAX_PROMPT_AUDIO_INPUT_BYTES;
@@ -9,6 +7,8 @@ use ava_protocol::models::ResponseItem;
 use ava_utils_cache::BlockingLruCache;
 use ava_utils_cache::sha1_digest;
 use ava_utils_string::approx_token_count;
+use base64::Engine;
+use base64::engine::general_purpose::STANDARD as BASE64_STANDARD;
 use std::io::Cursor;
 use std::num::NonZeroUsize;
 use std::sync::LazyLock;

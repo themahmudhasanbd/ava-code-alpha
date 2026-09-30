@@ -318,3 +318,14 @@ Tests and features must support Linux, macOS and Windows unless feature is expli
 
 Ava supports running connected app-server and exec-server on different operating systems. See the
 `$remote-tests` skill for details about integration testing these configurations.
+
+## Planning vs Todo Tool Protocol
+- **Plan Making is NOT a tool call**:
+  For large, architectural, or multi-step tasks, AvA creates and maintains persistent Markdown plans under `<workspace>/.ava-code/plans/`:
+  - `index.md`: Master roadmap, milestones, and index of feature plans.
+  - `<feature-name>.md`: Specific feature plan (e.g. `frontend-update.md`, `auth-flow.md`).
+- **Todo is the Runtime Execution Tool (`update_plan` / `todowrite`)**:
+  - Used for tracking the active execution phase.
+  - Decomposes the active phase into small sequential steps.
+  - Exactly one step is `in_progress`; as each completes, call the todo tool to mark it `completed`.
+  - Streams real-time step status to the AvA Mobile / Web UI.

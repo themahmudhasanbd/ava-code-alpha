@@ -93,15 +93,14 @@ impl OpenAiModelsEndpoint {
         http_client_factory: HttpClientFactory,
     ) -> CoreResult<ModelsEndpointResponse> {
         let auth = self.auth().await;
-        let metric_auth_mode = if self.has_provider_api_key()
-            || auth.as_ref().is_some_and(AvaAuth::is_api_key_auth)
-        {
-            "api_key"
-        } else if auth.is_some() {
-            "chatgpt"
-        } else {
-            "none"
-        };
+        let metric_auth_mode =
+            if self.has_provider_api_key() || auth.as_ref().is_some_and(AvaAuth::is_api_key_auth) {
+                "api_key"
+            } else if auth.is_some() {
+                "chatgpt"
+            } else {
+                "none"
+            };
         let _timer = ava_otel::start_global_timer(
             "ava.remote_models.fetch_update.duration_ms",
             &[("auth_mode", metric_auth_mode)],
@@ -506,10 +505,7 @@ mod tests {
 
     #[tokio::test]
     async fn provider_api_key_without_endpoint_overrides_uses_ava_backend() {
-        for auth in [
-            None,
-            Some(AvaAuth::create_dummy_chatgpt_auth_for_testing()),
-        ] {
+        for auth in [None, Some(AvaAuth::create_dummy_chatgpt_auth_for_testing())] {
             let capture = Arc::new(CaptureModelsUrl(Mutex::new(/*t*/ None)));
             let auth_manager = auth.map(AuthManager::from_auth_for_testing);
             let endpoint = Arc::new(OpenAiModelsEndpoint {
@@ -784,8 +780,7 @@ mod tests {
             AvaAuth::from_api_key("test-key"),
         ] {
             let server = MockServer::start().await;
-            let mut model =
-                ava_models_manager::model_info::model_info_from_slug("provider-model");
+            let mut model = ava_models_manager::model_info::model_info_from_slug("provider-model");
             model.visibility = ModelVisibility::List;
             model.supported_in_api = true;
             model.used_fallback_model_metadata = false;

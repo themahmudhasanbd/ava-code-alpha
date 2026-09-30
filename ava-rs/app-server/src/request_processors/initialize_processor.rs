@@ -1,7 +1,6 @@
 use std::sync::atomic::AtomicBool;
 use std::sync::atomic::Ordering;
 
-use axum::http::HeaderValue;
 use ava_analytics::AppServerRpcTransport;
 use ava_login::default_client::SetOriginatorError;
 use ava_login::default_client::USER_AGENT_SUFFIX;
@@ -10,6 +9,7 @@ use ava_login::default_client::set_default_client_residency_requirement;
 use ava_login::default_client::set_default_originator;
 use ava_protocol::mcp::ClientMcpExtensions;
 use ava_protocol::mcp::OPENAI_ELICITATION_EXTENSION_ID;
+use axum::http::HeaderValue;
 
 use super::*;
 use crate::message_processor::ConnectionSessionState;
@@ -101,8 +101,7 @@ impl InitializeRequestProcessor {
         let user_verification_enabled = experimental_api_enabled
             && matches!(
                 (session.origin, name.as_str()),
-                (ConnectionOrigin::InProcess, "ava-tui")
-                    | (ConnectionOrigin::Stdio, "Ava Desktop")
+                (ConnectionOrigin::InProcess, "ava-tui") | (ConnectionOrigin::Stdio, "Ava Desktop")
             )
             && tokio::task::spawn_blocking(self.user_verification.device_supported)
                 .await

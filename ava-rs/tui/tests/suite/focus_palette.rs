@@ -208,8 +208,7 @@ fn owned_screen_entry_paints_before_sync_ends_and_exit_clears_inline_draft() -> 
     first_frame.process(&terminal.output[..end]);
     let first_contents = first_frame.screen().contents();
     ensure!(
-        first_contents.contains("OpenAI Ava")
-            && first_contents.contains("Ask Ava to do anything"),
+        first_contents.contains("OpenAI Ava") && first_contents.contains("Ask Ava to do anything"),
         "owned-screen synchronization ended before its first complete loading frame:\n{first_contents}"
     );
     let composer_row = first_contents
@@ -264,11 +263,7 @@ pub(super) struct PtyAva {
 }
 
 impl PtyAva {
-    pub(super) fn start(
-        repo_root: &Path,
-        ava_home: TempDir,
-        extra_args: &[&str],
-    ) -> Result<Self> {
+    pub(super) fn start(repo_root: &Path, ava_home: TempDir, extra_args: &[&str]) -> Result<Self> {
         let ava = ava_utils_cargo_bin::cargo_bin("ava-tui")
             .or_else(|_| ava_utils_cargo_bin::cargo_bin("ava"))?;
         Self::start_binary(&ava, repo_root, ava_home, extra_args)
@@ -554,13 +549,7 @@ fn no_daemon_skips_startup_and_discovery() -> Result<()> {
         terminal.read_output(Duration::from_millis(/*millis*/ 200))?;
         terminal.write_input(b"\r")?;
         terminal.wait_for_screen("Model:")?;
-        ensure!(
-            !terminal
-                ._ava_home
-                .path()
-                .join("app-server-daemon")
-                .exists()
-        );
+        ensure!(!terminal._ava_home.path().join("app-server-daemon").exists());
         if let Some(listener) = listener {
             assert_eq!(
                 listener.accept().unwrap_err().kind(),

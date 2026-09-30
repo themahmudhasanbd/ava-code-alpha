@@ -2,7 +2,6 @@ use super::*;
 use crate::app_event::ConnectorsSnapshot;
 use crate::bottom_pane::RestrictedInputMode;
 use crate::history_cell::ThreadRecapLoadingCell;
-use base64::Engine;
 use ava_app_server_protocol::ImageReference;
 use ava_protocol::models::ManagedFileSystemPermissions;
 use ava_protocol::permissions::FileSystemAccessMode;
@@ -10,6 +9,7 @@ use ava_protocol::permissions::FileSystemPath;
 use ava_protocol::permissions::FileSystemSandboxEntry;
 use ava_protocol::permissions::FileSystemSpecialPath;
 use ava_protocol::permissions::NetworkSandboxPolicy;
+use base64::Engine;
 use pretty_assertions::assert_eq;
 use std::collections::VecDeque;
 

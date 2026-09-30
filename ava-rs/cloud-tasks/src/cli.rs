@@ -1,6 +1,6 @@
+use ava_utils_cli::CliConfigOverrides;
 use clap::Args;
 use clap::Parser;
-use ava_utils_cli::CliConfigOverrides;
 
 #[derive(Parser, Debug, Default)]
 #[command(version)]

@@ -2,10 +2,10 @@
 
 mod viewer;
 
+use ava_protocol::ThreadId;
 use base64::Engine as _;
 use base64::engine::general_purpose::URL_SAFE_NO_PAD;
 use chrono::DateTime;
-use ava_protocol::ThreadId;
 use pulldown_cmark::Event;
 use pulldown_cmark::Options;
 use pulldown_cmark::Parser;

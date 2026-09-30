@@ -9,7 +9,6 @@
 //! byte-for-byte. Filesystem publishing and SQLite projection intentionally live outside this
 //! module.
 
-use chrono::DateTime;
 use ava_protocol::ThreadId;
 use ava_protocol::items::ReasoningItem;
 use ava_protocol::items::TurnItem;
@@ -22,6 +21,7 @@ use ava_protocol::protocol::TurnCompleteEvent;
 use ava_protocol::protocol::TurnStartedEvent;
 use ava_rollout::RolloutItem;
 use ava_rollout::RolloutLine;
+use chrono::DateTime;
 use std::collections::HashSet;
 use tokio::fs::File;
 use tokio::io::AsyncWriteExt;
@@ -278,8 +278,7 @@ impl LegacyRolloutCanonicalizer {
                     }
                 } else {
                     let item = RolloutItem::EventMsg(event);
-                    if ava_rollout::is_persisted_rollout_item(&item, ThreadHistoryMode::Paginated)
-                    {
+                    if ava_rollout::is_persisted_rollout_item(&item, ThreadHistoryMode::Paginated) {
                         self.write_item(writer, &timestamp, item).await?;
                     }
                 }

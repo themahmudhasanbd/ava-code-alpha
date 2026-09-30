@@ -217,7 +217,7 @@ export function TimelineScreen({ route, navigation }: Props) {
   const { allParts, finalOutputText, totalDuration, totalTokens, changedFiles } = useMemo(() => {
     const parts: (MessagePart & {
       turnId: string;
-      nodeType: "thought" | "decision" | "tool" | "plan" | "notice" | "text";
+      nodeType: "thought" | "decision" | "tool" | "plan" | "notice" | "question" | "text";
       hasExpandableContent: boolean;
     })[] = [];
     let dur = 0;
@@ -313,6 +313,17 @@ export function TimelineScreen({ route, navigation }: Props) {
             turnId: msg.id,
             nodeType: "notice",
             hasExpandableContent: false,
+          });
+          continue;
+        }
+
+        if (part.kind === "question" || part.meta?.questions) {
+          const hasQuestions = (part.meta?.questions?.length ?? 0) > 0;
+          parts.push({
+            ...part,
+            turnId: msg.id,
+            nodeType: "question",
+            hasExpandableContent: hasQuestions,
           });
           continue;
         }
@@ -866,6 +877,9 @@ export function TimelineScreen({ route, navigation }: Props) {
                           } else if (part.nodeType === "notice") {
                             Icon = AlertCircle;
                             iconColor = colors.warning;
+                          } else if (part.nodeType === "question") {
+                            Icon = MessageSquare;
+                            iconColor = colors.primary;
                           }
 
                           const displayTitle = toolInfo

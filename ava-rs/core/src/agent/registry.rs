@@ -276,11 +276,8 @@ impl AgentRegistry {
                 active_agents.used_agent_nicknames.clear();
                 active_agents.nickname_reset_count += 1;
                 if let Some(metrics) = ava_otel::global() {
-                    let _ = metrics.counter(
-                        "ava.multi_agent.nickname_pool_reset",
-                        /*inc*/ 1,
-                        &[],
-                    );
+                    let _ =
+                        metrics.counter("ava.multi_agent.nickname_pool_reset", /*inc*/ 1, &[]);
                 }
                 format_agent_nickname(
                     names.choose(&mut rand::rng())?,

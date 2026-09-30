@@ -52,13 +52,12 @@ impl CodeModeElicitationHarness {
         configure: impl FnOnce(&mut Config) + Send + 'static,
     ) -> Result<Self> {
         let server = responses::start_mock_server().await;
-        let mut builder =
-            test_ava()
-                .with_model("test-gpt-5.1-ava")
-                .with_config(move |config| {
-                    let _ = config.features.enable(Feature::CodeMode);
-                    configure(config);
-                });
+        let mut builder = test_ava()
+            .with_model("test-gpt-5.1-ava")
+            .with_config(move |config| {
+                let _ = config.features.enable(Feature::CodeMode);
+                configure(config);
+            });
         let test = builder.build_with_auto_env(&server).await?;
         let follow_up = mount_code_mode_responses(&server, code).await;
         let turn_id = submit_turn(&test, permission_profile).await?;
@@ -172,15 +171,14 @@ await tools.exec_command({
     .await;
 
     harness.assert_result_held().await;
-    harness
-        .test
-        .ava-code
-        .submit(Op::ExecApproval {
-            id: approval.effective_approval_id(),
-            turn_id: Some(harness.turn_id.clone()),
-            decision: ReviewDecision::Approved,
-        })
-        .await?;
+    harness.test.ava
+        - code
+            .submit(Op::ExecApproval {
+                id: approval.effective_approval_id(),
+                turn_id: Some(harness.turn_id.clone()),
+                decision: ReviewDecision::Approved,
+            })
+            .await?;
     harness.finish().await;
     Ok(())
 }
@@ -203,14 +201,13 @@ await tools.apply_patch("*** Begin Patch\n*** Add File: code_mode_patch_approval
     .await;
 
     harness.assert_result_held().await;
-    harness
-        .test
-        .ava-code
-        .submit(Op::PatchApproval {
-            id: approval.call_id,
-            decision: ReviewDecision::Approved,
-        })
-        .await?;
+    harness.test.ava
+        - code
+            .submit(Op::PatchApproval {
+                id: approval.call_id,
+                decision: ReviewDecision::Approved,
+            })
+            .await?;
     harness.finish().await;
     Ok(())
 }
@@ -247,18 +244,17 @@ await tools.request_permissions({
     };
 
     harness.assert_result_held().await;
-    harness
-        .test
-        .ava-code
-        .submit(Op::RequestPermissionsResponse {
-            id: request.call_id,
-            response: RequestPermissionsResponse {
-                permissions: Default::default(),
-                scope: PermissionGrantScope::Turn,
-                strict_auto_review: false,
-            },
-        })
-        .await?;
+    harness.test.ava
+        - code
+            .submit(Op::RequestPermissionsResponse {
+                id: request.call_id,
+                response: RequestPermissionsResponse {
+                    permissions: Default::default(),
+                    scope: PermissionGrantScope::Turn,
+                    strict_auto_review: false,
+                },
+            })
+            .await?;
     harness.finish().await;
     Ok(())
 }

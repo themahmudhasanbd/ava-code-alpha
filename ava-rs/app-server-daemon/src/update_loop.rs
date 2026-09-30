@@ -128,14 +128,14 @@ async fn run_with_http(
     let mut listener = Some(ava_uds::UnixListener::bind(&socket_path).await?);
     #[cfg(windows)]
     updater.mark_ready().await?;
-    let needs_managed_handoff =
-        match resolved_managed_ava_bin(&daemon.current_managed_ava_bin()?).await {
-            Ok(managed_bin) => {
-                executable_identity(&managed_bin).await.ok().as_ref()
-                    != Some(running_updater_identity)
-            }
-            Err(_) => true,
-        };
+    let needs_managed_handoff = match resolved_managed_ava_bin(&daemon.current_managed_ava_bin()?)
+        .await
+    {
+        Ok(managed_bin) => {
+            executable_identity(&managed_bin).await.ok().as_ref() != Some(running_updater_identity)
+        }
+        Err(_) => true,
+    };
     let auto_update_enabled = UpdaterSettings::load(&daemon.settings_file)
         .await
         .map(|settings| settings.auto_update_enabled)
@@ -395,8 +395,7 @@ async fn update_once(
         return Ok((UpdateLoopControl::Continue, None));
     }
 
-    let managed_ava_bin =
-        resolved_managed_ava_bin(&daemon.current_managed_ava_bin()?).await?;
+    let managed_ava_bin = resolved_managed_ava_bin(&daemon.current_managed_ava_bin()?).await?;
     let restart_mode = match trigger {
         // The package can contain different resources even when its CLI binary
         // is identical. A release change must also replace the running process.

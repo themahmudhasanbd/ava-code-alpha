@@ -89,9 +89,7 @@ plugins = true
     )
 }
 
-fn write_cached_remote_plugin_with_skill(
-    ava_home: &std::path::Path,
-) -> Result<std::path::PathBuf> {
+fn write_cached_remote_plugin_with_skill(ava_home: &std::path::Path) -> Result<std::path::PathBuf> {
     let plugin_root = ava_home.join("plugins/cache/openai-curated-remote/linear/local");
     std::fs::create_dir_all(plugin_root.join(".ava-plugin"))?;
     std::fs::write(
@@ -1404,11 +1402,7 @@ async fn skills_changed_notification_is_emitted_after_skill_change() -> Result<(
     let _: ThreadStartResponse =
         timeout(DEFAULT_TIMEOUT, mcp.read_response(thread_start_request_id)).await??;
 
-    let skill_path = ava_home
-        .path()
-        .join("skills")
-        .join("demo")
-        .join("SKILL.md");
+    let skill_path = ava_home.path().join("skills").join("demo").join("SKILL.md");
     std::fs::write(
         &skill_path,
         "---\nname: demo\ndescription: updated\n---\n\n# Updated\n",

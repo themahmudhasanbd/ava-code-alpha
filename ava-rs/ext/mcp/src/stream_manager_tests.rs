@@ -326,13 +326,11 @@ async fn access_changes_cancel_streams_with_full_output() -> Result<()> {
         } else {
             fixture
                 .auth
-                .set_external_auth(Arc::new(StaticAuth(
-                    AvaAuth::from_external_chatgpt_tokens(
-                        "header.e30.other",
-                        "other-account",
-                        /*chatgpt_plan_type*/ None,
-                    )?,
-                )))
+                .set_external_auth(Arc::new(StaticAuth(AvaAuth::from_external_chatgpt_tokens(
+                    "header.e30.other",
+                    "other-account",
+                    /*chatgpt_plan_type*/ None,
+                )?)))
                 .await?;
         }
         // Access changes close the stream even while its output is blocked.

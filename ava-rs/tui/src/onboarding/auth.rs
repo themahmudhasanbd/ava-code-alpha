@@ -249,11 +249,11 @@ impl AuthModeWidget {
     }
 
     fn displayed_sign_in_options(&self) -> Vec<SignInOption> {
-        vec![SignInOption::Antigravity, SignInOption::CustomProvider]
+        vec![SignInOption::CustomProvider]
     }
 
     fn selectable_sign_in_options(&self) -> Vec<SignInOption> {
-        vec![SignInOption::Antigravity, SignInOption::CustomProvider]
+        vec![SignInOption::CustomProvider]
     }
 
     fn move_highlight(&mut self, delta: isize) {
@@ -278,18 +278,8 @@ impl AuthModeWidget {
         }
     }
 
-    fn handle_sign_in_option(&mut self, option: SignInOption) {
-        match option {
-            SignInOption::Antigravity | SignInOption::ChatGpt => {
-                self.start_antigravity_login();
-            }
-            SignInOption::CustomProvider
-            | SignInOption::ApiKey
-            | SignInOption::DeviceCode
-            | SignInOption::Bedrock => {
-                self.start_custom_provider_setup();
-            }
-        }
+    fn handle_sign_in_option(&mut self, _option: SignInOption) {
+        self.start_custom_provider_setup();
     }
 
     fn start_antigravity_login(&mut self) {
@@ -434,15 +424,7 @@ impl AuthModeWidget {
                         .await;
 
                     // Fetch dynamically available models from Cloud Code PA
-                    let mut models = vec![
-                        "gemini-3.8-flash".to_string(),
-                        "gemini-3.7-flash".to_string(),
-                        "gemini-3.1-pro".to_string(),
-                        "claude-3-7-sonnet".to_string(),
-                        "claude-3-5-sonnet".to_string(),
-                        "claude-opus-4".to_string(),
-                        "gpt-oss-1".to_string(),
-                    ];
+                    let mut models = Vec::new();
 
                     if let Ok(models_resp) = client
                         .post("https://daily-cloudcode-pa.googleapis.com/v1internal:fetchAvailableModels")
@@ -503,21 +485,31 @@ impl AuthModeWidget {
         });
 
         let toml_config = r#"model_provider = "antigravity"
-model = "gemini-3.8-flash"
 "#;
 
         if let Some(home) = dirs::home_dir() {
-            for dir in [
-                home.join(".ava-code"),
-                home.join(".config").join("ava"),
-                home.join(".ava-code"),
-            ] {
+            for dir in [home.join(".ava-code"), home.join(".config").join("ava")] {
                 let _ = std::fs::create_dir_all(&dir);
                 let _ = std::fs::write(
                     dir.join("auth.json"),
                     serde_json::to_string_pretty(&auth_payload).unwrap_or_default(),
                 );
                 let _ = std::fs::write(dir.join("config.toml"), toml_config);
+            }
+        }
+    }
+
+    fn persist_antigravity_model(model: &str) {
+        let toml_config = format!(
+            r#"model_provider = "antigravity"
+model = "{model}"
+"#
+        );
+
+        if let Some(home) = dirs::home_dir() {
+            for dir in [home.join(".ava-code"), home.join(".config").join("ava")] {
+                let _ = std::fs::create_dir_all(&dir);
+                let _ = std::fs::write(dir.join("config.toml"), &toml_config);
             }
         }
     }
@@ -628,15 +620,8 @@ wire_api = "responses"
                 }
             }
 
-            if fetched_models.is_empty() {
-                // Default fallback options if dynamic discovery returned none
-                fetched_models = vec![
-                    "gpt-4o".to_string(),
-                    "gpt-4o-mini".to_string(),
-                    "claude-3-5-sonnet-latest".to_string(),
-                    "deepseek-coder".to_string(),
-                    "llama3.2".to_string(),
-                ];
+            if fetched_models.is_empty() && fetch_err.is_none() {
+                fetch_err = Some("No models returned by endpoint /models".to_string());
             }
 
             let mut guard = sign_in_state.write().unwrap();
@@ -663,7 +648,8 @@ wire_api = "responses"
             ]),
             Line::from(vec![
                 "  ".into(),
-                "Connect with Google Antigravity or configure a custom endpoint & API key".dim(),
+                "Connect an OpenAI-compatible endpoint, OpenRouter, DeepSeek, Ollama, or API key"
+                    .dim(),
             ]),
             "".into(),
         ];
@@ -840,31 +826,47 @@ wire_api = "responses"
                 "Google Antigravity Connected!".bold(),
             ]),
             "".into(),
-            "  Select your default model for this workspace:".into(),
-            "".into(),
         ];
 
-        for (idx, model) in state.models.iter().enumerate() {
-            let is_selected = idx == state.selected_index;
-            let caret = if is_selected { ">" } else { " " };
-            if is_selected {
-                lines.push(Line::from(vec![
-                    format!("{caret} {model}").cyan().bold(),
-                    " (Default)".dim(),
-                ]));
-            } else {
-                lines.push(Line::from(format!("  {model}")).dim());
-            }
-        }
+        if state.models.is_empty() {
+            lines.push(
+                "  No models discovered from Antigravity endpoint."
+                    .yellow()
+                    .into(),
+            );
+            lines.push("  Configure model in ~/.ava-code/config.toml".dim().into());
+            lines.push("".into());
+            lines.push(Line::from(vec![
+                "  Press ".dim(),
+                self.confirm_binding().into(),
+                " to continue".dim(),
+            ]));
+        } else {
+            lines.push("  Select your default model for this workspace:".into());
+            lines.push("".into());
 
-        lines.push("".into());
-        lines.push(Line::from(vec![
-            "  Use ".dim(),
-            "↑/↓".cyan(),
-            " to select, press ".dim(),
-            self.confirm_binding().into(),
-            " to confirm".dim(),
-        ]));
+            for (idx, model) in state.models.iter().enumerate() {
+                let is_selected = idx == state.selected_index;
+                let caret = if is_selected { ">" } else { " " };
+                if is_selected {
+                    lines.push(Line::from(vec![
+                        format!("{caret} {model}").cyan().bold(),
+                        " (Default)".dim(),
+                    ]));
+                } else {
+                    lines.push(Line::from(format!("  {model}")).dim());
+                }
+            }
+
+            lines.push("".into());
+            lines.push(Line::from(vec![
+                "  Use ".dim(),
+                "↑/↓".cyan(),
+                " to select, press ".dim(),
+                self.confirm_binding().into(),
+                " to confirm".dim(),
+            ]));
+        }
 
         Paragraph::new(lines)
             .wrap(Wrap { trim: false })
@@ -981,6 +983,27 @@ wire_api = "responses"
             lines.push(Line::from(
                 "  Fetching available models from endpoint...".cyan(),
             ));
+        } else if state.models.is_empty() {
+            lines.push(
+                "  No models discovered from remote endpoint."
+                    .yellow()
+                    .into(),
+            );
+            if let Some(ref err) = state.error_msg {
+                lines.push(Line::from(format!("  Status: {err}")).dim());
+            }
+            lines.push("".into());
+            lines.push(
+                "  You can configure your model in ~/.ava-code/config.toml"
+                    .dim()
+                    .into(),
+            );
+            lines.push("".into());
+            lines.push(Line::from(vec![
+                "  Press ".dim(),
+                self.confirm_binding().into(),
+                " to finish setup".dim(),
+            ]));
         } else {
             lines.push("  Dynamically loaded models:".into());
             lines.push("".into());
@@ -1151,14 +1174,18 @@ impl KeyboardHandler for AuthModeWidget {
                     return;
                 }
                 if keys::CONFIRM.is_pressed(key_event) {
-                    let selected_model = state
-                        .models
-                        .get(state.selected_index)
-                        .cloned()
-                        .unwrap_or_else(|| "gemini-3.8-flash".to_string());
-                    *self.sign_in_state.write().unwrap() = SignInState::SuccessMessage(format!(
-                        "Authenticated with Google Antigravity (Default model: {selected_model})"
-                    ));
+                    if let Some(selected_model) = state.models.get(state.selected_index) {
+                        Self::persist_antigravity_model(selected_model);
+                        *self.sign_in_state.write().unwrap() = SignInState::SuccessMessage(
+                            format!(
+                                "Authenticated with Google Antigravity (Default model: {selected_model})"
+                            ),
+                        );
+                    } else {
+                        *self.sign_in_state.write().unwrap() = SignInState::SuccessMessage(
+                            "Authenticated with Google Antigravity (No model selected)".to_string(),
+                        );
+                    }
                     self.request_frame.schedule_frame();
                     return;
                 }
@@ -1277,15 +1304,18 @@ impl KeyboardHandler for AuthModeWidget {
                         .models
                         .get(state.selected_index)
                         .cloned()
-                        .unwrap_or_else(|| "default".to_string());
+                        .unwrap_or_default();
                     Self::persist_custom_provider_config(
                         &state.endpoint,
                         &state.api_key,
                         &selected_model,
                     );
-                    *self.sign_in_state.write().unwrap() = SignInState::SuccessMessage(format!(
-                        "Custom Provider Connected (Model: {selected_model})"
-                    ));
+                    let success_msg = if selected_model.is_empty() {
+                        "Custom Provider Connected (No model configured)".to_string()
+                    } else {
+                        format!("Custom Provider Connected (Model: {selected_model})")
+                    };
+                    *self.sign_in_state.write().unwrap() = SignInState::SuccessMessage(success_msg);
                     self.request_frame.schedule_frame();
                     return;
                 }

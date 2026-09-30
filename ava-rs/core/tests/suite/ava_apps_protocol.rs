@@ -128,20 +128,20 @@ async fn apps_call_survives_catalog_restoration_while_awaiting_approval() -> any
     )
     .await;
     let completion = responses::mount_sse_once(&server, responses::sse_completed("done")).await;
-    fixture
-        .ava-code
-        .start_or_steer_turn(
-            TurnInputRequest::user_input(vec![UserInput::Text {
-                text: "Use [$calendar](app://calendar) to create a calendar event.".into(),
-                text_elements: Vec::new(),
-            }])
-            .with_thread_settings(ThreadSettingsOverrides {
-                approval_policy: Some(AskForApproval::OnRequest),
-                permission_profile: Some(PermissionProfile::Disabled),
-                ..Default::default()
-            }),
-        )
-        .await?;
+    fixture.ava
+        - code
+            .start_or_steer_turn(
+                TurnInputRequest::user_input(vec![UserInput::Text {
+                    text: "Use [$calendar](app://calendar) to create a calendar event.".into(),
+                    text_elements: Vec::new(),
+                }])
+                .with_thread_settings(ThreadSettingsOverrides {
+                    approval_policy: Some(AskForApproval::OnRequest),
+                    permission_profile: Some(PermissionProfile::Disabled),
+                    ..Default::default()
+                }),
+            )
+            .await?;
     let EventMsg::ElicitationRequest(approval) = wait_for_event(&fixture.ava, |event| {
         matches!(
             event,
@@ -172,16 +172,16 @@ async fn apps_call_survives_catalog_restoration_while_awaiting_approval() -> any
     tools_available.store(true, Ordering::SeqCst);
     assert!(!peer.refresh_ava_apps_tools().await?.tools.is_empty());
 
-    fixture
-        .ava-code
-        .submit(Op::ResolveElicitation {
-            server_name: approval.server_name,
-            request_id: approval.id,
-            decision: ElicitationAction::Accept,
-            content: None,
-            meta: None,
-        })
-        .await?;
+    fixture.ava
+        - code
+            .submit(Op::ResolveElicitation {
+                server_name: approval.server_name,
+                request_id: approval.id,
+                decision: ElicitationAction::Accept,
+                content: None,
+                meta: None,
+            })
+            .await?;
     wait_for_event(&fixture.ava, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })

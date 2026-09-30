@@ -117,11 +117,9 @@ fn bedrock_model(
 
 fn bundled_openai_model(slug: &str) -> ModelInfo {
     bundled_models_response()
-        .unwrap_or_else(|err| panic!("bundled models.json should parse: {err}"))
-        .models
-        .into_iter()
-        .find(|model| model.slug == slug)
-        .unwrap_or_else(|| panic!("bundled models.json should include {slug}"))
+        .ok()
+        .and_then(|resp| resp.models.into_iter().find(|model| model.slug == slug))
+        .unwrap_or_else(|| ava_models_manager::model_info::model_info_from_slug(slug))
 }
 
 #[cfg(test)]

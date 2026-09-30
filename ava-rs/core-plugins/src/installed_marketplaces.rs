@@ -19,8 +19,7 @@ pub fn installed_marketplace_roots_from_layer_stack(
     config_layer_stack: &ConfigLayerStack,
     ava_home: &Path,
 ) -> Vec<AbsolutePathBuf> {
-    let Some(effective_config) = policy_filtered_plugin_config(config_layer_stack, ava_home)
-    else {
+    let Some(effective_config) = policy_filtered_plugin_config(config_layer_stack, ava_home) else {
         return Vec::new();
     };
     let Some(marketplaces_value) = effective_config.get("marketplaces") else {

@@ -329,11 +329,7 @@ async fn control_socket_file_is_private_after_bind() {
     let physical_path = std::fs::read_link(socket_path.as_path()).expect("rendezvous symlink");
     assert_eq!(
         physical_path.parent(),
-        Some(
-            ava_uds::shared_daemon_socket_directory()
-                .unwrap()
-                .as_path()
-        )
+        Some(ava_uds::shared_daemon_socket_directory().unwrap().as_path())
     );
 
     shutdown_token.cancel();

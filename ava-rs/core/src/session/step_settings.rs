@@ -41,7 +41,7 @@ pub(crate) struct StepSettings {
 pub(crate) struct ResolvedStepSettings {
     /// Inputs for later sparse patches. Unset defaults and unsupported requested
     /// tiers must not be reconstructed from the effective values below.
-    selected: Arc<StepSettings>,
+    pub(crate) selected: Arc<StepSettings>,
     pub(crate) model_info: Arc<ModelInfo>,
     /// Effective request summary: the configured value or the pinned model's default.
     pub(crate) reasoning_summary: ReasoningSummary,
@@ -54,7 +54,7 @@ pub(crate) struct ResolvedStepSettings {
 
 impl ResolvedStepSettings {
     /// Derives request values from selected settings and pinned metadata.
-    pub(super) fn new(
+    pub(crate) fn new(
         selected: Arc<StepSettings>,
         model_info: Arc<ModelInfo>,
         fast_mode_enabled: bool,
@@ -105,7 +105,7 @@ impl ResolvedStepSettings {
     }
 
     /// Retained inputs for constructing a snapshot against different model metadata.
-    pub(super) fn selected(&self) -> &StepSettings {
+    pub(crate) fn selected(&self) -> &StepSettings {
         &self.selected
     }
 
@@ -167,7 +167,7 @@ impl ResolvedStepSettings {
             .can_set(&self.approvals_reviewer())
     }
 
-    pub(super) fn telemetry(&self, base: &SessionTelemetry) -> SessionTelemetry {
+    pub(crate) fn telemetry(&self, base: &SessionTelemetry) -> SessionTelemetry {
         base.clone().with_model(
             self.selected.collaboration_mode.model(),
             &self.model_info.slug,
@@ -243,7 +243,7 @@ pub(crate) struct StepSettingsConstraints<'a> {
 
 impl StepSettings {
     /// Resolves the selected model using the session's explicit startup overrides.
-    pub(super) async fn resolve_model_info(
+    pub(crate) async fn resolve_model_info(
         &self,
         models_manager: &dyn ModelsManager,
         overrides: &ModelInfoOverrides,

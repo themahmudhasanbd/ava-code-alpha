@@ -304,11 +304,6 @@ fn normalize_scopes(scopes_supported: Option<Vec<String>>) -> Option<Vec<String>
 #[cfg(test)]
 mod tests {
     use super::*;
-    use axum::Json;
-    use axum::Router;
-    use axum::http::StatusCode;
-    use axum::http::header::WWW_AUTHENTICATE;
-    use axum::routing::get;
     use ava_exec_server::ExecServerError;
     use ava_exec_server::HttpRedirectPolicy;
     use ava_exec_server::HttpRequestParams;
@@ -317,6 +312,11 @@ mod tests {
     use ava_exec_server::RouteAwareHttpClient;
     use ava_http_client::HttpClientFactory;
     use ava_http_client::OutboundProxyPolicy;
+    use axum::Json;
+    use axum::Router;
+    use axum::http::StatusCode;
+    use axum::http::header::WWW_AUTHENTICATE;
+    use axum::routing::get;
     use futures::future::BoxFuture;
     use pretty_assertions::assert_eq;
     use serial_test::serial;

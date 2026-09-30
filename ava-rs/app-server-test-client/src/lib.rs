@@ -22,9 +22,6 @@ use std::time::SystemTime;
 use anyhow::Context;
 use anyhow::Result;
 use anyhow::bail;
-use clap::ArgAction;
-use clap::Parser;
-use clap::Subcommand;
 use ava_app_server_protocol::AccountLoginCompletedNotification;
 use ava_app_server_protocol::AskForApproval;
 use ava_app_server_protocol::ClientInfo;
@@ -75,6 +72,9 @@ use ava_protocol::dynamic_tools::normalize_dynamic_tool_specs;
 use ava_protocol::openai_models::ReasoningEffort;
 use ava_protocol::protocol::W3cTraceContext;
 use ava_utils_cli::CliConfigOverrides;
+use clap::ArgAction;
+use clap::Parser;
+use clap::Subcommand;
 use serde::Serialize;
 use serde::de::DeserializeOwned;
 use serde_json::Value;
@@ -521,8 +521,7 @@ pub async fn run() -> Result<()> {
                     "plugin-analytics-mutation-smoke requires --ava-bin and does not support --url"
                 );
             }
-            let ava_bin =
-                ava_bin.context("plugin-analytics-mutation-smoke requires --ava-bin")?;
+            let ava_bin = ava_bin.context("plugin-analytics-mutation-smoke requires --ava-bin")?;
             plugin_analytics_mutation_smoke::run(
                 &ava_bin,
                 &config_overrides,

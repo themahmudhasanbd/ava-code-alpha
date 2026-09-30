@@ -302,11 +302,7 @@ fn launch_rpc_span_finishes_before_its_process_exits() {
     assert_exported_attributes(
         &records,
         vec![
-            expected_process_attributes(
-                "ava.exec_server.process_start",
-                /*index*/ 0,
-                "None",
-            ),
+            expected_process_attributes("ava.exec_server.process_start", /*index*/ 0, "None"),
             expected_exit,
         ],
     );

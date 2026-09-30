@@ -56,13 +56,12 @@ async fn fork_thread_twice_drops_to_first_message() {
 
     // Send three user messages; wait for three completed turns.
     for text in ["first", "second", "third"] {
-        ava
-            .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
-                text: text.to_string(),
-                text_elements: Vec::new(),
-            }]))
-            .await
-            .unwrap();
+        ava.start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
+            text: text.to_string(),
+            text_elements: Vec::new(),
+        }]))
+        .await
+        .unwrap();
         let _ = wait_for_event(&ava, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
     }
 
@@ -276,13 +275,12 @@ async fn assert_copied_fork_persists_inherited_history(history_mode: ThreadHisto
     let ava = test.ava.clone();
     let thread_manager = test.thread_manager.clone();
 
-    ava
-        .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
-            text: "fork me from stored history".to_string(),
-            text_elements: Vec::new(),
-        }]))
-        .await
-        .expect("submit initial user turn");
+    ava.start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
+        text: "fork me from stored history".to_string(),
+        text_elements: Vec::new(),
+    }]))
+    .await
+    .expect("submit initial user turn");
     let _ = wait_for_event(&ava, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
 
     let source_path = ava.rollout_path().expect("source rollout path");
@@ -335,9 +333,9 @@ async fn assert_copied_fork_persists_inherited_history(history_mode: ThreadHisto
             .resume_thread_with_history(
                 test.config.clone(),
                 resumed_history,
-                ava_core::test_support::auth_manager_from_auth(
-                    ava_login::AvaAuth::from_api_key("dummy"),
-                ),
+                ava_core::test_support::auth_manager_from_auth(ava_login::AvaAuth::from_api_key(
+                    "dummy",
+                )),
                 /*parent_trace*/ None,
                 ClientMcpExtensions::default(),
             )

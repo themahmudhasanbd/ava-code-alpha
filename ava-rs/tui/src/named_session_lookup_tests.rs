@@ -497,10 +497,8 @@ async fn uses_listed_thread_when_older_server_cannot_read_it() -> color_eyre::Re
             channel_capacity: 8,
         })
         .await?;
-        let mut remote = AppServerSession::new(
-            ava_app_server_client::AppServerClient::Remote(client),
-            mode,
-        );
+        let mut remote =
+            AppServerSession::new(ava_app_server_client::AppServerClient::Remote(client), mode);
         let found = lookup(
             &mut remote,
             config.ava_home.as_path(),

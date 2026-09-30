@@ -2,11 +2,11 @@ use crate::auth::SharedAuthProvider;
 use crate::endpoint::session::EndpointSession;
 use crate::error::ApiError;
 use crate::provider::Provider;
-use bytes::Bytes;
 use ava_client::HttpTransport;
 use ava_client::RequestTelemetry;
 use ava_protocol::openai_models::ModelInfo;
 use ava_protocol::openai_models::ModelsResponse;
+use bytes::Bytes;
 use http::HeaderMap;
 use http::Method;
 use http::header::ETAG;
@@ -222,6 +222,7 @@ mod tests {
                 retry_429: false,
                 retry_5xx: true,
                 retry_transport: true,
+                retry_auth: false,
             },
             stream_idle_timeout: Duration::from_secs(1),
         }

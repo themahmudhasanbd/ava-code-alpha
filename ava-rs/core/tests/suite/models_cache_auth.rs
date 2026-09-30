@@ -206,10 +206,8 @@ async fn auth_rotation_refreshes_before_turn_with_best_effort(
                 .await?;
         }
     }
-    let started = wait_for_event(&test.ava, |event| {
-        matches!(event, EventMsg::TurnStarted(_))
-    })
-    .await;
+    let started =
+        wait_for_event(&test.ava, |event| matches!(event, EventMsg::TurnStarted(_))).await;
     let EventMsg::TurnStarted(started) = started else {
         unreachable!()
     };

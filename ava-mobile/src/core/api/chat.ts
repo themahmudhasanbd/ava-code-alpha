@@ -52,6 +52,45 @@ function toSandboxPolicy(sandbox?: string): { type: string } | undefined {
   }
 }
 
+/**
+ * Server-initiated request methods that are approval/elicitation prompts,
+ * not genuine user-input questions. These get the sticky approval card UI
+ * and a structured response (see answerApproval), instead of the free-text
+ * question flow.
+ */
+export const APPROVAL_METHODS: ReadonlySet<string> = new Set([
+  "item/commandExecution/requestApproval",
+  "item/fileChange/requestApproval",
+  "item/permissions/requestApproval",
+  "mcpServer/elicitation/request",
+]);
+
+export function isApprovalMethod(method: string): boolean {
+  return APPROVAL_METHODS.has(method);
+}
+
+/** Builds a human-readable detail line for an approval card from server params. */
+export function approvalDetail(method: string, params: Raw): string | undefined {
+  if (!params || typeof params !== "object") return undefined;
+  const parts: string[] = [];
+  if (typeof params.command === "string" && params.command.trim()) {
+    parts.push(params.command.trim().slice(0, 300));
+  }
+  if (typeof params.reason === "string" && params.reason.trim()) {
+    parts.push(params.reason.trim().slice(0, 300));
+  }
+  if (typeof params.server_name === "string" && params.server_name.trim()) {
+    parts.push(`MCP server: ${params.server_name.trim()}`);
+  }
+  if (typeof params.grant_root === "string" && params.grant_root.trim()) {
+    parts.push(`Grant root: ${params.grant_root.trim()}`);
+  }
+  if (typeof params.cwd === "string" && params.cwd.trim()) {
+    parts.push(`cwd: ${params.cwd.trim()}`);
+  }
+  return parts.length ? parts.join("\n") : undefined;
+}
+
 /** Dedupes the "output truncated" notice per process. */
 const cappedProcessNotices = new Set<string>();
 
@@ -81,11 +120,14 @@ function handleServerRequest(
         params?.message ??
         params?.prompt ??
         params?.text ??
+        params?.reason ??
         fallbackTitle[method] ??
         "Agent question",
     ),
     options: Array.isArray(params?.options) ? params.options.map((o: Raw) => String(o)) : undefined,
     requestId: reqId,
+    method,
+    params,
   };
   if (h.onQuestion) h.onQuestion(q, reqId);
 }
@@ -598,6 +640,39 @@ export async function startQueuedPrompt(
 }
 
 /** Steers or responds to an active turn with an answer to a question. */
+/**
+ * Responds to a server approval/elicitation request with the structured
+ * response the protocol expects. Unlike answerQuestion, this does NOT
+ * steer or start a new turn — the server resumes the paused turn itself.
+ */
+export function answerApproval(
+  rpc: RpcClient,
+  requestId: number | string | undefined,
+  method: string,
+  approved: boolean,
+  params?: Raw,
+): void {
+  if (requestId == null) return;
+  let response: Record<string, unknown> | null = null;
+  switch (method) {
+    case "item/commandExecution/requestApproval":
+    case "item/fileChange/requestApproval":
+      response = { decision: approved ? "accept" : "decline" };
+      break;
+    case "item/permissions/requestApproval":
+      response = approved
+        ? { permissions: params?.permissions ?? {}, scope: "turn" }
+        : { permissions: {}, scope: "turn" };
+      break;
+    case "mcpServer/elicitation/request":
+      response = { action: approved ? "accept" : "decline", content: null };
+      break;
+    default:
+      return;
+  }
+  rpc.respond(requestId, response);
+}
+
 export async function answerQuestion(
   rpc: RpcClient,
   threadId: string,

@@ -82,10 +82,10 @@ async fn initial_plugin_ids_use_turn_context_without_extra_settings_checkpoints(
     )
     .await?;
     let response = responses::mount_sse_once(&server, responses::sse_completed("first turn")).await;
-    let submission = test
-        .ava-code
-        .start_turn_if_idle(TurnInputRequest::user_input(Vec::new()))
-        .await?;
+    let submission = test.ava
+        - code
+            .start_turn_if_idle(TurnInputRequest::user_input(Vec::new()))
+            .await?;
     let StartIfIdleSubmission::Started { turn_id } = submission else {
         panic!("expected an accepted first turn, got {submission:?}");
     };

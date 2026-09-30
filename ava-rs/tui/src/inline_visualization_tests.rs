@@ -43,8 +43,8 @@ fn unterminated_visualization_preview_uses_the_stream_context() {
 #[test]
 fn granted_visualization_root_overrides_thread_id_derived_root() {
     let ava_home = tempfile::tempdir().expect("temp ava home");
-    let granted_context = InlineVisualizationContext::new(ava_home.path(), ThreadId::new())
-        .expect("granted context");
+    let granted_context =
+        InlineVisualizationContext::new(ava_home.path(), ThreadId::new()).expect("granted context");
     fs::create_dir_all(&granted_context.thread_dir).expect("create granted directory");
     fs::write(
         granted_context.thread_dir.join("chart.html"),

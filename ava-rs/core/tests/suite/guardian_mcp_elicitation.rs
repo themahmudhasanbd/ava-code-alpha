@@ -246,10 +246,7 @@ async fn server_initiated_mcp_elicitation_can_require_synchronous_auto_review(
         meta.insert("ava_strict_auto_review".to_string(), json!(true));
     }
     if let Some(sensitive_action) = sensitive_action {
-        meta.insert(
-            "ava_sensitive_action".to_string(),
-            json!(sensitive_action),
-        );
+        meta.insert("ava_sensitive_action".to_string(), json!(sensitive_action));
     }
 
     let server = responses::start_mock_server().await;
@@ -891,8 +888,7 @@ async fn yielded_code_mode_elicitation_keeps_live_invocation_metadata() -> Resul
     let mut invocation_id = None;
     let mut assessment_target = None;
     loop {
-        let event =
-            tokio::time::timeout(Duration::from_secs(60), test.ava.next_event()).await??;
+        let event = tokio::time::timeout(Duration::from_secs(60), test.ava.next_event()).await??;
         match event.msg {
             EventMsg::ItemCompleted(event) => {
                 if let TurnItem::McpToolCall(item) = event.item {

@@ -15,12 +15,12 @@ use std::path::PathBuf;
 use std::time::Duration;
 use std::time::SystemTime;
 
-use chrono::NaiveDateTime;
 use ava_protocol::ThreadId;
 use ava_protocol::protocol::ThreadHistoryMode;
 use ava_rollout::StateDbHandle;
 use ava_state::RolloutMigrationCursor;
 use ava_state::RolloutMigrationSkippedRollout;
+use chrono::NaiveDateTime;
 
 use super::LocalThreadStore;
 use super::RolloutMigrationMode;

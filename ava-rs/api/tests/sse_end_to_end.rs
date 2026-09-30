@@ -3,7 +3,6 @@ use std::sync::Arc;
 use std::time::Duration;
 
 use anyhow::Result;
-use bytes::Bytes;
 use ava_api::AuthProvider;
 use ava_api::Compression;
 use ava_api::Provider;
@@ -15,6 +14,7 @@ use ava_client::Response;
 use ava_client::StreamResponse;
 use ava_client::TransportError;
 use ava_protocol::models::ResponseItem;
+use bytes::Bytes;
 use futures::StreamExt;
 use http::HeaderMap;
 use http::StatusCode;
@@ -68,6 +68,7 @@ fn provider(name: &str) -> Provider {
             retry_429: false,
             retry_5xx: false,
             retry_transport: true,
+                retry_auth: false,
         },
         stream_idle_timeout: Duration::from_millis(50),
     }

@@ -74,10 +74,7 @@ pub(crate) struct ImportedSourceState {
     pub imported_at: i64,
 }
 
-pub fn has_current_session_been_imported(
-    ava_home: &Path,
-    source_path: &Path,
-) -> io::Result<bool> {
+pub fn has_current_session_been_imported(ava_home: &Path, source_path: &Path) -> io::Result<bool> {
     load_import_ledger(ava_home)?.contains_current_source(source_path)
 }
 

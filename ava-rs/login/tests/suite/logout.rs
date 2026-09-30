@@ -1,19 +1,19 @@
 use anyhow::Context;
 use anyhow::Result;
-use base64::Engine;
 use ava_config::types::AuthCredentialsStoreMode;
+use ava_login::AVA_ACCESS_TOKEN_ENV_VAR;
 use ava_login::AuthDotJson;
 use ava_login::AuthKeyringBackendKind;
 use ava_login::AuthManager;
 use ava_login::CLIENT_ID;
 use ava_login::CLIENT_ID_OVERRIDE_ENV_VAR;
-use ava_login::AVA_ACCESS_TOKEN_ENV_VAR;
 use ava_login::REVOKE_TOKEN_URL_OVERRIDE_ENV_VAR;
 use ava_login::logout_with_revoke;
 use ava_login::save_auth;
 use ava_login::token_data::IdTokenInfo;
 use ava_login::token_data::TokenData;
 use ava_protocol::auth::AuthMode;
+use base64::Engine;
 use core_test_support::skip_if_no_network;
 use pretty_assertions::assert_eq;
 use serde_json::Value;
@@ -103,10 +103,8 @@ async fn logout_with_revoke_uses_stored_auth_when_access_token_env_is_set() -> R
         REVOKE_TOKEN_URL_OVERRIDE_ENV_VAR,
         format!("{}/oauth/revoke", server.uri()),
     );
-    let _access_token_env_guard = EnvGuard::set(
-        AVA_ACCESS_TOKEN_ENV_VAR,
-        "at-environment-token".to_string(),
-    );
+    let _access_token_env_guard =
+        EnvGuard::set(AVA_ACCESS_TOKEN_ENV_VAR, "at-environment-token".to_string());
 
     let ava_home = TempDir::new()?;
     save_auth(

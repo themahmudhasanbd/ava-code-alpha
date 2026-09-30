@@ -26,11 +26,7 @@ pub(crate) struct BackendPaths {
 }
 
 pub(crate) fn pid_backend(paths: BackendPaths) -> PidBackend {
-    let mut backend = PidBackend::new(
-        paths.ava_bin,
-        paths.pid_file,
-        paths.remote_control_enabled,
-    );
+    let mut backend = PidBackend::new(paths.ava_bin, paths.pid_file, paths.remote_control_enabled);
     backend.feature_overrides = paths.feature_overrides;
     backend
 }

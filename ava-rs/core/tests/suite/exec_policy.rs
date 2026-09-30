@@ -701,35 +701,37 @@ async fn environment_command_restrictions_override_saved_prefix_approvals() -> R
     });
     let server = start_mock_server().await;
     let test = builder.build_with_auto_env(&server).await?;
-    let selection = test
-        .ava-code
-        .environment_selections()
-        .await
-        .into_iter()
-        .next()
-        .expect("thread should select its executor environment");
+    let selection = test.ava
+        - code
+            .environment_selections()
+            .await
+            .into_iter()
+            .next()
+            .expect("thread should select its executor environment");
     let mut invalid_policy = Policy::empty();
     invalid_policy.add_prefix_rule(&["echo".to_string()], Decision::Allow)?;
-    let error = test
-        .ava-code
-        .environment_ready(
-            &selection,
-            EnvironmentConfig {
-                allow_login_shell: true,
-                workspace_roots: selection.workspace_roots.clone(),
-                permission_profile: PermissionProfileSnapshot::legacy(PermissionProfile::Disabled),
-                shell_environment_policy: Default::default(),
-                windows_sandbox_level: WindowsSandboxLevel::from_config(&test.config),
-                windows_sandbox_type: test.config.permissions.windows_sandbox_type,
-                use_legacy_landlock: test.config.features.use_legacy_landlock(),
-                exec_policy: Some(RequirementsExecPolicy::new(invalid_policy)),
-                mcp_policy: None,
-                network_policy: None,
-                selected_capability_roots: Vec::new(),
-            },
-        )
-        .await
-        .expect_err("environment policies must not introduce command allowances");
+    let error = test.ava
+        - code
+            .environment_ready(
+                &selection,
+                EnvironmentConfig {
+                    allow_login_shell: true,
+                    workspace_roots: selection.workspace_roots.clone(),
+                    permission_profile: PermissionProfileSnapshot::legacy(
+                        PermissionProfile::Disabled,
+                    ),
+                    shell_environment_policy: Default::default(),
+                    windows_sandbox_level: WindowsSandboxLevel::from_config(&test.config),
+                    windows_sandbox_type: test.config.permissions.windows_sandbox_type,
+                    use_legacy_landlock: test.config.features.use_legacy_landlock(),
+                    exec_policy: Some(RequirementsExecPolicy::new(invalid_policy)),
+                    mcp_policy: None,
+                    network_policy: None,
+                    selected_capability_roots: Vec::new(),
+                },
+            )
+            .await
+            .expect_err("environment policies must not introduce command allowances");
     assert!(matches!(
         error.details(),
         AvaErrorDetails::InvalidRequest(message)
@@ -829,13 +831,13 @@ async fn environment_command_policy_changes_invalidate_session_approvals() -> Re
     });
     let server = start_mock_server().await;
     let test = builder.build_with_auto_env(&server).await?;
-    let selection = test
-        .ava-code
-        .environment_selections()
-        .await
-        .into_iter()
-        .next()
-        .expect("thread should select its executor environment");
+    let selection = test.ava
+        - code
+            .environment_selections()
+            .await
+            .into_iter()
+            .next()
+            .expect("thread should select its executor environment");
 
     for (attempt, decision) in [
         ("before-owner-policy", ReviewDecision::ApprovedForSession),

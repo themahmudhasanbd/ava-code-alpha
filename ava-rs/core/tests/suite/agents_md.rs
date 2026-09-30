@@ -311,29 +311,28 @@ fn request_body_contains(request: &wiremock::Request, text: &str) -> bool {
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn agents_override_is_preferred_over_agents_md() -> Result<()> {
-    let instructions =
-        agents_instructions(test_ava().with_workspace_setup(|cwd, fs| async move {
-            let agents_md = cwd.join("AGENTS.md");
-            let override_md = cwd.join("AGENTS.override.md");
-            let agents_md_uri = executor_path_uri(&agents_md)?;
-            let override_md_uri = executor_path_uri(&override_md)?;
-            fs.write_file(
-                &agents_md_uri,
-                b"base doc".to_vec(),
-                Default::default(),
-                /*sandbox*/ None,
-            )
-            .await?;
-            fs.write_file(
-                &override_md_uri,
-                b"override doc".to_vec(),
-                Default::default(),
-                /*sandbox*/ None,
-            )
-            .await?;
-            Ok::<(), anyhow::Error>(())
-        }))
+    let instructions = agents_instructions(test_ava().with_workspace_setup(|cwd, fs| async move {
+        let agents_md = cwd.join("AGENTS.md");
+        let override_md = cwd.join("AGENTS.override.md");
+        let agents_md_uri = executor_path_uri(&agents_md)?;
+        let override_md_uri = executor_path_uri(&override_md)?;
+        fs.write_file(
+            &agents_md_uri,
+            b"base doc".to_vec(),
+            Default::default(),
+            /*sandbox*/ None,
+        )
         .await?;
+        fs.write_file(
+            &override_md_uri,
+            b"override doc".to_vec(),
+            Default::default(),
+            /*sandbox*/ None,
+        )
+        .await?;
+        Ok::<(), anyhow::Error>(())
+    }))
+    .await?;
 
     assert!(
         instructions.contains("override doc"),
@@ -787,10 +786,7 @@ async fn restricted_project_without_instructions_starts_successfully() -> Result
     });
     let test = builder.build_with_auto_env(&server).await?;
 
-    assert_eq!(
-        test.ava.instruction_sources().await,
-        Vec::<PathUri>::new()
-    );
+    assert_eq!(test.ava.instruction_sources().await, Vec::<PathUri>::new());
     test.submit_text_turn("continue without project instructions")
         .await?;
     response_mock.single_request();
@@ -1004,10 +1000,7 @@ async fn tightening_environment_read_permissions_invalidates_cached_project_inst
         error.message
     );
 
-    assert_eq!(
-        test.ava.instruction_sources().await,
-        Vec::<PathUri>::new()
-    );
+    assert_eq!(test.ava.instruction_sources().await, Vec::<PathUri>::new());
     assert!(
         response_mock.requests().is_empty(),
         "the denied turn must fail before sending a model request"
@@ -1031,9 +1024,7 @@ async fn loads_user_instructions_without_a_primary_environment() -> Result<()> {
     let global_source =
         write_global_file(home.as_ref(), GLOBAL_AGENTS_FILENAME, GLOBAL_INSTRUCTIONS)?;
     let provider = Arc::new(RecordingUserInstructionsProvider::new(Arc::new(
-        AvaHomeUserInstructionsProvider::new(AbsolutePathBuf::try_from(
-            home.path().to_path_buf(),
-        )?),
+        AvaHomeUserInstructionsProvider::new(AbsolutePathBuf::try_from(home.path().to_path_buf())?),
     )));
 
     let mut builder = test_ava()
@@ -1934,9 +1925,7 @@ async fn multi_environment_thread_refreshes_global_and_keeps_repository_snapshot
     let global_source =
         write_global_file(home.as_ref(), GLOBAL_AGENTS_FILENAME, GLOBAL_INSTRUCTIONS)?;
     let provider = Arc::new(RecordingUserInstructionsProvider::new(Arc::new(
-        AvaHomeUserInstructionsProvider::new(AbsolutePathBuf::try_from(
-            home.path().to_path_buf(),
-        )?),
+        AvaHomeUserInstructionsProvider::new(AbsolutePathBuf::try_from(home.path().to_path_buf())?),
     )));
     let local_root = TempDir::new()?;
     let local_source = local_root.path().join(GLOBAL_AGENTS_FILENAME);

@@ -516,10 +516,8 @@ mod tests {
         }
 
         let Ok(policy_name) = std::env::var(CHILD_POLICY_ENV) else {
-            let invalid_ca_path = std::env::temp_dir().join(format!(
-                "ava-ollama-invalid-ca-{}.pem",
-                std::process::id()
-            ));
+            let invalid_ca_path = std::env::temp_dir()
+                .join(format!("ava-ollama-invalid-ca-{}.pem", std::process::id()));
             std::fs::write(&invalid_ca_path, "not a PEM certificate")
                 .expect("invalid CA fixture should be written");
 

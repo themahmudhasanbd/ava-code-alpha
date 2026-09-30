@@ -633,9 +633,8 @@ async fn run_review_on_session(
         .turn_environments()
         .map(|environment| {
             let mut selection = environment.selection();
-            selection.config = ava_protocol::protocol::EnvironmentConfigState::Ready(
-                environment.config().clone(),
-            );
+            selection.config =
+                ava_protocol::protocol::EnvironmentConfigState::Ready(environment.config().clone());
             selection
         })
         .collect();

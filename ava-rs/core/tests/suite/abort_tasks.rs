@@ -52,13 +52,12 @@ async fn interrupt_long_running_tool_emits_turn_aborted() {
     let ava = Arc::clone(&fixture.ava);
 
     // Kick off a turn that triggers the function call.
-    ava
-        .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
-            text: "start sleep".into(),
-            text_elements: Vec::new(),
-        }]))
-        .await
-        .unwrap();
+    ava.start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
+        text: "start sleep".into(),
+        text_elements: Vec::new(),
+    }]))
+    .await
+    .unwrap();
 
     // Wait until the exec begins to avoid a race, then interrupt.
     wait_for_event(&ava, |ev| matches!(ev, EventMsg::ExecCommandBegin(_))).await;
@@ -117,8 +116,7 @@ async fn root_turn_suspension_preserves_unfinished_turn_history() {
     wait_for_event(&ava, |event| matches!(event, EventMsg::TurnStarted(_))).await;
 
     assert_eq!(
-        ava
-            .suspend_turn_and_shutdown()
+        ava.suspend_turn_and_shutdown()
             .await
             .expect("reject handoff while a descendant remains loaded"),
         SuspendTurnOutcome::HasLiveDescendants,
@@ -136,8 +134,7 @@ async fn root_turn_suspension_preserves_unfinished_turn_history() {
     // A previously admitted descendant no longer blocks handoff once it is stopped
     // and removed; suspension only consults the current live subtree.
     assert_eq!(
-        ava
-            .suspend_turn_and_shutdown()
+        ava.suspend_turn_and_shutdown()
             .await
             .expect("stop and close the old writer"),
         SuspendTurnOutcome::Suspended {
@@ -180,16 +177,16 @@ async fn root_turn_suspension_preserves_unfinished_turn_history() {
         .expect("resume the suspended root on a replacement runtime");
 
     assert_eq!(
-        resumed
-            .ava-code
-            .recover_turn_if_idle(ava_core::RecoverTurnRequest {
-                turn_id: turn_id.clone(),
-                thread_settings: Default::default(),
-                trace: None,
-                cyber_access_program: None,
-            })
-            .await
-            .expect("recover the unfinished turn"),
+        resumed.ava
+            - code
+                .recover_turn_if_idle(ava_core::RecoverTurnRequest {
+                    turn_id: turn_id.clone(),
+                    thread_settings: Default::default(),
+                    trace: None,
+                    cyber_access_program: None,
+                })
+                .await
+                .expect("recover the unfinished turn"),
         ava_core::StartIfIdleSubmission::Started {
             turn_id: turn_id.clone(),
         },
@@ -238,13 +235,12 @@ async fn interrupt_tool_records_history_entries() {
         .unwrap();
     let ava = Arc::clone(&fixture.ava);
 
-    ava
-        .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
-            text: "start history recording".into(),
-            text_elements: Vec::new(),
-        }]))
-        .await
-        .unwrap();
+    ava.start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
+        text: "start history recording".into(),
+        text_elements: Vec::new(),
+    }]))
+    .await
+    .unwrap();
 
     wait_for_event(&ava, |ev| matches!(ev, EventMsg::ExecCommandBegin(_))).await;
 
@@ -253,13 +249,12 @@ async fn interrupt_tool_records_history_entries() {
 
     wait_for_event(&ava, |ev| matches!(ev, EventMsg::TurnAborted(_))).await;
 
-    ava
-        .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
-            text: "follow up".into(),
-            text_elements: Vec::new(),
-        }]))
-        .await
-        .unwrap();
+    ava.start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
+        text: "follow up".into(),
+        text_elements: Vec::new(),
+    }]))
+    .await
+    .unwrap();
 
     wait_for_event(&ava, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
 
@@ -331,13 +326,12 @@ async fn interrupt_persists_turn_aborted_marker_in_next_request() {
         .unwrap();
     let ava = Arc::clone(&fixture.ava);
 
-    ava
-        .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
-            text: "start interrupt marker".into(),
-            text_elements: Vec::new(),
-        }]))
-        .await
-        .unwrap();
+    ava.start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
+        text: "start interrupt marker".into(),
+        text_elements: Vec::new(),
+    }]))
+    .await
+    .unwrap();
 
     wait_for_event(&ava, |ev| matches!(ev, EventMsg::ExecCommandBegin(_))).await;
 
@@ -346,13 +340,12 @@ async fn interrupt_persists_turn_aborted_marker_in_next_request() {
 
     wait_for_event(&ava, |ev| matches!(ev, EventMsg::TurnAborted(_))).await;
 
-    ava
-        .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
-            text: "follow up".into(),
-            text_elements: Vec::new(),
-        }]))
-        .await
-        .unwrap();
+    ava.start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
+        text: "follow up".into(),
+        text_elements: Vec::new(),
+    }]))
+    .await
+    .unwrap();
 
     wait_for_event(&ava, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
 

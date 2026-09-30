@@ -101,11 +101,12 @@ pub(super) async fn revert(
     .await?;
 
     let forked_from_ordinal_exclusive =
-        ava_rollout::forked_from_ordinal_exclusive(&source_meta, Some(source_path.as_path()))
-            .map(|cutoff| {
+        ava_rollout::forked_from_ordinal_exclusive(&source_meta, Some(source_path.as_path())).map(
+            |cutoff| {
                 // Reverting into inherited history can shrink, but never grow, the parent prefix.
                 cutoff.min(history_base.map_or(0, |base| base.end_ordinal_exclusive))
-            });
+            },
+        );
 
     source_meta.multi_agent_version = multi_agent_version.or(source_meta.multi_agent_version);
     let rollout_id = ThreadId::new();

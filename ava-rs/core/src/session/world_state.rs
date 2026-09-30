@@ -24,6 +24,7 @@ use crate::context::world_state::RealtimeState;
 use crate::context::world_state::ToolsState;
 use crate::context::world_state::UserProfileState;
 use crate::context::world_state::WorldState;
+use crate::context::world_state::ProjectContextState;
 use ava_connectors::AppToolPolicyEvaluator;
 use ava_extension_api::WorldStateContributionInput;
 use ava_features::Feature;
@@ -139,6 +140,9 @@ impl Session {
                 .and_then(|instructions| instructions.end.as_deref()),
         ));
         world_state.add_section(AgentsMdState::new(step_context.loaded_agents_md.as_deref()));
+        world_state.add_section(ProjectContextState::new(
+            step_context.loaded_project_context.as_deref(),
+        ));
         let exec_policy = self
             .services
             .exec_policy

@@ -25,8 +25,7 @@ use agent_plugin_manifest::parse_agent_plugin_manifest_uri;
 pub type PluginManifest = ava_plugin::manifest::PluginManifest<AbsolutePathBuf>;
 pub type PluginManifestHooks = ava_plugin::manifest::PluginManifestHooks<AbsolutePathBuf>;
 pub type PluginManifestInterface = ava_plugin::manifest::PluginManifestInterface<AbsolutePathBuf>;
-pub type PluginManifestMcpServers =
-    ava_plugin::manifest::PluginManifestMcpServers<AbsolutePathBuf>;
+pub type PluginManifestMcpServers = ava_plugin::manifest::PluginManifestMcpServers<AbsolutePathBuf>;
 pub type PluginManifestPaths = ava_plugin::manifest::PluginManifestPaths<AbsolutePathBuf>;
 
 pub type UriPluginManifest = ava_plugin::manifest::PluginManifest<PathUri>;
@@ -438,8 +437,9 @@ fn resolve_manifest_hooks(
                 *hooks,
             ]))
         }
-        RawPluginManifestHooks::InlineList(hooks) => (!hooks.is_empty())
-            .then_some(ava_plugin::manifest::PluginManifestHooks::Inline(hooks)),
+        RawPluginManifestHooks::InlineList(hooks) => {
+            (!hooks.is_empty()).then_some(ava_plugin::manifest::PluginManifestHooks::Inline(hooks))
+        }
         RawPluginManifestHooks::Invalid(value) => {
             tracing::warn!(
                 "ignoring hooks: expected a string, string array, object, or object array; found {}",

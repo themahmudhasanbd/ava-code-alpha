@@ -1,9 +1,9 @@
 use super::RemotePluginDirectoryItem;
 use super::RemotePluginScope;
 use super::RemotePluginServiceConfig;
+use ava_login::AvaAuth;
 use chrono::DateTime;
 use chrono::Utc;
-use ava_login::AvaAuth;
 use serde::Deserialize;
 use serde::Serialize;
 use std::path::Path;

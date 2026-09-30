@@ -1,11 +1,11 @@
 //! Credentials and recovery bound to one remote-control login lifetime.
 //! A request can refresh credentials, but cannot adopt a replacement authentication owner.
 
-use axum::http::HeaderMap;
-use axum::http::HeaderValue;
 use ava_api::SharedAuthProvider;
 use ava_login::AuthManager;
 use ava_login::UnauthorizedRecovery;
+use axum::http::HeaderMap;
+use axum::http::HeaderValue;
 use std::io;
 use std::io::ErrorKind;
 use std::sync::Arc;

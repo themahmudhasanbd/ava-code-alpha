@@ -3,8 +3,8 @@
 use super::*;
 use crate::analytics::sections::Section;
 use crate::legacy_core::config::ConfigBuilder;
-use base64::Engine;
 use ava_config::LoaderOverrides;
+use base64::Engine;
 use pretty_assertions::assert_eq;
 use serde_json::json;
 use wiremock::Mock;

@@ -4,8 +4,6 @@ use std::io::ErrorKind;
 use std::path::PathBuf;
 use std::sync::Arc;
 
-use chrono::DateTime;
-use chrono::Utc;
 use ava_arg0::Arg0DispatchPaths;
 use ava_core::ThreadManager;
 use ava_core::config::ConfigOverrides;
@@ -42,6 +40,8 @@ use ava_thread_store::ThreadMetadataPatch;
 use ava_thread_store::ThreadPersistenceMetadata;
 use ava_thread_store::ThreadStore;
 use ava_thread_store::UpdateThreadMetadataParams;
+use chrono::DateTime;
+use chrono::Utc;
 use futures::StreamExt;
 use tokio::sync::Semaphore;
 

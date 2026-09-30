@@ -926,10 +926,7 @@ fn parsed_regex_result(pattern: &str, output_str: &str) -> Option<CommandResult>
     })
 }
 
-async fn expect_exec_approval(
-    test: &TestAva,
-    expected_command: &str,
-) -> ExecApprovalRequestEvent {
+async fn expect_exec_approval(test: &TestAva, expected_command: &str) -> ExecApprovalRequestEvent {
     let event = wait_for_event(&test.ava, |event| {
         matches!(
             event,

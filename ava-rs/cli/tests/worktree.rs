@@ -388,7 +388,10 @@ trust_level = "trusted"
             args.extend(["--cd".into(), source.display().to_string()]);
         }
         if explicit_cd {
-            args.extend(["--cd".into(), source.join(".ava-code").display().to_string()]);
+            args.extend([
+                "--cd".into(),
+                source.join(".ava-code").display().to_string(),
+            ]);
         }
         if analytics {
             args.extend(["-c".into(), "analytics.enabled=true".into()]);

@@ -179,8 +179,7 @@ impl TestEnv {
             },
             None => local(cwd.clone()),
         };
-        let environment =
-            ava_exec_server::Environment::create_for_tests(exec_server_url.clone())?;
+        let environment = ava_exec_server::Environment::create_for_tests(exec_server_url.clone())?;
         Ok(Self {
             environment,
             exec_server_url,
@@ -634,11 +633,7 @@ impl TestAvaBuilder {
         .await
     }
 
-    pub async fn restart(
-        &mut self,
-        server: &MockServer,
-        previous: &TestAva,
-    ) -> Result<TestAva> {
+    pub async fn restart(&mut self, server: &MockServer, previous: &TestAva) -> Result<TestAva> {
         let rollout_path = previous
             .session_configured
             .rollout_path

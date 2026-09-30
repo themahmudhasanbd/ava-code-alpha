@@ -608,10 +608,7 @@ pub(crate) async fn wait_for_matching_analytics_event(
             };
             for request in &requests {
                 if request.method != "POST"
-                    || !request
-                        .url
-                        .path()
-                        .ends_with("/ava/analytics-events/events")
+                    || !request.url.path().ends_with("/ava/analytics-events/events")
                 {
                     continue;
                 }

@@ -1,7 +1,6 @@
 use anyhow::Result;
 use app_test_support::MockResponsesConfig;
 use app_test_support::TestAppServer;
-use chrono::Utc;
 use ava_app_server_protocol::MemoryResetResponse;
 use ava_features::Feature;
 use ava_protocol::MemoryVersion;
@@ -11,6 +10,7 @@ use ava_state::Stage1JobClaimOutcome;
 use ava_state::StateRuntime;
 use ava_state::ThreadMetadataBuilder;
 use ava_utils_absolute_path::test_support::PathExt;
+use chrono::Utc;
 use pretty_assertions::assert_eq;
 use std::path::Path;
 use std::sync::Arc;

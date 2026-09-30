@@ -1,8 +1,5 @@
 use anyhow::Context;
 use anyhow::Result;
-use base64::Engine;
-use chrono::Duration;
-use chrono::Utc;
 use ava_config::types::AuthCredentialsStoreMode;
 use ava_http_client::HttpClientFactory;
 use ava_http_client::OutboundProxyPolicy;
@@ -19,6 +16,9 @@ use ava_login::token_data::IdTokenInfo;
 use ava_login::token_data::TokenData;
 use ava_protocol::auth::AuthMode;
 use ava_protocol::auth::RefreshTokenFailedReason;
+use base64::Engine;
+use chrono::Duration;
+use chrono::Utc;
 use core_test_support::skip_if_no_network;
 use pretty_assertions::assert_eq;
 use serde::Serialize;

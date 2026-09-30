@@ -6,8 +6,6 @@ mod relay_support;
 use std::collections::HashMap;
 
 use anyhow::Result;
-use base64::Engine as _;
-use base64::engine::general_purpose::STANDARD;
 use ava_exec_server::ExecOutputStream;
 use ava_exec_server::ExecParams;
 use ava_exec_server::ExecServerError;
@@ -16,6 +14,8 @@ use ava_exec_server::FsWriteFileParams;
 use ava_exec_server::ProcessId;
 use ava_exec_server::ReadParams;
 use ava_utils_path_uri::PathUri;
+use base64::Engine as _;
+use base64::engine::general_purpose::STANDARD;
 use pretty_assertions::assert_eq;
 use relay_support::RelayTest;
 use relay_support::TEST_TIMEOUT;

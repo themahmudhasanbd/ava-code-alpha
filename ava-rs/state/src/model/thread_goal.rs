@@ -1,8 +1,8 @@
 use anyhow::Result;
 use anyhow::anyhow;
+use ava_protocol::ThreadId;
 use chrono::DateTime;
 use chrono::Utc;
-use ava_protocol::ThreadId;
 use serde::Serialize;
 use sqlx::Row;
 use sqlx::sqlite::SqliteRow;

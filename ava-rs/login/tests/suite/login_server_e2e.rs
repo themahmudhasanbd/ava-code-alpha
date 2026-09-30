@@ -7,7 +7,6 @@ use std::thread;
 use std::time::Duration;
 
 use anyhow::Result;
-use base64::Engine;
 use ava_config::types::AuthCredentialsStoreMode;
 use ava_http_client::HttpClientBuilder;
 use ava_login::AuthKeyringBackendKind;
@@ -17,6 +16,7 @@ use ava_login::LoginSuccessPage;
 use ava_login::LoginSuccessPageBrand;
 use ava_login::ServerOptions;
 use ava_login::run_login_server;
+use base64::Engine;
 use core_test_support::skip_if_no_network;
 use pretty_assertions::assert_eq;
 use tempfile::tempdir;

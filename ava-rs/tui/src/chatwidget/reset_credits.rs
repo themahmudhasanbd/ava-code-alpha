@@ -1,8 +1,8 @@
+use ava_app_server_protocol::RateLimitResetCreditStatus;
+use ava_app_server_protocol::RateLimitResetCreditsSummary;
 use chrono::DateTime;
 use chrono::Local;
 use chrono::Utc;
-use ava_app_server_protocol::RateLimitResetCreditStatus;
-use ava_app_server_protocol::RateLimitResetCreditsSummary;
 
 #[derive(Debug, Eq, PartialEq)]
 pub(super) struct ResetCreditOption {

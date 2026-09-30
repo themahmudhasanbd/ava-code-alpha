@@ -192,29 +192,28 @@ async fn run_snapshot_command_with_options(
     let (sandbox_policy, permission_profile) =
         turn_permission_fields(PermissionProfile::Disabled, cwd.as_path());
 
-    ava
-        .start_or_steer_turn(
-            TurnInputRequest::user_input(vec![UserInput::Text {
-                text: "run unified exec with shell snapshot".into(),
-                text_elements: Vec::new(),
-            }])
-            .with_thread_settings(ThreadSettingsOverrides {
-                environments: Some(local_selections(cwd)),
-                approval_policy: Some(AskForApproval::Never),
-                sandbox_policy: Some(sandbox_policy),
-                permission_profile,
-                collaboration_mode: Some(CollaborationMode {
-                    mode: ModeKind::Default,
-                    settings: Settings {
-                        model: session_model,
-                        reasoning_effort: None,
-                        developer_instructions: None,
-                    },
-                }),
-                ..Default::default()
+    ava.start_or_steer_turn(
+        TurnInputRequest::user_input(vec![UserInput::Text {
+            text: "run unified exec with shell snapshot".into(),
+            text_elements: Vec::new(),
+        }])
+        .with_thread_settings(ThreadSettingsOverrides {
+            environments: Some(local_selections(cwd)),
+            approval_policy: Some(AskForApproval::Never),
+            sandbox_policy: Some(sandbox_policy),
+            permission_profile,
+            collaboration_mode: Some(CollaborationMode {
+                mode: ModeKind::Default,
+                settings: Settings {
+                    model: session_model,
+                    reasoning_effort: None,
+                    developer_instructions: None,
+                },
             }),
-        )
-        .await?;
+            ..Default::default()
+        }),
+    )
+    .await?;
 
     let begin = wait_for_event_match(&ava, |ev| match ev {
         EventMsg::ExecCommandBegin(ev) if ev.call_id == call_id => Some(ev.clone()),
@@ -268,29 +267,28 @@ async fn run_tool_turn_on_harness(
     let cwd = test.config.cwd.clone();
     let (sandbox_policy, permission_profile) =
         turn_permission_fields(PermissionProfile::Disabled, cwd.as_path());
-    ava
-        .start_or_steer_turn(
-            TurnInputRequest::user_input(vec![UserInput::Text {
-                text: prompt.into(),
-                text_elements: Vec::new(),
-            }])
-            .with_thread_settings(ThreadSettingsOverrides {
-                environments: Some(local_selections(cwd)),
-                approval_policy: Some(AskForApproval::Never),
-                sandbox_policy: Some(sandbox_policy),
-                permission_profile,
-                collaboration_mode: Some(CollaborationMode {
-                    mode: ModeKind::Default,
-                    settings: Settings {
-                        model: session_model,
-                        reasoning_effort: None,
-                        developer_instructions: None,
-                    },
-                }),
-                ..Default::default()
+    ava.start_or_steer_turn(
+        TurnInputRequest::user_input(vec![UserInput::Text {
+            text: prompt.into(),
+            text_elements: Vec::new(),
+        }])
+        .with_thread_settings(ThreadSettingsOverrides {
+            environments: Some(local_selections(cwd)),
+            approval_policy: Some(AskForApproval::Never),
+            sandbox_policy: Some(sandbox_policy),
+            permission_profile,
+            collaboration_mode: Some(CollaborationMode {
+                mode: ModeKind::Default,
+                settings: Settings {
+                    model: session_model,
+                    reasoning_effort: None,
+                    developer_instructions: None,
+                },
             }),
-        )
-        .await?;
+            ..Default::default()
+        }),
+    )
+    .await?;
 
     wait_for_event_match(&ava, |ev| match ev {
         EventMsg::ExecCommandBegin(ev) if ev.call_id == call_id => Some(ev.clone()),
@@ -360,13 +358,12 @@ async fn run_no_shell_turn(harness: &TestAvaHarness) -> Result<()> {
         ]),
     )
     .await;
-    let ava = &harness.test().ava-code;
-    ava
-        .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
-            text: "hello".to_string(),
-            text_elements: Vec::new(),
-        }]))
-        .await?;
+    let ava = &harness.test().ava - code;
+    ava.start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
+        text: "hello".to_string(),
+        text_elements: Vec::new(),
+    }]))
+    .await?;
     wait_for_event(ava, |event| {
         assert!(
             !matches!(event, EventMsg::ExecApprovalRequest(_) | EventMsg::Error(_)),
@@ -478,7 +475,7 @@ async fn shell_snapshot_v2_recovers_after_failed_prewarm() -> Result<()> {
         fs::read_to_string(profile_home.path().join("captures")).await?,
         "x"
     );
-    harness.test().ava-code.shutdown_and_wait().await?;
+    harness.test().ava - code.shutdown_and_wait().await?;
     Ok(())
 }
 
@@ -523,7 +520,7 @@ async fn shell_snapshot_v2_prewarm_preserves_the_sandbox() -> Result<()> {
     let harness = TestAvaHarness::with_auto_env_builder(builder).await?;
     run_no_shell_turn(&harness).await?;
     wait_for_file_contents(&profile_home.path().join("captures"), "done").await?;
-    harness.test().ava-code.shutdown_and_wait().await?;
+    harness.test().ava - code.shutdown_and_wait().await?;
     assert!(
         !forbidden.exists(),
         "profile startup must stay sandboxed even when true is allowed"
@@ -548,7 +545,7 @@ async fn shell_snapshot_v2_prewarm_stops_on_shutdown() -> Result<()> {
     wait_for_file_contents(&profile_home.path().join("captures"), "x").await?;
     let pid = fs::read_to_string(profile_home.path().join("pid")).await?;
 
-    let ava = &harness.test().ava-code;
+    let ava = &harness.test().ava - code;
     ava.submit(Op::Shutdown {}).await?;
     wait_for_event(ava, |event| matches!(event, EventMsg::ShutdownComplete)).await;
     tokio::time::timeout(Duration::from_secs(2), async {
@@ -593,7 +590,7 @@ async fn shell_snapshot_v2_prewarm_skips_ineligible_sessions(
     let builder = shell_snapshot_v2_prewarm_builder(profile_home.path()).with_config(configure);
     let harness = TestAvaHarness::with_auto_env_builder(builder).await?;
     run_no_shell_turn(&harness).await?;
-    harness.test().ava-code.shutdown_and_wait().await?;
+    harness.test().ava - code.shutdown_and_wait().await?;
     assert!(!profile_home.path().join("captures").exists());
     Ok(())
 }
@@ -624,7 +621,7 @@ async fn shell_snapshot_v2_does_not_warm_a_hook_stopped_turn(hook_event: &str) -
             .with_config(trust_discovered_hooks);
     let harness = TestAvaHarness::with_auto_env_builder(builder).await?;
     harness.submit("do not start the model or shell").await?;
-    harness.test().ava-code.shutdown_and_wait().await?;
+    harness.test().ava - code.shutdown_and_wait().await?;
     assert!(harness.request_bodies().await.is_empty());
     assert!(!profile_home.path().join("captures").exists());
     Ok(())
@@ -841,13 +838,12 @@ async fn shell_snapshot_v2_preserves_legacy_snapshots_for_user_shell() -> Result
     let harness = TestAvaHarness::with_auto_env_builder(builder).await?;
     let snapshot_path = wait_for_snapshot(harness.test().home.path()).await?;
     assert_posix_snapshot_sections(&fs::read_to_string(snapshot_path).await?);
-    let ava = &harness.test().ava-code;
-    ava
-        .submit(Op::RunUserShellCommand {
-            command: "printf legacy".to_string(),
-            timeout_ms: None,
-        })
-        .await?;
+    let ava = &harness.test().ava - code;
+    ava.submit(Op::RunUserShellCommand {
+        command: "printf legacy".to_string(),
+        timeout_ms: None,
+    })
+    .await?;
     let end = wait_for_event_match(ava, |event| match event {
         EventMsg::ExecCommandEnd(event) => Some(event.clone()),
         _ => None,
@@ -972,29 +968,28 @@ async fn unified_exec_snapshot_still_intercepts_apply_patch() -> Result<()> {
     let model = test.session_configured.model.clone();
     let (sandbox_policy, permission_profile) =
         turn_permission_fields(PermissionProfile::Disabled, cwd.as_path());
-    ava
-        .start_or_steer_turn(
-            TurnInputRequest::user_input(vec![UserInput::Text {
-                text: "apply patch via unified_exec with snapshot".into(),
-                text_elements: Vec::new(),
-            }])
-            .with_thread_settings(ThreadSettingsOverrides {
-                environments: Some(local_selections(cwd.clone())),
-                approval_policy: Some(AskForApproval::Never),
-                sandbox_policy: Some(sandbox_policy),
-                permission_profile,
-                collaboration_mode: Some(CollaborationMode {
-                    mode: ModeKind::Default,
-                    settings: Settings {
-                        model,
-                        reasoning_effort: None,
-                        developer_instructions: None,
-                    },
-                }),
-                ..Default::default()
+    ava.start_or_steer_turn(
+        TurnInputRequest::user_input(vec![UserInput::Text {
+            text: "apply patch via unified_exec with snapshot".into(),
+            text_elements: Vec::new(),
+        }])
+        .with_thread_settings(ThreadSettingsOverrides {
+            environments: Some(local_selections(cwd.clone())),
+            approval_policy: Some(AskForApproval::Never),
+            sandbox_policy: Some(sandbox_policy),
+            permission_profile,
+            collaboration_mode: Some(CollaborationMode {
+                mode: ModeKind::Default,
+                settings: Settings {
+                    model,
+                    reasoning_effort: None,
+                    developer_instructions: None,
+                },
             }),
-        )
-        .await?;
+            ..Default::default()
+        }),
+    )
+    .await?;
 
     let mut saw_patch_begin = false;
     let mut patch_end = None;
@@ -1044,7 +1039,7 @@ async fn shell_snapshot_deleted_after_shutdown_with_skills() -> Result<()> {
     let harness = TestAvaHarness::with_builder(builder).await?;
     let home = harness.test().home.clone();
     let ava_home = home.path().to_path_buf();
-    let ava = harness.test().ava-code.clone();
+    let ava = harness.test().ava - code.clone();
 
     let snapshot_path = wait_for_snapshot(&ava_home).await?;
     assert!(snapshot_path.exists());

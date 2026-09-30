@@ -29,7 +29,7 @@ function loadDesktopSettings(dataDir: string): any {
     theme: "system",
     language: "en",
     defaultProviderId: "omniroute",
-    defaultModelId: "powerful-coding-combo",
+    defaultModelId: "",
     developerMode: false,
   };
   if (existsSync(p)) {

@@ -1,7 +1,6 @@
 use anyhow::Context;
 use anyhow::Result;
 use anyhow::bail;
-use clap::Parser;
 use ava_core::config::Config;
 use ava_core::config::ConfigOverrides;
 use ava_core::config::LoaderOverrides;
@@ -18,6 +17,7 @@ use ava_core_plugins::marketplace_remove::MarketplaceRemoveOutcome;
 use ava_core_plugins::marketplace_remove::MarketplaceRemoveRequest;
 use ava_core_plugins::marketplace_remove::remove_marketplace;
 use ava_utils_cli::CliConfigOverrides;
+use clap::Parser;
 use serde::Serialize;
 use std::collections::HashMap;
 use std::collections::HashSet;

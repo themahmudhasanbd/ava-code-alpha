@@ -2,8 +2,6 @@ use anyhow::Context;
 use anyhow::Result;
 use app_test_support::TestAppServer;
 use app_test_support::to_response;
-use base64::Engine;
-use base64::engine::general_purpose::STANDARD;
 use ava_app_server_protocol::FsChangedNotification;
 use ava_app_server_protocol::FsCopyParams;
 use ava_app_server_protocol::FsGetMetadataResponse;
@@ -16,6 +14,8 @@ use ava_app_server_protocol::JSONRPCNotification;
 use ava_app_server_protocol::RequestId;
 use ava_exec_server::AVA_EXEC_SERVER_URL_ENV_VAR;
 use ava_utils_absolute_path::AbsolutePathBuf;
+use base64::Engine;
+use base64::engine::general_purpose::STANDARD;
 use pretty_assertions::assert_eq;
 use serde_json::json;
 use std::path::PathBuf;
@@ -287,8 +287,7 @@ async fn fs_methods_cover_current_fs_utils_surface() -> Result<()> {
     )
     .await??;
     let mut entries =
-        to_response::<ava_app_server_protocol::FsReadDirectoryResponse>(readdir_response)?
-            .entries;
+        to_response::<ava_app_server_protocol::FsReadDirectoryResponse>(readdir_response)?.entries;
     entries.sort_by(|left, right| left.file_name.cmp(&right.file_name));
     assert_eq!(
         entries,

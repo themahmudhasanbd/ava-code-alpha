@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
-import { listMcpServers, listModels, reloadMcpServers, mcpOAuthLogin } from "@/core/api/catalog";
+import { listMcpServers, listModels, reloadMcpServers, mcpOAuthLogin, addMcpServer, type McpServerAddParams } from "@/core/api/catalog";
 import { getMetadata, readDirectory, readTextFile } from "@/core/api/files";
 import { deleteSession, listSessions, readSession, renameSession, startSession } from "@/core/api/sessions";
 import { readDiagnostics, readServerConfig, writeServerConfig } from "@/core/api/system";
@@ -112,6 +112,15 @@ export function useMcpOAuth() {
   const { rpc } = useAva();
   return useMutation({
     mutationFn: (serverName: string) => mcpOAuthLogin(rpc!, serverName),
+  });
+}
+
+export function useAddMcpServer() {
+  const { rpc } = useAva();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (params: McpServerAddParams) => addMcpServer(rpc!, params),
+    onSuccess: () => qc.invalidateQueries({ queryKey: keys.mcp }),
   });
 }
 

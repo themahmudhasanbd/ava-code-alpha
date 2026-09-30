@@ -40,8 +40,7 @@ async fn supports_originator_override() -> anyhow::Result<()> {
         responses::ev_assistant_message("response_1", "Hello, world!"),
         responses::ev_completed("response_1"),
     ]);
-    responses::mount_sse_once_match(&server, header("Originator", "ava_exec_override"), body)
-        .await;
+    responses::mount_sse_once_match(&server, header("Originator", "ava_exec_override"), body).await;
 
     test.cmd_with_server(&server)
         .env("AVA_INTERNAL_ORIGINATOR_OVERRIDE", "ava_exec_override")

@@ -771,9 +771,7 @@ async fn agent_plugin_skill_prompt_stays_bounded_without_skills_extension() -> R
     .await;
 
     let ava_home = Arc::new(TempDir::new()?);
-    let plugin_root = ava_home
-        .path()
-        .join("plugins/cache/test/acme.tools/local");
+    let plugin_root = ava_home.path().join("plugins/cache/test/acme.tools/local");
     let skill_dir = plugin_root.join("skills/review");
     std::fs::create_dir_all(&skill_dir)?;
     std::fs::write(
@@ -858,9 +856,7 @@ async fn explicit_skill_prompt_precedes_plugin_instructions() -> Result<()> {
     let skill_path = dunce::canonicalize(skill_dir.join("SKILL.md"))?;
     let (extensions, _) =
         catalog_extensions(SkillCatalog::default(), /*include_host_provider*/ true);
-    let mut builder = test_ava()
-        .with_home(ava_home)
-        .with_extensions(extensions);
+    let mut builder = test_ava().with_home(ava_home).with_extensions(extensions);
     let test = builder.build_with_auto_env(&server).await?;
 
     test.ava
@@ -2027,13 +2023,13 @@ async fn executor_skill_tool_reads_references_under_current_permissions(
         })
         .with_config(configure_catalog_test);
     let test = builder.build_with_auto_env(&server).await?;
-    let selection = test
-        .ava-code
-        .environment_selections()
-        .await
-        .into_iter()
-        .next()
-        .expect("thread should select an executor environment");
+    let selection = test.ava
+        - code
+            .environment_selections()
+            .await
+            .into_iter()
+            .next()
+            .expect("thread should select an executor environment");
     let file_system = test.fs();
     let skill_dir = selection.cwd.join("skill")?;
     file_system

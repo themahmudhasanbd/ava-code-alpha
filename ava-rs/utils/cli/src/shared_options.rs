@@ -2,8 +2,8 @@
 
 use crate::CliConfigOverrides;
 use crate::SandboxModeCliArg;
-use clap::Args;
 use ava_protocol::config_types::ProfileV2Name;
+use clap::Args;
 use std::path::PathBuf;
 
 #[derive(Args, Clone, Debug, Default)]

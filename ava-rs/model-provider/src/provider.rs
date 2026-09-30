@@ -123,15 +123,15 @@ pub type ProviderAccountResult = std::result::Result<ProviderAccountState, Provi
 /// require a backend-specific model ID.
 pub const DEFAULT_APPROVAL_REVIEW_PREFERRED_MODEL: &str = "ava-auto-review";
 
-const API_KEY_APPROVAL_REVIEW_PREFERRED_MODEL: &str = "gpt-5.6-luna";
+const API_KEY_APPROVAL_REVIEW_PREFERRED_MODEL: &str = "ava-auto-review";
 
 /// Default model used for memory extraction when a provider does not require a
 /// backend-specific model ID.
-pub const DEFAULT_MEMORY_EXTRACTION_PREFERRED_MODEL: &str = "gpt-5.6-luna";
+pub const DEFAULT_MEMORY_EXTRACTION_PREFERRED_MODEL: &str = "ava-auto";
 
 /// Default model used for memory consolidation when a provider does not require
 /// a backend-specific model ID.
-pub const DEFAULT_MEMORY_CONSOLIDATION_PREFERRED_MODEL: &str = "gpt-5.6-terra";
+pub const DEFAULT_MEMORY_CONSOLIDATION_PREFERRED_MODEL: &str = "ava-auto";
 
 /// Runtime provider abstraction used by model execution.
 ///
@@ -280,9 +280,7 @@ pub trait ModelProvider: fmt::Debug + Send + Sync {
     }
 
     /// Returns the auth provider used to attach request credentials.
-    fn api_auth(
-        &self,
-    ) -> ModelProviderFuture<'_, ava_protocol::error::Result<SharedAuthProvider>> {
+    fn api_auth(&self) -> ModelProviderFuture<'_, ava_protocol::error::Result<SharedAuthProvider>> {
         Box::pin(async move {
             let auth = self.auth().await;
             resolve_provider_auth(auth.as_ref(), self.info())
@@ -435,6 +433,14 @@ impl ModelProvider for ConfiguredModelProvider {
         }
     }
 
+    fn memory_extraction_preferred_model(&self) -> &'static str {
+        DEFAULT_MEMORY_EXTRACTION_PREFERRED_MODEL
+    }
+
+    fn memory_consolidation_preferred_model(&self) -> &'static str {
+        DEFAULT_MEMORY_CONSOLIDATION_PREFERRED_MODEL
+    }
+
     fn auth_manager(&self) -> Option<Arc<AuthManager>> {
         self.auth_manager.clone()
     }
@@ -462,9 +468,7 @@ impl ModelProvider for ConfiguredModelProvider {
         })
     }
 
-    fn api_auth(
-        &self,
-    ) -> ModelProviderFuture<'_, ava_protocol::error::Result<SharedAuthProvider>> {
+    fn api_auth(&self) -> ModelProviderFuture<'_, ava_protocol::error::Result<SharedAuthProvider>> {
         Box::pin(async move {
             let auth = self.auth().await;
             let primary = resolve_provider_auth(auth.as_ref(), &self.info)?;
@@ -679,24 +683,13 @@ mod tests {
         ModelProviderInfo {
             name: "mock".into(),
             base_url: Some(base_url),
-            model_catalog_url: None,
-            env_key: None,
-            env_key_instructions: None,
-            experimental_bearer_token: None,
-            auth: None,
-            gateway_oauth: None,
-            aws: None,
-            wire_api: WireApi::Responses,
-            query_params: None,
-            http_headers: None,
-            env_http_headers: None,
             request_max_retries: Some(0),
             stream_max_retries: Some(0),
             stream_idle_timeout_ms: Some(5_000),
-            websocket_connect_timeout_ms: None,
             requires_openai_auth: false,
             supports_websockets: false,
             supports_standalone_web_search: false,
+            ..ModelProviderInfo::default()
         }
     }
 
@@ -823,7 +816,10 @@ mod tests {
             ))),
         );
 
-        assert_eq!(provider.approval_review_preferred_model(), "gpt-5.6-luna");
+        assert_eq!(
+            provider.approval_review_preferred_model(),
+            DEFAULT_APPROVAL_REVIEW_PREFERRED_MODEL
+        );
     }
 
     #[test]
@@ -1245,8 +1241,7 @@ printf '%s\n' '{"AccessKeyId":"exported","SecretAccessKey":"secret"}'
             ModelProviderInfo::create_amazon_bedrock_provider(/*aws*/ None),
             /*auth_manager*/ None,
         );
-        let manager =
-            provider.models_manager(test_ava_home(), /*config_model_catalog*/ None);
+        let manager = provider.models_manager(test_ava_home(), /*config_model_catalog*/ None);
         let uncached_manager =
             provider.models_manager_without_cache(/*config_model_catalog*/ None);
 
@@ -1392,10 +1387,7 @@ printf '%s\n' '{"AccessKeyId":"exported","SecretAccessKey":"secret"}'
             ava_login::default_client::RESIDENCY_HEADER_NAME.to_string(),
             "us".into(),
         )]));
-        for auth in [
-            None,
-            Some(AvaAuth::create_dummy_chatgpt_auth_for_testing()),
-        ] {
+        for auth in [None, Some(AvaAuth::create_dummy_chatgpt_auth_for_testing())] {
             // Disabled discovery must ignore the catalog cached by the enabled run.
             for enabled in [true, false] {
                 let provider = create_model_provider(

@@ -17,8 +17,8 @@ use tracing::warn;
 use uuid::Uuid;
 
 use crate::AgentThreadId;
-use crate::CodeCellTraceContext;
 use crate::AvaTurnId;
+use crate::CodeCellTraceContext;
 use crate::CompactionId;
 use crate::CompactionTraceContext;
 use crate::InferenceTraceContext;

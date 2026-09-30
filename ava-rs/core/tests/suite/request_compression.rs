@@ -36,14 +36,13 @@ async fn request_body_is_zstd_compressed_for_ava_backend_when_enabled() -> anyho
                 .expect("test config should allow feature update");
             config.model_provider.base_url = Some(base_url);
         });
-    let ava = builder.build(&server).await?.ava-code;
+    let ava = builder.build(&server).await?.ava - code;
 
-    ava
-        .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
-            text: "compress me".into(),
-            text_elements: Vec::new(),
-        }]))
-        .await?;
+    ava.start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
+        text: "compress me".into(),
+        text_elements: Vec::new(),
+    }]))
+    .await?;
 
     // Wait until the task completes so the request definitely hit the server.
     wait_for_event(&ava, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
@@ -80,14 +79,13 @@ async fn request_body_is_not_compressed_for_api_key_auth_even_when_enabled() -> 
             .expect("test config should allow feature update");
         config.model_provider.base_url = Some(base_url);
     });
-    let ava = builder.build(&server).await?.ava-code;
+    let ava = builder.build(&server).await?.ava - code;
 
-    ava
-        .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
-            text: "do not compress".into(),
-            text_elements: Vec::new(),
-        }]))
-        .await?;
+    ava.start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
+        text: "do not compress".into(),
+        text_elements: Vec::new(),
+    }]))
+    .await?;
 
     wait_for_event(&ava, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
 

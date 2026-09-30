@@ -411,10 +411,7 @@ fn parse_windows_sandbox_wrapper_args(args: Vec<String>) -> Result<WindowsSandbo
 
     let ava_home = ava_home.ok_or_else(|| anyhow!("missing required {AVA_HOME_FLAG}"))?;
     if !ava_home.is_absolute() {
-        bail!(
-            "{AVA_HOME_FLAG} must be absolute: {}",
-            ava_home.display()
-        );
+        bail!("{AVA_HOME_FLAG} must be absolute: {}", ava_home.display());
     }
     let command_cwd = command_cwd.ok_or_else(|| anyhow!("missing required {COMMAND_CWD_FLAG}"))?;
     let private_desktop_name = private_desktop_name

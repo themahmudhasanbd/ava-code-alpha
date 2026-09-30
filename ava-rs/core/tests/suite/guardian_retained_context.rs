@@ -732,9 +732,8 @@ async fn disabled_capture_stays_incomplete_after_compaction_and_enabled_resume()
     let thread_id = test.ava.startup_metadata().thread_id;
     test.ava.shutdown_and_wait().await?;
     test.thread_manager.remove_thread(&thread_id).await;
-    let items: Vec<RolloutItem> = serde_json::from_value(serde_json::to_value(
-        load_context(&test, &test.ava).await?,
-    )?)?;
+    let items: Vec<RolloutItem> =
+        serde_json::from_value(serde_json::to_value(load_context(&test, &test.ava).await?)?)?;
     let mut config = test.config.clone();
     config
         .features
@@ -1313,8 +1312,7 @@ async fn forked_parent_instructions_do_not_become_local_authorization(
             .ordered_entries()
             .map(|(_, entry)| match entry {
                 ava_history::RetainedContextEntry::UserMessage(message) => message.text.as_str(),
-                ava_history::RetainedContextEntry::VerifiedAnswer(_) =>
-                    panic!("unexpected answer"),
+                ava_history::RetainedContextEntry::VerifiedAnswer(_) => panic!("unexpected answer"),
             })
             .collect::<Vec<_>>()),
         thread_context_enabled.then_some(vec![LOCAL_INSTRUCTION]),

@@ -25,12 +25,12 @@ use std::time::Duration;
 use anyhow::Context;
 use anyhow::Result;
 use anyhow::anyhow;
-pub use backend::BackendKind;
-use backend::BackendPaths;
 use ava_app_server_protocol::RemoteControlConnectionStatus;
 use ava_app_server_protocol::RemoteControlPairingStartResponse;
 use ava_app_server_transport::app_server_control_socket_path;
 use ava_utils_home_dir::find_ava_home;
+pub use backend::BackendKind;
+use backend::BackendPaths;
 use managed_install::managed_ava_bin;
 #[cfg(any(unix, windows))]
 use managed_install::managed_ava_version;
@@ -838,8 +838,7 @@ impl Daemon {
         settings: &DaemonSettings,
         managed_ava_bin: &Path,
     ) -> Result<Option<u32>> {
-        let backend =
-            backend::pid_backend(self.backend_paths_with_bin(settings, managed_ava_bin));
+        let backend = backend::pid_backend(self.backend_paths_with_bin(settings, managed_ava_bin));
         backend.start().await
     }
 
@@ -857,8 +856,7 @@ impl Daemon {
             }
             return Ok(false);
         }
-        let Ok(ava_bin) =
-            managed_install::resolved_managed_ava_bin(&self.managed_ava_bin).await
+        let Ok(ava_bin) = managed_install::resolved_managed_ava_bin(&self.managed_ava_bin).await
         else {
             if !self.has_latest_selection_marker() {
                 updater.stop().await?;

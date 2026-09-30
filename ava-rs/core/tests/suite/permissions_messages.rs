@@ -66,10 +66,7 @@ fn model_with_permission_messages(
     model
 }
 
-async fn submit_text_turn(
-    test: &core_test_support::test_ava::TestAva,
-    text: &str,
-) -> Result<()> {
+async fn submit_text_turn(test: &core_test_support::test_ava::TestAva, text: &str) -> Result<()> {
     test.ava
         .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
             text: text.to_string(),
@@ -570,13 +567,13 @@ async fn resume_replays_permissions_messages() -> Result<()> {
     });
     let initial = builder.build(&server).await?;
 
-    initial
-        .ava-code
-        .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
-            text: "hello 1".into(),
-            text_elements: Vec::new(),
-        }]))
-        .await?;
+    initial.ava
+        - code
+            .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
+                text: "hello 1".into(),
+                text_elements: Vec::new(),
+            }]))
+            .await?;
     wait_for_event(&initial.ava, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
 
     core_test_support::submit_thread_settings(
@@ -588,23 +585,23 @@ async fn resume_replays_permissions_messages() -> Result<()> {
     )
     .await?;
 
-    initial
-        .ava-code
-        .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
-            text: "hello 2".into(),
-            text_elements: Vec::new(),
-        }]))
-        .await?;
+    initial.ava
+        - code
+            .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
+                text: "hello 2".into(),
+                text_elements: Vec::new(),
+            }]))
+            .await?;
     wait_for_event(&initial.ava, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
 
     let resumed = builder.restart(&server, &initial).await?;
-    resumed
-        .ava-code
-        .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
-            text: "after resume".into(),
-            text_elements: Vec::new(),
-        }]))
-        .await?;
+    resumed.ava
+        - code
+            .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
+                text: "after resume".into(),
+                text_elements: Vec::new(),
+            }]))
+            .await?;
     wait_for_event(&resumed.ava, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
 
     let permissions = permissions_texts(&req3.single_request());
@@ -651,13 +648,13 @@ async fn resume_and_fork_append_permissions_messages() -> Result<()> {
         .clone()
         .expect("rollout path");
 
-    initial
-        .ava-code
-        .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
-            text: "hello 1".into(),
-            text_elements: Vec::new(),
-        }]))
-        .await?;
+    initial.ava
+        - code
+            .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
+                text: "hello 1".into(),
+                text_elements: Vec::new(),
+            }]))
+            .await?;
     wait_for_event(&initial.ava, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
 
     core_test_support::submit_thread_settings(
@@ -669,13 +666,13 @@ async fn resume_and_fork_append_permissions_messages() -> Result<()> {
     )
     .await?;
 
-    initial
-        .ava-code
-        .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
-            text: "hello 2".into(),
-            text_elements: Vec::new(),
-        }]))
-        .await?;
+    initial.ava
+        - code
+            .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
+                text: "hello 2".into(),
+                text_elements: Vec::new(),
+            }]))
+            .await?;
     wait_for_event(&initial.ava, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
 
     let permissions_base = permissions_texts(&req2.single_request());
@@ -685,13 +682,13 @@ async fn resume_and_fork_append_permissions_messages() -> Result<()> {
         config.permissions.approval_policy = Constrained::allow_any(AskForApproval::UnlessTrusted);
     });
     let resumed = builder.restart(&server, &initial).await?;
-    resumed
-        .ava-code
-        .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
-            text: "after resume".into(),
-            text_elements: Vec::new(),
-        }]))
-        .await?;
+    resumed.ava
+        - code
+            .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
+                text: "after resume".into(),
+                text_elements: Vec::new(),
+            }]))
+            .await?;
     wait_for_event(&resumed.ava, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
 
     let permissions_resume = permissions_texts(&req3.single_request());

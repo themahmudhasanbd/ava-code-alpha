@@ -129,11 +129,8 @@ mod tests {
     async fn resolve_installation_id_rewrites_invalid_file_contents() {
         let ava_home = TempDir::new().expect("create temp dir");
         let ava_home_abs = ava_home.path().abs();
-        std::fs::write(
-            ava_home.path().join(INSTALLATION_ID_FILENAME),
-            "not-a-uuid",
-        )
-        .expect("write invalid installation id");
+        std::fs::write(ava_home.path().join(INSTALLATION_ID_FILENAME), "not-a-uuid")
+            .expect("write invalid installation id");
 
         let resolved = resolve_installation_id(&ava_home_abs)
             .await

@@ -19,8 +19,8 @@ use super::McpServerMetadata;
 use crate::binding::McpBinding;
 use crate::binding::PreparedMcpCall;
 use crate::binding_clients::McpBindingClients;
-use crate::client_tool_catalog::ClientToolCatalogRevision;
 use crate::client_tool_catalog::AvaAppsToolSnapshot;
+use crate::client_tool_catalog::ClientToolCatalogRevision;
 use crate::client_tool_catalog::ToolCatalogSnapshot;
 use crate::mcp::AVA_APPS_MCP_SERVER_NAME;
 use crate::rmcp_client::AVA_APPS_REFRESH_DURATION_METRIC;
@@ -487,11 +487,13 @@ impl McpConnectionSet {
             .refresh(
                 || async {
                     let list_start = Instant::now();
-                    let fetch_ticket = managed_client.ava_apps_tools_cache_context.as_ref().map(
-                        |cache_context| {
-                            cache_context.begin_fetch(ConnectorRuntimeFetchSource::HardRefresh)
-                        },
-                    );
+                    let fetch_ticket =
+                        managed_client
+                            .ava_apps_tools_cache_context
+                            .as_ref()
+                            .map(|cache_context| {
+                                cache_context.begin_fetch(ConnectorRuntimeFetchSource::HardRefresh)
+                            });
                     let client_tools = list_tools_for_client_uncached(
                         AVA_APPS_MCP_SERVER_NAME,
                         /*is_ava_apps_mcp_server*/ true,

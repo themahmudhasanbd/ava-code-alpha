@@ -648,10 +648,10 @@ async fn cached_mcp_startup_is_eager_for_root_and_lazy_for_subagents() -> anyhow
         ]),
     )
     .await;
-    fixture
-        .ava-code
-        .start_or_steer_turn(user_turn("use the echo tool"))
-        .await?;
+    fixture.ava
+        - code
+            .start_or_steer_turn(user_turn("use the echo tool"))
+            .await?;
     let first_pid = wait_for_new_pid(fs.as_ref(), &pid_file, /*previous_pid*/ None).await?;
     fs.write_file(
         &barrier_file,

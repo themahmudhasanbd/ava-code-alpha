@@ -319,8 +319,7 @@ async fn run_command_under_sandbox(
     if let SandboxType::Windows = sandbox_type {
         #[cfg(target_os = "windows")]
         {
-            if config.permissions.windows_sandbox_type != ava_sandboxing::SandboxType::WindowsMxc
-            {
+            if config.permissions.windows_sandbox_type != ava_sandboxing::SandboxType::WindowsMxc {
                 let workspace_roots = config
                     .effective_workspace_roots()
                     .iter()
@@ -1107,8 +1106,8 @@ enabled = true
             .permissions
             .permission_profile()
             .file_system_sandbox_policy();
-        let expected = ava_protocol::models::PermissionProfile::workspace_write()
-            .file_system_sandbox_policy();
+        let expected =
+            ava_protocol::models::PermissionProfile::workspace_write().file_system_sandbox_policy();
         assert!(
             expected
                 .entries

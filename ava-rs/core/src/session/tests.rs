@@ -289,6 +289,7 @@ impl StepContext {
                 &[],
             )),
             loaded_agents_md: None,
+            loaded_project_context: None,
         })
     }
 
@@ -713,10 +714,7 @@ async fn request_mcp_server_elicitation_rejects_non_root_threads(auto_deny: bool
             panic!("non-root elicitation must be rejected");
         };
 
-        assert_eq!(
-            error.to_string(),
-            ava_mcp::MCP_ELICITATION_HANDOFF_MESSAGE
-        );
+        assert_eq!(error.to_string(), ava_mcp::MCP_ELICITATION_HANDOFF_MESSAGE);
         assert!(rx.try_recv().is_err());
         assert!(!*paused.borrow());
         assert!(
@@ -808,9 +806,7 @@ fn test_model_client_session() -> crate::client::ModelClientSession {
         /*concurrent_reasoning_summaries_enabled*/ false,
         /*attestation_provider*/ None,
         HttpClientFactory::new(OutboundProxyPolicy::ReqwestDefault),
-        ava_model_provider::WorkspaceRoutingContext::new(
-            "https://chatgpt.com/backend-api".into(),
-        ),
+        ava_model_provider::WorkspaceRoutingContext::new("https://chatgpt.com/backend-api".into()),
     )
     .new_session()
 }
@@ -1728,8 +1724,8 @@ async fn reload_user_config_layer_updates_effective_apps_config() {
         .and_then(|table| table.get("apps"))
         .cloned()
         .expect("apps table");
-    let apps = ava_config::types::AppsConfigToml::deserialize(apps_toml)
-        .expect("deserialize apps config");
+    let apps =
+        ava_config::types::AppsConfigToml::deserialize(apps_toml).expect("deserialize apps config");
     let app = apps
         .apps
         .get("calendar")
@@ -2058,8 +2054,8 @@ disabled_tools = [
         .and_then(|table| table.get("apps"))
         .cloned()
         .expect("apps table");
-    let apps = ava_config::types::AppsConfigToml::deserialize(apps_toml)
-        .expect("deserialize apps config");
+    let apps =
+        ava_config::types::AppsConfigToml::deserialize(apps_toml).expect("deserialize apps config");
     let app = apps
         .apps
         .get("calendar")
@@ -3773,10 +3769,7 @@ async fn record_initial_history_assigns_and_persists_id_for_forked_response_item
         persisted_item.id().map(ResponseItemId::as_str),
         Some(live_item_id.as_str())
     );
-    assert_eq!(
-        persisted_item.metadata,
-        Some(AvaHarnessMetadata::default())
-    );
+    assert_eq!(persisted_item.metadata, Some(AvaHarnessMetadata::default()));
 }
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
@@ -3835,24 +3828,24 @@ async fn fork_startup_context_then_first_turn_diff_snapshot() -> anyhow::Result<
         .clone()
         .expect("rollout path");
 
-    initial
-        .ava-code
-        .start_or_steer_turn(ExternalTurnInputRequest::user_input(vec![
-            UserInput::Text {
-                text: "fork seed".into(),
-                text_elements: Vec::new(),
-            },
-        ]))
-        .await?;
+    initial.ava
+        - code
+            .start_or_steer_turn(ExternalTurnInputRequest::user_input(vec![
+                UserInput::Text {
+                    text: "fork seed".into(),
+                    text_elements: Vec::new(),
+                },
+            ]))
+            .await?;
     wait_for_event(&initial.ava, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
     // Forking reads the persisted rollout JSONL, so force the completed source turn to disk
     // before snapshotting from it.
     initial.ava.ensure_rollout_materialized().await;
-    initial
-        .ava-code
-        .flush_rollout()
-        .await
-        .expect("source rollout should flush before fork");
+    initial.ava
+        - code
+            .flush_rollout()
+            .await
+            .expect("source rollout should flush before fork");
 
     let mut fork_config = initial.config.clone();
     fork_config.permissions.approval_policy =
@@ -9077,8 +9070,7 @@ async fn conflicting_ready_environment_root_ids_keep_first_location() {
     let mut turn_environments = Vec::new();
     for selected_root in &selected_roots {
         let ava_protocol::capabilities::CapabilityRootLocation::Environment {
-            environment_id,
-            ..
+            environment_id, ..
         } = &selected_root.location;
         let mut environment_config = local_environment.config().clone();
         environment_config.selected_capability_roots = vec![selected_root.clone()];

@@ -88,8 +88,8 @@ impl OAuthStoreLock {
         // the default home (`~/.ava-code`), and if an embedder has no local home/filesystem authority
         // those stores already cannot operate. A future provider-backed credential store should
         // provide its own matching lock authority instead of using this local path.
-        let ava_home = find_ava_home()
-            .map_err(|source| OAuthStoreLockFailure::AvaHome { store, source })?;
+        let ava_home =
+            find_ava_home().map_err(|source| OAuthStoreLockFailure::AvaHome { store, source })?;
         Self::acquire_in_with_mode(&ava_home, store, acquire_timeout, mode)
     }
 

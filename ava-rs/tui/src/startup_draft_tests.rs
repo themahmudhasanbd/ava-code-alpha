@@ -644,8 +644,7 @@ async fn startup_draft_applies_editor_keymap_without_enabling_vim() {
         .expect("confirm draft");
     pump.apply_config(&config);
     assert!(pump.submission_pending);
-    config.tui_keymap.composer.submit =
-        Some(ava_config::types::KeybindingsSpec::Many(Vec::new()));
+    config.tui_keymap.composer.submit = Some(ava_config::types::KeybindingsSpec::Many(Vec::new()));
     pump.apply_config(&config);
     assert!(!pump.submission_pending);
     assert_eq!(pump.bottom_pane.composer_text(), "draftx");

@@ -80,13 +80,12 @@ async fn retries_on_early_close() {
         .await
         .unwrap();
 
-    ava
-        .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
-            text: "hello".into(),
-            text_elements: Vec::new(),
-        }]))
-        .await
-        .unwrap();
+    ava.start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
+        text: "hello".into(),
+        text_elements: Vec::new(),
+    }]))
+    .await
+    .unwrap();
 
     // Wait until TurnComplete (should succeed after retry).
     wait_for_event(&ava, |event| matches!(event, EventMsg::TurnComplete(_))).await;
@@ -121,12 +120,11 @@ async fn connection_failure_pauses_retry_budget_until_provider_is_reachable() ->
         .build_with_auto_env(&bootstrap_server)
         .await?;
 
-    ava
-        .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
-            text: "recover after the network returns".into(),
-            text_elements: Vec::new(),
-        }]))
-        .await?;
+    ava.start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
+        text: "recover after the network returns".into(),
+        text_elements: Vec::new(),
+    }]))
+    .await?;
 
     let EventMsg::StreamError(connection_error) =
         wait_for_event(&ava, |event| matches!(event, EventMsg::StreamError(_))).await

@@ -13,8 +13,6 @@ use async_channel::Receiver;
 use async_channel::RecvError;
 use async_channel::Sender;
 use async_channel::TrySendError;
-use base64::Engine;
-use base64::engine::general_purpose::STANDARD as BASE64_STANDARD;
 use ava_api::ApiError;
 use ava_api::Provider as ApiProvider;
 use ava_api::RealtimeAudioFrame;
@@ -64,6 +62,8 @@ use ava_utils_output_truncation::approx_bytes_for_tokens;
 use ava_utils_string::approx_token_count;
 use ava_utils_string::take_bytes_at_char_boundary;
 use ava_utils_string::to_ascii_json_string;
+use base64::Engine;
+use base64::engine::general_purpose::STANDARD as BASE64_STANDARD;
 use http::HeaderMap;
 use http::HeaderValue;
 use http::header::AUTHORIZATION;
@@ -856,10 +856,7 @@ impl RealtimeConversationManager {
             return Ok(());
         }
         let phase = if handoff.routes_handoff_by_bem() {
-            match bem_message_phase(
-                &output_text,
-                &handoff.ava_response_handoff_channel_prefixes,
-            ) {
+            match bem_message_phase(&output_text, &handoff.ava_response_handoff_channel_prefixes) {
                 Some(phase) => Some(phase),
                 None => {
                     warn!("BEM output did not contain a recognized channel header");
@@ -987,11 +984,7 @@ impl RealtimeConversationManager {
         }
     }
 
-    pub(crate) async fn stream_handoff_delta(
-        &self,
-        item_id: &str,
-        delta: String,
-    ) -> AvaResult<()> {
+    pub(crate) async fn stream_handoff_delta(&self, item_id: &str, delta: String) -> AvaResult<()> {
         if delta.is_empty() {
             return Ok(());
         }
@@ -1728,8 +1721,7 @@ pub(crate) async fn handle_audio(
         if sess.conversation.running_state().await.is_some() {
             warn!("realtime audio input failed while the session was already ending");
         } else {
-            send_conversation_error(sess, sub_id, err.to_string(), AvaErrorInfo::BadRequest)
-                .await;
+            send_conversation_error(sess, sub_id, err.to_string(), AvaErrorInfo::BadRequest).await;
         }
     }
 }
@@ -1843,8 +1835,7 @@ pub(crate) async fn handle_text(
         if sess.conversation.running_state().await.is_some() {
             warn!("realtime text input failed while the session was already ending");
         } else {
-            send_conversation_error(sess, sub_id, err.to_string(), AvaErrorInfo::BadRequest)
-                .await;
+            send_conversation_error(sess, sub_id, err.to_string(), AvaErrorInfo::BadRequest).await;
         }
     }
 }
@@ -1860,8 +1851,7 @@ pub(crate) async fn handle_speech(
         if sess.conversation.running_state().await.is_some() {
             warn!("realtime speech append failed while the session was already ending");
         } else {
-            send_conversation_error(sess, sub_id, err.to_string(), AvaErrorInfo::BadRequest)
-                .await;
+            send_conversation_error(sess, sub_id, err.to_string(), AvaErrorInfo::BadRequest).await;
         }
     }
 }

@@ -1,6 +1,5 @@
 use anyhow::Context;
 use anyhow::Result;
-use chrono::Utc;
 use ava_app_server_protocol::ThreadRealtimeItemContent;
 use ava_app_server_protocol::ThreadRealtimeSessionOutcome;
 use ava_app_server_protocol::ThreadRealtimeTranscriptRole;
@@ -41,6 +40,7 @@ use ava_protocol::protocol::ThreadHistoryMode;
 use ava_protocol::protocol::ThreadSource;
 use ava_protocol::user_input::UserInput;
 use ava_thread_store::ListTimelineParams;
+use chrono::Utc;
 use core_test_support::responses;
 use core_test_support::responses::WebSocketConnectionConfig;
 use core_test_support::responses::start_mock_server;
@@ -314,8 +314,7 @@ async fn conversation_start_audio_text_close_round_trip() -> Result<()> {
             flush_transcript_tail_on_session_end: false,
             ava_responses_as_items: false,
             ava_response_item_prefix: None,
-            ava_response_handoff_mode:
-                ava_protocol::protocol::AvaResponseHandoffMode::Thinking,
+            ava_response_handoff_mode: ava_protocol::protocol::AvaResponseHandoffMode::Thinking,
             ava_response_handoff_channel_prefixes: None,
             model: None,
             output_modality: RealtimeOutputModality::Audio,
@@ -495,8 +494,7 @@ async fn conversation_records_history_without_an_event_observer(
                 flush_transcript_tail_on_session_end: false,
                 ava_responses_as_items: false,
                 ava_response_item_prefix: None,
-                ava_response_handoff_mode:
-                    ava_protocol::protocol::AvaResponseHandoffMode::Thinking,
+                ava_response_handoff_mode: ava_protocol::protocol::AvaResponseHandoffMode::Thinking,
                 ava_response_handoff_channel_prefixes: None,
                 model: None,
                 output_modality: RealtimeOutputModality::Audio,
@@ -605,8 +603,7 @@ async fn conversation_start_defaults_to_v2_and_gpt_realtime_1_5() -> Result<()> 
             flush_transcript_tail_on_session_end: false,
             ava_responses_as_items: false,
             ava_response_item_prefix: None,
-            ava_response_handoff_mode:
-                ava_protocol::protocol::AvaResponseHandoffMode::Thinking,
+            ava_response_handoff_mode: ava_protocol::protocol::AvaResponseHandoffMode::Thinking,
             ava_response_handoff_channel_prefixes: None,
             model: None,
             output_modality: RealtimeOutputModality::Audio,
@@ -693,29 +690,27 @@ async fn conversation_websocket_transports_send_ava_headers_without_creating_a_c
         .await?;
     let ava = &conversation.thread;
 
-    ava
-        .submit(Op::RealtimeConversationStart(ConversationStartParams {
-            client_managed_handoffs: false,
-            delegation_ack_filler: None,
-            flush_transcript_tail_on_session_end: false,
-            ava_responses_as_items: false,
-            ava_response_item_prefix: None,
-            ava_response_handoff_mode:
-                ava_protocol::protocol::AvaResponseHandoffMode::Thinking,
-            ava_response_handoff_channel_prefixes: None,
-            model: None,
-            output_modality: RealtimeOutputModality::Audio,
-            include_startup_context: false,
-            initial_items: Vec::new(),
-            realtime_start_instructions: None,
-            realtime_end_instructions: None,
-            prompt: None,
-            realtime_session_id: None,
-            transport: Some(transport.clone()),
-            version: Some(RealtimeConversationVersion::V3),
-            voice: None,
-        }))
-        .await?;
+    ava.submit(Op::RealtimeConversationStart(ConversationStartParams {
+        client_managed_handoffs: false,
+        delegation_ack_filler: None,
+        flush_transcript_tail_on_session_end: false,
+        ava_responses_as_items: false,
+        ava_response_item_prefix: None,
+        ava_response_handoff_mode: ava_protocol::protocol::AvaResponseHandoffMode::Thinking,
+        ava_response_handoff_channel_prefixes: None,
+        model: None,
+        output_modality: RealtimeOutputModality::Audio,
+        include_startup_context: false,
+        initial_items: Vec::new(),
+        realtime_start_instructions: None,
+        realtime_end_instructions: None,
+        prompt: None,
+        realtime_session_id: None,
+        transport: Some(transport.clone()),
+        version: Some(RealtimeConversationVersion::V3),
+        voice: None,
+    }))
+    .await?;
 
     let started = wait_for_event_match(ava, |msg| match msg {
         EventMsg::RealtimeConversationStarted(started) => Some(Ok(started.clone())),
@@ -863,34 +858,32 @@ async fn conversation_webrtc_frameless_chatgpt_sends_ava_headers_to_backend(
     assert_eq!(ava.config_snapshot().await.thread_source, thread_source);
     let requested_realtime_session_id = Uuid::new_v4().to_string();
 
-    ava
-        .submit(Op::RealtimeConversationStart(ConversationStartParams {
-            client_managed_handoffs: false,
-            delegation_ack_filler: None,
-            flush_transcript_tail_on_session_end: false,
-            ava_responses_as_items: false,
-            ava_response_item_prefix: None,
-            ava_response_handoff_mode:
-                ava_protocol::protocol::AvaResponseHandoffMode::Thinking,
-            ava_response_handoff_channel_prefixes: None,
-            model: model.map(str::to_string),
-            output_modality: RealtimeOutputModality::Audio,
-            include_startup_context: false,
-            initial_items: vec![ConversationTextParams {
-                text: "private voice transcript".to_string(),
-                role: ConversationTextRole::User,
-            }],
-            realtime_start_instructions: None,
-            realtime_end_instructions: None,
-            prompt: Some(Some("backend prompt".to_string())),
-            realtime_session_id: Some(requested_realtime_session_id.clone()),
-            transport: Some(ConversationStartTransport::Webrtc {
-                sdp: "v=offer\r\n".to_string(),
-            }),
-            version: Some(RealtimeConversationVersion::V3),
-            voice: None,
-        }))
-        .await?;
+    ava.submit(Op::RealtimeConversationStart(ConversationStartParams {
+        client_managed_handoffs: false,
+        delegation_ack_filler: None,
+        flush_transcript_tail_on_session_end: false,
+        ava_responses_as_items: false,
+        ava_response_item_prefix: None,
+        ava_response_handoff_mode: ava_protocol::protocol::AvaResponseHandoffMode::Thinking,
+        ava_response_handoff_channel_prefixes: None,
+        model: model.map(str::to_string),
+        output_modality: RealtimeOutputModality::Audio,
+        include_startup_context: false,
+        initial_items: vec![ConversationTextParams {
+            text: "private voice transcript".to_string(),
+            role: ConversationTextRole::User,
+        }],
+        realtime_start_instructions: None,
+        realtime_end_instructions: None,
+        prompt: Some(Some("backend prompt".to_string())),
+        realtime_session_id: Some(requested_realtime_session_id.clone()),
+        transport: Some(ConversationStartTransport::Webrtc {
+            sdp: "v=offer\r\n".to_string(),
+        }),
+        version: Some(RealtimeConversationVersion::V3),
+        voice: None,
+    }))
+    .await?;
 
     let created = wait_for_event_match(ava, |msg| match msg {
         EventMsg::RealtimeConversationSdp(created) => Some(Ok(created.clone())),
@@ -1031,8 +1024,7 @@ async fn conversation_webrtc_start_posts_generated_session() -> Result<()> {
             flush_transcript_tail_on_session_end: false,
             ava_responses_as_items: false,
             ava_response_item_prefix: None,
-            ava_response_handoff_mode:
-                ava_protocol::protocol::AvaResponseHandoffMode::Thinking,
+            ava_response_handoff_mode: ava_protocol::protocol::AvaResponseHandoffMode::Thinking,
             ava_response_handoff_channel_prefixes: None,
             model: Some("session-override-model".to_string()),
             output_modality: RealtimeOutputModality::Audio,
@@ -1395,8 +1387,7 @@ async fn conversation_webrtc_live_reconnects_sideband_after_unclean_disconnect(
             flush_transcript_tail_on_session_end: false,
             ava_responses_as_items: false,
             ava_response_item_prefix: None,
-            ava_response_handoff_mode:
-                ava_protocol::protocol::AvaResponseHandoffMode::Thinking,
+            ava_response_handoff_mode: ava_protocol::protocol::AvaResponseHandoffMode::Thinking,
             ava_response_handoff_channel_prefixes: None,
             model: None,
             output_modality: RealtimeOutputModality::Audio,
@@ -1550,8 +1541,7 @@ async fn conversation_webrtc_start_uses_avas_query() -> Result<()> {
             flush_transcript_tail_on_session_end: false,
             ava_responses_as_items: false,
             ava_response_item_prefix: None,
-            ava_response_handoff_mode:
-                ava_protocol::protocol::AvaResponseHandoffMode::Thinking,
+            ava_response_handoff_mode: ava_protocol::protocol::AvaResponseHandoffMode::Thinking,
             ava_response_handoff_channel_prefixes: None,
             model: None,
             output_modality: RealtimeOutputModality::Audio,
@@ -1655,8 +1645,7 @@ async fn conversation_webrtc_default_v1_ignores_configured_v2_voice() -> Result<
             flush_transcript_tail_on_session_end: false,
             ava_responses_as_items: false,
             ava_response_item_prefix: None,
-            ava_response_handoff_mode:
-                ava_protocol::protocol::AvaResponseHandoffMode::Thinking,
+            ava_response_handoff_mode: ava_protocol::protocol::AvaResponseHandoffMode::Thinking,
             ava_response_handoff_channel_prefixes: None,
             model: None,
             output_modality: RealtimeOutputModality::Audio,
@@ -1722,8 +1711,7 @@ async fn conversation_webrtc_default_v1_rejects_explicit_v2_voice() -> Result<()
             flush_transcript_tail_on_session_end: false,
             ava_responses_as_items: false,
             ava_response_item_prefix: None,
-            ava_response_handoff_mode:
-                ava_protocol::protocol::AvaResponseHandoffMode::Thinking,
+            ava_response_handoff_mode: ava_protocol::protocol::AvaResponseHandoffMode::Thinking,
             ava_response_handoff_channel_prefixes: None,
             model: None,
             output_modality: RealtimeOutputModality::Audio,
@@ -1799,8 +1787,7 @@ async fn conversation_webrtc_start_uses_configured_call_base_url_for_avas() -> R
             flush_transcript_tail_on_session_end: false,
             ava_responses_as_items: false,
             ava_response_item_prefix: None,
-            ava_response_handoff_mode:
-                ava_protocol::protocol::AvaResponseHandoffMode::Thinking,
+            ava_response_handoff_mode: ava_protocol::protocol::AvaResponseHandoffMode::Thinking,
             ava_response_handoff_channel_prefixes: None,
             model: None,
             output_modality: RealtimeOutputModality::Audio,
@@ -1913,8 +1900,7 @@ async fn conversation_webrtc_close_while_sideband_connecting_drops_pending_join(
             flush_transcript_tail_on_session_end: false,
             ava_responses_as_items: false,
             ava_response_item_prefix: None,
-            ava_response_handoff_mode:
-                ava_protocol::protocol::AvaResponseHandoffMode::Thinking,
+            ava_response_handoff_mode: ava_protocol::protocol::AvaResponseHandoffMode::Thinking,
             ava_response_handoff_channel_prefixes: None,
             model: None,
             output_modality: RealtimeOutputModality::Audio,
@@ -2020,8 +2006,7 @@ async fn conversation_webrtc_sideband_connect_failure_closes_with_error() -> Res
             flush_transcript_tail_on_session_end: false,
             ava_responses_as_items: false,
             ava_response_item_prefix: None,
-            ava_response_handoff_mode:
-                ava_protocol::protocol::AvaResponseHandoffMode::Thinking,
+            ava_response_handoff_mode: ava_protocol::protocol::AvaResponseHandoffMode::Thinking,
             ava_response_handoff_channel_prefixes: None,
             model: None,
             output_modality: RealtimeOutputModality::Audio,
@@ -2120,8 +2105,7 @@ async fn conversation_start_uses_openai_env_key_fallback_with_chatgpt_auth() -> 
             flush_transcript_tail_on_session_end: false,
             ava_responses_as_items: false,
             ava_response_item_prefix: None,
-            ava_response_handoff_mode:
-                ava_protocol::protocol::AvaResponseHandoffMode::Thinking,
+            ava_response_handoff_mode: ava_protocol::protocol::AvaResponseHandoffMode::Thinking,
             ava_response_handoff_channel_prefixes: None,
             model: None,
             output_modality: RealtimeOutputModality::Audio,
@@ -2218,8 +2202,7 @@ async fn assert_transport_close_tail_flush(
             flush_transcript_tail_on_session_end,
             ava_responses_as_items: false,
             ava_response_item_prefix: None,
-            ava_response_handoff_mode:
-                ava_protocol::protocol::AvaResponseHandoffMode::Thinking,
+            ava_response_handoff_mode: ava_protocol::protocol::AvaResponseHandoffMode::Thinking,
             ava_response_handoff_channel_prefixes: None,
             model: None,
             output_modality: RealtimeOutputModality::Audio,
@@ -2341,8 +2324,7 @@ async fn conversation_start_preflight_failure_emits_realtime_error_only() -> Res
             flush_transcript_tail_on_session_end: false,
             ava_responses_as_items: false,
             ava_response_item_prefix: None,
-            ava_response_handoff_mode:
-                ava_protocol::protocol::AvaResponseHandoffMode::Thinking,
+            ava_response_handoff_mode: ava_protocol::protocol::AvaResponseHandoffMode::Thinking,
             ava_response_handoff_channel_prefixes: None,
             model: None,
             output_modality: RealtimeOutputModality::Audio,
@@ -2399,8 +2381,7 @@ async fn conversation_start_connect_failure_emits_realtime_error_only() -> Resul
             flush_transcript_tail_on_session_end: false,
             ava_responses_as_items: false,
             ava_response_item_prefix: None,
-            ava_response_handoff_mode:
-                ava_protocol::protocol::AvaResponseHandoffMode::Thinking,
+            ava_response_handoff_mode: ava_protocol::protocol::AvaResponseHandoffMode::Thinking,
             ava_response_handoff_channel_prefixes: None,
             model: None,
             output_modality: RealtimeOutputModality::Audio,
@@ -2505,8 +2486,7 @@ async fn conversation_second_start_replaces_runtime() -> Result<()> {
             flush_transcript_tail_on_session_end: false,
             ava_responses_as_items: false,
             ava_response_item_prefix: None,
-            ava_response_handoff_mode:
-                ava_protocol::protocol::AvaResponseHandoffMode::Thinking,
+            ava_response_handoff_mode: ava_protocol::protocol::AvaResponseHandoffMode::Thinking,
             ava_response_handoff_channel_prefixes: None,
             model: None,
             output_modality: RealtimeOutputModality::Audio,
@@ -2542,8 +2522,7 @@ async fn conversation_second_start_replaces_runtime() -> Result<()> {
             flush_transcript_tail_on_session_end: false,
             ava_responses_as_items: false,
             ava_response_item_prefix: None,
-            ava_response_handoff_mode:
-                ava_protocol::protocol::AvaResponseHandoffMode::Thinking,
+            ava_response_handoff_mode: ava_protocol::protocol::AvaResponseHandoffMode::Thinking,
             ava_response_handoff_channel_prefixes: None,
             model: None,
             output_modality: RealtimeOutputModality::Audio,
@@ -2650,8 +2629,7 @@ async fn conversation_uses_experimental_realtime_ws_base_url_override() -> Resul
             flush_transcript_tail_on_session_end: false,
             ava_responses_as_items: false,
             ava_response_item_prefix: None,
-            ava_response_handoff_mode:
-                ava_protocol::protocol::AvaResponseHandoffMode::Thinking,
+            ava_response_handoff_mode: ava_protocol::protocol::AvaResponseHandoffMode::Thinking,
             ava_response_handoff_channel_prefixes: None,
             model: None,
             output_modality: RealtimeOutputModality::Audio,
@@ -2726,8 +2704,7 @@ async fn conversation_uses_default_realtime_backend_prompt() -> Result<()> {
             flush_transcript_tail_on_session_end: false,
             ava_responses_as_items: false,
             ava_response_item_prefix: None,
-            ava_response_handoff_mode:
-                ava_protocol::protocol::AvaResponseHandoffMode::Thinking,
+            ava_response_handoff_mode: ava_protocol::protocol::AvaResponseHandoffMode::Thinking,
             ava_response_handoff_channel_prefixes: None,
             model: None,
             output_modality: RealtimeOutputModality::Audio,
@@ -2810,8 +2787,7 @@ async fn conversation_uses_empty_instructions_for_null_or_empty_prompt() -> Resu
                 flush_transcript_tail_on_session_end: false,
                 ava_responses_as_items: false,
                 ava_response_item_prefix: None,
-                ava_response_handoff_mode:
-                    ava_protocol::protocol::AvaResponseHandoffMode::Thinking,
+                ava_response_handoff_mode: ava_protocol::protocol::AvaResponseHandoffMode::Thinking,
                 ava_response_handoff_channel_prefixes: None,
                 model: None,
                 output_modality: RealtimeOutputModality::Audio,
@@ -2887,8 +2863,7 @@ async fn conversation_uses_explicit_start_voice() -> Result<()> {
             flush_transcript_tail_on_session_end: false,
             ava_responses_as_items: false,
             ava_response_item_prefix: None,
-            ava_response_handoff_mode:
-                ava_protocol::protocol::AvaResponseHandoffMode::Thinking,
+            ava_response_handoff_mode: ava_protocol::protocol::AvaResponseHandoffMode::Thinking,
             ava_response_handoff_channel_prefixes: None,
             model: None,
             output_modality: RealtimeOutputModality::Audio,
@@ -2956,8 +2931,7 @@ async fn conversation_uses_configured_realtime_voice() -> Result<()> {
             flush_transcript_tail_on_session_end: false,
             ava_responses_as_items: false,
             ava_response_item_prefix: None,
-            ava_response_handoff_mode:
-                ava_protocol::protocol::AvaResponseHandoffMode::Thinking,
+            ava_response_handoff_mode: ava_protocol::protocol::AvaResponseHandoffMode::Thinking,
             ava_response_handoff_channel_prefixes: None,
             model: None,
             output_modality: RealtimeOutputModality::Audio,
@@ -3013,8 +2987,7 @@ async fn conversation_rejects_voice_for_wrong_realtime_version() -> Result<()> {
             flush_transcript_tail_on_session_end: false,
             ava_responses_as_items: false,
             ava_response_item_prefix: None,
-            ava_response_handoff_mode:
-                ava_protocol::protocol::AvaResponseHandoffMode::Thinking,
+            ava_response_handoff_mode: ava_protocol::protocol::AvaResponseHandoffMode::Thinking,
             ava_response_handoff_channel_prefixes: None,
             model: None,
             output_modality: RealtimeOutputModality::Audio,
@@ -3071,8 +3044,7 @@ async fn conversation_uses_experimental_realtime_ws_backend_prompt_override() ->
             flush_transcript_tail_on_session_end: false,
             ava_responses_as_items: false,
             ava_response_item_prefix: None,
-            ava_response_handoff_mode:
-                ava_protocol::protocol::AvaResponseHandoffMode::Thinking,
+            ava_response_handoff_mode: ava_protocol::protocol::AvaResponseHandoffMode::Thinking,
             ava_response_handoff_channel_prefixes: None,
             model: None,
             output_modality: RealtimeOutputModality::Audio,
@@ -3155,8 +3127,7 @@ async fn conversation_uses_experimental_realtime_ws_startup_context_override() -
             flush_transcript_tail_on_session_end: false,
             ava_responses_as_items: false,
             ava_response_item_prefix: None,
-            ava_response_handoff_mode:
-                ava_protocol::protocol::AvaResponseHandoffMode::Thinking,
+            ava_response_handoff_mode: ava_protocol::protocol::AvaResponseHandoffMode::Thinking,
             ava_response_handoff_channel_prefixes: None,
             model: None,
             output_modality: RealtimeOutputModality::Audio,
@@ -3233,8 +3204,7 @@ async fn conversation_disables_realtime_startup_context_with_empty_override() ->
             flush_transcript_tail_on_session_end: false,
             ava_responses_as_items: false,
             ava_response_item_prefix: None,
-            ava_response_handoff_mode:
-                ava_protocol::protocol::AvaResponseHandoffMode::Thinking,
+            ava_response_handoff_mode: ava_protocol::protocol::AvaResponseHandoffMode::Thinking,
             ava_response_handoff_channel_prefixes: None,
             model: None,
             output_modality: RealtimeOutputModality::Audio,
@@ -3304,8 +3274,7 @@ async fn conversation_start_injects_startup_context_from_thread_history() -> Res
             flush_transcript_tail_on_session_end: false,
             ava_responses_as_items: false,
             ava_response_item_prefix: None,
-            ava_response_handoff_mode:
-                ava_protocol::protocol::AvaResponseHandoffMode::Thinking,
+            ava_response_handoff_mode: ava_protocol::protocol::AvaResponseHandoffMode::Thinking,
             ava_response_handoff_channel_prefixes: None,
             model: None,
             output_modality: RealtimeOutputModality::Audio,
@@ -3424,29 +3393,27 @@ async fn conversation_startup_context_current_thread_selects_many_turns_by_budge
         .await?;
     let ava = resumed_thread.thread;
 
-    ava
-        .submit(Op::RealtimeConversationStart(ConversationStartParams {
-            client_managed_handoffs: false,
-            delegation_ack_filler: None,
-            flush_transcript_tail_on_session_end: false,
-            ava_responses_as_items: false,
-            ava_response_item_prefix: None,
-            ava_response_handoff_mode:
-                ava_protocol::protocol::AvaResponseHandoffMode::Thinking,
-            ava_response_handoff_channel_prefixes: None,
-            model: None,
-            output_modality: RealtimeOutputModality::Audio,
-            include_startup_context: true,
-            initial_items: Vec::new(),
-            realtime_start_instructions: None,
-            realtime_end_instructions: None,
-            prompt: Some(Some("backend prompt".to_string())),
-            realtime_session_id: None,
-            transport: None,
-            version: None,
-            voice: None,
-        }))
-        .await?;
+    ava.submit(Op::RealtimeConversationStart(ConversationStartParams {
+        client_managed_handoffs: false,
+        delegation_ack_filler: None,
+        flush_transcript_tail_on_session_end: false,
+        ava_responses_as_items: false,
+        ava_response_item_prefix: None,
+        ava_response_handoff_mode: ava_protocol::protocol::AvaResponseHandoffMode::Thinking,
+        ava_response_handoff_channel_prefixes: None,
+        model: None,
+        output_modality: RealtimeOutputModality::Audio,
+        include_startup_context: true,
+        initial_items: Vec::new(),
+        realtime_start_instructions: None,
+        realtime_end_instructions: None,
+        prompt: Some(Some("backend prompt".to_string())),
+        realtime_session_id: None,
+        transport: None,
+        version: None,
+        voice: None,
+    }))
+    .await?;
 
     let startup_context_request = wait_for_matching_websocket_request(
         &realtime_server,
@@ -3550,8 +3517,7 @@ async fn conversation_startup_context_falls_back_to_workspace_map() -> Result<()
             flush_transcript_tail_on_session_end: false,
             ava_responses_as_items: false,
             ava_response_item_prefix: None,
-            ava_response_handoff_mode:
-                ava_protocol::protocol::AvaResponseHandoffMode::Thinking,
+            ava_response_handoff_mode: ava_protocol::protocol::AvaResponseHandoffMode::Thinking,
             ava_response_handoff_channel_prefixes: None,
             model: None,
             output_modality: RealtimeOutputModality::Audio,
@@ -3621,8 +3587,7 @@ async fn conversation_startup_context_is_truncated_and_sent_once_per_start() -> 
             flush_transcript_tail_on_session_end: false,
             ava_responses_as_items: false,
             ava_response_item_prefix: None,
-            ava_response_handoff_mode:
-                ava_protocol::protocol::AvaResponseHandoffMode::Thinking,
+            ava_response_handoff_mode: ava_protocol::protocol::AvaResponseHandoffMode::Thinking,
             ava_response_handoff_channel_prefixes: None,
             model: None,
             output_modality: RealtimeOutputModality::Audio,
@@ -3725,8 +3690,7 @@ async fn conversation_user_text_turn_is_not_sent_to_realtime(ephemeral: bool) ->
             flush_transcript_tail_on_session_end: false,
             ava_responses_as_items: false,
             ava_response_item_prefix: None,
-            ava_response_handoff_mode:
-                ava_protocol::protocol::AvaResponseHandoffMode::Thinking,
+            ava_response_handoff_mode: ava_protocol::protocol::AvaResponseHandoffMode::Thinking,
             ava_response_handoff_channel_prefixes: None,
             model: None,
             output_modality: RealtimeOutputModality::Audio,
@@ -3865,8 +3829,7 @@ async fn realtime_v2_noop_tool_call_returns_empty_function_output_without_respon
             flush_transcript_tail_on_session_end: false,
             ava_responses_as_items: false,
             ava_response_item_prefix: None,
-            ava_response_handoff_mode:
-                ava_protocol::protocol::AvaResponseHandoffMode::Thinking,
+            ava_response_handoff_mode: ava_protocol::protocol::AvaResponseHandoffMode::Thinking,
             ava_response_handoff_channel_prefixes: None,
             model: None,
             output_modality: RealtimeOutputModality::Audio,
@@ -3975,8 +3938,7 @@ async fn conversation_mirrors_assistant_message_text_to_realtime_handoff() -> Re
             flush_transcript_tail_on_session_end: false,
             ava_responses_as_items: false,
             ava_response_item_prefix: None,
-            ava_response_handoff_mode:
-                ava_protocol::protocol::AvaResponseHandoffMode::Thinking,
+            ava_response_handoff_mode: ava_protocol::protocol::AvaResponseHandoffMode::Thinking,
             ava_response_handoff_channel_prefixes: None,
             model: None,
             output_modality: RealtimeOutputModality::Audio,
@@ -4146,8 +4108,7 @@ async fn conversation_flushes_assistant_deltas_every_200ms_for_v3_handoff() -> R
             flush_transcript_tail_on_session_end: false,
             ava_responses_as_items: false,
             ava_response_item_prefix: None,
-            ava_response_handoff_mode:
-                ava_protocol::protocol::AvaResponseHandoffMode::BemTags,
+            ava_response_handoff_mode: ava_protocol::protocol::AvaResponseHandoffMode::BemTags,
             ava_response_handoff_channel_prefixes: Some(BTreeMap::from([
                 (
                     "commentary".to_string(),
@@ -4325,8 +4286,7 @@ async fn conversation_handoff_persists_across_item_done_until_turn_complete() ->
             flush_transcript_tail_on_session_end: false,
             ava_responses_as_items: false,
             ava_response_item_prefix: None,
-            ava_response_handoff_mode:
-                ava_protocol::protocol::AvaResponseHandoffMode::BemTags,
+            ava_response_handoff_mode: ava_protocol::protocol::AvaResponseHandoffMode::BemTags,
             ava_response_handoff_channel_prefixes: None,
             model: None,
             output_modality: RealtimeOutputModality::Audio,
@@ -4490,8 +4450,7 @@ async fn inbound_handoff_request_starts_turn_and_promotes_its_artifact() -> Resu
             flush_transcript_tail_on_session_end: false,
             ava_responses_as_items: false,
             ava_response_item_prefix: None,
-            ava_response_handoff_mode:
-                ava_protocol::protocol::AvaResponseHandoffMode::Thinking,
+            ava_response_handoff_mode: ava_protocol::protocol::AvaResponseHandoffMode::Thinking,
             ava_response_handoff_channel_prefixes: None,
             model: None,
             output_modality: RealtimeOutputModality::Audio,
@@ -4654,8 +4613,7 @@ async fn inbound_handoff_request_uses_active_transcript() -> Result<()> {
             flush_transcript_tail_on_session_end: false,
             ava_responses_as_items: false,
             ava_response_item_prefix: None,
-            ava_response_handoff_mode:
-                ava_protocol::protocol::AvaResponseHandoffMode::Thinking,
+            ava_response_handoff_mode: ava_protocol::protocol::AvaResponseHandoffMode::Thinking,
             ava_response_handoff_channel_prefixes: None,
             model: None,
             output_modality: RealtimeOutputModality::Audio,
@@ -4768,8 +4726,7 @@ async fn inbound_handoff_request_sends_transcript_delta_after_each_handoff() -> 
             flush_transcript_tail_on_session_end: false,
             ava_responses_as_items: false,
             ava_response_item_prefix: None,
-            ava_response_handoff_mode:
-                ava_protocol::protocol::AvaResponseHandoffMode::Thinking,
+            ava_response_handoff_mode: ava_protocol::protocol::AvaResponseHandoffMode::Thinking,
             ava_response_handoff_channel_prefixes: None,
             model: None,
             output_modality: RealtimeOutputModality::Audio,
@@ -4901,8 +4858,7 @@ async fn conversation_close_routes_only_remaining_transcript_tail_once() -> Resu
             flush_transcript_tail_on_session_end: true,
             ava_responses_as_items: false,
             ava_response_item_prefix: None,
-            ava_response_handoff_mode:
-                ava_protocol::protocol::AvaResponseHandoffMode::Thinking,
+            ava_response_handoff_mode: ava_protocol::protocol::AvaResponseHandoffMode::Thinking,
             ava_response_handoff_channel_prefixes: None,
             model: None,
             output_modality: RealtimeOutputModality::Audio,
@@ -4995,8 +4951,7 @@ async fn inbound_conversation_item_does_not_start_turn_and_still_forwards_audio(
             flush_transcript_tail_on_session_end: false,
             ava_responses_as_items: false,
             ava_response_item_prefix: None,
-            ava_response_handoff_mode:
-                ava_protocol::protocol::AvaResponseHandoffMode::Thinking,
+            ava_response_handoff_mode: ava_protocol::protocol::AvaResponseHandoffMode::Thinking,
             ava_response_handoff_channel_prefixes: None,
             model: None,
             output_modality: RealtimeOutputModality::Audio,
@@ -5129,8 +5084,7 @@ async fn delegated_turn_user_role_echo_does_not_redelegate_and_still_forwards_au
             flush_transcript_tail_on_session_end: false,
             ava_responses_as_items: false,
             ava_response_item_prefix: None,
-            ava_response_handoff_mode:
-                ava_protocol::protocol::AvaResponseHandoffMode::Thinking,
+            ava_response_handoff_mode: ava_protocol::protocol::AvaResponseHandoffMode::Thinking,
             ava_response_handoff_channel_prefixes: None,
             model: None,
             output_modality: RealtimeOutputModality::Audio,
@@ -5293,8 +5247,7 @@ async fn inbound_handoff_request_does_not_block_realtime_event_forwarding() -> R
             flush_transcript_tail_on_session_end: false,
             ava_responses_as_items: false,
             ava_response_item_prefix: None,
-            ava_response_handoff_mode:
-                ava_protocol::protocol::AvaResponseHandoffMode::Thinking,
+            ava_response_handoff_mode: ava_protocol::protocol::AvaResponseHandoffMode::Thinking,
             ava_response_handoff_channel_prefixes: None,
             model: None,
             output_modality: RealtimeOutputModality::Audio,
@@ -5446,8 +5399,7 @@ async fn inbound_handoff_request_steers_active_turn() -> Result<()> {
             flush_transcript_tail_on_session_end: false,
             ava_responses_as_items: false,
             ava_response_item_prefix: None,
-            ava_response_handoff_mode:
-                ava_protocol::protocol::AvaResponseHandoffMode::Thinking,
+            ava_response_handoff_mode: ava_protocol::protocol::AvaResponseHandoffMode::Thinking,
             ava_response_handoff_channel_prefixes: None,
             model: None,
             output_modality: RealtimeOutputModality::Audio,
@@ -5604,8 +5556,7 @@ async fn inbound_handoff_request_starts_turn_and_does_not_block_realtime_audio()
             flush_transcript_tail_on_session_end: false,
             ava_responses_as_items: false,
             ava_response_item_prefix: None,
-            ava_response_handoff_mode:
-                ava_protocol::protocol::AvaResponseHandoffMode::Thinking,
+            ava_response_handoff_mode: ava_protocol::protocol::AvaResponseHandoffMode::Thinking,
             ava_response_handoff_channel_prefixes: None,
             model: None,
             output_modality: RealtimeOutputModality::Audio,

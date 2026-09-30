@@ -94,10 +94,7 @@ fn env_overlay_for_exec_server_keeps_runtime_changes_only() {
             ava_apply_patch::AVA_APPLY_PATCH_PRESERVE_LINE_ENDINGS_ENV_VAR.to_string(),
             "1".to_string(),
         ),
-        (
-            "AVA_SANDBOX_NETWORK_DISABLED".to_string(),
-            "1".to_string(),
-        ),
+        ("AVA_SANDBOX_NETWORK_DISABLED".to_string(), "1".to_string()),
     ]);
 
     assert_eq!(
@@ -117,10 +114,7 @@ fn env_overlay_for_exec_server_keeps_runtime_changes_only() {
                 ava_apply_patch::AVA_APPLY_PATCH_PRESERVE_LINE_ENDINGS_ENV_VAR.to_string(),
                 "1".to_string(),
             ),
-            (
-                "AVA_SANDBOX_NETWORK_DISABLED".to_string(),
-                "1".to_string()
-            ),
+            ("AVA_SANDBOX_NETWORK_DISABLED".to_string(), "1".to_string()),
         ])
     );
 }

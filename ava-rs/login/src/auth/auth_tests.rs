@@ -8,11 +8,11 @@ use ava_protocol::auth::KnownPlan as InternalKnownPlan;
 use ava_protocol::auth::PlanType as InternalPlanType;
 use ava_protocol::protocol::SessionSource;
 
-use base64::Engine;
 use ava_protocol::config_types::ForcedLoginMethod;
 use ava_protocol::config_types::ModelProviderAuthInfo;
 use ava_protocol::shell_environment::OPENAI_FEDERATION_RULE_ID_ENV_VAR;
 use ava_protocol::shell_environment::OPENAI_IDENTITY_TOKEN_FILE_ENV_VAR;
+use base64::Engine;
 use pretty_assertions::assert_eq;
 use serde::Serialize;
 use serde_json::json;
@@ -217,8 +217,7 @@ async fn agent_identity_jwt_uses_explicit_staging_endpoint_overrides() -> anyhow
     )
     .await;
     let authapi_base_url = format!("{}/api/accounts/", authapi_server.uri());
-    let _authapi_guard =
-        EnvVarGuard::set("AVA_AGENT_IDENTITY_AUTHAPI_BASE_URL", &authapi_base_url);
+    let _authapi_guard = EnvVarGuard::set("AVA_AGENT_IDENTITY_AUTHAPI_BASE_URL", &authapi_base_url);
     let jwks_base_url = format!("{}/api/ava/", jwks_server.uri());
     let _jwks_guard = EnvVarGuard::set("AVA_AGENT_IDENTITY_JWKS_BASE_URL", &jwks_base_url);
 
@@ -259,8 +258,7 @@ async fn agent_identity_jwt_supports_existing_staging_launcher() -> anyhow::Resu
     )
     .await;
     let authapi_base_url = format!("{}/api/accounts", authapi_server.uri());
-    let _authapi_guard =
-        EnvVarGuard::set("AVA_AGENT_IDENTITY_AUTHAPI_BASE_URL", &authapi_base_url);
+    let _authapi_guard = EnvVarGuard::set("AVA_AGENT_IDENTITY_AUTHAPI_BASE_URL", &authapi_base_url);
     let jwks_base_url = format!("{}/api/ava", jwks_server.uri());
     let _jwks_guard = EnvVarGuard::set("AVA_AGENT_IDENTITY_JWKS_BASE_URL", &jwks_base_url);
 

@@ -1,7 +1,6 @@
 use std::fs;
 use std::time::Duration;
 
-use chrono::Utc;
 use ava_app_server_protocol::AvaErrorInfo;
 use ava_app_server_protocol::ThreadTimelineEntry;
 use ava_protocol::ThreadId;
@@ -18,6 +17,7 @@ use ava_protocol::realtime::RealtimeSessionOutcome;
 use ava_protocol::realtime::RealtimeTranscriptRole;
 use ava_rollout::RolloutItem;
 use ava_rollout::RolloutLine;
+use chrono::Utc;
 use pretty_assertions::assert_eq;
 use tempfile::TempDir;
 

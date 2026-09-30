@@ -1,7 +1,5 @@
 use anyhow::Context;
 use anyhow::Result;
-use base64::Engine;
-use base64::engine::general_purpose::STANDARD as BASE64_STANDARD;
 use ava_config::test_support::CloudConfigBundleFixture;
 use ava_core::TurnInputRequest;
 use ava_protocol::config_types::ApprovalsReviewer;
@@ -25,6 +23,8 @@ use ava_protocol::protocol::TurnEnvironmentSelection;
 use ava_protocol::protocol::TurnEnvironmentSelections;
 use ava_protocol::user_input::UserInput;
 use ava_utils_path_uri::PathUri;
+use base64::Engine;
+use base64::engine::general_purpose::STANDARD as BASE64_STANDARD;
 use core_test_support::managed_network_requirements_loader;
 use core_test_support::responses::ev_apply_patch_custom_tool_call;
 use core_test_support::responses::ev_assistant_message;

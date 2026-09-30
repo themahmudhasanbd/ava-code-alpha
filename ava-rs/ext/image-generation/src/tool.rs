@@ -1,7 +1,5 @@
 use std::io;
 
-use base64::Engine;
-use base64::engine::general_purpose::STANDARD as BASE64_STANDARD;
 use ava_api::ImageBackground;
 use ava_api::ImageEditRequest;
 use ava_api::ImageGenerationRequest;
@@ -44,6 +42,8 @@ use ava_utils_absolute_path::AbsolutePathBuf;
 use ava_utils_image::PromptImageMode;
 use ava_utils_image::load_for_prompt_bytes;
 use ava_utils_path_uri::PathUri;
+use base64::Engine;
+use base64::engine::general_purpose::STANDARD as BASE64_STANDARD;
 use schemars::JsonSchema;
 use schemars::r#gen::SchemaSettings;
 use serde::Deserialize;

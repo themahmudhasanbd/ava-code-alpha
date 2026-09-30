@@ -284,11 +284,8 @@ async fn duplicate_named_resume_renders_error_without_replacing_current_session(
             /*git_info*/ None,
         )
         .expect("materialized rollout should be created");
-        let path = app_test_support::rollout_path(
-            app.config.ava_home.as_path(),
-            filename_ts,
-            &thread_id,
-        );
+        let path =
+            app_test_support::rollout_path(app.config.ava_home.as_path(), filename_ts, &thread_id);
         let thread_id = ThreadId::from_string(&thread_id)?;
         thread_ids.push(thread_id);
         let created_at =
@@ -8635,25 +8632,22 @@ async fn replace_chat_widget_reseeds_collab_agent_metadata_for_replay() {
             session: None,
             turns: Vec::new(),
             events: vec![ThreadBufferedEvent::Notification(Box::new(
-                ServerNotification::ItemStarted(
-                    ava_app_server_protocol::ItemStartedNotification {
-                        thread_id: "thread-1".to_string(),
-                        turn_id: "turn-1".to_string(),
-                        started_at_ms: 0,
-                        item: ThreadItem::CollabAgentToolCall {
-                            id: "wait-1".to_string(),
-                            tool: ava_app_server_protocol::CollabAgentTool::Wait,
-                            status:
-                                ava_app_server_protocol::CollabAgentToolCallStatus::InProgress,
-                            sender_thread_id: ThreadId::new().to_string(),
-                            receiver_thread_ids: vec![receiver_thread_id.to_string()],
-                            prompt: None,
-                            model: None,
-                            reasoning_effort: None,
-                            agents_states: HashMap::new(),
-                        },
+                ServerNotification::ItemStarted(ava_app_server_protocol::ItemStartedNotification {
+                    thread_id: "thread-1".to_string(),
+                    turn_id: "turn-1".to_string(),
+                    started_at_ms: 0,
+                    item: ThreadItem::CollabAgentToolCall {
+                        id: "wait-1".to_string(),
+                        tool: ava_app_server_protocol::CollabAgentTool::Wait,
+                        status: ava_app_server_protocol::CollabAgentToolCallStatus::InProgress,
+                        sender_thread_id: ThreadId::new().to_string(),
+                        receiver_thread_ids: vec![receiver_thread_id.to_string()],
+                        prompt: None,
+                        model: None,
+                        reasoning_effort: None,
+                        agents_states: HashMap::new(),
                     },
-                ),
+                }),
             ))],
             active_reasoning_item: None,
             input_state: None,
@@ -9133,8 +9127,7 @@ async fn changing_cyber_model_reasoning_preserves_selected_permissions() {
 
         assert!(
             app.apply_permission_profile_selection(PermissionProfileSelection {
-                profile_id: ava_protocol::models::BUILT_IN_PERMISSION_PROFILE_READ_ONLY
-                    .to_string(),
+                profile_id: ava_protocol::models::BUILT_IN_PERMISSION_PROFILE_READ_ONLY.to_string(),
                 approval_policy: Some(AskForApproval::OnRequest),
                 approvals_reviewer: Some(ApprovalsReviewer::User),
                 display_label: "Read Only".to_string(),

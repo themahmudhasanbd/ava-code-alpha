@@ -2485,9 +2485,9 @@ async fn spawn_agent_fork_strips_parent_usage_hints_from_compacted_history(
                         .collect(),
                 ),
                 retained_context: Some(retained_context),
-                guardian_history: Some(ava_history::GuardianHistoryCheckpoint(vec![
-                    user_message("Parent-local approval must not be inherited."),
-                ])),
+                guardian_history: Some(ava_history::GuardianHistoryCheckpoint(vec![user_message(
+                    "Parent-local approval must not be inherited.",
+                )])),
                 mcp_resource_origins: None,
                 window_number: None,
                 first_window_id: None,

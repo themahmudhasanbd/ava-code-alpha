@@ -92,17 +92,16 @@ async fn review_op_emits_lifecycle_and_review_output() {
     let ava = new_conversation_for_server(&server, ava_home.clone(), |_| {}).await;
 
     // Submit review request.
-    ava
-        .submit(Op::Review {
-            review_request: ReviewRequest {
-                target: ReviewTarget::Custom {
-                    instructions: "Please review my changes".to_string(),
-                },
-                user_facing_hint: None,
+    ava.submit(Op::Review {
+        review_request: ReviewRequest {
+            target: ReviewTarget::Custom {
+                instructions: "Please review my changes".to_string(),
             },
-        })
-        .await
-        .unwrap();
+            user_facing_hint: None,
+        },
+    })
+    .await
+    .unwrap();
 
     // Item lifecycle events are emitted first, then the legacy review event is fanned out
     // with the same stable IDs for compatibility consumers.
@@ -319,17 +318,16 @@ async fn cancelled_review_does_not_forward_delegate_mcp_startup() {
     })
     .await;
 
-    ava
-        .submit(Op::Review {
-            review_request: ReviewRequest {
-                target: ReviewTarget::Custom {
-                    instructions: "Cancel this review".to_string(),
-                },
-                user_facing_hint: None,
+    ava.submit(Op::Review {
+        review_request: ReviewRequest {
+            target: ReviewTarget::Custom {
+                instructions: "Cancel this review".to_string(),
             },
-        })
-        .await
-        .unwrap();
+            user_facing_hint: None,
+        },
+    })
+    .await
+    .unwrap();
 
     tokio::time::timeout(Duration::from_secs(5), async {
         loop {
@@ -403,17 +401,16 @@ async fn review_op_with_plain_text_emits_review_fallback() {
     let ava_home = Arc::new(TempDir::new().unwrap());
     let ava = new_conversation_for_server(&server, ava_home.clone(), |_| {}).await;
 
-    ava
-        .submit(Op::Review {
-            review_request: ReviewRequest {
-                target: ReviewTarget::Custom {
-                    instructions: "Plain text review".to_string(),
-                },
-                user_facing_hint: None,
+    ava.submit(Op::Review {
+        review_request: ReviewRequest {
+            target: ReviewTarget::Custom {
+                instructions: "Plain text review".to_string(),
             },
-        })
-        .await
-        .unwrap();
+            user_facing_hint: None,
+        },
+    })
+    .await
+    .unwrap();
 
     let _entered = wait_for_event(&ava, |ev| matches!(ev, EventMsg::EnteredReviewMode(_))).await;
     let closed = wait_for_event(&ava, |ev| matches!(ev, EventMsg::ExitedReviewMode(_))).await;
@@ -459,17 +456,16 @@ async fn review_filters_agent_message_related_events() {
     let ava_home = Arc::new(TempDir::new().unwrap());
     let ava = new_conversation_for_server(&server, ava_home.clone(), |_| {}).await;
 
-    ava
-        .submit(Op::Review {
-            review_request: ReviewRequest {
-                target: ReviewTarget::Custom {
-                    instructions: "Filter streaming events".to_string(),
-                },
-                user_facing_hint: None,
+    ava.submit(Op::Review {
+        review_request: ReviewRequest {
+            target: ReviewTarget::Custom {
+                instructions: "Filter streaming events".to_string(),
             },
-        })
-        .await
-        .unwrap();
+            user_facing_hint: None,
+        },
+    })
+    .await
+    .unwrap();
 
     let mut saw_entered = false;
     let mut saw_exited = false;
@@ -533,17 +529,16 @@ async fn review_does_not_emit_agent_message_on_structured_output() {
     let ava_home = Arc::new(TempDir::new().unwrap());
     let ava = new_conversation_for_server(&server, ava_home.clone(), |_| {}).await;
 
-    ava
-        .submit(Op::Review {
-            review_request: ReviewRequest {
-                target: ReviewTarget::Custom {
-                    instructions: "check structured".to_string(),
-                },
-                user_facing_hint: None,
+    ava.submit(Op::Review {
+        review_request: ReviewRequest {
+            target: ReviewTarget::Custom {
+                instructions: "check structured".to_string(),
             },
-        })
-        .await
-        .unwrap();
+            user_facing_hint: None,
+        },
+    })
+    .await
+    .unwrap();
 
     // Drain events until TurnComplete; ensure we only see a final
     // AgentMessage (no streaming assistant messages).
@@ -697,17 +692,16 @@ async fn review_uses_updated_turn_permissions_and_approval_policy() {
     .expect("updated thread permissions should be accepted");
 
     let stored_settings = ava.thread_settings_snapshot().await;
-    ava
-        .submit(Op::Review {
-            review_request: ReviewRequest {
-                target: ReviewTarget::Custom {
-                    instructions: "review current permissions".to_string(),
-                },
-                user_facing_hint: None,
+    ava.submit(Op::Review {
+        review_request: ReviewRequest {
+            target: ReviewTarget::Custom {
+                instructions: "review current permissions".to_string(),
             },
-        })
-        .await
-        .expect("review should start");
+            user_facing_hint: None,
+        },
+    })
+    .await
+    .expect("review should start");
     wait_for_event(&ava, |event| matches!(event, EventMsg::TurnComplete(_))).await;
 
     assert_eq!(ava.thread_settings_snapshot().await, stored_settings);
@@ -762,8 +756,8 @@ async fn review_uses_updated_turn_permissions_and_approval_policy() {
     let review_session_cwd = review_rollout
         .lines()
         .find_map(|line| {
-            let rollout_line = ava_rollout::parse_rollout_line(line)
-                .expect("review rollout line should be valid");
+            let rollout_line =
+                ava_rollout::parse_rollout_line(line).expect("review rollout line should be valid");
             match rollout_line.item {
                 RolloutItem::SessionMeta(session_meta) => Some(session_meta.meta.cwd),
                 _ => None,
@@ -774,8 +768,8 @@ async fn review_uses_updated_turn_permissions_and_approval_policy() {
     let review_context = review_rollout
         .lines()
         .filter_map(|line| {
-            let rollout_line = ava_rollout::parse_rollout_line(line)
-                .expect("review rollout line should be valid");
+            let rollout_line =
+                ava_rollout::parse_rollout_line(line).expect("review rollout line should be valid");
             match rollout_line.item {
                 RolloutItem::TurnContext(turn_context) => Some(turn_context),
                 _ => None,
@@ -954,8 +948,8 @@ async fn review_uses_custom_review_model_from_config() {
     let ava = Arc::clone(&test.ava);
     std::fs::remove_file(ava_home.path().join("models_cache.json"))
         .expect("initial empty model catalog should be cached");
-    let mut models = ava_models_manager::bundled_models_response()
-        .expect("bundled model catalog should parse");
+    let mut models =
+        ava_models_manager::bundled_models_response().expect("bundled model catalog should parse");
     let model = models
         .models
         .iter_mut()
@@ -966,17 +960,16 @@ async fn review_uses_custom_review_model_from_config() {
     model.node_repl_disabled = true;
     let models_mock = responses::mount_models_once(&server, models).await;
 
-    ava
-        .submit(Op::Review {
-            review_request: ReviewRequest {
-                target: ReviewTarget::Custom {
-                    instructions: "use custom model".to_string(),
-                },
-                user_facing_hint: None,
+    ava.submit(Op::Review {
+        review_request: ReviewRequest {
+            target: ReviewTarget::Custom {
+                instructions: "use custom model".to_string(),
             },
-        })
-        .await
-        .unwrap();
+            user_facing_hint: None,
+        },
+    })
+    .await
+    .unwrap();
 
     // Wait for completion
     let _entered = wait_for_event(&ava, |ev| matches!(ev, EventMsg::EnteredReviewMode(_))).await;
@@ -1033,17 +1026,16 @@ async fn review_uses_session_model_when_review_model_unset() {
         .expect("same-model review conversation should be created");
     let ava = Arc::clone(&test.ava);
 
-    ava
-        .submit(Op::Review {
-            review_request: ReviewRequest {
-                target: ReviewTarget::Custom {
-                    instructions: "use session model".to_string(),
-                },
-                user_facing_hint: None,
+    ava.submit(Op::Review {
+        review_request: ReviewRequest {
+            target: ReviewTarget::Custom {
+                instructions: "use session model".to_string(),
             },
-        })
-        .await
-        .unwrap();
+            user_facing_hint: None,
+        },
+    })
+    .await
+    .unwrap();
 
     let _entered = wait_for_event(&ava, |ev| matches!(ev, EventMsg::EnteredReviewMode(_))).await;
     let _closed = wait_for_event(&ava, |ev| {
@@ -1156,17 +1148,16 @@ async fn review_input_isolated_from_parent_history() {
 
     // Submit review request; it must start fresh (no parent history in `input`).
     let review_prompt = "Please review only this".to_string();
-    ava
-        .submit(Op::Review {
-            review_request: ReviewRequest {
-                target: ReviewTarget::Custom {
-                    instructions: review_prompt.clone(),
-                },
-                user_facing_hint: None,
+    ava.submit(Op::Review {
+        review_request: ReviewRequest {
+            target: ReviewTarget::Custom {
+                instructions: review_prompt.clone(),
             },
-        })
-        .await
-        .unwrap();
+            user_facing_hint: None,
+        },
+    })
+    .await
+    .unwrap();
 
     let _entered = wait_for_event(&ava, |ev| matches!(ev, EventMsg::EnteredReviewMode(_))).await;
     let _closed = wait_for_event(&ava, |ev| {
@@ -1270,17 +1261,16 @@ async fn review_history_surfaces_in_parent_session() {
     let ava = new_conversation_for_server(&server, ava_home.clone(), |_| {}).await;
 
     // 1) Run a review turn that produces an assistant message (isolated in child).
-    ava
-        .submit(Op::Review {
-            review_request: ReviewRequest {
-                target: ReviewTarget::Custom {
-                    instructions: "Start a review".to_string(),
-                },
-                user_facing_hint: None,
+    ava.submit(Op::Review {
+        review_request: ReviewRequest {
+            target: ReviewTarget::Custom {
+                instructions: "Start a review".to_string(),
             },
-        })
-        .await
-        .unwrap();
+            user_facing_hint: None,
+        },
+    })
+    .await
+    .unwrap();
     let _entered = wait_for_event(&ava, |ev| matches!(ev, EventMsg::EnteredReviewMode(_))).await;
     let _closed = wait_for_event(&ava, |ev| {
         matches!(
@@ -1296,13 +1286,12 @@ async fn review_history_surfaces_in_parent_session() {
 
     // 2) Continue in the parent session; request input must not include any review items.
     let followup = "back to parent".to_string();
-    ava
-        .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
-            text: followup.clone(),
-            text_elements: Vec::new(),
-        }]))
-        .await
-        .unwrap();
+    ava.start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
+        text: followup.clone(),
+        text_elements: Vec::new(),
+    }]))
+    .await
+    .unwrap();
     let _complete = wait_for_event(&ava, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
 
     // Inspect the second request (parent turn) input contents.
@@ -1414,17 +1403,16 @@ async fn review_uses_overridden_cwd_for_base_branch_merge_base() {
     .await
     .unwrap();
 
-    ava
-        .submit(Op::Review {
-            review_request: ReviewRequest {
-                target: ReviewTarget::BaseBranch {
-                    branch: "main".to_string(),
-                },
-                user_facing_hint: None,
+    ava.submit(Op::Review {
+        review_request: ReviewRequest {
+            target: ReviewTarget::BaseBranch {
+                branch: "main".to_string(),
             },
-        })
-        .await
-        .unwrap();
+            user_facing_hint: None,
+        },
+    })
+    .await
+    .unwrap();
 
     let _entered = wait_for_event(&ava, |ev| matches!(ev, EventMsg::EnteredReviewMode(_))).await;
     let _complete = wait_for_event(&ava, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
@@ -1483,17 +1471,16 @@ where
     F: FnOnce(&mut Config) + Send + 'static,
 {
     let base_url = format!("{}/v1", server.uri());
-    let mut builder = test_ava()
-        .with_home(ava_home)
-        .with_config(move |config| {
-            config.model_provider.base_url = Some(base_url.clone());
-            mutator(config);
-        });
+    let mut builder = test_ava().with_home(ava_home).with_config(move |config| {
+        config.model_provider.base_url = Some(base_url.clone());
+        mutator(config);
+    });
     builder
         .build(server)
         .await
         .expect("create conversation")
-        .ava-code
+        .ava
+        - code
 }
 
 /// Create a conversation resuming from a rollout file, configured to talk to the provided mock server.
@@ -1517,5 +1504,6 @@ where
         .resume(server, ava_home, resume_path)
         .await
         .expect("resume conversation")
-        .ava-code
+        .ava
+        - code
 }

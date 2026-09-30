@@ -1,3 +1,4 @@
+use ava_http_client::HttpClientFactory;
 use axum::Router;
 use axum::body::Body;
 use axum::extract::ConnectInfo;
@@ -12,7 +13,6 @@ use axum::response::IntoResponse;
 use axum::response::Response;
 use axum::routing::any;
 use axum::routing::get;
-use ava_http_client::HttpClientFactory;
 use std::io::Write as _;
 use std::net::SocketAddr;
 use tokio::io;
@@ -225,17 +225,17 @@ async fn websocket_upgrade_handler(
         .max_message_size(64 * 1024 * 1024)
         .max_frame_size(64 * 1024 * 1024)
         .on_upgrade(move |stream| async move {
-        state
-            .processor
-            .run_connection(
-                JsonRpcConnection::from_axum_websocket(
-                    stream,
-                    format!("exec-server websocket {peer_addr}"),
-                ),
-                ConnectionTransport::WebSocket,
-            )
-            .await;
-    })
+            state
+                .processor
+                .run_connection(
+                    JsonRpcConnection::from_axum_websocket(
+                        stream,
+                        format!("exec-server websocket {peer_addr}"),
+                    ),
+                    ConnectionTransport::WebSocket,
+                )
+                .await;
+        })
 }
 
 #[cfg(test)]

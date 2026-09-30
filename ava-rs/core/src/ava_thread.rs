@@ -701,10 +701,7 @@ impl AvaThread {
     /// The caller must submit the associated user input while retaining its
     /// thread-operation lock. The subsequent turn persistence includes both
     /// these items and the user input, without an independent rollout flush.
-    pub async fn inject_response_items_for_turn(
-        &self,
-        items: Vec<ResponseItem>,
-    ) -> AvaResult<()> {
+    pub async fn inject_response_items_for_turn(&self, items: Vec<ResponseItem>) -> AvaResult<()> {
         if items.is_empty() {
             return Err(AvaErr::InvalidRequest(
                 "items must not be empty".to_string(),
@@ -937,9 +934,7 @@ impl AvaThread {
     }
 
     /// Refreshes this thread's Apps tools before returning their runtime state.
-    pub async fn refresh_ava_apps_tools(
-        &self,
-    ) -> anyhow::Result<ava_mcp::AvaAppsToolSnapshot> {
+    pub async fn refresh_ava_apps_tools(&self) -> anyhow::Result<ava_mcp::AvaAppsToolSnapshot> {
         self.session.refresh_ava_apps_tools().await
     }
 
@@ -1048,9 +1043,10 @@ impl AvaThread {
 
     pub async fn increment_out_of_band_elicitation_count(&self) -> AvaResult<i64> {
         let mut elicitations = self.out_of_band_elicitations.lock().await;
-        let incremented = elicitations.count.checked_add(1).ok_or_else(|| {
-            AvaErr::Fatal("out-of-band elicitation count overflowed".to_string())
-        })?;
+        let incremented = elicitations
+            .count
+            .checked_add(1)
+            .ok_or_else(|| AvaErr::Fatal("out-of-band elicitation count overflowed".to_string()))?;
         if elicitations.count == 0 {
             elicitations.registration = Some(self.session.services.elicitations.register());
         }

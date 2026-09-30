@@ -194,7 +194,6 @@ export function ProfileScreen() {
     ? profileQuery.data.presets
     : DEFAULT_PRESETS;
 
-  const currentPresetInfo = presets.find((p) => p.id === form.personalityPreset);
 
   const displayName = form.name?.trim() || form.username?.trim() || auth?.username || "Developer";
   const initials = displayName.slice(0, 2).toUpperCase();
@@ -373,13 +372,16 @@ export function ProfileScreen() {
 
               <View style={styles.fieldGroup}>
                 <Text style={[styles.fieldLabel, font("medium")]}>Personality Preset</Text>
-                <View style={styles.presetChips}>
+                <View style={styles.presetCards}>
                   {presets.map((preset) => {
                     const isSelected = form.personalityPreset === preset.id;
                     return (
                       <TouchableOpacity
                         key={preset.id}
-                        style={[styles.presetChip, isSelected && styles.presetChipActive]}
+                        style={[
+                          styles.presetCard,
+                          isSelected && styles.presetCardActive,
+                        ]}
                         onPress={() =>
                           setForm((prev) => ({
                             ...prev,
@@ -388,24 +390,36 @@ export function ProfileScreen() {
                         }
                         activeOpacity={0.7}
                       >
-                        <Text
-                          style={[
-                            styles.presetChipText,
-                            font("semibold"),
-                            isSelected && styles.presetChipTextActive,
-                          ]}
-                        >
-                          {preset.name}
-                        </Text>
+                        <View style={styles.presetCardHeader}>
+                          <Text
+                            style={[
+                              styles.presetCardTitle,
+                              font("semibold"),
+                              isSelected && styles.presetCardTitleActive,
+                            ]}
+                          >
+                            {preset.name}
+                          </Text>
+                          {isSelected && (
+                            <View
+                              style={[
+                                styles.presetCheck,
+                                { backgroundColor: COLORS.primary },
+                              ]}
+                            >
+                              <Check size={11} color="#FFFFFF" />
+                            </View>
+                          )}
+                        </View>
+                        {preset.description ? (
+                          <Text style={[styles.presetCardDesc, font("regular")]}>
+                            {preset.description}
+                          </Text>
+                        ) : null}
                       </TouchableOpacity>
                     );
                   })}
                 </View>
-                {currentPresetInfo?.description ? (
-                  <Text style={[styles.presetDesc, font("regular")]}>
-                    {currentPresetInfo.description}
-                  </Text>
-                ) : null}
               </View>
 
               {form.personalityPreset === "custom" && (
@@ -743,36 +757,47 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(255, 255, 255, 0.06)",
     marginVertical: 4,
   },
-  presetChips: {
-    flexDirection: "row",
-    flexWrap: "wrap",
+  presetCards: {
+    flexDirection: "column",
     gap: 8,
     marginTop: 4,
   },
-  presetChip: {
+  presetCard: {
     paddingHorizontal: 12,
-    paddingVertical: 7,
-    borderRadius: 10,
+    paddingVertical: 10,
+    borderRadius: 12,
     backgroundColor: COLORS.secondary,
     borderWidth: 1,
     borderColor: COLORS.border,
+    gap: 4,
   },
-  presetChipActive: {
-    backgroundColor: COLORS.primary,
+  presetCardActive: {
     borderColor: COLORS.primary,
+    borderWidth: 1.5,
   },
-  presetChipText: {
-    fontSize: 12,
+  presetCardHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  presetCardTitle: {
+    fontSize: 13.5,
     color: COLORS.foreground,
   },
-  presetChipTextActive: {
-    color: "#FFFFFF",
+  presetCardTitleActive: {
+    color: COLORS.primary,
   },
-  presetDesc: {
-    fontSize: 11.5,
+  presetCheck: {
+    width: 18,
+    height: 18,
+    borderRadius: 9,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  presetCardDesc: {
+    fontSize: 12,
     color: COLORS.mutedForeground,
-    marginTop: 8,
-    lineHeight: 16,
+    lineHeight: 17,
   },
   switchRow: {
     flexDirection: "row",

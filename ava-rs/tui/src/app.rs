@@ -96,8 +96,8 @@ use ava_app_server_client::AppServerRequestHandle;
 use ava_app_server_client::TypedRequestError;
 use ava_app_server_protocol::AddCreditsNudgeCreditType;
 use ava_app_server_protocol::AskForApproval;
-use ava_app_server_protocol::ClientRequest;
 use ava_app_server_protocol::AvaErrorInfo as AppServerAvaErrorInfo;
+use ava_app_server_protocol::ClientRequest;
 use ava_app_server_protocol::ConfigBatchWriteParams;
 use ava_app_server_protocol::ConfigReadResponse;
 use ava_app_server_protocol::ConfigValueWriteParams;
@@ -360,9 +360,7 @@ fn collab_receiver_is_not_found(
 fn default_exec_approval_decisions(
     network_approval_context: Option<&ava_app_server_protocol::NetworkApprovalContext>,
     proposed_execpolicy_amendment: Option<&ava_app_server_protocol::ExecPolicyAmendment>,
-    proposed_network_policy_amendments: Option<
-        &[ava_app_server_protocol::NetworkPolicyAmendment],
-    >,
+    proposed_network_policy_amendments: Option<&[ava_app_server_protocol::NetworkPolicyAmendment]>,
     additional_permissions: Option<&ava_app_server_protocol::AdditionalPermissionProfile>,
 ) -> Vec<ava_app_server_protocol::CommandExecutionApprovalDecision> {
     use ava_app_server_protocol::CommandExecutionApprovalDecision;

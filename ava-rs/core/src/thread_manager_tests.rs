@@ -2388,10 +2388,7 @@ async fn rollout_path_resume_and_fork_read_history_through_thread_store() {
         .expect("shutdown source thread");
     let _ = manager.remove_thread(&source.thread_id).await;
 
-    let rollout_path = config
-        .ava_home
-        .join("rollouts/source.jsonl")
-        .to_path_buf();
+    let rollout_path = config.ava_home.join("rollouts/source.jsonl").to_path_buf();
     let resumed = manager
         .resume_thread_with_history(
             config.clone(),

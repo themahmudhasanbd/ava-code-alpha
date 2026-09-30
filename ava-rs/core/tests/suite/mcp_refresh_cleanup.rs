@@ -80,28 +80,27 @@ async fn refresh_keeps_superseded_mcp_server_alive_for_in_flight_calls() -> anyh
         let ava = Arc::clone(&fixture.ava);
         let barrier = barrier.clone();
         async move {
-            ava
-                .call_mcp_tool(
-                    "refresh_cleanup",
-                    "sync",
-                    Some(serde_json::json!({
-                        "barrier": barrier,
-                        "sleep_after_ms": 300_000
-                    })),
-                    /*meta*/ None,
-                )
-                .await
+            ava.call_mcp_tool(
+                "refresh_cleanup",
+                "sync",
+                Some(serde_json::json!({
+                    "barrier": barrier,
+                    "sleep_after_ms": 300_000
+                })),
+                /*meta*/ None,
+            )
+            .await
         }
     });
-    fixture
-        .ava-code
-        .call_mcp_tool(
-            "refresh_cleanup",
-            "sync",
-            Some(serde_json::json!({ "barrier": barrier })),
-            /*meta*/ None,
-        )
-        .await?;
+    fixture.ava
+        - code
+            .call_mcp_tool(
+                "refresh_cleanup",
+                "sync",
+                Some(serde_json::json!({ "barrier": barrier })),
+                /*meta*/ None,
+            )
+            .await?;
     fs::remove_file(&pid_file)?;
 
     responses::mount_sse_once(

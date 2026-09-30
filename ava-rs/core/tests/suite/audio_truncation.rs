@@ -1,6 +1,4 @@
 use anyhow::Result;
-use base64::Engine;
-use base64::engine::general_purpose::STANDARD as BASE64_STANDARD;
 use ava_core::StartThreadOptions;
 use ava_core::TurnInputRequest;
 use ava_protocol::dynamic_tools::DynamicToolCallOutputContentItem;
@@ -17,6 +15,8 @@ use ava_protocol::openai_models::TruncationPolicyConfig;
 use ava_protocol::protocol::EventMsg;
 use ava_protocol::protocol::Op;
 use ava_protocol::user_input::UserInput;
+use base64::Engine;
+use base64::engine::general_purpose::STANDARD as BASE64_STANDARD;
 use core_test_support::responses;
 use core_test_support::responses::sse;
 use core_test_support::skip_if_no_network;

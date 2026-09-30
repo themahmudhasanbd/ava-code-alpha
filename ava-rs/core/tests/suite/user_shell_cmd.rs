@@ -64,17 +64,17 @@ async fn user_shell_cmd_ls_and_cat_in_temp_dir() {
         .build(&server)
         .await
         .expect("create new conversation")
-        .ava-code;
+        .ava
+        - code;
 
     // 1) shell command should list the file
     let list_cmd = "ls".to_string();
-    ava
-        .submit(Op::RunUserShellCommand {
-            command: list_cmd,
-            timeout_ms: None,
-        })
-        .await
-        .unwrap();
+    ava.submit(Op::RunUserShellCommand {
+        command: list_cmd,
+        timeout_ms: None,
+    })
+    .await
+    .unwrap();
     let msg = wait_for_event(&ava, |ev| matches!(ev, EventMsg::ExecCommandEnd(_))).await;
     let EventMsg::ExecCommandEnd(ExecCommandEndEvent {
         stdout, exit_code, ..
@@ -90,13 +90,12 @@ async fn user_shell_cmd_ls_and_cat_in_temp_dir() {
 
     // 2) shell command should print the file contents verbatim
     let cat_cmd = format!("cat {file_name}");
-    ava
-        .submit(Op::RunUserShellCommand {
-            command: cat_cmd,
-            timeout_ms: None,
-        })
-        .await
-        .unwrap();
+    ava.submit(Op::RunUserShellCommand {
+        command: cat_cmd,
+        timeout_ms: None,
+    })
+    .await
+    .unwrap();
     let msg = wait_for_event(&ava, |ev| matches!(ev, EventMsg::ExecCommandEnd(_))).await;
     let EventMsg::ExecCommandEnd(ExecCommandEndEvent {
         mut stdout,
@@ -161,13 +160,12 @@ async fn user_shell_cmd_can_be_interrupted() {
     let ava = &fixture.ava;
 
     // Start a long-running command and then interrupt it before its deadline.
-    ava
-        .submit(Op::RunUserShellCommand {
-            command: slow_user_shell_command().to_string(),
-            timeout_ms: Some(28_800_000),
-        })
-        .await
-        .unwrap();
+    ava.submit(Op::RunUserShellCommand {
+        command: slow_user_shell_command().to_string(),
+        timeout_ms: Some(28_800_000),
+    })
+    .await
+    .unwrap();
 
     // Output proves that the process was spawned before cancellation.
     wait_for_event(ava, |event| {
@@ -214,13 +212,13 @@ async fn user_shell_command_honors_default_and_extended_deadlines() -> anyhow::R
             },
         )
         .await?;
-        fixture
-            .ava-code
-            .submit(Op::RunUserShellCommand {
-                command: slow_user_shell_command().to_string(),
-                timeout_ms,
-            })
-            .await?;
+        fixture.ava
+            - code
+                .submit(Op::RunUserShellCommand {
+                    command: slow_user_shell_command().to_string(),
+                    timeout_ms,
+                })
+                .await?;
         wait_for_event(&fixture.ava, |event| {
             matches!(event, EventMsg::ExecCommandOutputDelta(delta)
                 if String::from_utf8_lossy(&delta.chunk).contains("shell-timeout-ready"))
@@ -304,30 +302,30 @@ async fn user_shell_command_does_not_replace_active_turn() -> anyhow::Result<()>
     let (sandbox_policy, permission_profile) =
         turn_permission_fields(PermissionProfile::Disabled, cwd.as_path());
 
-    fixture
-        .ava-code
-        .start_or_steer_turn(
-            TurnInputRequest::user_input(vec![UserInput::Text {
-                text: "run model shell command".to_string(),
-                text_elements: Vec::new(),
-            }])
-            .with_thread_settings(ThreadSettingsOverrides {
-                environments: Some(local_selections(cwd)),
-                approval_policy: Some(AskForApproval::Never),
-                sandbox_policy: Some(sandbox_policy),
-                permission_profile,
-                collaboration_mode: Some(CollaborationMode {
-                    mode: ModeKind::Default,
-                    settings: Settings {
-                        model: fixture.session_configured.model.clone(),
-                        reasoning_effort: None,
-                        developer_instructions: None,
-                    },
+    fixture.ava
+        - code
+            .start_or_steer_turn(
+                TurnInputRequest::user_input(vec![UserInput::Text {
+                    text: "run model shell command".to_string(),
+                    text_elements: Vec::new(),
+                }])
+                .with_thread_settings(ThreadSettingsOverrides {
+                    environments: Some(local_selections(cwd)),
+                    approval_policy: Some(AskForApproval::Never),
+                    sandbox_policy: Some(sandbox_policy),
+                    permission_profile,
+                    collaboration_mode: Some(CollaborationMode {
+                        mode: ModeKind::Default,
+                        settings: Settings {
+                            model: fixture.session_configured.model.clone(),
+                            reasoning_effort: None,
+                            developer_instructions: None,
+                        },
+                    }),
+                    ..Default::default()
                 }),
-                ..Default::default()
-            }),
-        )
-        .await?;
+            )
+            .await?;
 
     let _ = wait_for_event_match(&fixture.ava, |ev| match ev {
         EventMsg::ExecCommandBegin(event)
@@ -343,13 +341,13 @@ async fn user_shell_command_does_not_replace_active_turn() -> anyhow::Result<()>
     let user_shell_command = "Write-Output user-shell".to_string();
     #[cfg(not(windows))]
     let user_shell_command = "printf user-shell".to_string();
-    fixture
-        .ava-code
-        .submit(Op::RunUserShellCommand {
-            command: user_shell_command,
-            timeout_ms: None,
-        })
-        .await?;
+    fixture.ava
+        - code
+            .submit(Op::RunUserShellCommand {
+                command: user_shell_command,
+                timeout_ms: None,
+            })
+            .await?;
 
     let mut saw_replaced_abort = false;
     let mut saw_user_shell_end = false;
@@ -495,8 +493,7 @@ async fn user_shell_command_does_not_set_network_sandbox_env_var() -> anyhow::Re
     #[cfg(windows)]
     let command = r#"$val = $env:AVA_SANDBOX_NETWORK_DISABLED; if ([string]::IsNullOrEmpty($val)) { $val = 'not-set' } ; [System.Console]::Write($val)"#.to_string();
     #[cfg(not(windows))]
-    let command =
-        r#"sh -c "printf '%s' \"${AVA_SANDBOX_NETWORK_DISABLED:-not-set}\"""#.to_string();
+    let command = r#"sh -c "printf '%s' \"${AVA_SANDBOX_NETWORK_DISABLED:-not-set}\"""#.to_string();
 
     test.ava
         .submit(Op::RunUserShellCommand {

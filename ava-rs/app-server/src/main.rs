@@ -1,6 +1,5 @@
 #![recursion_limit = "256"]
 
-use clap::Parser;
 use ava_app_server::AppServerCodeModeHostArgs;
 use ava_app_server::AppServerRuntimeOptions;
 use ava_app_server::AppServerTransport;
@@ -12,6 +11,7 @@ use ava_arg0::arg0_dispatch_or_else;
 use ava_config::LoaderOverrides;
 use ava_protocol::protocol::SessionSource;
 use ava_utils_cli::CliConfigOverrides;
+use clap::Parser;
 use std::path::PathBuf;
 
 #[cfg(all(

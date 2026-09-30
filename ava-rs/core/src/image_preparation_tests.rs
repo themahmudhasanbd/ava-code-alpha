@@ -1,7 +1,5 @@
 use std::io::Cursor;
 
-use base64::Engine;
-use base64::engine::general_purpose::STANDARD as BASE64_STANDARD;
 use ava_attachment_store::AttachmentStoreError;
 use ava_attachment_store::AttachmentStoreErrorKind;
 use ava_attachment_store::InlineAttachmentStore;
@@ -14,6 +12,8 @@ use ava_protocol::models::FunctionCallOutputPayload;
 use ava_protocol::models::ImageReference;
 use ava_protocol::models::InternalChatMessageMetadataPassthrough;
 use ava_utils_image::data_url_from_bytes;
+use base64::Engine;
+use base64::engine::general_purpose::STANDARD as BASE64_STANDARD;
 use image::DynamicImage;
 use image::GenericImageView;
 use image::ImageBuffer;

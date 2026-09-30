@@ -43,11 +43,11 @@ async fn resume_restores_windows_sandbox_override() -> Result<()> {
     resumed.ava.restore_thread_settings(settings).await?;
 
     assert_eq!(
-        resumed
-            .ava-code
-            .restorable_thread_settings()
-            .await
-            .windows_sandbox_level,
+        resumed.ava
+            - code
+                .restorable_thread_settings()
+                .await
+                .windows_sandbox_level,
         Some(WindowsSandboxLevel::Elevated)
     );
     Ok(())
@@ -74,12 +74,11 @@ async fn resume_includes_initial_messages_from_rollout_events() -> Result<()> {
         Some("<note>".into()),
     )];
 
-    ava
-        .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
-            text: "Record some messages".into(),
-            text_elements: text_elements.clone(),
-        }]))
-        .await?;
+    ava.start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
+        text: "Record some messages".into(),
+        text_elements: text_elements.clone(),
+    }]))
+    .await?;
 
     wait_for_event(&ava, |event| matches!(event, EventMsg::TurnComplete(_))).await;
     let mut resumed = builder.restart(&server, &initial).await?;
@@ -156,12 +155,11 @@ async fn resume_includes_initial_messages_from_reasoning_events() -> Result<()> 
     ]);
     mount_sse_once(&server, initial_sse).await;
 
-    ava
-        .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
-            text: "Record reasoning messages".into(),
-            text_elements: Vec::new(),
-        }]))
-        .await?;
+    ava.start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
+        text: "Record reasoning messages".into(),
+        text_elements: Vec::new(),
+    }]))
+    .await?;
 
     wait_for_event(&ava, |event| matches!(event, EventMsg::TurnComplete(_))).await;
     let resumed = builder.restart(&server, &initial).await?;
@@ -213,12 +211,11 @@ async fn resume_switches_models_preserves_base_instructions() -> Result<()> {
     ]);
     let initial_mock = mount_sse_once(&server, initial_sse).await;
 
-    ava
-        .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
-            text: "Record initial instructions".into(),
-            text_elements: Vec::new(),
-        }]))
-        .await?;
+    ava.start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
+        text: "Record initial instructions".into(),
+        text_elements: Vec::new(),
+    }]))
+    .await?;
     wait_for_event(&ava, |event| matches!(event, EventMsg::TurnComplete(_))).await;
     let initial_body = initial_mock.single_request().body_json();
     let initial_instructions = initial_body
@@ -248,25 +245,25 @@ async fn resume_switches_models_preserves_base_instructions() -> Result<()> {
         config.model = Some("gpt-5.4".to_string());
     });
     let resumed = resume_builder.restart(&server, &initial).await?;
-    resumed
-        .ava-code
-        .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
-            text: "Resume with different model".into(),
-            text_elements: Vec::new(),
-        }]))
-        .await?;
+    resumed.ava
+        - code
+            .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
+                text: "Resume with different model".into(),
+                text_elements: Vec::new(),
+            }]))
+            .await?;
     wait_for_event(&resumed.ava, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;
 
-    resumed
-        .ava-code
-        .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
-            text: "Second turn after resume".into(),
-            text_elements: Vec::new(),
-        }]))
-        .await?;
+    resumed.ava
+        - code
+            .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
+                text: "Second turn after resume".into(),
+                text_elements: Vec::new(),
+            }]))
+            .await?;
     wait_for_event(&resumed.ava, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
@@ -322,12 +319,11 @@ async fn resume_model_switch_is_not_duplicated_after_pre_turn_override() -> Resu
         ]),
     )
     .await;
-    ava
-        .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
-            text: "Record initial instructions".into(),
-            text_elements: Vec::new(),
-        }]))
-        .await?;
+    ava.start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
+        text: "Record initial instructions".into(),
+        text_elements: Vec::new(),
+    }]))
+    .await?;
     wait_for_event(&ava, |event| matches!(event, EventMsg::TurnComplete(_))).await;
     let _ = initial_mock.single_request();
 
@@ -353,13 +349,13 @@ async fn resume_model_switch_is_not_duplicated_after_pre_turn_override() -> Resu
         },
     )
     .await?;
-    resumed
-        .ava-code
-        .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
-            text: "first turn after override".into(),
-            text_elements: Vec::new(),
-        }]))
-        .await?;
+    resumed.ava
+        - code
+            .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
+                text: "first turn after override".into(),
+                text_elements: Vec::new(),
+            }]))
+            .await?;
     wait_for_event(&resumed.ava, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })

@@ -40,10 +40,7 @@ impl AuthProvider for StaticAuthProvider {
         );
     }
 
-    fn apply_auth(
-        &self,
-        mut request: ava_http_client::Request,
-    ) -> ava_api::AuthProviderFuture<'_> {
+    fn apply_auth(&self, mut request: ava_http_client::Request) -> ava_api::AuthProviderFuture<'_> {
         Box::pin(async move {
             if request.method == http::Method::GET {
                 assert_eq!(request.headers.len(), 1);
@@ -62,10 +59,7 @@ struct QueryAuthProvider;
 impl AuthProvider for QueryAuthProvider {
     fn add_auth_headers(&self, _headers: &mut HeaderMap) {}
 
-    fn apply_auth(
-        &self,
-        mut request: ava_http_client::Request,
-    ) -> ava_api::AuthProviderFuture<'_> {
+    fn apply_auth(&self, mut request: ava_http_client::Request) -> ava_api::AuthProviderFuture<'_> {
         Box::pin(async move {
             let mut url = url::Url::parse(&request.url)
                 .map_err(|error| ava_api::AuthError::Build(error.to_string()))?;

@@ -210,8 +210,7 @@ async fn shell_snapshot_v2_filters_profile_exports_and_stays_in_memory(
     shell_name: &str,
 ) -> Result<()> {
     if use_sandbox
-        && let Some(warning) =
-            ava_sandboxing::system_bwrap_warning(&PermissionProfile::read_only())
+        && let Some(warning) = ava_sandboxing::system_bwrap_warning(&PermissionProfile::read_only())
     {
         eprintln!("skipping sandbox test: {warning}");
         return Ok(());

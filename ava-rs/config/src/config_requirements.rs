@@ -797,8 +797,7 @@ fn split_glob_pattern(input: &str) -> (&str, &str) {
     match separator_index {
         Some(0) => ("/", &input[1..]),
         Some(index)
-            if crate::path_context::convention()
-                == ava_utils_path_uri::PathConvention::Windows
+            if crate::path_context::convention() == ava_utils_path_uri::PathConvention::Windows
                 && index == 2
                 && input.as_bytes().get(1) == Some(&b':')
                 && input.as_bytes().get(2).is_some() =>

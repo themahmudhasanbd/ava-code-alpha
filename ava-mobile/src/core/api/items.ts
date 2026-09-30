@@ -204,6 +204,46 @@ function generatePartId(): string {
 }
 
 /** Converts one server "item" into a UI part. Shared by history and live streaming. */
+/**
+ * Extracts server-provided media from item.meta.media (e.g. from the attach_media
+ * agent tool). Validates shape and normalizes to MediaItem.
+ */
+export function extractServerMetaMedia(meta: Raw): MediaItem[] {
+  const raw = meta?.media;
+  if (!Array.isArray(raw)) return [];
+  const out: MediaItem[] = [];
+  const validTypes = new Set(["image", "video", "audio", "file"]);
+  for (const m of raw) {
+    if (!m || typeof m !== "object") continue;
+    const type = String((m as Raw).type ?? "");
+    const url = String((m as Raw).url ?? "").trim();
+    if (!validTypes.has(type) || !url) continue;
+    out.push({
+      type: type as MediaItem["type"],
+      url,
+      name: typeof (m as Raw).name === "string" ? ((m as Raw).name as string) : undefined,
+      size: typeof (m as Raw).size === "number" ? ((m as Raw).size as number) : undefined,
+      mimeType: typeof (m as Raw).mimeType === "string" ? ((m as Raw).mimeType as string) : undefined,
+    });
+  }
+  return out;
+}
+
+/**
+ * Merges text-extracted media with server-provided media, deduping by URL.
+ */
+export function mergeMediaItems(textMedia: MediaItem[], serverMedia: MediaItem[]): MediaItem[] {
+  const seen = new Set(textMedia.map((m) => m.url));
+  const merged = [...textMedia];
+  for (const m of serverMedia) {
+    if (!seen.has(m.url)) {
+      seen.add(m.url);
+      merged.push(m);
+    }
+  }
+  return merged;
+}
+
 export function itemToPart(item: Raw, fallback: MessagePart["status"] = "done"): MessagePart | null {
   const id = item?.id ? String(item.id) : item?.itemId ? String(item.itemId) : generatePartId();
   const type = str(item.type);
@@ -215,7 +255,7 @@ export function itemToPart(item: Raw, fallback: MessagePart["status"] = "done"):
       return null;
     case "agentMessage": {
       const text = str(item.text ?? item.content ?? "");
-      const media = extractMediaFromText(text);
+      const media = mergeMediaItems(extractMediaFromText(text), extractServerMetaMedia(item.meta));
       return {
         id,
         kind: questions ? "question" : "text",

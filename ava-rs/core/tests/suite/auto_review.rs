@@ -531,21 +531,20 @@ async fn remote_model_override_uses_catalog_model_for_strict_auto_review() -> Re
     let cwd_path = cwd.abs();
     let (sandbox_policy, permission_profile) =
         turn_permission_fields(PermissionProfile::read_only(), cwd_path.as_path());
-    ava
-        .start_or_steer_turn(
-            TurnInputRequest::user_input(vec![UserInput::Text {
-                text: "run the Guardian model override check".into(),
-                text_elements: Vec::new(),
-            }])
-            .with_thread_settings(ThreadSettingsOverrides {
-                environments: Some(local_selections(cwd_path)),
-                approval_policy: Some(AskForApproval::OnRequest),
-                sandbox_policy: Some(sandbox_policy),
-                permission_profile,
-                ..Default::default()
-            }),
-        )
-        .await?;
+    ava.start_or_steer_turn(
+        TurnInputRequest::user_input(vec![UserInput::Text {
+            text: "run the Guardian model override check".into(),
+            text_elements: Vec::new(),
+        }])
+        .with_thread_settings(ThreadSettingsOverrides {
+            environments: Some(local_selections(cwd_path)),
+            approval_policy: Some(AskForApproval::OnRequest),
+            sandbox_policy: Some(sandbox_policy),
+            permission_profile,
+            ..Default::default()
+        }),
+    )
+    .await?;
 
     let permissions_request = wait_for_event(&ava, |event| {
         matches!(
@@ -558,16 +557,15 @@ async fn remote_model_override_uses_catalog_model_for_strict_auto_review() -> Re
         panic!("expected request_permissions before completion");
     };
     assert_eq!(permissions_request.call_id, permissions_call_id);
-    ava
-        .submit(Op::RequestPermissionsResponse {
-            id: permissions_request.call_id,
-            response: RequestPermissionsResponse {
-                permissions: permissions_request.permissions,
-                scope: PermissionGrantScope::Turn,
-                strict_auto_review: true,
-            },
-        })
-        .await?;
+    ava.submit(Op::RequestPermissionsResponse {
+        id: permissions_request.call_id,
+        response: RequestPermissionsResponse {
+            permissions: permissions_request.permissions,
+            scope: PermissionGrantScope::Turn,
+            strict_auto_review: true,
+        },
+    })
+    .await?;
 
     wait_for_event_with_timeout(
         &ava,

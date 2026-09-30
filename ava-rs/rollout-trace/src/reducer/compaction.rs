@@ -127,9 +127,7 @@ impl TraceReducer {
         }
         self.thread_mut(&thread_id)?;
         let Some(turn) = self.rollout.ava_turns.get(&ava_turn_id) else {
-            bail!(
-                "compaction install {compaction_id} referenced unknown ava turn {ava_turn_id}"
-            );
+            bail!("compaction install {compaction_id} referenced unknown ava turn {ava_turn_id}");
         };
         if turn.thread_id != thread_id {
             bail!(

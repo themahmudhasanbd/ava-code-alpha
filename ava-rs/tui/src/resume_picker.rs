@@ -31,8 +31,6 @@ use crate::tui::Tui;
 use crate::tui::TuiEvent;
 use crate::wrapping::RtOptions;
 use crate::wrapping::adaptive_wrap_lines;
-use chrono::DateTime;
-use chrono::Utc;
 use ava_app_server_client::AppServerRequestHandle;
 use ava_app_server_protocol::ClientRequest;
 use ava_app_server_protocol::RequestId;
@@ -48,6 +46,8 @@ use ava_app_server_protocol::ThreadUnarchiveResponse;
 use ava_config::types::SessionPickerViewMode;
 use ava_protocol::ThreadId;
 use ava_utils_path as path_utils;
+use chrono::DateTime;
+use chrono::Utc;
 use color_eyre::eyre::Result;
 use crossterm::event::KeyCode;
 use crossterm::event::KeyEvent;
@@ -3535,13 +3535,13 @@ fn render_empty_state_line(state: &PickerState) -> Line<'static> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use chrono::Duration;
     use ava_app_server_protocol::ThreadItem;
     use ava_app_server_protocol::ThreadSourceKind;
     use ava_config::CONFIG_TOML_FILE;
     use ava_protocol::ThreadId;
     use ava_utils_absolute_path::test_support::PathBufExt;
     use ava_utils_absolute_path::test_support::test_path_buf;
+    use chrono::Duration;
 
     use crossterm::event::KeyCode;
     use crossterm::event::KeyEvent;

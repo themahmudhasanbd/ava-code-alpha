@@ -4,12 +4,12 @@ use std::path::PathBuf;
 use std::time::Duration;
 
 use anyhow::Context;
-use clap::Parser;
 use ava_otel::OtelExporter;
 use ava_otel::OtelHttpProtocol;
 use ava_otel::OtelProvider;
 use ava_otel::OtelSettings;
 use ava_otel_trace_websocket::TraceWebSocket;
+use clap::Parser;
 use tracing_subscriber::Layer;
 use tracing_subscriber::layer::SubscriberExt;
 use tracing_subscriber::util::SubscriberInitExt;

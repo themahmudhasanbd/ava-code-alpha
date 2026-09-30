@@ -334,18 +334,19 @@ impl LocalStdioServerLauncher {
             None => (transport, stderr, process_id, None),
         };
         #[cfg(windows)]
-        let terminator = match job {
-            Some(job) => Some(LocalProcessTerminator::Job(job)),
-            None => process_id.and_then(|process_id| {
-                match ava_utils_pty::JobObject::open_process_handle(process_id) {
-                    Ok(handle) => Some(LocalProcessTerminator::Process(handle)),
-                    Err(error) => {
-                        warn!("Windows MCP process handle unavailable: {error}");
-                        None
+        let terminator =
+            match job {
+                Some(job) => Some(LocalProcessTerminator::Job(job)),
+                None => process_id.and_then(|process_id| {
+                    match ava_utils_pty::JobObject::open_process_handle(process_id) {
+                        Ok(handle) => Some(LocalProcessTerminator::Process(handle)),
+                        Err(error) => {
+                            warn!("Windows MCP process handle unavailable: {error}");
+                            None
+                        }
                     }
-                }
-            }),
-        };
+                }),
+            };
         #[cfg(not(windows))]
         let terminator = process_id.map(LocalProcessTerminator::new);
         let stderr_reader = stderr.map(|stderr| {

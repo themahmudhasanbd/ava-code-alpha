@@ -441,10 +441,7 @@ async fn remote_multi_agent_selector_uses_model_selected_before_first_turn() -> 
         });
     let test = builder.build(&server).await?;
     assert_eq!(
-        (
-            models_mock.requests().len(),
-            test.ava.multi_agent_version(),
-        ),
+        (models_mock.requests().len(), test.ava.multi_agent_version(),),
         (1, None)
     );
 

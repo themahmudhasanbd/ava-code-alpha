@@ -1,10 +1,10 @@
 //! Completion metadata rendering, date selection, and muted styling coverage.
 
 use super::*;
+use ava_otel::RuntimeMetricTotals;
 use chrono::NaiveDateTime;
 use chrono::TimeZone;
 use chrono::Timelike;
-use ava_otel::RuntimeMetricTotals;
 use pretty_assertions::assert_eq;
 use ratatui::buffer::Buffer;
 use ratatui::layout::Rect;

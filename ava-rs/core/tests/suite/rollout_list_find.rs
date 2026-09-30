@@ -4,7 +4,6 @@ use std::io::Write;
 use std::path::Path;
 use std::path::PathBuf;
 
-use chrono::Utc;
 use ava_core::RolloutRecorder;
 use ava_core::RolloutRecorderParams;
 use ava_core::config::ConfigBuilder;
@@ -17,6 +16,7 @@ use ava_protocol::protocol::SessionSource;
 use ava_rollout::StateDbHandle;
 use ava_state::StateRuntime;
 use ava_state::ThreadMetadataBuilder;
+use chrono::Utc;
 use pretty_assertions::assert_eq;
 use tempfile::TempDir;
 use uuid::Uuid;
@@ -112,10 +112,9 @@ async fn find_handles_gitignore_covering_ava_home_directory() {
     let id = Uuid::new_v4();
     let expected = write_minimal_rollout_with_id(&ava_home, id);
 
-    let found =
-        find_thread_path_by_id_str(&ava_home, &id.to_string(), /*state_db_ctx*/ None)
-            .await
-            .unwrap();
+    let found = find_thread_path_by_id_str(&ava_home, &id.to_string(), /*state_db_ctx*/ None)
+        .await
+        .unwrap();
 
     assert_eq!(found, Some(expected));
 }

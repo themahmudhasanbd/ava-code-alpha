@@ -1,7 +1,6 @@
 use std::collections::HashMap;
 use std::sync::Arc;
 
-use base64::engine::general_purpose::STANDARD as BASE64_STANDARD;
 use ava_file_system::FileSystemSandboxContext;
 pub use ava_file_system::WalkOptions;
 pub use ava_file_system::WalkOutcome;
@@ -13,6 +12,7 @@ use ava_protocol::capabilities::SelectedCapabilityRoot;
 use ava_protocol::config_types::ShellEnvironmentPolicyInherit;
 use ava_shell_command::shell_detect::DetectedShell;
 use ava_utils_path_uri::PathUri;
+use base64::engine::general_purpose::STANDARD as BASE64_STANDARD;
 use serde::Deserialize;
 use serde::Serialize;
 

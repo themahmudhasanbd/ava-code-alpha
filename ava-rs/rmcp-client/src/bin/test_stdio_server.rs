@@ -831,10 +831,7 @@ impl TestToolServer {
             }
             ImageScenario::ImageOnlyOriginalDetail => {
                 let mut meta = MetaObject::new();
-                meta.insert(
-                    "ava/imageDetail".to_string(),
-                    serde_json::json!("original"),
-                );
+                meta.insert("ava/imageDetail".to_string(), serde_json::json!("original"));
                 content.push(rmcp::model::ContentBlock::Image(
                     rmcp::model::ImageContent::new(valid_data_b64, mime_type).with_meta(meta),
                 ));

@@ -6,13 +6,6 @@ use app_test_support::ChatGptAuthFixture;
 use app_test_support::TestAppServer;
 use app_test_support::to_response;
 use app_test_support::write_chatgpt_auth;
-use axum::Json;
-use axum::Router;
-use axum::extract::State;
-use axum::http::HeaderMap;
-use axum::http::StatusCode;
-use axum::http::header::AUTHORIZATION;
-use axum::routing::post;
 use ava_app_server_protocol::AppInfo;
 use ava_app_server_protocol::AppMetadata;
 use ava_app_server_protocol::AppTemplateSummary;
@@ -43,6 +36,13 @@ use ava_app_server_protocol::SkillInterface;
 use ava_app_server_protocol::SkillSummary;
 use ava_config::types::AuthCredentialsStoreMode;
 use ava_utils_absolute_path::AbsolutePathBuf;
+use axum::Json;
+use axum::Router;
+use axum::extract::State;
+use axum::http::HeaderMap;
+use axum::http::StatusCode;
+use axum::http::header::AUTHORIZATION;
+use axum::routing::post;
 use pretty_assertions::assert_eq;
 use serde_json::json;
 use tempfile::TempDir;
@@ -168,10 +168,7 @@ async fn plugin_read_selects_remote_onboarding_skill(
 ) -> Result<()> {
     let ava_home = TempDir::new()?;
     let server = MockServer::start().await;
-    write_remote_plugin_catalog_config(
-        ava_home.path(),
-        &format!("{}/backend-api/", server.uri()),
-    )?;
+    write_remote_plugin_catalog_config(ava_home.path(), &format!("{}/backend-api/", server.uri()))?;
     write_chatgpt_auth(
         ava_home.path(),
         ChatGptAuthFixture::new("chatgpt-token")
@@ -553,10 +550,7 @@ apps = true
 async fn plugin_read_returns_share_context_for_shared_remote_plugin() -> Result<()> {
     let ava_home = TempDir::new()?;
     let server = MockServer::start().await;
-    write_remote_plugin_catalog_config(
-        ava_home.path(),
-        &format!("{}/backend-api/", server.uri()),
-    )?;
+    write_remote_plugin_catalog_config(ava_home.path(), &format!("{}/backend-api/", server.uri()))?;
     write_chatgpt_auth(
         ava_home.path(),
         ChatGptAuthFixture::new("chatgpt-token")
@@ -705,10 +699,7 @@ async fn plugin_read_returns_share_context_for_shared_remote_plugin() -> Result<
 async fn plugin_read_includes_share_url_for_admin_disabled_remote_plugin() -> Result<()> {
     let ava_home = TempDir::new()?;
     let server = MockServer::start().await;
-    write_remote_plugin_catalog_config(
-        ava_home.path(),
-        &format!("{}/backend-api/", server.uri()),
-    )?;
+    write_remote_plugin_catalog_config(ava_home.path(), &format!("{}/backend-api/", server.uri()))?;
     write_chatgpt_auth(
         ava_home.path(),
         ChatGptAuthFixture::new("chatgpt-token")
@@ -947,10 +938,7 @@ async fn plugin_read_includes_share_url_for_admin_disabled_remote_plugin() -> Re
 async fn plugin_skill_read_reads_remote_skill_contents_when_remote_plugin_enabled() -> Result<()> {
     let ava_home = TempDir::new()?;
     let server = MockServer::start().await;
-    write_remote_plugin_catalog_config(
-        ava_home.path(),
-        &format!("{}/backend-api/", server.uri()),
-    )?;
+    write_remote_plugin_catalog_config(ava_home.path(), &format!("{}/backend-api/", server.uri()))?;
     write_chatgpt_auth(
         ava_home.path(),
         ChatGptAuthFixture::new("chatgpt-token")
@@ -1010,10 +998,7 @@ async fn plugin_skill_read_reads_remote_skill_contents_when_remote_plugin_enable
 async fn plugin_read_maps_missing_remote_plugin_to_invalid_request() -> Result<()> {
     let ava_home = TempDir::new()?;
     let server = MockServer::start().await;
-    write_remote_plugin_catalog_config(
-        ava_home.path(),
-        &format!("{}/backend-api/", server.uri()),
-    )?;
+    write_remote_plugin_catalog_config(ava_home.path(), &format!("{}/backend-api/", server.uri()))?;
     write_chatgpt_auth(
         ava_home.path(),
         ChatGptAuthFixture::new("chatgpt-token")
@@ -1209,10 +1194,7 @@ async fn plugin_read_returns_share_context_for_shared_local_plugin() -> Result<(
     let ava_home = TempDir::new()?;
     let repo_root = TempDir::new()?;
     let server = MockServer::start().await;
-    write_remote_plugin_catalog_config(
-        ava_home.path(),
-        &format!("{}/backend-api/", server.uri()),
-    )?;
+    write_remote_plugin_catalog_config(ava_home.path(), &format!("{}/backend-api/", server.uri()))?;
     write_chatgpt_auth(
         ava_home.path(),
         ChatGptAuthFixture::new("chatgpt-token")
@@ -1229,9 +1211,7 @@ async fn plugin_read_returns_share_context_for_shared_local_plugin() -> Result<(
     )?;
     std::fs::create_dir_all(repo_root.path().join("demo-plugin/.ava-plugin"))?;
     std::fs::write(
-        repo_root
-            .path()
-            .join("demo-plugin/.ava-plugin/plugin.json"),
+        repo_root.path().join("demo-plugin/.ava-plugin/plugin.json"),
         r#"{"name":"demo-plugin","version":"1.2.3"}"#,
     )?;
     std::fs::write(
@@ -1351,10 +1331,7 @@ async fn plugin_read_keeps_remote_version_when_share_principals_are_missing() ->
     let ava_home = TempDir::new()?;
     let repo_root = TempDir::new()?;
     let server = MockServer::start().await;
-    write_remote_plugin_catalog_config(
-        ava_home.path(),
-        &format!("{}/backend-api/", server.uri()),
-    )?;
+    write_remote_plugin_catalog_config(ava_home.path(), &format!("{}/backend-api/", server.uri()))?;
     write_chatgpt_auth(
         ava_home.path(),
         ChatGptAuthFixture::new("chatgpt-token")
@@ -1371,9 +1348,7 @@ async fn plugin_read_keeps_remote_version_when_share_principals_are_missing() ->
     )?;
     std::fs::create_dir_all(repo_root.path().join("demo-plugin/.ava-plugin"))?;
     std::fs::write(
-        repo_root
-            .path()
-            .join("demo-plugin/.ava-plugin/plugin.json"),
+        repo_root.path().join("demo-plugin/.ava-plugin/plugin.json"),
         r#"{"name":"demo-plugin","version":"1.2.3"}"#,
     )?;
     std::fs::write(

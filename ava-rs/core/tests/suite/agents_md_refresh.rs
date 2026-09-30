@@ -239,10 +239,7 @@ async fn interrupting_a_provider_read_allows_the_next_turn_to_refresh() -> Resul
         .await?;
     tokio::time::timeout(Duration::from_secs(10), provider.started.notified()).await?;
     test.ava.submit(Op::Interrupt).await?;
-    wait_for_event(&test.ava, |event| {
-        matches!(event, EventMsg::TurnAborted(_))
-    })
-    .await;
+    wait_for_event(&test.ava, |event| matches!(event, EventMsg::TurnAborted(_))).await;
     assert!(request.requests().is_empty());
     write_global_file(&home, GLOBAL_AGENTS_FILENAME, NEW_GLOBAL_INSTRUCTIONS)?;
     test.submit_turn("use the latest instructions").await?;

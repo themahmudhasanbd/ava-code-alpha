@@ -9,8 +9,6 @@ use std::sync::Arc;
 use std::time::Duration;
 
 use anyhow::Result;
-use base64::Engine;
-use base64::engine::general_purpose::STANDARD as BASE64_STANDARD;
 use ava_config::ConfigLayerSource;
 use ava_config::ConfigLayerStack;
 use ava_config::types::McpServerConfig;
@@ -41,6 +39,8 @@ use ava_skills_extension::SkillsExtensionConfig;
 use ava_skills_extension::install;
 use ava_skills_extension::install_with_providers;
 use ava_utils_path_uri::PathUri;
+use base64::Engine;
+use base64::engine::general_purpose::STANDARD as BASE64_STANDARD;
 use core_test_support::context_snapshot;
 use core_test_support::context_snapshot::ContextSnapshotOptions;
 use core_test_support::context_snapshot::SnapshotEntry;

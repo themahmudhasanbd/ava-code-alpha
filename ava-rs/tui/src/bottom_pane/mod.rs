@@ -42,8 +42,6 @@ use crate::render::renderable::Renderable;
 use crate::render::renderable::RenderableItem;
 use crate::terminal_palette::effective_stdout_color_level;
 use crate::tui::FrameRequester;
-pub(crate) use bottom_pane_view::BottomPaneView;
-pub(crate) use bottom_pane_view::ViewCompletion;
 use ava_app_server_protocol::SkillMetadata;
 use ava_app_server_protocol::ToolRequestUserInputParams;
 use ava_features::Features;
@@ -52,6 +50,8 @@ use ava_plugin::PluginCapabilitySummary;
 use ava_protocol::ThreadId;
 use ava_protocol::openai_models::ReasoningEffort;
 use ava_protocol::user_input::TextElement;
+pub(crate) use bottom_pane_view::BottomPaneView;
+pub(crate) use bottom_pane_view::ViewCompletion;
 use crossterm::event::KeyCode;
 use crossterm::event::KeyEvent;
 use crossterm::event::KeyEventKind;
@@ -3591,10 +3591,7 @@ mod tests {
 
         pane.hide_status_indicator();
         pane.handle_key_event(KeyEvent::new(KeyCode::Esc, KeyModifiers::NONE));
-        assert!(matches!(
-            rx.try_recv(),
-            Ok(AppEvent::AvaOp(Op::Interrupt))
-        ));
+        assert!(matches!(rx.try_recv(), Ok(AppEvent::AvaOp(Op::Interrupt))));
     }
 
     #[test]
@@ -3622,10 +3619,7 @@ mod tests {
 
         pane.hide_status_indicator();
         pane.handle_key_event(KeyEvent::new(KeyCode::F(12), KeyModifiers::NONE));
-        assert!(matches!(
-            rx.try_recv(),
-            Ok(AppEvent::AvaOp(Op::Interrupt))
-        ));
+        assert!(matches!(rx.try_recv(), Ok(AppEvent::AvaOp(Op::Interrupt))));
     }
 
     #[test]

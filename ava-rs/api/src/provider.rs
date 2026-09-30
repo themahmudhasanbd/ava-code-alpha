@@ -19,6 +19,7 @@ pub struct RetryConfig {
     pub retry_429: bool,
     pub retry_5xx: bool,
     pub retry_transport: bool,
+    pub retry_auth: bool,
 }
 
 impl RetryConfig {
@@ -30,6 +31,7 @@ impl RetryConfig {
                 retry_429: self.retry_429,
                 retry_5xx: self.retry_5xx,
                 retry_transport: self.retry_transport,
+                retry_auth: self.retry_auth,
             },
         }
     }

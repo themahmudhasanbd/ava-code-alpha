@@ -9,8 +9,8 @@ use crate::ExecServerClient;
 use crate::ExecServerClientConnectOptions;
 use crate::ExecServerError;
 use crate::client::LazyRemoteExecServerClient;
-use axum::extract::ws::WebSocket;
 use ava_http_client::HttpClientFactory;
+use axum::extract::ws::WebSocket;
 
 impl EnvironmentManager {
     /// Builds a manager around a WebSocket already accepted and authenticated by its host.

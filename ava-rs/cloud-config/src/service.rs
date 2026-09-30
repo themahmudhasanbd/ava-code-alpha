@@ -126,8 +126,7 @@ where
     pub(crate) async fn load_startup_bundle_with_timeout(
         &self,
     ) -> Result<Option<CloudConfigBundle>, CloudConfigBundleLoadError> {
-        let _timer =
-            ava_otel::start_global_timer("ava.cloud_config_bundle.fetch.duration_ms", &[]);
+        let _timer = ava_otel::start_global_timer("ava.cloud_config_bundle.fetch.duration_ms", &[]);
         let started_at = Instant::now();
         let load_result = timeout(self.timeout, self.load_startup_bundle())
             .await

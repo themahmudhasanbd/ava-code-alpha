@@ -6,9 +6,9 @@ use crate::raw_event::RawEventSeq;
 
 use super::AgentPath;
 use super::AgentThreadId;
+use super::AvaTurnId;
 use super::CodeCellId;
 use super::CodeModeRuntimeToolId;
-use super::AvaTurnId;
 use super::CompactionId;
 use super::CompactionRequestId;
 use super::ConversationItemId;

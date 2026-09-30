@@ -53,8 +53,7 @@ impl WorkspaceRoutingResolver for ChangedBootstrap {
 #[tokio::test]
 async fn concurrent_discovery_cannot_forget_established_routing() {
     let context = WorkspaceRoutingContext::new("https://chatgpt.com/backend-api".into());
-    let auth =
-        AuthManager::from_auth_for_testing(AvaAuth::create_dummy_chatgpt_auth_for_testing());
+    let auth = AuthManager::from_auth_for_testing(AvaAuth::create_dummy_chatgpt_auth_for_testing());
     let resolver = Arc::new(ChangedBootstrap {
         first_lookup: std::sync::atomic::AtomicBool::new(true),
         release_first: tokio::sync::Notify::new(),
@@ -106,8 +105,7 @@ impl WorkspaceRoutingResolver for Routing {
 #[tokio::test]
 async fn workspace_routing_preserves_paths_and_excludes_other_providers() {
     let routing_context = WorkspaceRoutingContext::new("https://chatgpt.com/backend-api".into());
-    let auth =
-        AuthManager::from_auth_for_testing(AvaAuth::create_dummy_chatgpt_auth_for_testing());
+    let auth = AuthManager::from_auth_for_testing(AvaAuth::create_dummy_chatgpt_auth_for_testing());
     let resolver: Arc<dyn WorkspaceRoutingResolver> = Arc::new(Routing(WorkspaceRouting {
         chatgpt_account_id: "account_id".into(),
         backend_origin: "https://gov.chatgpt.com:8443".into(),
@@ -171,8 +169,7 @@ async fn workspace_routing_preserves_paths_and_excludes_other_providers() {
 #[tokio::test]
 async fn missing_routing_owner_and_wrong_workspace_fail_closed() {
     let routing_context = WorkspaceRoutingContext::new("https://chatgpt.com/backend-api".into());
-    let auth =
-        AuthManager::from_auth_for_testing(AvaAuth::create_dummy_chatgpt_auth_for_testing());
+    let auth = AuthManager::from_auth_for_testing(AvaAuth::create_dummy_chatgpt_auth_for_testing());
     let resolver: Arc<dyn WorkspaceRoutingResolver> = Arc::new(Routing(WorkspaceRouting {
         chatgpt_account_id: "other-account".into(),
         backend_origin: "https://chatgpt.com".into(),

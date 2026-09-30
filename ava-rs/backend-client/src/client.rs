@@ -1,7 +1,7 @@
 use crate::types::AccountsCheckResponse;
-use crate::types::CodeTaskDetailsResponse;
 use crate::types::AvaUserSettingsResponse;
 use crate::types::AvaWorkspaceMessagesResponse;
+use crate::types::CodeTaskDetailsResponse;
 use crate::types::ConfigBundleResponse;
 use crate::types::PaginatedListTaskListItem;
 use crate::types::RateLimitReachedKind as BackendRateLimitReachedKind;

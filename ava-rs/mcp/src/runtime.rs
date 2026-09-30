@@ -601,9 +601,7 @@ impl McpRuntime {
             .await
     }
 
-    pub async fn latest_hard_refresh_ava_apps_tools_cache(
-        &self,
-    ) -> anyhow::Result<Vec<ToolInfo>> {
+    pub async fn latest_hard_refresh_ava_apps_tools_cache(&self) -> anyhow::Result<Vec<ToolInfo>> {
         self.latest_connections()
             .refresh_ava_apps_tools_for_discovery()
             .await

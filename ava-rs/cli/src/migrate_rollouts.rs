@@ -6,7 +6,6 @@ use std::time::Duration;
 use std::time::Instant;
 
 use anyhow::Context;
-use clap::Parser;
 use ava_core::config::ConfigBuilder;
 use ava_protocol::ThreadId;
 use ava_thread_store::LocalThreadStore;
@@ -17,6 +16,7 @@ use ava_thread_store::RolloutMigrationProgress;
 use ava_thread_store::RolloutMigrationReport;
 use ava_thread_store::RolloutMigrationStatus;
 use ava_utils_cli::CliConfigOverrides;
+use clap::Parser;
 
 #[derive(Debug, Parser)]
 pub(crate) struct MigrateRolloutsCommand {
@@ -76,12 +76,9 @@ pub(crate) async fn run(
     let verbose = command.verbose;
     let thread_history_db_path = config.sqlite.thread_history_db_path();
     let thread_storage_before = if mode == RolloutMigrationMode::Apply && !json {
-        thread_storage_bytes(
-            config.ava_home.as_path(),
-            thread_history_db_path.as_path(),
-        )
-        .await
-        .ok()
+        thread_storage_bytes(config.ava_home.as_path(), thread_history_db_path.as_path())
+            .await
+            .ok()
     } else {
         None
     };
@@ -110,13 +107,12 @@ pub(crate) async fn run(
     progress.finish();
     let report = result?;
     let thread_storage = match thread_storage_before {
-        Some(before) => thread_storage_bytes(
-            config.ava_home.as_path(),
-            thread_history_db_path.as_path(),
-        )
-        .await
-        .ok()
-        .map(|after| (before, after)),
+        Some(before) => {
+            thread_storage_bytes(config.ava_home.as_path(), thread_history_db_path.as_path())
+                .await
+                .ok()
+                .map(|after| (before, after))
+        }
         None => None,
     };
 

@@ -25,6 +25,7 @@ import { useTheme } from "@/theme/colors";
 import { font } from "@/theme/fonts";
 import { useServerConfig, useWriteConfig } from "@/state/queries";
 import * as NativeAgent from "@/core/native-agent";
+import { SANDBOX_MODES as SHARED_SANDBOX_MODES } from "@/config/models";
 
 interface PolicyOption {
   value: string;
@@ -50,23 +51,27 @@ const APPROVAL_POLICIES: PolicyOption[] = [
   },
 ];
 
-const SANDBOX_MODES: PolicyOption[] = [
-  {
-    value: "danger-full-access",
+/** Screen-specific presentation; ids come from the single source in @/config/models. */
+const SANDBOX_LABELS: Record<string, { label: string; desc: string }> = {
+  "danger-full-access": {
     label: "Host Full Access",
     desc: "Direct access to host system, shells, network, and filesystems without sandbox barriers.",
   },
-  {
-    value: "workspace-write",
+  "workspace-write": {
     label: "Workspace Write Only",
     desc: "Can read host files, but writes and mutations are constrained inside the active workspace.",
   },
-  {
-    value: "read-only",
+  "read-only": {
     label: "Read Only",
     desc: "Safe mode: all file modifications and mutating commands are prevented.",
   },
-];
+};
+
+const SANDBOX_MODES: PolicyOption[] = SHARED_SANDBOX_MODES.map((m) => ({
+  value: m.id,
+  label: SANDBOX_LABELS[m.id]?.label ?? m.label,
+  desc: SANDBOX_LABELS[m.id]?.desc ?? m.description,
+}));
 
 export function PermissionsSettingsScreen() {
   const navigation = useNavigation<any>();

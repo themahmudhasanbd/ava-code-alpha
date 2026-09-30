@@ -1,8 +1,6 @@
 #![allow(clippy::unwrap_used)]
 
 use anyhow::Result;
-use base64::Engine;
-use base64::engine::general_purpose::STANDARD as BASE64_STANDARD;
 use ava_analytics::AnalyticsEventsClient;
 use ava_config::types::McpServerConfig;
 use ava_config::types::McpServerTransportConfig;
@@ -68,6 +66,8 @@ use ava_tools::ToolOutput;
 use ava_tools::ToolPayload;
 use ava_tools::ToolSpec;
 use ava_web_search_extension::install as install_web_search_extension;
+use base64::Engine;
+use base64::engine::general_purpose::STANDARD as BASE64_STANDARD;
 use core_test_support::apps_test_server::AppsTestServer;
 use core_test_support::apps_test_server::AppsTestToolLoading;
 use core_test_support::apps_test_server::DIRECT_CALENDAR_APP_ONLY_TOOL;
@@ -571,10 +571,7 @@ text(result);
     let search_body = search_request
         .body_json::<Value>()
         .expect("search request body should be JSON");
-    assert_eq!(
-        search_body["model"],
-        serde_json::json!("test-gpt-5.1-ava")
-    );
+    assert_eq!(search_body["model"], serde_json::json!("test-gpt-5.1-ava"));
     assert_eq!(
         search_body["commands"],
         serde_json::json!({
@@ -786,14 +783,8 @@ async fn code_mode_exec_holds_captured_result_during_elicitation() -> Result<()>
     )
     .await;
 
-    assert_eq!(
-        test.ava.increment_out_of_band_elicitation_count().await?,
-        1
-    );
-    assert_eq!(
-        test.ava.increment_out_of_band_elicitation_count().await?,
-        2
-    );
+    assert_eq!(test.ava.increment_out_of_band_elicitation_count().await?, 1);
+    assert_eq!(test.ava.increment_out_of_band_elicitation_count().await?, 2);
     let release_elicitation = async {
         tokio::time::timeout(Duration::from_secs(5), async {
             while first_mock.requests().is_empty() {
@@ -807,19 +798,13 @@ async fn code_mode_exec_holds_captured_result_during_elicitation() -> Result<()>
             second_mock.requests().is_empty(),
             "captured exec result should not return during an elicitation"
         );
-        assert_eq!(
-            test.ava.decrement_out_of_band_elicitation_count().await?,
-            1
-        );
+        assert_eq!(test.ava.decrement_out_of_band_elicitation_count().await?, 1);
         tokio::time::sleep(Duration::from_millis(100)).await;
         assert!(
             second_mock.requests().is_empty(),
             "captured exec result should wait for every elicitation"
         );
-        assert_eq!(
-            test.ava.decrement_out_of_band_elicitation_count().await?,
-            0
-        );
+        assert_eq!(test.ava.decrement_out_of_band_elicitation_count().await?, 0);
         Ok::<(), anyhow::Error>(())
     };
 
@@ -2098,9 +2083,7 @@ async fn result_metadata_follows_call_binding(
             .iter()
             .find_map(|item| match item {
                 ava_protocol::models::ResponseItem::FunctionCallOutput {
-                    call_id,
-                    output,
-                    ..
+                    call_id, output, ..
                 } if call_id.as_deref() == Some("call-1") => Some(output),
                 _ => None,
             })
@@ -2172,12 +2155,12 @@ async fn code_mode_result_metadata_follows_runtime_recording_enablement() -> Res
             test.ava.refresh_runtime_config(config).await;
             // Runtime recording changes without updating the session's execution features.
             assert!(
-                !test
-                    .ava-code
-                    .config()
-                    .await
-                    .features
-                    .enabled(Feature::ExecutedToolCallMetadata)
+                !test.ava
+                    - code
+                        .config()
+                        .await
+                        .features
+                        .enabled(Feature::ExecutedToolCallMetadata)
             );
         }
         let initial = responses::mount_sse_once(
@@ -5091,10 +5074,7 @@ async fn code_mode_interrupt_terminates_active_cells_and_nested_tools() -> Resul
     let active_cell_id = tokio::time::timeout(Duration::from_secs(10), started_rx).await??;
 
     test.ava.submit(Op::Interrupt).await?;
-    wait_for_event(&test.ava, |event| {
-        matches!(event, EventMsg::TurnAborted(_))
-    })
-    .await;
+    wait_for_event(&test.ava, |event| matches!(event, EventMsg::TurnAborted(_))).await;
     let nested_outcome = tokio::time::timeout(Duration::from_secs(10), finished_rx).await??;
     assert_eq!(nested_outcome, ToolCallOutcome::Aborted);
 
@@ -5685,14 +5665,12 @@ async fn code_mode_can_use_view_image_result_with_image_helper(
     skip_if_no_network!(Ok(()));
 
     let server = responses::start_mock_server().await;
-    let mut builder = test_ava()
-        .with_model("gpt-5.5")
-        .with_config(move |config| {
-            let _ = config.features.enable(Feature::CodeMode);
-            if unified_image_budget {
-                let _ = config.features.enable(Feature::UnifiedImageBudget);
-            }
-        });
+    let mut builder = test_ava().with_model("gpt-5.5").with_config(move |config| {
+        let _ = config.features.enable(Feature::CodeMode);
+        if unified_image_budget {
+            let _ = config.features.enable(Feature::UnifiedImageBudget);
+        }
+    });
     let test = builder.build(&server).await?;
 
     let image = ImageBuffer::from_pixel(
@@ -5974,10 +5952,10 @@ async fn code_mode_node_repl_screenshots_can_be_captured_without_guardian_transc
     });
     let test = builder.build_with_auto_env(&server).await?;
     core_test_support::wait_for_mcp_server(&test.ava, repl_server).await?;
-    let evidence = test
-        .ava-code
-        .thread_extension_data()
-        .get_or_init(NodeReplReviewEvidence::default);
+    let evidence = test.ava
+        - code
+            .thread_extension_data()
+            .get_or_init(NodeReplReviewEvidence::default);
     evidence.enable_image_capture();
 
     let response_mock = responses::mount_sse_sequence(

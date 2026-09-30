@@ -388,7 +388,10 @@ async fn inactive_profiles_keep_snapshots_but_active_brokers_require_sandbox() -
     .await?;
     config.shell_environment_policy.r#set.insert(
         "BASH_ENV".into(),
-        dir.path().join(".ava-code/startup.sh").display().to_string(),
+        dir.path()
+            .join(".ava-code/startup.sh")
+            .display()
+            .to_string(),
     );
     environments.set_snapshot_credential_broker(SnapshotCredentialBrokerState::Ready(
         started_proxy.proxy(),
@@ -1810,11 +1813,7 @@ async fn windows_powershell_snapshot_includes_sections() -> Result<()> {
 }
 
 async fn write_rollout_stub(ava_home: &Path, session_id: ThreadId) -> Result<PathBuf> {
-    let dir = ava_home
-        .join("sessions")
-        .join("2025")
-        .join("01")
-        .join("01");
+    let dir = ava_home.join("sessions").join("2025").join("01").join("01");
     fs::create_dir_all(&dir).await?;
     let path = dir.join(format!("rollout-2025-01-01T00-00-00-{session_id}.jsonl"));
     fs::write(&path, "").await?;

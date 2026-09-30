@@ -194,11 +194,7 @@ pub(super) async fn resolve_provider_auth(
 ) -> Result<SharedAuthProvider> {
     match resolve_auth_method(source, managed_auth, aws, endpoint).await? {
         BedrockAuthMethod::ManagedBearerToken { token, .. }
-        | BedrockAuthMethod::EnvBearerToken { token, .. } => Ok(Arc::new(BearerAuthProvider {
-            token: Some(token),
-            account_id: None,
-            is_fedramp_account: false,
-        })),
+        | BedrockAuthMethod::EnvBearerToken { token, .. } => Ok(Arc::new(BearerAuthProvider::new(token))),
         BedrockAuthMethod::AwsSdkAuth { context } => {
             Ok(Arc::new(BedrockSigV4AuthProvider::new(context, endpoint)))
         }
@@ -381,13 +377,12 @@ mod tests {
                 api_key: "managed-bedrock-api-key".to_string(),
                 region: "us-east-1".to_string(),
             }));
-        let managed_access_keys = AuthManager::from_auth_for_testing(AvaAuth::BedrockAccessKeys(
-            BedrockAccessKeysAuth {
+        let managed_access_keys =
+            AuthManager::from_auth_for_testing(AvaAuth::BedrockAccessKeys(BedrockAccessKeysAuth {
                 access_key_id: "managed-access-key-id".to_string(),
                 secret_access_key: "managed-secret-access-key".to_string(),
                 session_token: None,
-            },
-        ));
+            }));
         let cases: &[(
             &ModelProviderInfo,
             Option<&AuthManager>,
@@ -495,11 +490,7 @@ mod tests {
             },
         )
         .expect("configured region should resolve");
-        let provider = BearerAuthProvider {
-            token: Some(token),
-            account_id: None,
-            is_fedramp_account: false,
-        };
+        let provider = BearerAuthProvider::new(token);
         let mut headers = http::HeaderMap::new();
 
         provider.add_auth_headers(&mut headers);

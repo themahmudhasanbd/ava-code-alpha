@@ -40,6 +40,7 @@ import { RuntimeDottedIndicator } from "@/components/ai-elements/dotted-indicato
 import { TypewriterText } from "@/components/ai-elements/typewriter-text";
 import { InlineText, RichResponse } from "./rich-response";
 import { LiveStepOverviewCard } from "./live-step-card";
+import { resolveIntent } from "./intent";
 import { MediaPreviewGallery } from "./media-preview-gallery";
 import { getToolIcon } from "./tool-icons";
 import { Surface } from "@/components/kit";
@@ -95,18 +96,50 @@ function NoticeStep({ part }: { part: MessagePart }) {
 
 // ---------- assistant turn ------------------------------------------------
 
+// --- Media attachment helpers ---
+// Normalizes a media URL/path for comparison:
+// trim -> lowercase -> strip ?query and #fragment.
+export function normalizeMediaUrl(url: string): string {
+  return (url || "")
+    .trim()
+    .toLowerCase()
+    .split("?")[0]
+    .split("#")[0];
+}
+
+// Extracts server paths from user prompt attachment markers:
+//   [Attachment: <name> (<path>)]
+// Returns the set of normalized paths. Only full-path matches count,
+// so an agent attaching a different file with the same name is unaffected.
+export function extractAttachmentPaths(text: string | undefined): Set<string> {
+  const paths = new Set<string>();
+  if (!text) return paths;
+  // Greedy .* so the LAST parenthesized group (the path) is captured,
+  // even if the display name itself contains parentheses.
+  const re = /\[Attachment:.*\(([^()]*)\)\]/g;
+  let match: RegExpExecArray | null;
+  while ((match = re.exec(text)) !== null) {
+    const normalized = normalizeMediaUrl(match[1]);
+    if (normalized) paths.add(normalized);
+  }
+  return paths;
+}
+
 function AssistantTurn({
   message,
   live,
   sessionId,
+  userPrompt,
   onOpenTimeline,
 }: {
   message: ChatMessage;
   live: boolean;
   sessionId?: string;
+  userPrompt?: string;
   onOpenTimeline?: (messageId?: string) => void;
 }) {
   const { rpc } = useAva();
+  const { colors } = useTheme();
   const elapsed = useElapsed(message.stats?.startedAt, live);
   const steps = message.parts.filter((p) => p.kind === "tool").length;
   const workflowParts = message.parts.filter(
@@ -118,12 +151,53 @@ function AssistantTurn({
   );
   const hasWorkflowSteps = workflowParts.length > 0;
 
-  // Find the final text response intended for the user
-  const textParts = message.parts.filter((p) => p.kind === "text" && p.text && p.text.trim());
-  const finalPart = textParts.length > 0 ? textParts[textParts.length - 1] : null;
+  // Turn intent: core-provided meta.intent wins, else derive from user prompt.
+  // Used for the pre-state card, overview card title, and completion text.
+  const coreIntent = message.parts.find((p) => p.meta?.intent)?.meta?.intent;
+  const intent = resolveIntent(coreIntent, userPrompt);
+  const coreSummary = message.parts.find((p) => p.meta?.summary)?.meta?.summary;
+
+  // First reasoning / premature text: shown in chat, rest lives in Timeline.
+  const firstReasoning = message.parts.find(
+    (p) => p.kind === "reasoning" && p.text && p.text.trim().length > 0,
+  );
+
+  // Find the last tool index in the turn
+  let lastToolIdx = -1;
+  for (let i = message.parts.length - 1; i >= 0; i--) {
+    if (message.parts[i]!.kind === "tool") {
+      lastToolIdx = i;
+      break;
+    }
+  }
+
+  // Find the final text response intended for the user.
+  // When a turn executes tool actions, any text generated BEFORE or DURING tool execution
+  // is premature/interim commentary and must NOT be shown as the final response.
+  // Only text produced AFTER all tools have finished counts as the final answer.
+  const finalPart = useMemo(() => {
+    for (let i = message.parts.length - 1; i >= 0; i--) {
+      const p = message.parts[i]!;
+      if (p.kind === "text" && p.text && p.text.trim()) {
+        if (lastToolIdx === -1 || i > lastToolIdx) {
+          return p;
+        }
+      }
+    }
+    return null;
+  }, [message.parts, lastToolIdx]);
+
   const finalText = finalPart?.text?.trim() ?? "";
 
-  // Collect and deduplicate all media items from the message parts
+  // Paths the user already attached in their prompt (from [Attachment: name (path)] markers)
+  const userAttachedPaths = useMemo(
+    () => extractAttachmentPaths(userPrompt),
+    [userPrompt],
+  );
+
+  // Collect and deduplicate all media items from the message parts.
+  // Media whose path the user already attached is filtered out so the agent's
+  // re-attachment of the same file is not shown twice.
   const allTurnMedia = useMemo(() => {
     const mediaList: MediaItem[] = [];
     const seen = new Set<string>();
@@ -131,18 +205,22 @@ function AssistantTurn({
       if (p.meta?.media && Array.isArray(p.meta.media)) {
         for (const m of p.meta.media) {
           if (m && m.url) {
-            const clean = m.url.trim();
-            const lower = clean.toLowerCase();
-            if (!seen.has(lower)) {
-              seen.add(lower);
-              mediaList.push({ ...m, url: clean });
+            const normalized = normalizeMediaUrl(m.url);
+            if (
+              !normalized ||
+              seen.has(normalized) ||
+              userAttachedPaths.has(normalized)
+            ) {
+              continue;
             }
+            seen.add(normalized);
+            mediaList.push({ ...m, url: m.url.trim() });
           }
         }
       }
     }
     return mediaList;
-  }, [message.parts]);
+  }, [message.parts, userAttachedPaths]);
 
   // Extract questions or errors
   const questionParts = message.parts.filter((p) => p.kind === "question" || p.meta?.questions);
@@ -248,6 +326,8 @@ function AssistantTurn({
           message={message}
           live={live}
           sessionId={sessionId}
+          intent={intent}
+          summary={coreSummary}
           onOpenTimeline={onOpenTimeline}
         />
       )}
@@ -269,7 +349,7 @@ function AssistantTurn({
                 </Text>
               )}
               {question.options?.map((opt, idx) => {
-                const isAnswered = answeredQuestions.has(question.id ?? "");
+                const isAnswered = answeredQuestions.has(question.id ?? "") || !!question.answered;
                 return (
                   <TouchableOpacity
                     key={idx}
@@ -286,7 +366,7 @@ function AssistantTurn({
                   </TouchableOpacity>
                 );
               })}
-              {!question.options?.length && !answeredQuestions.has(question.id ?? "") && (
+              {!question.options?.length && !answeredQuestions.has(question.id ?? "") && !question.answered && (
                 <Text style={[styles.questionHint, font("regular")]}>
                   Type your answer in the composer below
                 </Text>
@@ -306,13 +386,30 @@ function AssistantTurn({
           )}
         </View>
       ) : live && !hasWorkflowSteps ? (
-        <View style={styles.finalOutputContainer}>
-          <RuntimeDottedIndicator
-            variant="block"
-            size="sm"
-            label="Agent thinking…"
-            subLabel="Analyzing prompt and preparing response"
-          />
+        <View style={styles.intentCard}>
+          <View style={[styles.intentPulse, { backgroundColor: colors.primary }]} />
+          <View style={{ flex: 1 }}>
+            <Shimmer style={[styles.intentTitle, font("medium"), { color: colors.primary }]}>
+              {`${intent}…`}
+            </Shimmer>
+            <Text style={[styles.intentSubtitle, font("regular"), { color: colors.mutedForeground }]}>
+              Analyzing prompt and preparing response
+            </Text>
+          </View>
+          <ActivityIndicator size="small" color={colors.primary} />
+        </View>
+      ) : null}
+
+      {/* First reasoning / premature text stays in chat; rest in Timeline */}
+      {firstReasoning && !finalText ? (
+        <View style={styles.reasoningCard}>
+          <Brain size={13} color={colors.mutedForeground} />
+          <Text
+            style={[styles.reasoningText, font("regular"), { color: colors.mutedForeground }]}
+            numberOfLines={live ? 3 : 2}
+          >
+            {firstReasoning.text.trim()}
+          </Text>
         </View>
       ) : null}
 
@@ -648,11 +745,13 @@ function ChatMessageViewBase({
   message,
   live = false,
   sessionId,
+  userPrompt,
   onOpenTimeline,
 }: {
   message: ChatMessage;
   live?: boolean;
   sessionId?: string;
+  userPrompt?: string;
   onOpenTimeline?: (messageId?: string) => void;
 }) {
   if (message.role === "assistant") {
@@ -661,6 +760,7 @@ function ChatMessageViewBase({
         message={message}
         live={live}
         sessionId={sessionId}
+        userPrompt={userPrompt}
         onOpenTimeline={onOpenTimeline}
       />
     );
@@ -673,7 +773,7 @@ function ChatMessageViewBase({
 // Streaming deltas replace only the last message, so older turns stay untouched.
 export const ChatMessageView = React.memo(
   ChatMessageViewBase,
-  (a, b) => a.message === b.message && a.live === b.live && a.sessionId === b.sessionId,
+  (a, b) => a.message === b.message && a.live === b.live && a.sessionId === b.sessionId && a.userPrompt === b.userPrompt,
 );
 
 const styles = StyleSheet.create({
@@ -728,6 +828,43 @@ const styles = StyleSheet.create({
     fontSize: 11,
     color: COLORS.mutedForeground,
     marginTop: 1,
+  },
+  intentCard: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    borderWidth: 1,
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 11,
+    marginTop: 8,
+  },
+  intentPulse: {
+    width: 8,
+    height: 8,
+    borderRadius: 999,
+  },
+  intentTitle: {
+    fontSize: 14,
+  },
+  intentSubtitle: {
+    fontSize: 11,
+    marginTop: 2,
+  },
+  reasoningCard: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 8,
+    borderRadius: 10,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    marginTop: 8,
+    opacity: 0.85,
+  },
+  reasoningText: {
+    fontSize: 12.5,
+    flex: 1,
+    lineHeight: 17,
   },
   finalOutputContainer: {
     marginTop: 4,

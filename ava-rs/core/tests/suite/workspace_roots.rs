@@ -260,13 +260,13 @@ async fn workspace_roots_allow_file_and_command_writes_in_secondary_root(
         .context("workspace should have a parent")?
         .join(&secondary_root_name)?;
     if owner_resolved_roots {
-        let selection = test
-            .ava-code
-            .environment_selections()
-            .await
-            .into_iter()
-            .next()
-            .context("thread should select its executor environment")?;
+        let selection = test.ava
+            - code
+                .environment_selections()
+                .await
+                .into_iter()
+                .next()
+                .context("thread should select its executor environment")?;
         test.ava
             .environment_ready(
                 &selection,

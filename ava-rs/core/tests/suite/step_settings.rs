@@ -1,6 +1,4 @@
 use anyhow::Result;
-use base64::Engine;
-use base64::engine::general_purpose::STANDARD as BASE64_STANDARD;
 use ava_config::McpServerConfig;
 use ava_core::AvaThread;
 use ava_core::ForkSnapshot;
@@ -74,6 +72,8 @@ use ava_tools::ToolSpec;
 use ava_utils_image::data_url_from_bytes;
 use ava_utils_output_truncation::TruncationPolicy;
 use ava_utils_output_truncation::truncate_text;
+use base64::Engine;
+use base64::engine::general_purpose::STANDARD as BASE64_STANDARD;
 use core_test_support::apps_test_server::AppsTestServer;
 use core_test_support::apps_test_server::recorded_apps_tool_calls;
 use core_test_support::responses::ResponsesRequest;

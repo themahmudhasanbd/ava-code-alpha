@@ -667,10 +667,7 @@ async fn interrupting_concurrent_step_preparation_prevents_sampling() -> Result<
     let barrier = start_gated_step_preparation(&test, &server).await?;
     assert!(response.requests().is_empty());
     test.ava.submit(Op::Interrupt).await?;
-    wait_for_event(&test.ava, |event| {
-        matches!(event, EventMsg::TurnAborted(_))
-    })
-    .await;
+    wait_for_event(&test.ava, |event| matches!(event, EventMsg::TurnAborted(_))).await;
     assert!(
         response.requests().is_empty(),
         "cancelling concurrent step preparation must prevent model sampling"

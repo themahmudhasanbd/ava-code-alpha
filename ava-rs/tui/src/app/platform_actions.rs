@@ -216,9 +216,8 @@ impl App {
         >,
     ) {
         match response {
-            Ok(Ok(ava_app_server_protocol::WindowsSandboxSetupStartResponse {
-                started: true,
-            })) => {}
+            Ok(Ok(ava_app_server_protocol::WindowsSandboxSetupStartResponse { started: true })) => {
+            }
             Err(_) => {
                 self.chat_widget.add_error_message(
                     "Windows sandbox setup request timed out. Waiting for completion; restart Ava if it does not finish."

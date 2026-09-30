@@ -108,8 +108,6 @@ mod thread_processor_behavior_tests {
     use crate::outgoing_message::OutgoingEnvelope;
     use crate::outgoing_message::OutgoingMessage;
     use anyhow::Result;
-    use chrono::DateTime;
-    use chrono::Utc;
     use ava_app_server_protocol::ServerRequestPayload;
     use ava_app_server_protocol::ThreadItem;
     use ava_app_server_protocol::ToolRequestUserInputParams;
@@ -134,6 +132,8 @@ mod thread_processor_behavior_tests {
     use ava_thread_store::StoredThread;
     use ava_utils_absolute_path::test_support::PathBufExt;
     use ava_utils_absolute_path::test_support::test_path_buf;
+    use chrono::DateTime;
+    use chrono::Utc;
     use pretty_assertions::assert_eq;
     use serde_json::Value;
     use serde_json::json;

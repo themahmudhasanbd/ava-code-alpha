@@ -2,15 +2,15 @@ use std::path::PathBuf;
 use std::time::Duration;
 
 use anyhow::Context;
-use chrono::DateTime;
-use clap::Parser;
-use clap::ValueEnum;
 use ava_core::config::ConfigBuilder;
 use ava_state::LogQuery;
 use ava_state::LogRow;
 use ava_state::SqliteConfig;
 use ava_state::StateRuntime;
 use ava_utils_absolute_path::AbsolutePathBuf;
+use chrono::DateTime;
+use clap::Parser;
+use clap::ValueEnum;
 use owo_colors::OwoColorize;
 
 #[derive(Debug, Parser)]

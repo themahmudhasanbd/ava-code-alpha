@@ -134,9 +134,7 @@ impl ava_extension_api::ContextContributor for GuardianMemoryContextProbe {
             {
                 vec![ava_extension_api::PromptFragment::developer_policy(
                     GUARDIAN_MEMORY_CONTEXT_PROBE,
-                    ava_extension_api::ContentItemKind(
-                        "guardian.memory_context_probe".to_string(),
-                    ),
+                    ava_extension_api::ContentItemKind("guardian.memory_context_probe".to_string()),
                 )]
             } else {
                 Vec::new()

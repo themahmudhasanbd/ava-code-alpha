@@ -1064,8 +1064,7 @@ mod metrics {
     pub(super) const FILE_COUNTER: &str = "ava.rollout_compression.file";
     const FILE_DURATION_HISTOGRAM: &str = "ava.rollout_compression.file.duration_ms";
     const FILE_SOURCE_BYTES_HISTOGRAM: &str = "ava.rollout_compression.file.source_bytes";
-    const FILE_COMPRESSION_RATIO_HISTOGRAM: &str =
-        "ava.rollout_compression.file.compression_ratio";
+    const FILE_COMPRESSION_RATIO_HISTOGRAM: &str = "ava.rollout_compression.file.compression_ratio";
     pub(super) const MATERIALIZE_COUNTER: &str = "ava.rollout_compression.materialize";
     pub(super) const RUN_COUNTER: &str = "ava.rollout_compression.run";
     pub(super) const RUN_DURATION_HISTOGRAM: &str = "ava.rollout_compression.run.duration_ms";

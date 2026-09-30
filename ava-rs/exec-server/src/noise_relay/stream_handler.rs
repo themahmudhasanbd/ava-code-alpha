@@ -1,9 +1,9 @@
 use std::future::Future;
 use std::sync::Arc;
 
-use bytes::Bytes;
 use ava_exec_server_protocol::JSONRPCMessage;
 use ava_protocol::protocol::W3cTraceContext;
+use bytes::Bytes;
 use tokio::sync::mpsc;
 use tokio::sync::watch;
 use tokio::task::JoinHandle;

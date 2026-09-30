@@ -1,5 +1,3 @@
-use chrono::DateTime;
-use chrono::Utc;
 use ava_protocol::models::PermissionProfile;
 use ava_protocol::protocol::AskForApproval;
 use ava_protocol::protocol::SessionMetaLine;
@@ -10,6 +8,8 @@ use ava_rollout::find_thread_name_by_id;
 use ava_rollout::read_session_meta_line;
 use ava_rollout::read_thread_item_from_rollout;
 use ava_state::ThreadMetadata;
+use chrono::DateTime;
+use chrono::Utc;
 
 use super::LocalThreadStore;
 use super::helpers::distinct_thread_metadata_title;
@@ -552,7 +552,6 @@ mod tests {
     use std::io::Write;
     use std::path::PathBuf;
 
-    use chrono::Utc;
     use ava_protocol::ThreadId;
     use ava_protocol::items::TurnItem;
     use ava_protocol::items::UserMessageItem;
@@ -565,6 +564,7 @@ mod tests {
     use ava_protocol::user_input::UserInput;
     use ava_rollout::RolloutItem;
     use ava_state::ThreadMetadataBuilder;
+    use chrono::Utc;
     use pretty_assertions::assert_eq;
     use tempfile::TempDir;
     use uuid::Uuid;

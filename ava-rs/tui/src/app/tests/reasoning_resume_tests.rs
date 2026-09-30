@@ -136,18 +136,16 @@ async fn resumed_trailing_reasoning_is_kept_when_no_more_reasoning_arrives() {
         app.replay_thread_snapshot(store.snapshot(), /*resume_restored_queue*/ false);
         if next_item {
             app.chat_widget.handle_server_notification(
-                ServerNotification::ItemStarted(
-                    ava_app_server_protocol::ItemStartedNotification {
-                        thread_id: thread_id.to_string(),
-                        turn_id: "turn".into(),
-                        started_at_ms: 0,
-                        item: ThreadItem::Reasoning {
-                            id: "next".into(),
-                            summary: Vec::new(),
-                            content: Vec::new(),
-                        },
+                ServerNotification::ItemStarted(ava_app_server_protocol::ItemStartedNotification {
+                    thread_id: thread_id.to_string(),
+                    turn_id: "turn".into(),
+                    started_at_ms: 0,
+                    item: ThreadItem::Reasoning {
+                        id: "next".into(),
+                        summary: Vec::new(),
+                        content: Vec::new(),
                     },
-                ),
+                }),
                 /*replay_kind*/ None,
             );
         }

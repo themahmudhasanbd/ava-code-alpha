@@ -9,12 +9,12 @@
 //!
 //! This allows us to ship a completely separate set of functionality as part
 //! of the `ava-exec` binary.
-use clap::Parser;
 use ava_arg0::Arg0DispatchPaths;
 use ava_arg0::arg0_dispatch_or_else;
 use ava_exec::Cli;
 use ava_exec::run_main;
 use ava_utils_cli::CliConfigOverrides;
+use clap::Parser;
 
 #[derive(Parser, Debug)]
 struct TopCli {

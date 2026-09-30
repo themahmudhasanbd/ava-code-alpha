@@ -10,10 +10,10 @@ pub mod manifest;
 mod plugin_id;
 mod provider;
 
-pub use bundled_hooks::is_allowlisted_bundled_cleanup_hook;
 use ava_config::HookEventsToml;
 use ava_utils_absolute_path::AbsolutePathBuf;
 use ava_utils_path_uri::PathUri;
+pub use bundled_hooks::is_allowlisted_bundled_cleanup_hook;
 pub use load_outcome::LoadedPlugin;
 pub use load_outcome::PluginLoadOutcome;
 pub use load_outcome::prompt_safe_plugin_description;

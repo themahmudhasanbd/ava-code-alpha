@@ -21,8 +21,7 @@ use test_case::test_case;
 use wiremock::MockServer;
 
 #[tokio::test]
-async fn cloud_provider_auth_merges_before_parsing_and_resolves_cwd_from_ava_home() -> Result<()>
-{
+async fn cloud_provider_auth_merges_before_parsing_and_resolves_cwd_from_ava_home() -> Result<()> {
     let home = tempdir()?;
     std::fs::write(
         home.path().join("config.toml"),

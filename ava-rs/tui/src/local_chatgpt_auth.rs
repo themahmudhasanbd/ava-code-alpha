@@ -62,13 +62,13 @@ pub(crate) fn load_local_chatgpt_auth(
 mod tests {
     use super::*;
 
-    use base64::Engine;
-    use chrono::Utc;
     use ava_login::AuthDotJson;
     use ava_login::auth::login_with_chatgpt_auth_tokens;
     use ava_login::save_auth;
     use ava_login::token_data::TokenData;
     use ava_protocol::auth::AuthMode;
+    use base64::Engine;
+    use chrono::Utc;
     use pretty_assertions::assert_eq;
     use serde::Serialize;
     use serde_json::json;

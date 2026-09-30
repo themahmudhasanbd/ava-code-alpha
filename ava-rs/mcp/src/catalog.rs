@@ -496,10 +496,7 @@ impl McpCatalogBuilder {
                             disabled_server_names.insert(name.clone());
                         }
                     }
-                    if matches!(
-                        registration.config.auth,
-                        ava_config::McpServerAuth::EmaAuth
-                    ) {
+                    if matches!(registration.config.auth, ava_config::McpServerAuth::EmaAuth) {
                         let allowed = ema_idp.as_ref().is_some_and(|idp| {
                             registration.config.resolve_ema_registration(idp).is_ok()
                         });

@@ -2,10 +2,10 @@ use super::StateRuntime;
 use crate::runtime::test_support::test_thread_metadata;
 use crate::runtime::test_support::unique_temp_dir;
 use anyhow::Result;
-use chrono::DateTime;
-use chrono::Utc;
 use ava_protocol::ThreadId;
 use ava_utils_absolute_path::test_support::PathExt;
+use chrono::DateTime;
+use chrono::Utc;
 use pretty_assertions::assert_eq;
 use std::collections::HashMap;
 

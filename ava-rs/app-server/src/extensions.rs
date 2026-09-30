@@ -116,9 +116,7 @@ pub(crate) fn thread_extensions(
             max_context_tokens: config.skill_max_context_tokens,
             bundled_skills_enabled: config.bundled_skills_enabled(),
             orchestrator_skills_enabled: config.orchestrator_skills_enabled,
-            shadow_selection_enabled: config
-                .features
-                .enabled(ava_features::Feature::SkillSearch),
+            shadow_selection_enabled: config.features.enabled(ava_features::Feature::SkillSearch),
         },
     );
     Arc::new(builder.build())

@@ -146,11 +146,8 @@ async fn connected_trust_cancellation_and_acceptance_control_task_creation() -> 
                 });
             }
         });
-        let mut terminal = PtyAva::start(
-            &repo_root,
-            ava_home,
-            &["do not submit this launch prompt"],
-        )?;
+        let mut terminal =
+            PtyAva::start(&repo_root, ava_home, &["do not submit this launch prompt"])?;
         let prompt = if trust_level.is_some() {
             "Open restricted"
         } else {

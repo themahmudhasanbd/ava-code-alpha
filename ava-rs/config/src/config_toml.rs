@@ -165,6 +165,9 @@ pub struct ConfigToml {
     /// Provider to use from the model_providers map.
     pub model_provider: Option<String>,
 
+    /// Ordered fallback chain of models to try if the primary model fails.
+    pub model_fallback_chain: Option<Vec<String>>,
+
     /// Size of the context window for the model, in tokens.
     pub model_context_window: Option<i64>,
 
@@ -468,6 +471,9 @@ pub struct ConfigToml {
     /// Agent-related settings (thread limits, etc.).
     pub agents: Option<AgentsToml>,
 
+    /// `.ava-code/` project context index loading options.
+    pub project_context: Option<ProjectContextToml>,
+
     /// Goal-related settings.
     pub goals: Option<GoalsToml>,
 
@@ -707,6 +713,22 @@ where
 pub struct GoalsToml {
     /// Maximum token budget allowed for a goal and default budget for new goals.
     pub max_goal_token_budget: Option<NonZeroU64>,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, Default, PartialEq, Eq, JsonSchema)]
+#[schemars(deny_unknown_fields)]
+pub struct ProjectContextToml {
+    /// Whether the `.ava-code/` context index is injected with each prompt.
+    /// Defaults to true. Set to false to disable entirely.
+    pub enabled: Option<bool>,
+    /// Whether the `.ava-code/rules/` index is loaded. Defaults to true.
+    pub rules: Option<bool>,
+    /// Whether the `.ava-code/workflows/` index is loaded. Defaults to true.
+    pub workflows: Option<bool>,
+    /// Whether the `.ava-code/design/` index is loaded. Defaults to true.
+    pub design: Option<bool>,
+    /// Whether the `.ava-code/plans/` index is loaded. Defaults to true.
+    pub plans: Option<bool>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, Default, PartialEq, Eq, JsonSchema)]

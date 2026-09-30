@@ -429,11 +429,11 @@ async fn run_cloud_catalog_refresh_lifecycle() -> anyhow::Result<()> {
                 loop {
                     if resources.auth_cache_key_for_server(ava_mcp::AVA_APPS_MCP_SERVER_NAME)
                         != previous_auth
-                        && test
-                            .ava-code
-                            .thread_extension_data()
-                            .get::<SelectedPluginSnapshot>()
-                            .is_some_and(|snapshot| snapshot.plugins.is_empty())
+                        && test.ava
+                            - code
+                                .thread_extension_data()
+                                .get::<SelectedPluginSnapshot>()
+                                .is_some_and(|snapshot| snapshot.plugins.is_empty())
                     {
                         break;
                     }
@@ -481,8 +481,8 @@ async fn run_cloud_catalog_refresh_lifecycle() -> anyhow::Result<()> {
                             .unwrap_or_else(std::sync::PoisonError::into_inner)
                             .clone()
                             .context("cloud provider resource client missing")?;
-                        let previous_auth = resources
-                            .auth_cache_key_for_server(ava_mcp::AVA_APPS_MCP_SERVER_NAME);
+                        let previous_auth =
+                            resources.auth_cache_key_for_server(ava_mcp::AVA_APPS_MCP_SERVER_NAME);
                         // Rotate credentials without replacing the captured runtime/client.
                         ava_login::auth::login_with_chatgpt_auth_tokens(
                             test.ava_home_path(),
@@ -491,8 +491,7 @@ async fn run_cloud_catalog_refresh_lifecycle() -> anyhow::Result<()> {
                             /*chatgpt_plan_type*/ None,
                         )?;
                         test.thread_manager.auth_manager().reload().await;
-                        while resources
-                            .auth_cache_key_for_server(ava_mcp::AVA_APPS_MCP_SERVER_NAME)
+                        while resources.auth_cache_key_for_server(ava_mcp::AVA_APPS_MCP_SERVER_NAME)
                             == previous_auth
                         {
                             tokio::task::yield_now().await;
@@ -504,11 +503,11 @@ async fn run_cloud_catalog_refresh_lifecycle() -> anyhow::Result<()> {
             })
             .await??;
             // The old request must not republish its catalog after credentials change.
-            let state = test
-                .ava-code
-                .thread_extension_data()
-                .get::<PluginsThreadState>()
-                .context("plugin state missing")?;
+            let state = test.ava
+                - code
+                    .thread_extension_data()
+                    .get::<PluginsThreadState>()
+                    .context("plugin state missing")?;
             assert_eq!(state.cloud_catalog(), None);
             assert_eq!(
                 state

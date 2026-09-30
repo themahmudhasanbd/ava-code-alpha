@@ -277,8 +277,7 @@ fn apply_zsh_fork_path_prepend_uses_shell_parent() {
 fn apply_zsh_fork_path_prepend_moves_existing_shell_parent_to_front() {
     let mut env = HashMap::from([(
         "PATH".to_string(),
-        "/usr/bin:/package/ava-resources/zsh/bin:/bin:/package/ava-resources/zsh/bin"
-            .to_string(),
+        "/usr/bin:/package/ava-resources/zsh/bin:/bin:/package/ava-resources/zsh/bin".to_string(),
     )]);
     let mut runtime_path_prepends = RuntimePathPrepends::default();
 

@@ -2,9 +2,9 @@ use std::time::Duration;
 
 use anyhow::Context;
 use anyhow::Result;
-use bytes::Bytes;
 use ava_http_client::HttpClientFactory;
 use ava_http_client::OutboundProxyPolicy;
+use bytes::Bytes;
 use futures::SinkExt;
 use futures::StreamExt;
 use pretty_assertions::assert_eq;

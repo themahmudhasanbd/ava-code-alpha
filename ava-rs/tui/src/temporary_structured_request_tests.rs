@@ -68,8 +68,7 @@ async fn preserves_custom_permissions_and_disables_required_mcp_servers() -> col
         ),
     )?;
     config.ava_home = ava_home.path().to_path_buf().abs();
-    config.sqlite =
-        ava_state::SqliteConfig::new_for_testing(ava_home.path().to_path_buf().abs());
+    config.sqlite = ava_state::SqliteConfig::new_for_testing(ava_home.path().to_path_buf().abs());
 
     let app_server = crate::start_embedded_app_server_for_picker(&config).await?;
     let response = start_temporary_thread(

@@ -14,6 +14,7 @@ use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
 
 use crate::actions::{ActionDispatcher, ActionResult};
+use crate::approval::{ApprovalGate, ApprovalMode, ApprovalOutcome};
 use crate::coordinator::BrowserCoordinator;
 use crate::schema;
 
@@ -76,6 +77,22 @@ pub struct BrowserArgs {
     pub script: Option<String>,
     /// Whether to wait for navigation completion after click (default: true).
     pub wait_for_navigation: Option<bool>,
+    /// Set to true after the user explicitly approves a gated action in chat.
+    /// Mutating actions (click/fill/evaluate_js/...) and first-time navigation
+    /// to an origin require approval; the tool refuses without it.
+    pub approved: Option<bool>,
+    /// Key name for action=press_key ("Enter", "Tab", "Escape", "ArrowDown", ...).
+    pub key: Option<String>,
+    /// Drag source ref/selector (for action=drag).
+    pub from_ref: Option<String>,
+    /// Drag source selector alias (for action=drag).
+    pub from_selector: Option<String>,
+    /// Drag target ref/selector (for action=drag).
+    pub to_ref: Option<String>,
+    /// Drag target selector alias (for action=drag).
+    pub to_selector: Option<String>,
+    /// Target ID for action=tab_switch and tab_close (from tab_list).
+    pub target_id: Option<String>,
 }
 
 #[derive(Debug, Clone, Deserialize, JsonSchema)]
@@ -113,6 +130,7 @@ impl From<ActionResult> for BrowserResponse {
 #[derive(Clone)]
 pub struct BrowserTool {
     coordinator: Arc<BrowserCoordinator>,
+    approval_gate: Arc<ApprovalGate>,
     #[allow(dead_code)]
     metrics_client: Option<MetricsClient>,
 }
@@ -122,8 +140,15 @@ impl BrowserTool {
         coordinator: Arc<BrowserCoordinator>,
         metrics_client: Option<MetricsClient>,
     ) -> Self {
+        let cfg = coordinator.config();
+        let approval_gate = Arc::new(ApprovalGate::new(
+            ApprovalMode::parse(&cfg.approval_mode),
+            cfg.allow_evaluate_js,
+            cfg.allowed_origins.clone(),
+        ));
         Self {
             coordinator,
+            approval_gate,
             metrics_client,
         }
     }
@@ -138,6 +163,7 @@ impl<'call> ToolExecutor<ToolCall<'call>> for BrowserTool {
         let tool = ResponsesApiTool {
             name: BROWSER_TOOL_NAME.to_string(),
             description: r#"Advanced native browser automation with observe→reason→act→verify loop enforcement.
+Approval: read-only actions (observe, screenshot, scrape_*, state, wait, viewport, scroll) never need approval. Navigating to a new origin and login need one-time user approval per site; mutating actions (click, fill, fill_form, evaluate_js, clear_session, close) need user approval per session. When the tool refuses with Approval required, ask the user in chat, then retry the same action with approved=true. Never include passwords in approval prompts.
 
 Supported Actions:
 - 'open': Navigate to URL with optional viewport and task intent. Automatically inspects DOM and verifies page indicators.
@@ -161,6 +187,14 @@ Supported Actions:
 - 'state': Get complete page state including current URL, title, login cookie status, navigation history, and console errors.
 - 'clear_session': Clear persistent cookies, localStorage, sessionStorage, and browser state.
 - 'close': Cleanly close page and terminate browser process.
+- 'hover': Move mouse to element (triggers hover menus/tooltips).
+- 'press_key': Press keyboard key.
+- 'drag': Drag from one element to another.
+- 'tab_list': List open tabs/pages.
+- 'tab_new': Open new tab.
+- 'tab_switch': Switch tab by target_id.
+- 'tab_close': Close tab by target_id.
+- 'live_frame': Capture lightweight base64 JPEG frame for live view.
 "#
             .to_string(),
             strict: false,
@@ -199,6 +233,28 @@ impl BrowserTool {
             .ok_or_else(|| {
                 FunctionCallError::RespondToModel("Missing required parameter 'action'".to_string())
             })?;
+
+        // Approval gate: mutating actions and first-time navigation to an
+        // origin require explicit user approval (via `approved=true` after
+        // asking in chat). Read-only actions are never gated.
+        let url = args_val.get("url").and_then(Value::as_str);
+        let username = args_val.get("username").and_then(Value::as_str);
+        let model_approved = args_val
+            .get("approved")
+            .and_then(Value::as_bool)
+            .unwrap_or(false);
+        match self
+            .approval_gate
+            .check(action, url, username, model_approved)
+        {
+            ApprovalOutcome::Allowed => {}
+            ApprovalOutcome::NeedsApproval(prompt) => {
+                return Err(FunctionCallError::RespondToModel(prompt));
+            }
+            ApprovalOutcome::Denied(reason) => {
+                return Err(FunctionCallError::RespondToModel(reason));
+            }
+        }
 
         let result = ActionDispatcher::dispatch(&self.coordinator, action, &args_val)
             .await

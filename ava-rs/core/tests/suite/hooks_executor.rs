@@ -92,16 +92,15 @@ async fn thread_plugin_selection_disables_executor_hooks_without_disabling_their
         }
         assert_eq!(fixture.calls().await?.len(), expected_calls);
     }
-    fixture
-        .test
-        .ava-code
-        .call_mcp_tool(
-            "node_repl",
-            "js",
-            Some(json!({"code": "1 + 1"})),
-            /*meta*/ None,
-        )
-        .await?;
+    fixture.test.ava
+        - code
+            .call_mcp_tool(
+                "node_repl",
+                "js",
+                Some(json!({"code": "1 + 1"})),
+                /*meta*/ None,
+            )
+            .await?;
     assert_eq!(
         fixture
             .calls()
@@ -179,14 +178,13 @@ async fn executor_interrupt_hook_runs_after_attachment() -> Result<()> {
     ])
     .await?;
     fixture.attach().await?;
-    fixture
-        .test
-        .ava-code
-        .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
-            text: "interrupt this turn".to_string(),
-            text_elements: Vec::new(),
-        }]))
-        .await?;
+    fixture.test.ava
+        - code
+            .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
+                text: "interrupt this turn".to_string(),
+                text_elements: Vec::new(),
+            }]))
+            .await?;
 
     // The model request confirms discovery was saved, without requiring a target shell.
     tokio::time::timeout(Duration::from_secs(10), async {
@@ -238,14 +236,13 @@ async fn executor_interrupt_hook_skips_turn_without_step_context() -> Result<()>
     fixture.wait_for_hook_call().await?;
 
     // Standalone shell turns have no model step, despite the previous turn's discovery.
-    fixture
-        .test
-        .ava-code
-        .submit(Op::RunUserShellCommand {
-            command: "sleep 60".to_string(),
-            timeout_ms: None,
-        })
-        .await?;
+    fixture.test.ava
+        - code
+            .submit(Op::RunUserShellCommand {
+                command: "sleep 60".to_string(),
+                timeout_ms: None,
+            })
+            .await?;
     fixture.interrupt_running_command().await?;
 
     assert!(
@@ -269,11 +266,10 @@ async fn executor_stop_hook_stops_after_disconnection() -> Result<()> {
         .await?;
     fixture.wait_for_hook_call().await?;
 
-    fixture
-        .test
-        .ava-code
-        .environment_failed(&selection, "executor disconnected".to_string())
-        .await?;
+    fixture.test.ava
+        - code
+            .environment_failed(&selection, "executor disconnected".to_string())
+            .await?;
     fixture
         .test
         .submit_text_turn("after the executor disconnects")
@@ -301,43 +297,40 @@ async fn executor_stop_hook_rejects_mismatched_environment() -> Result<()> {
         .await?;
     fixture.wait_for_hook_call().await?;
 
-    let (executor_url, executor) =
-        if let Some(executor_url) = fixture.test.executor_environment().exec_server_url() {
-            (executor_url.to_string(), None)
-        } else {
-            let listener = TcpListener::bind("127.0.0.1:0").await?;
-            let executor_address = listener.local_addr()?;
-            let executor_url = format!("ws://{executor_address}");
-            drop(listener);
-            let runtime_paths = ExecServerRuntimePaths::new(
-                std::env::current_exe()?,
-                /*ava_linux_sandbox_exe*/ None,
-            )?;
-            let http_client_factory = fixture.test.config.http_client_factory();
-            let executor_url_for_server = executor_url.clone();
-            let executor = tokio::spawn(async move {
-                ava_exec_server::run_main(
-                    &executor_url_for_server,
-                    runtime_paths,
-                    http_client_factory,
-                )
+    let (executor_url, executor) = if let Some(executor_url) =
+        fixture.test.executor_environment().exec_server_url()
+    {
+        (executor_url.to_string(), None)
+    } else {
+        let listener = TcpListener::bind("127.0.0.1:0").await?;
+        let executor_address = listener.local_addr()?;
+        let executor_url = format!("ws://{executor_address}");
+        drop(listener);
+        let runtime_paths = ExecServerRuntimePaths::new(
+            std::env::current_exe()?,
+            /*ava_linux_sandbox_exe*/ None,
+        )?;
+        let http_client_factory = fixture.test.config.http_client_factory();
+        let executor_url_for_server = executor_url.clone();
+        let executor = tokio::spawn(async move {
+            ava_exec_server::run_main(&executor_url_for_server, runtime_paths, http_client_factory)
                 .await
-            });
-            tokio::time::timeout(Duration::from_secs(5), async {
-                loop {
-                    if tokio::net::TcpStream::connect(executor_address)
-                        .await
-                        .is_ok()
-                    {
-                        break;
-                    }
-                    tokio::task::yield_now().await;
+        });
+        tokio::time::timeout(Duration::from_secs(5), async {
+            loop {
+                if tokio::net::TcpStream::connect(executor_address)
+                    .await
+                    .is_ok()
+                {
+                    break;
                 }
-            })
-            .await
-            .context("timed out waiting for the mismatched executor to start")?;
-            (executor_url, Some(executor))
-        };
+                tokio::task::yield_now().await;
+            }
+        })
+        .await
+        .context("timed out waiting for the mismatched executor to start")?;
+        (executor_url, Some(executor))
+    };
 
     let mismatched_environment_id = "another-executor";
     let environments = fixture.test.thread_manager.environment_manager();
@@ -351,14 +344,13 @@ async fn executor_stop_hook_rejects_mismatched_environment() -> Result<()> {
         .context("mismatched executor environment should exist")?
         .wait_until_ready()
         .await?;
-    let attached_selection = fixture
-        .test
-        .ava-code
-        .environment_selections()
-        .await
-        .into_iter()
-        .next()
-        .context("attached executor environment should remain selected")?;
+    let attached_selection = fixture.test.ava
+        - code
+            .environment_selections()
+            .await
+            .into_iter()
+            .next()
+            .context("attached executor environment should remain selected")?;
     submit_thread_settings(
         &fixture.test.ava,
         ThreadSettingsOverrides {
@@ -396,28 +388,18 @@ async fn executor_stop_hook_rejects_mismatched_environment() -> Result<()> {
             .into_iter()
             .collect(),
     )?;
-    fixture
-        .test
-        .ava-code
-        .refresh_mcp_config(mismatched_config)
-        .await;
-    fixture
-        .test
-        .ava-code
-        .call_mcp_tool(
-            "node_repl",
-            "js",
-            Some(json!({"code": "1 + 1"})),
-            /*meta*/ None,
-        )
-        .await?;
+    fixture.test.ava - code.refresh_mcp_config(mismatched_config).await;
+    fixture.test.ava
+        - code
+            .call_mcp_tool(
+                "node_repl",
+                "js",
+                Some(json!({"code": "1 + 1"})),
+                /*meta*/ None,
+            )
+            .await?;
     assert_eq!(
-        fixture
-            .test
-            .ava-code
-            .inspect_selected_capability_roots()
-            .ready_roots
-            .len(),
+        fixture.test.ava - code.inspect_selected_capability_roots().ready_roots.len(),
         1
     );
     fixture
@@ -567,26 +549,24 @@ async fn executor_browser_and_computer_use_cleanup_hooks_use_separate_mcp_routes
     fixture.attach().await?;
     if hook_event == "SubagentStop" {
         // Cached subagent MCP servers start on first use; cleanup must not start them.
-        fixture
-            .test
-            .ava-code
-            .call_mcp_tool(
-                "node_repl",
-                "js",
-                Some(json!({ "code": "1 + 1" })),
-                /*meta*/ None,
-            )
-            .await?;
+        fixture.test.ava
+            - code
+                .call_mcp_tool(
+                    "node_repl",
+                    "js",
+                    Some(json!({ "code": "1 + 1" })),
+                    /*meta*/ None,
+                )
+                .await?;
     }
     if hook_event == "Interrupt" {
-        fixture
-            .test
-            .ava-code
-            .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
-                text: "interrupt browsing".to_string(),
-                text_elements: Vec::new(),
-            }]))
-            .await?;
+        fixture.test.ava
+            - code
+                .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
+                    text: "interrupt browsing".to_string(),
+                    text_elements: Vec::new(),
+                }]))
+                .await?;
         tokio::time::timeout(Duration::from_secs(10), async {
             while fixture.responses.requests().is_empty() {
                 tokio::task::yield_now().await;
@@ -648,10 +628,7 @@ async fn executor_browser_and_computer_use_cleanup_hooks_use_separate_mcp_routes
     assert_eq!(browser_params["arguments"], json!({}));
     assert_eq!(browser_params["_meta"]["_ava_apps"], routing);
     let turn_metadata = &browser_params["_meta"]["x-ava-turn-metadata"];
-    assert_eq!(
-        node_params["_meta"]["x-ava-turn-metadata"],
-        *turn_metadata
-    );
+    assert_eq!(node_params["_meta"]["x-ava-turn-metadata"], *turn_metadata);
     assert_eq!(turn_metadata["thread_id"], thread_id);
     if hook_event == "SubagentStop" {
         assert_eq!(turn_metadata["thread_source"], "subagent");
@@ -845,45 +822,44 @@ struct ExecutorHookFixture {
 
 impl ExecutorHookFixture {
     async fn attach(&self) -> Result<TurnEnvironmentSelection> {
-        let selection = self
-            .test
-            .ava-code
-            .environment_selections()
-            .await
-            .into_iter()
-            .next()
-            .context("thread should select its executor environment")?;
-        self.test
-            .ava-code
-            .environment_ready(
-                &selection,
-                EnvironmentConfig {
-                    allow_login_shell: false,
-                    workspace_roots: selection.workspace_roots.clone(),
-                    permission_profile: PermissionProfileSnapshot::legacy(
-                        self.test.config.permissions.permission_profile().clone(),
-                    ),
-                    shell_environment_policy: Default::default(),
-                    windows_sandbox_level: WindowsSandboxLevel::from_config(&self.test.config),
-                    windows_sandbox_type: self.test.config.permissions.windows_sandbox_type,
-                    use_legacy_landlock: self.test.config.features.use_legacy_landlock(),
-                    exec_policy: None,
-                    mcp_policy: None,
-                    network_policy: None,
-                    selected_capability_roots: self
-                        .plugin_roots
-                        .iter()
-                        .map(|(plugin_id, plugin_root)| SelectedCapabilityRoot {
-                            id: plugin_id.to_string(),
-                            location: CapabilityRootLocation::Environment {
-                                environment_id: selection.environment_id.clone(),
-                                path: plugin_root.clone(),
-                            },
-                        })
-                        .collect(),
-                },
-            )
-            .await?;
+        let selection = self.test.ava
+            - code
+                .environment_selections()
+                .await
+                .into_iter()
+                .next()
+                .context("thread should select its executor environment")?;
+        self.test.ava
+            - code
+                .environment_ready(
+                    &selection,
+                    EnvironmentConfig {
+                        allow_login_shell: false,
+                        workspace_roots: selection.workspace_roots.clone(),
+                        permission_profile: PermissionProfileSnapshot::legacy(
+                            self.test.config.permissions.permission_profile().clone(),
+                        ),
+                        shell_environment_policy: Default::default(),
+                        windows_sandbox_level: WindowsSandboxLevel::from_config(&self.test.config),
+                        windows_sandbox_type: self.test.config.permissions.windows_sandbox_type,
+                        use_legacy_landlock: self.test.config.features.use_legacy_landlock(),
+                        exec_policy: None,
+                        mcp_policy: None,
+                        network_policy: None,
+                        selected_capability_roots: self
+                            .plugin_roots
+                            .iter()
+                            .map(|(plugin_id, plugin_root)| SelectedCapabilityRoot {
+                                id: plugin_id.to_string(),
+                                location: CapabilityRootLocation::Environment {
+                                    environment_id: selection.environment_id.clone(),
+                                    path: plugin_root.clone(),
+                                },
+                            })
+                            .collect(),
+                    },
+                )
+                .await?;
 
         Ok(selection)
     }

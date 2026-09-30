@@ -400,8 +400,7 @@ async fn sqlite_log_metrics_exports_do_not_create_log_cycles() -> Result<()> {
 
                 if matches!(
                     name,
-                    ava_state::LOG_WRITE_BYTES_METRIC
-                        | ava_state::LOG_WRITE_MAX_ENTRY_BYTES_METRIC
+                    ava_state::LOG_WRITE_BYTES_METRIC | ava_state::LOG_WRITE_MAX_ENTRY_BYTES_METRIC
                 ) {
                     let bounds = point["explicitBounds"]
                         .as_array()
@@ -622,9 +621,7 @@ async fn app_server_emits_structured_tool_call_timing_event() -> Result<()> {
     )
     .await??;
 
-    let mut tool_call = app_server
-        .wait_for_json_log_event("ava.tool_call")
-        .await?;
+    let mut tool_call = app_server.wait_for_json_log_event("ava.tool_call").await?;
     let tool_call_object = tool_call
         .as_object_mut()
         .context("tool call log event must be an object")?;

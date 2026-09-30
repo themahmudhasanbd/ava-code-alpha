@@ -2,8 +2,6 @@ use anyhow::Context;
 use anyhow::Result;
 use app_test_support::TestAppServer;
 use app_test_support::create_mock_responses_server_sequence_unchecked;
-use base64::Engine;
-use base64::engine::general_purpose::STANDARD;
 use ava_app_server_protocol::CommandExecOutputDeltaNotification;
 use ava_app_server_protocol::CommandExecOutputStream;
 use ava_app_server_protocol::CommandExecParams;
@@ -20,6 +18,8 @@ use ava_core::exec_env::AVA_APPLY_PATCH_PRESERVE_LINE_ENDINGS_ENV_VAR;
 use ava_exec_server::AVA_EXEC_SERVER_URL_ENV_VAR;
 use ava_protocol::models::BUILT_IN_PERMISSION_PROFILE_READ_ONLY;
 use ava_protocol::shell_environment::OPENAI_FEDERATION_RULE_ID_ENV_VAR;
+use base64::Engine;
+use base64::engine::general_purpose::STANDARD;
 use pretty_assertions::assert_eq;
 use std::collections::HashMap;
 use std::path::Path;
@@ -448,10 +448,7 @@ async fn command_exec_permission_profile_starts_selected_network_proxy() -> Resu
     let server = create_mock_responses_server_sequence_unchecked(Vec::new()).await;
     let ava_home = TempDir::new()?;
     create_config_toml(ava_home.path(), &server.uri(), "never")?;
-    insert_networked_permission_profile_config(
-        ava_home.path(),
-        /*default_permissions*/ None,
-    )?;
+    insert_networked_permission_profile_config(ava_home.path(), /*default_permissions*/ None)?;
     let mut mcp = TestAppServer::builder()
         .with_ava_home(ava_home.path())
         .without_auto_env()

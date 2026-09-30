@@ -116,10 +116,7 @@ impl FeedbackRequestProcessor {
         {
             tracing::info!(target: "feedback_tags", chatgpt_user_id);
         }
-        if let Some(account_id) = auth
-            .as_ref()
-            .and_then(ava_login::AvaAuth::get_account_id)
-        {
+        if let Some(account_id) = auth.as_ref().and_then(ava_login::AvaAuth::get_account_id) {
             tracing::info!(target: "feedback_tags", account_id);
         }
         let snapshot = self.feedback.snapshot(conversation_id);

@@ -17,18 +17,11 @@ const OMNIROUTE_PROVIDER: ProviderPublic = {
   baseUrl: "http://127.0.0.1:20128/v1",
   authKind: "api_key",
   hasSecret: true,
-  models: [
-    { id: "powerful-coding-combo" },
-    { id: "gpt-6-astra" },
-    { id: "gpt-5.6-sol" },
-    { id: "gpt-5.6-terra" },
-    { id: "gpt-5.6-luna" },
-    { id: "gpt-5.5" },
-  ],
-  defaultModelId: "powerful-coding-combo",
+  models: [],
+  defaultModelId: "",
   supportsReasoning: true,
   supportsVision: true,
-  supportedThinkingLevels: ["off", "low", "medium", "high", "max"] as ThinkingLevel[],
+  supportedThinkingLevels: ["off", "low", "medium", "max", "ultra"] as ThinkingLevel[],
   createdAt: new Date().toISOString(),
   updatedAt: new Date().toISOString(),
 };
@@ -65,63 +58,7 @@ export function registerProviderIpc({
   handle(IPC.invoke.providersListModels, async () => {
     if (!host) {
       return {
-        models: [
-          {
-            modelId: "powerful-coding-combo",
-            displayName: "Powerful Coding Combo",
-            providerId: "omniroute",
-            reasoning: true,
-            capabilities: ["text", "tools", "vision", "reasoning"],
-            supportedThinkingLevels: ["off", "low", "medium", "high", "max"],
-            source: "bundled",
-            isDefault: true,
-          },
-          {
-            modelId: "gpt-6-astra",
-            displayName: "GPT-6 Astra",
-            providerId: "omniroute",
-            reasoning: true,
-            capabilities: ["text", "tools", "vision", "reasoning"],
-            supportedThinkingLevels: ["off", "low", "medium", "high", "max"],
-            source: "bundled",
-          },
-          {
-            modelId: "gpt-5.6-sol",
-            displayName: "GPT-5.6 Sol",
-            providerId: "omniroute",
-            reasoning: true,
-            capabilities: ["text", "tools", "vision", "reasoning"],
-            supportedThinkingLevels: ["off", "low", "medium", "high", "max"],
-            source: "bundled",
-          },
-          {
-            modelId: "gpt-5.6-terra",
-            displayName: "GPT-5.6 Terra",
-            providerId: "omniroute",
-            reasoning: true,
-            capabilities: ["text", "tools", "vision", "reasoning"],
-            supportedThinkingLevels: ["off", "low", "medium", "high", "max"],
-            source: "bundled",
-          },
-          {
-            modelId: "gpt-5.6-luna",
-            displayName: "GPT-5.6 Luna",
-            providerId: "omniroute",
-            reasoning: true,
-            capabilities: ["text", "tools", "vision", "reasoning"],
-            supportedThinkingLevels: ["off", "low", "medium", "high", "max"],
-            source: "bundled",
-          },
-          {
-            modelId: "gpt-5.5",
-            displayName: "GPT-5.5",
-            providerId: "omniroute",
-            reasoning: true,
-            capabilities: ["text", "tools", "vision", "reasoning"],
-            supportedThinkingLevels: ["off", "low", "medium", "high", "max"],
-            source: "bundled",
-          },
-        ],
+        models: [],
         source: "fallback",
       };
     }
@@ -136,26 +73,13 @@ export function registerProviderIpc({
         providerId: "omniroute",
         reasoning: Boolean(m.supportedReasoningEfforts?.length),
         capabilities: ["text", "tools", "vision", "reasoning"],
-        supportedThinkingLevels: ["off", "low", "medium", "high", "max"],
+        supportedThinkingLevels: ["off", "low", "medium", "max", "ultra"],
         source: "discovered",
         isDefault: m.isDefault || false,
       }));
 
-      // Ensure powerful-coding-combo is at the top if present or add as default
-      const hasCombo = models.some((m: any) => m.modelId === "powerful-coding-combo");
-      if (!hasCombo) {
-        models.unshift({
-          modelId: "powerful-coding-combo",
-          displayName: "Powerful Coding Combo",
-          description: "AvA Code Optimized Coding Pipeline",
-          providerId: "omniroute",
-          reasoning: true,
-          capabilities: ["text", "tools", "vision", "reasoning"],
-          supportedThinkingLevels: ["off", "low", "medium", "high", "max"],
-          source: "bundled",
-          isDefault: true,
-        });
-      }
+      // Models from core are authoritative; sort default model first if flagged
+      models.sort((a: any, b: any) => (b.isDefault ? 1 : 0) - (a.isDefault ? 1 : 0));
 
       return { models, source: "remote" };
     } catch (e) {

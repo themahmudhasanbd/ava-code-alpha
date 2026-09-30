@@ -1,8 +1,6 @@
 use std::path::PathBuf;
 use std::sync::Arc;
 
-use chrono::DateTime;
-use chrono::Utc;
 use ava_app_server_protocol::AvaErrorInfo;
 use ava_app_server_protocol::ThreadTimelineEntry;
 use ava_protocol::SanitizedGitUrl;
@@ -24,6 +22,8 @@ use ava_protocol::protocol::ThreadSource;
 use ava_protocol::protocol::TokenUsage;
 use ava_rollout::RolloutItem;
 use ava_utils_absolute_path::AbsolutePathBuf;
+use chrono::DateTime;
+use chrono::Utc;
 use serde::Deserialize;
 use serde::Deserializer;
 use serde::Serialize;

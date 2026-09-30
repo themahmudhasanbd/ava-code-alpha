@@ -76,9 +76,7 @@ async fn explicit_update_migrates_running_and_stopped_installations() {
         super::update_once(
             &scheduled,
             &legacy,
-            &executable_identity(&legacy.managed_ava_bin)
-                .await
-                .unwrap(),
+            &executable_identity(&legacy.managed_ava_bin).await.unwrap(),
             &mut test_terminate(),
             super::UpdateTrigger::Scheduled,
         )
@@ -171,10 +169,7 @@ printf '{release}' > "$root/auto-update-version"
         );
         assert!(!dedicated.join(".migration-current").exists());
         assert_eq!(root.join("current").canonicalize().unwrap(), previous);
-        assert_eq!(
-            std::fs::read(&legacy.managed_ava_bin).unwrap(),
-            legacy_bin
-        );
+        assert_eq!(std::fs::read(&legacy.managed_ava_bin).unwrap(), legacy_bin);
         assert_eq!(
             std::fs::read_to_string(&legacy.settings_file).unwrap(),
             settings
@@ -741,10 +736,7 @@ async fn check_manual_update_restart(package_directory: &str) {
     assert_eq!(output.status, UpdateStatus::Updated);
     assert_eq!(output.installed_version.as_deref(), Some(version));
     assert_eq!(output.running_version.as_deref(), Some(version));
-    assert_eq!(
-        output.managed_ava_path,
-        standalone.join("current/bin/ava")
-    );
+    assert_eq!(output.managed_ava_path, standalone.join("current/bin/ava"));
     let restarted = current_pid();
     assert_ne!(restarted, before);
     let mut response = Vec::new();
@@ -851,9 +843,7 @@ async fn update_rejects_a_package_root_change_during_download() {
     }
     let home = TempDir::new().unwrap();
     let (daemon, _) = manual_update_daemon(&home);
-    let identity = executable_identity(&daemon.managed_ava_bin)
-        .await
-        .unwrap();
+    let identity = executable_identity(&daemon.managed_ava_bin).await.unwrap();
     let error = manual_update_once(
         &ChangingRoot(home.path()),
         &daemon,
@@ -874,9 +864,7 @@ async fn daemon_owned_updates_require_and_request_an_isolated_installer() {
     let root = home.path().join("packages/app-server-daemon");
     std::fs::rename(home.path().join("packages/standalone"), &root).unwrap();
     daemon.managed_ava_bin = root.join("current/ava");
-    let identity = executable_identity(&daemon.managed_ava_bin)
-        .await
-        .unwrap();
+    let identity = executable_identity(&daemon.managed_ava_bin).await.unwrap();
     let old = FakeInstallerHttp::new(InstallerResponse::Success(
         b"# AVA_INSTALL_IF_LATEST\nexit 0\n".to_vec(),
     ));

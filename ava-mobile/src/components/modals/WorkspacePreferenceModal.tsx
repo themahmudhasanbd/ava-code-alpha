@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -47,20 +47,75 @@ import {
 import { Surface } from "@/components/kit";
 import { WorkspaceModal } from "./WorkspaceModal";
 import { APP } from "@/config/app";
+import { Switch } from "@/components/ui/switch";
+import { readTextFile, writeTextFile } from "@/core/api/files";
+
+interface ProjectContextPrefs {
+  enabled: boolean;
+  rules: boolean;
+  workflows: boolean;
+  design: boolean;
+  plans: boolean;
+}
+
+const DEFAULT_PROJECT_CONTEXT: ProjectContextPrefs = {
+  enabled: true,
+  rules: true,
+  workflows: true,
+  design: true,
+  plans: true,
+};
+
+const PROJECT_CONTEXT_KEYS: (keyof ProjectContextPrefs)[] = [
+  "enabled",
+  "rules",
+  "workflows",
+  "design",
+  "plans",
+];
+
+/** Extract [project_context] booleans from a config.toml's text. Missing keys default to true. */
+function parseProjectContextToml(text: string): ProjectContextPrefs {
+  const result = { ...DEFAULT_PROJECT_CONTEXT };
+  const sectionMatch = text.match(/\[project_context\]([\s\S]*?)(?=\n\[[^\]]+\]|\s*$)/);
+  if (!sectionMatch) return result;
+  const section = sectionMatch[1];
+  for (const key of PROJECT_CONTEXT_KEYS) {
+    const m = section.match(new RegExp(`^${key}\\s*=\\s*(true|false)`, "m"));
+    if (m) result[key] = m[1] === "true";
+  }
+  return result;
+}
+
+/** Rewrite the [project_context] section, preserving the rest of the file. */
+function updateProjectContextToml(text: string, pc: ProjectContextPrefs): string {
+  const section = [
+    "[project_context]",
+    `enabled = ${pc.enabled}`,
+    `rules = ${pc.rules}`,
+    `workflows = ${pc.workflows}`,
+    `design = ${pc.design}`,
+    `plans = ${pc.plans}`,
+    "",
+  ].join("\n");
+  const sectionRegex = /\[project_context\][\s\S]*?(?=\n\[[^\]]+\]|\s*$)/;
+  if (sectionRegex.test(text)) {
+    return text.replace(sectionRegex, section.trimEnd());
+  }
+  const trimmed = text.trimEnd();
+  return trimmed ? `${trimmed}\n\n${section}` : section;
+}
 import { storage } from "@/core/storage";
 import { useAva } from "@/state/ava-provider";
 import { useDirectory, useModels, useSessions } from "@/state/queries";
 import type { ChatMessage, Session } from "@/core/types";
 import { COLORS, useTheme } from "@/theme/colors";
 import { font, FONTS, mono } from "@/theme/fonts";
+import { REASONING_EFFORTS, SANDBOX_MODES} from "@/config/models";
 
 const ALIAS_KEY = "ava_project_aliases";
-const EFFORT_OPTIONS = ["low", "medium", "high", "xhigh"];
-const SANDBOX_OPTIONS = [
-  { id: "danger-full-access", label: "Full Access" },
-  { id: "read-only", label: "Read Only" },
-  { id: "workspace-only", label: "Workspace" },
-];
+const EFFORT_OPTIONS = [...REASONING_EFFORTS];
+
 
 interface Props {
   open: boolean;
@@ -92,8 +147,57 @@ export function WorkspacePreferenceModal({
     sandbox,
     setSandbox,
     setActiveSessionId,
+    rpc,
   } = useAva();
 
+  // Project context (.ava-code) preferences — persisted to the project's
+  // .ava-code/config.toml so the server picks them up on the next turn.
+  const [projectContext, setProjectContextState] = useState<ProjectContextPrefs>(
+    DEFAULT_PROJECT_CONTEXT
+  );
+  const [showAllSessions, setShowAllSessions] = useState(false);
+  const [pcSaving, setPcSaving] = useState(false);
+
+  const projectContextTomlPath = useMemo(
+    () => (workingCwd ? `${workingCwd.replace(/\/+$/, "")}/.ava-code/config.toml` : null),
+    [workingCwd]
+  );
+
+  const loadProjectContext = useCallback(async () => {
+    if (!rpc || !projectContextTomlPath) return;
+    try {
+      const text = await readTextFile(rpc, projectContextTomlPath);
+      setProjectContextState(parseProjectContextToml(text));
+    } catch {
+      setProjectContextState(DEFAULT_PROJECT_CONTEXT);
+    }
+  }, [rpc, projectContextTomlPath]);
+
+  useEffect(() => {
+    if (open) loadProjectContext();
+  }, [open, loadProjectContext]);
+
+  const setProjectContext = useCallback(
+    async (next: ProjectContextPrefs) => {
+      setProjectContextState(next);
+      if (!rpc || !projectContextTomlPath || pcSaving) return;
+      setPcSaving(true);
+      try {
+        let text = "";
+        try {
+          text = await readTextFile(rpc, projectContextTomlPath);
+        } catch {
+          text = "";
+        }
+        await writeTextFile(rpc, projectContextTomlPath, updateProjectContextToml(text, next));
+      } catch (e) {
+        Alert.alert("Couldn't save", "The project context preference couldn't be written.");
+      } finally {
+        setPcSaving(false);
+      }
+    },
+    [rpc, projectContextTomlPath, pcSaving]
+  );
   const { data: allSessions = [], isLoading: isLoadingSessions } = useSessions();
   const { data: models = [] } = useModels();
   const { data: dirEntries = [], isLoading: isLoadingDir } = useDirectory(workingCwd);
@@ -457,7 +561,7 @@ export function WorkspacePreferenceModal({
                     showsHorizontalScrollIndicator={false}
                     contentContainerStyle={styles.chipsScroll}
                   >
-                    {models.slice(0, 4).map((m) => {
+                    {models.map((m) => {
                       const isSel = m.id === modelId;
                       return (
                         <TouchableOpacity
@@ -531,7 +635,7 @@ export function WorkspacePreferenceModal({
                   </View>
 
                   <View style={styles.chipsRow}>
-                    {SANDBOX_OPTIONS.map((opt) => {
+                    {SANDBOX_MODES.map((opt) => {
                       const isSel = sandbox === opt.id;
                       return (
                         <TouchableOpacity
@@ -554,6 +658,52 @@ export function WorkspacePreferenceModal({
                     })}
                   </View>
                 </View>
+              </Surface>
+
+              {/* 3b. Project Context (.ava-code) */}
+              <Text style={[styles.sectionHeading, font("bold")]}>PROJECT CONTEXT</Text>
+              <Surface style={styles.configCard}>
+                <View style={styles.configItemRow}>
+                  <View style={styles.configItemLabelCol}>
+                    <View style={styles.configIconLabelRow}>
+                      <Brain size={14} color={COLORS.primary} />
+                      <Text style={[styles.configItemTitle, font("semibold")]}>
+                        Context Index
+                      </Text>
+                    </View>
+                    <Text style={[styles.configItemSub, font("regular")]}>
+                      Inject .ava-code index with each prompt
+                    </Text>
+                  </View>
+                  <Switch
+                    checked={projectContext.enabled}
+                    onCheckedChange={(v) => setProjectContext({ ...projectContext, enabled: v })}
+                  />
+                </View>
+                {(
+                  [
+                    { key: "rules", label: "Rules", sub: ".ava-code/rules/index.md" },
+                    { key: "workflows", label: "Workflows", sub: ".ava-code/workflows/index.md" },
+                    { key: "design", label: "Design", sub: ".ava-code/design/index.md" },
+                    { key: "plans", label: "Plans", sub: ".ava-code/plans/index.md" },
+                  ] as const
+                ).map((item) => (
+                  <View key={item.key} style={styles.configItemRow}>
+                    <View style={styles.configItemLabelCol}>
+                      <Text style={[styles.configItemTitle, font("semibold")]}>
+                        {item.label}
+                      </Text>
+                      <Text style={[styles.configItemSub, font("regular")]}>{item.sub}</Text>
+                    </View>
+                    <Switch
+                      checked={projectContext[item.key]}
+                      disabled={!projectContext.enabled}
+                      onCheckedChange={(v) =>
+                        setProjectContext({ ...projectContext, [item.key]: v })
+                      }
+                    />
+                  </View>
+                ))}
               </Surface>
 
               {/* 4. Active Session Analytics */}
@@ -690,7 +840,7 @@ export function WorkspacePreferenceModal({
                     </TouchableOpacity>
                   </View>
                 ) : (
-                  workspaceSessions.slice(0, 6).map((sess, idx) => {
+                  (showAllSessions ? workspaceSessions : workspaceSessions.slice(0, 6)).map((sess, idx) => {
                     const isCurrent = sess.id === activeSessionId;
                     return (
                       <TouchableOpacity
@@ -734,6 +884,24 @@ export function WorkspacePreferenceModal({
                       </TouchableOpacity>
                     );
                   })
+                )}
+                {workspaceSessions.length > 6 && (
+                  <TouchableOpacity
+                    style={styles.viewAllRow}
+                    onPress={() => setShowAllSessions((v) => !v)}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={[styles.viewAllText, font("medium")]}>
+                      {showAllSessions
+                        ? "Show less"
+                        : `View all ${workspaceSessions.length} sessions`}
+                    </Text>
+                    <ChevronRight
+                      size={14}
+                      color={COLORS.primary}
+                      style={showAllSessions ? { transform: [{ rotate: "90deg" }] } : undefined}
+                    />
+                  </TouchableOpacity>
                 )}
               </Surface>
             </ScrollView>
@@ -1288,5 +1456,18 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: "700",
     color: COLORS.primaryForeground,
+  },
+  viewAllRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 4,
+    paddingVertical: 10,
+    borderTopWidth: 1,
+    borderTopColor: COLORS.border,
+  },
+  viewAllText: {
+    fontSize: 13,
+    color: COLORS.primary,
   },
 });

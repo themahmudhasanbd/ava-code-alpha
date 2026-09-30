@@ -550,6 +550,12 @@ pub struct BrowserToml {
     pub executable_path: Option<String>,
     /// Path to browser storage state JSON file (cookies/localStorage persistence).
     pub storage_state_path: Option<String>,
+    /// Approval gating: "never" | "mutating" (default) | "always".
+    pub approval_mode: Option<String>,
+    /// Whether evaluate_js action is permitted (default: true).
+    pub allow_evaluate_js: Option<bool>,
+    /// Origins that never need navigation approval.
+    pub allowed_origins: Option<Vec<String>>,
 }
 
 /// Effective browser automation settings after defaults are applied.
@@ -566,6 +572,9 @@ pub struct BrowserConfig {
     pub screenshot_dir: Option<String>,
     pub executable_path: Option<String>,
     pub storage_state_path: Option<String>,
+    pub approval_mode: String,
+    pub allow_evaluate_js: bool,
+    pub allowed_origins: Vec<String>,
 }
 
 impl Default for BrowserConfig {
@@ -582,6 +591,9 @@ impl Default for BrowserConfig {
             screenshot_dir: None,
             executable_path: None,
             storage_state_path: None,
+            approval_mode: "mutating".to_string(),
+            allow_evaluate_js: true,
+            allowed_origins: Vec::new(),
         }
     }
 }
@@ -609,6 +621,9 @@ impl From<BrowserToml> for BrowserConfig {
             screenshot_dir: toml.screenshot_dir,
             executable_path: toml.executable_path,
             storage_state_path: toml.storage_state_path,
+            approval_mode: toml.approval_mode.unwrap_or(defaults.approval_mode),
+            allow_evaluate_js: toml.allow_evaluate_js.unwrap_or(defaults.allow_evaluate_js),
+            allowed_origins: toml.allowed_origins.unwrap_or(defaults.allowed_origins),
         }
     }
 }

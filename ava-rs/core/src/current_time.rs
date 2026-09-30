@@ -5,10 +5,10 @@ use std::time::Duration;
 
 use anyhow::Result;
 use anyhow::anyhow;
-use chrono::DateTime;
-use chrono::Utc;
 use ava_features::CurrentTimeSource;
 use ava_protocol::ThreadId;
+use chrono::DateTime;
+use chrono::Utc;
 
 use crate::config::CurrentTimeReminderConfig;
 

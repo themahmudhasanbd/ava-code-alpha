@@ -1,8 +1,8 @@
 use anyhow::Context as _;
 use anyhow::Result;
 use anyhow::anyhow;
-use base64::Engine as _;
 use ava_utils_home_dir::find_ava_home;
+use base64::Engine as _;
 use rama_net::tls::ApplicationProtocol;
 use rama_tls_rustls::dep::pki_types::CertificateDer;
 use rama_tls_rustls::dep::pki_types::PrivateKeyDer;
@@ -184,8 +184,7 @@ pub(crate) struct ManagedMitmCaTrustBundle {
 }
 
 fn managed_ca_dir() -> Result<PathBuf> {
-    let ava_home =
-        find_ava_home().context("failed to resolve AVA_HOME for managed MITM CA")?;
+    let ava_home = find_ava_home().context("failed to resolve AVA_HOME for managed MITM CA")?;
     Ok(ava_home.join(MANAGED_MITM_CA_DIR).to_path_buf())
 }
 

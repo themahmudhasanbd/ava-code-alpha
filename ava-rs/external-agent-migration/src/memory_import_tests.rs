@@ -48,8 +48,7 @@ fn copies_only_selected_projects_and_recopies_changed_content() {
     );
     let selected_memory = BTreeSet::from(["project-a"]);
 
-    let outcome =
-        copy_resources(&ava_home, &all_files, &selected_memory).expect("copy project A");
+    let outcome = copy_resources(&ava_home, &all_files, &selected_memory).expect("copy project A");
     assert_eq!(outcome.synchronized_projects, vec!["project-a"]);
     assert_eq!(outcome.failures, Vec::new());
     assert_eq!(
@@ -127,8 +126,8 @@ fn preserves_project_successes_and_reports_each_failed_selection() {
     let memory_files = discover_external_memory_files(&source_home).expect("discover memories");
     fs::remove_file(project_b_source).expect("remove project B source after discovery");
     let selected_memory = BTreeSet::from(["missing-project", "project-a", "project-b"]);
-    let outcome = copy_resources(&ava_home, &memory_files, &selected_memory)
-        .expect("copy selected memories");
+    let outcome =
+        copy_resources(&ava_home, &memory_files, &selected_memory).expect("copy selected memories");
 
     assert_eq!(outcome.synchronized_projects, vec!["project-a"]);
     assert_eq!(
@@ -264,8 +263,7 @@ fn does_not_import_a_new_project_without_a_reliable_cwd() {
         projects_needing_import(&ava_home, &memory_files).expect("detect memories"),
         BTreeSet::new()
     );
-    let outcome =
-        copy_resources(&ava_home, &memory_files, &selected_memory).expect("attempt copy");
+    let outcome = copy_resources(&ava_home, &memory_files, &selected_memory).expect("attempt copy");
     assert_eq!(
         outcome,
         MemoryImportOutcome {
@@ -323,8 +321,7 @@ fn removes_an_existing_unscoped_target_when_cwd_is_unavailable() {
         BTreeSet::from(["project-a".to_string()])
     );
     assert_eq!(
-        copy_resources(&ava_home, &memory_files, &selected_memory)
-            .expect("remove unscoped target"),
+        copy_resources(&ava_home, &memory_files, &selected_memory).expect("remove unscoped target"),
         MemoryImportOutcome {
             synchronized_projects: vec!["project-a".to_string()],
             failures: Vec::new(),

@@ -31,6 +31,7 @@ import {
   RefreshCw,
   Search,
   Server,
+  ShieldCheck,
   Terminal,
   Timer,
   Wrench,
@@ -38,15 +39,25 @@ import {
 } from "lucide-react-native";
 import type { MessagePart } from "@/core/types";
 
+export interface ToolDisplayInfo {
+  isMcp: boolean;
+  serverName?: string;
+  toolName: string;
+  displayTitle: string;
+  chipLabel: string;
+  subtitle: string;
+  icon: LucideIcon;
+}
+
 /**
  * Checks if a given tool invocation is an MCP (Model Context Protocol) tool.
  */
 export function isMcpTool(toolName?: string, meta?: MessagePart["meta"]): boolean {
-  if (!toolName && !meta?.server) return false;
   if (meta?.server && meta.server !== "builtin" && meta.server !== "core" && meta.server !== "terminal") {
     return true;
   }
   const raw = (toolName || "").toLowerCase().trim();
+  if (!raw) return false;
 
   // Core non-MCP commands
   if (
@@ -56,7 +67,11 @@ export function isMcpTool(toolName?: string, meta?: MessagePart["meta"]): boolea
     raw === "apply_patch" ||
     raw === "view_image" ||
     raw === "terminal" ||
-    raw === "shell"
+    raw === "shell" ||
+    raw === "file change" ||
+    raw === "file read" ||
+    raw === "web search" ||
+    raw === "browser"
   ) {
     return false;
   }
@@ -82,108 +97,103 @@ export function isMcpTool(toolName?: string, meta?: MessagePart["meta"]): boolea
 }
 
 /**
- * Clean and format backend tool names by stripping internal prefixes and formatting server names.
+ * Parses MCP server and tool name from toolName and meta.
  */
-export function displayToolName(name?: string): string {
-  if (!name) return "Tool";
-  let cleaned = name.trim();
+export function parseMcpDetails(
+  rawToolName?: string,
+  meta?: MessagePart["meta"]
+): { server: string; tool: string } {
+  let server = (meta?.server || "").trim();
+  let tool = (rawToolName || "").trim();
 
-  // Strip default_api:, mcp_, vps_, etc.
-  cleaned = cleaned.replace(/^default_api:/i, "");
-  cleaned = cleaned.replace(/^mcp_puppeteer_puppeteer_/i, "puppeteer: ");
-  cleaned = cleaned.replace(/^mcp_puppeteer_/i, "puppeteer: ");
-  cleaned = cleaned.replace(/^(?:vps|mcp)[_:-]+/i, "");
-  cleaned = cleaned.replace(/^puppeteer_puppeteer_/i, "puppeteer: ");
-  cleaned = cleaned.replace(/^puppeteer_/i, "puppeteer: ");
-  cleaned = cleaned.replace(/^browser_/i, "browser: ");
-  cleaned = cleaned.replace(/^omniroute_web_search/i, "web search");
-  cleaned = cleaned.replace(/^cf_/i, "cloudflare_");
-  cleaned = cleaned.replace(/^cpanel_/i, "cpanel: ");
-  cleaned = cleaned.replace(/^cloudflare_/i, "cloudflare: ");
-  cleaned = cleaned.replace(/^github_/i, "github: ");
-  cleaned = cleaned.replace(/^mysql_/i, "mysql: ");
-  cleaned = cleaned.replace(/^mail_/i, "mail: ");
-  cleaned = cleaned.replace(/^memory_/i, "memory: ");
-  cleaned = cleaned.replace(/^mem_/i, "memory: ");
-  cleaned = cleaned.replace(/^meta_ads_meta_/i, "meta: ");
-  cleaned = cleaned.replace(/^meta_facebook_instagram_meta_/i, "meta: ");
-  cleaned = cleaned.replace(/^meta_/i, "meta: ");
+  // Strip default_api: prefix
+  tool = tool.replace(/^default_api:/i, "");
 
-  // Convert snake_case to Title Case words
-  if (!cleaned.includes(" ")) {
-    cleaned = cleaned
-      .split("_")
-      .filter(Boolean)
-      .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
-      .join(" ");
+  // Check for custom connector prefix e.g. mcp_custom_E8Owa--execute_command
+  const customMatch = tool.match(/^mcp_custom_[a-zA-Z0-9]+--(.*)$/);
+  if (customMatch && customMatch[1]) {
+    tool = customMatch[1];
+    if (!server || /custom/i.test(server)) {
+      server = "vps";
+    }
   }
 
-  // Handle prefix styling for nice badges
-  cleaned = cleaned
-    .replace(/^Cpanel:\s*/i, "cPanel · ")
-    .replace(/^Cloudflare:\s*/i, "Cloudflare · ")
-    .replace(/^Github:\s*/i, "GitHub · ")
-    .replace(/^Mysql:\s*/i, "MySQL · ")
-    .replace(/^Mail:\s*/i, "Mail · ")
-    .replace(/^Memory:\s*/i, "Memory · ")
-    .replace(/^Meta:\s*/i, "Meta · ")
-    .replace(/^Puppeteer:\s*/i, "Puppeteer · ")
-    .replace(/^Browser:\s*/i, "Browser · ");
-
-  if (
-    cleaned.toLowerCase() === "exec command" ||
-    cleaned.toLowerCase() === "execute command" ||
-    cleaned.toLowerCase() === "exec" ||
-    cleaned.toLowerCase() === "terminal" ||
-    cleaned.toLowerCase() === "shell"
-  ) {
-    return "Terminal";
+  // Resolve known server strings
+  const lowerServer = server.toLowerCase();
+  if (lowerServer.includes("vsy0r") || lowerServer.includes("21st")) {
+    server = "21st.dev";
+  } else if (lowerServer.includes("e8owa") || lowerServer.includes("vps")) {
+    server = "vps";
+  } else if (lowerServer.includes("cpanel")) {
+    server = "cpanel";
+  } else if (lowerServer.includes("cloudflare") || lowerServer.includes("cf")) {
+    server = "cloudflare";
+  } else if (lowerServer.includes("github")) {
+    server = "github";
+  } else if (lowerServer.includes("mysql")) {
+    server = "mysql";
+  } else if (lowerServer.includes("puppeteer")) {
+    server = "puppeteer";
+  } else if (lowerServer.includes("memory")) {
+    server = "memory";
+  } else if (server.startsWith("mcp_custom_") || server.startsWith("custom_")) {
+    server = "vps";
   }
 
-  if (
-    cleaned.toLowerCase() === "read file" ||
-    cleaned.toLowerCase() === "get file contents" ||
-    cleaned.toLowerCase() === "get file content"
-  ) {
-    return "Read File";
+  // Clean tool sub-namespaces
+  if (tool.startsWith("cpanel_")) {
+    server = server || "cpanel";
+    tool = tool.slice("cpanel_".length);
+  } else if (tool.startsWith("cf_")) {
+    server = server || "cloudflare";
+    tool = tool.slice("cf_".length);
+  } else if (tool.startsWith("cloudflare_")) {
+    server = server || "cloudflare";
+    tool = tool.slice("cloudflare_".length);
+  } else if (tool.startsWith("mysql_")) {
+    server = server || "mysql";
+    tool = tool.slice("mysql_".length);
+  } else if (tool.startsWith("github_")) {
+    server = server || "github";
+    tool = tool.slice("github_".length);
+  } else if (tool.startsWith("memory_")) {
+    server = server || "memory";
+    tool = tool.slice("memory_".length);
+  } else if (tool.startsWith("puppeteer_puppeteer_")) {
+    server = server || "puppeteer";
+    tool = tool.slice("puppeteer_puppeteer_".length);
+  } else if (tool.startsWith("puppeteer_")) {
+    server = server || "puppeteer";
+    tool = tool.slice("puppeteer_".length);
+  } else if (tool.startsWith("mcp_")) {
+    tool = tool.slice("mcp_".length);
   }
 
-  if (cleaned.toLowerCase() === "view image") {
-    return "View Image";
-  }
+  // Clean trailing punctuation
+  server = server.replace(/[()]/g, "").trim() || "mcp";
+  tool = tool.trim() || "tool";
 
-  if (
-    cleaned.toLowerCase() === "apply patch" ||
-    cleaned.toLowerCase() === "file change"
-  ) {
-    return "File Change";
-  }
-
-  return cleaned || "Tool";
+  return { server, tool };
 }
 
 function extractSummaryFromObject(obj: any): string {
   if (!obj || typeof obj !== "object") return "";
   if (obj.path && typeof obj.path === "string") return obj.path.split("/").pop() || obj.path;
   if (obj.file && typeof obj.file === "string") return obj.file.split("/").pop() || obj.file;
-  if (obj.query && typeof obj.query === "string") return `"${obj.query.slice(0, 45)}"`;
-  if (obj.pattern && typeof obj.pattern === "string") return `"${obj.pattern.slice(0, 45)}"`;
+  if (obj.query && typeof obj.query === "string") return `"${obj.query.slice(0, 40)}"`;
+  if (obj.pattern && typeof obj.pattern === "string") return `"${obj.pattern.slice(0, 40)}"`;
   if (obj.domain && typeof obj.domain === "string") return obj.domain;
   if (obj.table && typeof obj.table === "string") return `table: ${obj.table}`;
   if (obj.database && typeof obj.database === "string") return `db: ${obj.database}`;
   if (obj.email && typeof obj.email === "string") return obj.email;
-  if (obj.url && typeof obj.url === "string") return obj.url.slice(0, 50);
-  if (obj.cmd && typeof obj.cmd === "string") {
-    const firstLine = obj.cmd.trim().split("\n")[0] || obj.cmd;
-    return firstLine.length > 50 ? firstLine.slice(0, 47) + "…" : firstLine;
-  }
+  if (obj.url && typeof obj.url === "string") return obj.url.slice(0, 45);
   if (obj.name && typeof obj.name === "string") return obj.name;
   return "";
 }
 
 /**
  * Returns a short, clean, human-readable subtitle for tool invocations (e.g. filename, query, domain).
- * Avoids dumping raw JSON objects or huge payloads into single-line headers.
+ * STRICT: NEVER returns raw JSON or massive command dumps.
  */
 export function getToolSubtitle(part: MessagePart): string {
   if (part.meta?.files && part.meta.files.length > 0) {
@@ -195,7 +205,9 @@ export function getToolSubtitle(part: MessagePart): string {
   if (part.meta?.command) {
     const cmd = part.meta.command.trim();
     const firstLine = cmd.split("\n")[0] || cmd;
-    return firstLine.length > 60 ? firstLine.slice(0, 57) + "…" : firstLine;
+    // Don't show if it's super long or looks like raw script
+    if (firstLine.length > 60 || firstLine.includes("<< 'EOF'")) return "";
+    return firstLine;
   }
 
   const inp = part.input;
@@ -211,8 +223,11 @@ export function getToolSubtitle(part: MessagePart): string {
         return "";
       }
     }
-    const firstLine = trimmed.split("\n")[0] || trimmed;
-    return firstLine.length > 60 ? firstLine.slice(0, 57) + "…" : firstLine;
+    // If it's a plain string and short, return it
+    if (trimmed.length < 50 && !trimmed.includes("\n") && !trimmed.includes("{")) {
+      return trimmed;
+    }
+    return "";
   }
 
   if (typeof inp === "object") {
@@ -222,214 +237,354 @@ export function getToolSubtitle(part: MessagePart): string {
   return "";
 }
 
-export function getToolIcon(toolName?: string, meta?: MessagePart["meta"]): LucideIcon {
-  if (meta?.server && meta.server !== "builtin" && meta.server !== "core") {
-    const s = meta.server.toLowerCase();
-    if (s.includes("mysql") || s.includes("db") || s.includes("postgres")) return Database;
-    if (s.includes("git") || s.includes("github")) return GitBranch;
-    if (s.includes("cpanel") || s.includes("vps") || s.includes("server")) return Server;
-    if (s.includes("mail") || s.includes("smtp") || s.includes("postfix")) return Mail;
-    if (s.includes("cloudflare") || s.includes("cf") || s.includes("dns")) return Globe;
-    if (s.includes("memory") || s.includes("mem")) return Brain;
-    if (s.includes("puppeteer") || s.includes("browser") || s.includes("playwright") || s.includes("web")) return Globe;
-    return Plug;
+/**
+ * Comprehensive tool display info:
+ * Guarantees proper MCP naming (server · tool), MCP icon, and NEVER leaks raw input to title.
+ */
+export function getToolDisplayInfo(partOrName: MessagePart | string, meta?: MessagePart["meta"]): ToolDisplayInfo {
+  const part: Partial<MessagePart> = typeof partOrName === "string"
+    ? { toolName: partOrName, meta }
+    : partOrName;
+
+  const rawToolName = part.toolName || "";
+  const partMeta = part.meta || meta;
+  const isMcp = isMcpTool(rawToolName, partMeta);
+  const subtitle = part.kind ? getToolSubtitle(part as MessagePart) : "";
+
+  if (isMcp) {
+    const { server, tool } = parseMcpDetails(rawToolName, partMeta);
+    return {
+      isMcp: true,
+      serverName: server,
+      toolName: tool,
+      displayTitle: `${server} · ${tool}`,
+      chipLabel: `MCP · ${server}`,
+      subtitle,
+      icon: Plug,
+    };
   }
 
-  if (!toolName) return Wrench;
-  const raw = toolName.toLowerCase().trim();
-  const name = displayToolName(toolName).toLowerCase().trim();
+  // Non-MCP standard tools
+  const lower = rawToolName.toLowerCase().trim();
 
-  // Browser, Puppeteer & Web Tools
   if (
-    raw.includes("puppeteer") ||
-    raw.includes("browser") ||
-    raw.includes("playwright") ||
-    raw.includes("navigate") ||
-    raw.includes("web_search") ||
-    raw.includes("omniroute_web_search") ||
-    name.includes("puppeteer") ||
-    name.includes("browser") ||
-    name.includes("web search") ||
-    name.includes("navigate") ||
-    name.includes("fetch web") ||
-    name.includes("browse")
+    lower === "terminal" ||
+    lower === "exec_command" ||
+    lower === "commandexecution" ||
+    lower === "shell" ||
+    lower === "exec" ||
+    lower === "bash"
   ) {
-    if (raw.includes("screenshot") && !raw.includes("puppeteer") && !raw.includes("browser")) {
-      return Image;
-    }
-    return Globe;
+    return {
+      isMcp: false,
+      toolName: "Terminal",
+      displayTitle: "Terminal",
+      chipLabel: "Terminal",
+      subtitle,
+      icon: Terminal,
+    };
   }
 
-  // MCP specific tool checks
-  if (raw.includes("mysql") || name.includes("mysql")) return Database;
-  if (raw.includes("cpanel") || name.includes("cpanel")) return Server;
-  if (raw.includes("mail") || name.includes("mail")) return Mail;
-  if (raw.includes("memory") || name.includes("memory") || raw.includes("mem_")) return Brain;
-  if (raw.includes("cloudflare") || name.includes("cloudflare")) return Globe;
-
-  // Terminal & command execution
   if (
-    name === "terminal" ||
-    name === "execute_command" ||
-    name === "terminal command" ||
-    name === "shell" ||
-    name === "exec" ||
-    name === "bash" ||
-    name === "unified_exec" ||
-    name.includes("command") ||
-    name.includes("shell") ||
-    name.includes("exec")
+    lower === "read_file" ||
+    lower === "file read" ||
+    lower === "get_file_contents" ||
+    lower === "get_file_content"
   ) {
-    return Terminal;
+    return {
+      isMcp: false,
+      toolName: "Read File",
+      displayTitle: "Read File",
+      chipLabel: "File",
+      subtitle,
+      icon: FileText,
+    };
   }
 
-  // File patch and editing
   if (
-    name === "apply_patch" ||
-    name === "file change" ||
-    name.includes("patch") ||
-    name.includes("edit file") ||
-    name.includes("replace file") ||
-    name.includes("save file")
+    lower === "apply_patch" ||
+    lower === "file change" ||
+    lower === "filechange" ||
+    lower === "edit_file"
   ) {
-    return FileEdit;
+    return {
+      isMcp: false,
+      toolName: "Edit File",
+      displayTitle: "Edit File",
+      chipLabel: "Diff",
+      subtitle,
+      icon: FileEdit,
+    };
   }
 
-  // File reading & inspection
+  if (lower === "view_image" || lower === "image") {
+    return {
+      isMcp: false,
+      toolName: "View Image",
+      displayTitle: "View Image",
+      chipLabel: "Image",
+      subtitle,
+      icon: Image,
+    };
+  }
+
   if (
-    name === "read_file" ||
-    name === "get_file_contents" ||
-    name === "get_file_content" ||
-    name.includes("read file") ||
-    name.includes("file read") ||
-    name.includes("cat")
+    lower.includes("browser") ||
+    lower.includes("navigate") ||
+    lower.includes("puppeteer")
   ) {
-    return FileText;
+    return {
+      isMcp: false,
+      toolName: "Browser",
+      displayTitle: "Browser",
+      chipLabel: "Browser",
+      subtitle,
+      icon: Globe,
+    };
   }
 
-  // File creation & folder creation
+  // Normalized name (strips :, _, -) to handle namespaced wire formats
+  // e.g. "web:run", "webrun", "web_run" all -> "webrun"
+  const norm = lower.replace(/[:_\-]/g, "");
+
+  // --- Web Search (P0 fix: was unmapped) ---
+  if (norm === "webrun" || norm === "websearch") {
+    return {
+      isMcp: false,
+      toolName: "Web Search",
+      displayTitle: "Web Search",
+      chipLabel: "Search",
+      subtitle,
+      icon: Search,
+    };
+  }
+
+  // --- Tool Search (P0 fix: was wrongly titled "Web Search") ---
+  if (norm === "toolsearch") {
+    return {
+      isMcp: false,
+      toolName: "Tool Search",
+      displayTitle: "Tool Search",
+      chipLabel: "Search",
+      subtitle,
+      icon: Search,
+    };
+  }
+
+  // --- Memory tools (P1) ---
   if (
-    name === "write_file" ||
-    name === "create_file" ||
-    name.includes("create dir") ||
-    name.includes("mkdir")
+    norm === "memory" ||
+    norm.startsWith("memories") ||
+    norm === "remember" ||
+    norm === "recall"
   ) {
-    return FilePlus;
+    const isSearch = norm.includes("search");
+    return {
+      isMcp: false,
+      toolName: "Memory",
+      displayTitle: isSearch ? "Memory Search" : "Memory",
+      chipLabel: "Memory",
+      subtitle,
+      icon: Database,
+    };
   }
 
-  // File search, grep & directory listing
+  // --- Multi-agent tools (P1) ---
   if (
-    name === "search_files" ||
-    name === "list_directory" ||
-    name === "list_files" ||
-    name === "search" ||
-    name.includes("grep") ||
-    name.includes("search code") ||
-    name.includes("find") ||
-    name.includes("list files") ||
-    name.includes("list dir")
+    norm === "spawnagent" ||
+    norm === "listagents" ||
+    norm === "sendmessage" ||
+    norm === "closeagent" ||
+    norm === "interruptagent" ||
+    norm === "resumeagent" ||
+    norm === "waitagent" ||
+    norm === "sendinput" ||
+    norm === "followuptask" ||
+    norm === "spawnsubagent"
   ) {
-    return FolderSearch;
+    return {
+      isMcp: false,
+      toolName: "Subagent",
+      displayTitle: "Subagent",
+      chipLabel: "Agent",
+      subtitle,
+      icon: Bot,
+    };
   }
 
-  // Images & Media
-  if (name.includes("image") || name.includes("screenshot") || name === "view_image") {
-    return Image;
+  // --- Tasks / Plan (P1) ---
+  if (norm === "todowrite" || norm === "updateplan" || norm === "todo") {
+    return {
+      isMcp: false,
+      toolName: "Plan",
+      displayTitle: norm === "updateplan" ? "Update Plan" : "Tasks",
+      chipLabel: "Plan",
+      subtitle,
+      icon: ListChecks,
+    };
   }
 
-  // Git & Version Control
-  if (name.includes("git") || name.includes("pr") || name.includes("commit") || name.includes("branch")) {
-    if (name.includes("pr") || name.includes("pull request")) return GitPullRequest;
-    if (name.includes("commit")) return GitCommit;
-    return GitBranch;
-  }
-
-  // Database / SQL / MySQL
+  // --- Wait / Poll / Sleep (P1) ---
   if (
-    name.includes("mysql") ||
-    name.includes("database") ||
-    name.includes("sql") ||
-    name.includes("query") ||
-    name.includes("table")
+    norm === "waitforenvironment" ||
+    norm === "sleep" ||
+    norm === "clocksleep" ||
+    norm === "wait" ||
+    norm === "poll"
   ) {
-    return Database;
+    return {
+      isMcp: false,
+      toolName: "Wait",
+      displayTitle: "Wait",
+      chipLabel: "Wait",
+      subtitle,
+      icon: Timer,
+    };
   }
 
-  // Planning & Steps
-  if (name.includes("plan") || name === "spec_plan" || name.includes("step") || name.includes("todo")) {
-    return ListChecks;
-  }
-
-  // Multi-agent & subagents
-  if (name.includes("agent") || name.includes("subagent") || name.includes("delegate")) {
-    return Bot;
-  }
-
-  // User input / communication
-  if (name.includes("user input") || name.includes("message to user") || name.includes("ask user")) {
-    return MessageSquare;
-  }
-
-  // Tests & Verification
-  if (name.includes("test") || name.includes("verify") || name.includes("check")) {
-    return CheckCircle2;
-  }
-
-  // System & Diagnostics
+  // --- User input / questions (P1) ---
   if (
-    name.includes("system") ||
-    name.includes("disk") ||
-    name.includes("process") ||
-    name.includes("cpu")
+    norm === "requestuserinput" ||
+    norm === "requestuserinputasync" ||
+    norm === "askuser" ||
+    norm === "askquestion"
   ) {
-    return Cpu;
+    return {
+      isMcp: false,
+      toolName: "Question",
+      displayTitle: "Question",
+      chipLabel: "Ask",
+      subtitle,
+      icon: MessageSquare,
+    };
   }
 
-  // Time & Delays
-  if (name.includes("time") || name.includes("sleep") || name.includes("wait")) {
-    return Timer;
+  if (norm === "sendmessagetouserasync" || norm === "sendmessage") {
+    return {
+      isMcp: false,
+      toolName: "Message",
+      displayTitle: "Message",
+      chipLabel: "Msg",
+      subtitle,
+      icon: MessageSquare,
+    };
   }
 
-  // MCP generic tools & extensions
-  if (name.includes("mcp") || name.includes("extension") || meta?.server) {
-    return Plug;
+  // --- Image generation (P1) ---
+  if (norm === "imagegen" || norm === "imagegenerate" || norm === "generateimage") {
+    return {
+      isMcp: false,
+      toolName: "Generate Image",
+      displayTitle: "Generate Image",
+      chipLabel: "Image",
+      subtitle,
+      icon: Image,
+    };
   }
 
-  // Default fallback
-  return Wrench;
-}
+  // --- Goals (P2) ---
+  if (norm === "getgoal" || norm === "creategoal" || norm === "updategoal" || norm === "goal") {
+    return {
+      isMcp: false,
+      toolName: "Goal",
+      displayTitle: "Goal",
+      chipLabel: "Goal",
+      subtitle,
+      icon: ListChecks,
+    };
+  }
 
-export interface ToolDisplayInfo {
-  isMcp: boolean;
-  serverName?: string;
-  toolName: string;
-  displayTitle: string;
-  chipLabel: string;
-  subtitle: string;
-  icon: LucideIcon;
+  // --- Context window (P2) ---
+  if (norm === "getcontextremaining" || norm === "newcontextwindow" || norm === "newcontext") {
+    return {
+      isMcp: false,
+      toolName: "Context",
+      displayTitle: "Context",
+      chipLabel: "Ctx",
+      subtitle,
+      icon: Cpu,
+    };
+  }
+
+  // --- Clock / time (P2) ---
+  if (norm === "currtime" || norm === "clockcurrtime" || norm === "gettime" || norm === "time") {
+    return {
+      isMcp: false,
+      toolName: "Time",
+      displayTitle: "Current Time",
+      chipLabel: "Time",
+      subtitle,
+      icon: Clock,
+    };
+  }
+
+  // --- Permissions / plugins (P2) ---
+  if (
+    norm === "requestpermissions" ||
+    norm === "requestplugininstall" ||
+    norm === "listavailablepluginstoinstall"
+  ) {
+    return {
+      isMcp: false,
+      toolName: "Permissions",
+      displayTitle: "Permissions",
+      chipLabel: "Perm",
+      subtitle,
+      icon: ShieldCheck,
+    };
+  }
+
+  // --- write_stdin -> Terminal (P2) ---
+  if (norm === "writestdin" || norm === "stdin") {
+    return {
+      isMcp: false,
+      toolName: "Terminal",
+      displayTitle: "Terminal",
+      chipLabel: "Terminal",
+      subtitle,
+      icon: Terminal,
+    };
+  }
+
+  // --- Generic search fallback (only for true search tools) ---
+  if (lower.includes("search") || lower.includes("find")) {
+    return {
+      isMcp: false,
+      toolName: "Search",
+      displayTitle: "Search",
+      chipLabel: "Search",
+      subtitle,
+      icon: Search,
+    };
+  }
+
+  // Fallback
+  return {
+    isMcp: false,
+    toolName: rawToolName || "Tool",
+    displayTitle: rawToolName ? rawToolName.replace(/_/g, " ") : "Tool",
+    chipLabel: "Tool",
+    subtitle,
+    icon: Wrench,
+  };
 }
 
 /**
- * Summarizes how a tool part should be displayed (icon, labels, MCP status).
- * TimelineScreen uses this for the per-node icon and color.
+ * Backward-compatible helper for code expecting a single string title.
  */
-export function getToolDisplayInfo(
-  partOrName: MessagePart | string,
-  meta?: MessagePart["meta"],
-): ToolDisplayInfo {
-  const toolName = typeof partOrName === "string" ? partOrName : partOrName.toolName ?? "";
-  const partMeta = (typeof partOrName === "string" ? meta : partOrName.meta) ?? meta;
-  const isMcp = isMcpTool(toolName, partMeta);
-  const icon = getToolIcon(toolName, partMeta);
-  const displayTitle = displayToolName(toolName) || toolName || "Tool";
-  const serverName = partMeta?.server;
-  return {
-    isMcp,
-    serverName,
-    toolName,
-    displayTitle,
-    chipLabel: isMcp && serverName ? `MCP \u00b7 ${serverName}` : displayTitle,
-    subtitle: typeof partOrName === "string" ? "" : getToolSubtitle(partOrName),
-    icon,
-  };
+export function displayToolName(name?: string, meta?: MessagePart["meta"]): string {
+  if (!name) return "Tool";
+  const info = getToolDisplayInfo(name, meta);
+  return info.displayTitle;
+}
+
+/**
+ * Returns the appropriate icon. For all MCP tools, returns Plug as requested.
+ */
+export function getToolIcon(toolName?: string, meta?: MessagePart["meta"]): LucideIcon {
+  if (isMcpTool(toolName, meta)) {
+    return Plug;
+  }
+  const info = getToolDisplayInfo(toolName || "", meta);
+  return info.icon;
 }

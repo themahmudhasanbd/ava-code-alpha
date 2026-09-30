@@ -2,7 +2,6 @@ mod environment_accessor;
 mod exec_permission_profile_serde;
 mod find_up;
 
-use bytes::Bytes;
 use ava_protocol::config_types::WindowsSandboxLevel;
 use ava_protocol::config_types::WindowsSandboxProxySettingsMode;
 use ava_protocol::models::ManagedFileSystemPermissions;
@@ -19,6 +18,7 @@ use ava_protocol::permissions::NetworkSandboxPolicy;
 use ava_protocol::protocol::SandboxPolicy;
 use ava_utils_path_uri::LegacyAppPathString;
 use ava_utils_path_uri::PathUri;
+use bytes::Bytes;
 pub use environment_accessor::EnvironmentAccess;
 pub use environment_accessor::EnvironmentAccessExt;
 pub use environment_accessor::EnvironmentAccessKey;

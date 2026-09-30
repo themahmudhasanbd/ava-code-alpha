@@ -36,9 +36,9 @@ mod windows_tcp_attribution;
 
 pub use attribution::PROXY_ATTRIBUTION_TOKEN_ENV_KEY;
 pub use attribution::write_attribution_frame;
+pub use ava_utils_path_uri::Platform;
 pub use certs::CUSTOM_CA_ENV_KEYS;
 pub use certs::is_managed_mitm_ca_trust_bundle_path;
-pub use ava_utils_path_uri::Platform;
 pub use config::NetworkDomainPermission;
 pub use config::NetworkDomainPermissionEntry;
 pub use config::NetworkDomainPermissions;
@@ -82,9 +82,9 @@ pub use process_log_metadata::ExecutorLogIdentity;
 pub use process_log_metadata::NetworkProxyProcessLogMetadata;
 pub use proxy::ALL_PROXY_ENV_KEYS;
 pub use proxy::ALLOW_LOCAL_BINDING_ENV_KEY;
-pub use proxy::Args;
 #[cfg(target_os = "macos")]
 pub use proxy::AVA_PROXY_GIT_SSH_COMMAND_MARKER;
+pub use proxy::Args;
 pub use proxy::DEFAULT_NO_PROXY_VALUE;
 pub use proxy::ManagedNetworkSandboxContext;
 pub use proxy::ManagedProxyRouting;

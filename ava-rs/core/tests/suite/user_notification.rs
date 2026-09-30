@@ -55,12 +55,11 @@ mv "${tmp_path}" "${payload_path}""#,
         .await?;
 
     // 1) Normal user input – should hit server once.
-    ava
-        .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
-            text: "hello world".into(),
-            text_elements: Vec::new(),
-        }]))
-        .await?;
+    ava.start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
+        text: "hello world".into(),
+        text_elements: Vec::new(),
+    }]))
+    .await?;
     wait_for_event(&ava, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
 
     // We fork the notify script, so we need to wait for it to write to the file.

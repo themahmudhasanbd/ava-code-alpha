@@ -731,10 +731,7 @@ async fn approved_mcp_tool_call_metadata_records_prior_user_input_request(
     let mcp_turn_metadata = apps_tool_call
         .pointer("/params/_meta/x-ava-turn-metadata")
         .expect("MCP tools/call turn metadata");
-    assert_eq!(
-        mcp_turn_metadata["ava_version"],
-        env!("CARGO_PKG_VERSION")
-    );
+    assert_eq!(mcp_turn_metadata["ava_version"], env!("CARGO_PKG_VERSION"));
     assert_eq!(
         (
             mcp_turn_metadata.get("root_turn_id"),

@@ -182,10 +182,7 @@ fn lock_curated_plugins_startup_sync(ava_home: &Path) -> Result<File, String> {
     Ok(lock_file)
 }
 
-fn sync_openai_plugins_repo_via_git(
-    ava_home: &Path,
-    git_binary: &Path,
-) -> Result<String, String> {
+fn sync_openai_plugins_repo_via_git(ava_home: &Path, git_binary: &Path) -> Result<String, String> {
     let repo_path = curated_plugins_repo_path(ava_home);
     let sha_path = ava_home.join(CURATED_PLUGINS_SHA_FILE);
     let remote_sha = git_ls_remote_head_sha(ava_home, git_binary)?;

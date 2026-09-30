@@ -4,7 +4,6 @@ use std::sync::Mutex;
 use std::time::Duration;
 
 use anyhow::Result;
-use bytes::Bytes;
 use ava_api::ApiError;
 use ava_api::AuthError;
 use ava_api::AuthProvider;
@@ -24,6 +23,7 @@ use ava_protocol::models::ContentItem;
 use ava_protocol::models::ResponseItem;
 use ava_protocol::protocol::SessionSource;
 use ava_protocol::protocol::SubAgentSource;
+use bytes::Bytes;
 use http::HeaderMap;
 use http::HeaderValue;
 use http::StatusCode;
@@ -147,6 +147,7 @@ fn provider(name: &str) -> Provider {
             retry_429: false,
             retry_5xx: false,
             retry_transport: true,
+                retry_auth: false,
         },
         stream_idle_timeout: Duration::from_millis(10),
     }

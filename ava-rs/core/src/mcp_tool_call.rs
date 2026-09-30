@@ -116,8 +116,7 @@ const MCP_RESULT_TELEMETRY_SPAN_KEY: &str = "span";
 const MCP_RESULT_TELEMETRY_TARGET_ID_KEY: &str = "target_id";
 const MCP_RESULT_TELEMETRY_DID_TRIGGER_SERVER_USER_FLOW_KEY: &str = "did_trigger_server_user_flow";
 const MCP_RESULT_TELEMETRY_TARGET_ID_SPAN_ATTR: &str = "ava.mcp.target.id";
-const MCP_RESULT_TELEMETRY_SERVER_USER_FLOW_SPAN_ATTR: &str =
-    "ava.mcp.server_user_flow.triggered";
+const MCP_RESULT_TELEMETRY_SERVER_USER_FLOW_SPAN_ATTR: &str = "ava.mcp.server_user_flow.triggered";
 const MCP_RESULT_TELEMETRY_TARGET_ID_MAX_CHARS: usize = 256;
 const MCP_TOOL_CALL_EVENT_RESULT_MAX_BYTES: usize = DEFAULT_OUTPUT_BYTES_CAP;
 
@@ -1334,10 +1333,7 @@ fn build_mcp_tool_call_request_meta(
             &step_context.settings,
         ))
     {
-        request_meta.insert(
-            crate::X_AVA_TURN_METADATA_HEADER.to_string(),
-            turn_metadata,
-        );
+        request_meta.insert(crate::X_AVA_TURN_METADATA_HEADER.to_string(), turn_metadata);
     }
 
     if server == AVA_APPS_MCP_SERVER_NAME {

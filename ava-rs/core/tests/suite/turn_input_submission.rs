@@ -267,8 +267,7 @@ async fn host_drain_closes_realtime_after_handoff_error() -> anyhow::Result<()> 
             flush_transcript_tail_on_session_end: false,
             ava_responses_as_items: false,
             ava_response_item_prefix: None,
-            ava_response_handoff_mode:
-                ava_protocol::protocol::AvaResponseHandoffMode::Thinking,
+            ava_response_handoff_mode: ava_protocol::protocol::AvaResponseHandoffMode::Thinking,
             ava_response_handoff_channel_prefixes: None,
             model: None,
             output_modality: ava_protocol::protocol::RealtimeOutputModality::Audio,
@@ -401,26 +400,23 @@ async fn start_turn_if_idle_keeps_automatic_plan_rejections_atomic(
         collaboration_mode: Some(collaboration_mode.clone()),
         ..Default::default()
     };
-    let submission = test
-        .ava-code
-        .start_turn_if_idle(
-            TurnInputRequest::new(TurnInput::ResponseItem(responses::user_message_item(
-                "rejected automatic input",
-            )))
-            .with_thread_settings(overrides.clone()),
-        )
-        .await
-        .expect("automatic Plan admission should return a typed rejection");
+    let submission = test.ava
+        - code
+            .start_turn_if_idle(
+                TurnInputRequest::new(TurnInput::ResponseItem(responses::user_message_item(
+                    "rejected automatic input",
+                )))
+                .with_thread_settings(overrides.clone()),
+            )
+            .await
+            .expect("automatic Plan admission should return a typed rejection");
     assert_eq!(
         submission,
         StartIfIdleSubmission::NotSubmitted {
             reason: NotSubmittedReason::PlanMode,
         }
     );
-    assert_eq!(
-        test.ava.thread_settings_snapshot().await,
-        current_settings
-    );
+    assert_eq!(test.ava.thread_settings_snapshot().await, current_settings);
 
     // Rejection releases the idle reservation, and an explicit user can make
     // either transition without receiving the rejected automatic input.
@@ -429,13 +425,13 @@ async fn start_turn_if_idle_keeps_automatic_plan_rejections_atomic(
         responses::sse(vec![ev_response_created("resp-1"), ev_completed("resp-1")]),
     )
     .await;
-    let started = test
-        .ava-code
-        .start_turn_if_idle(
-            user_message_request("explicit user input").with_thread_settings(overrides),
-        )
-        .await
-        .expect("rejection must release the idle reservation for explicit user input");
+    let started = test.ava
+        - code
+            .start_turn_if_idle(
+                user_message_request("explicit user input").with_thread_settings(overrides),
+            )
+            .await
+            .expect("rejection must release the idle reservation for explicit user input");
     assert!(matches!(started, StartIfIdleSubmission::Started { .. }));
     wait_for_event(&test.ava, |event| {
         matches!(event, EventMsg::TurnComplete(_))
@@ -461,26 +457,26 @@ async fn recover_turn_if_idle_preserves_id_and_resumes_plan_mode() {
         .expect("build recovered turn session");
     let turn_id = "durable-recovered-turn";
 
-    let submission = test
-        .ava-code
-        .recover_turn_if_idle(RecoverTurnRequest {
-            turn_id: turn_id.to_string(),
-            thread_settings: ThreadSettingsOverrides {
-                collaboration_mode: Some(CollaborationMode {
-                    mode: ModeKind::Plan,
-                    settings: Settings {
-                        model: test.session_configured.model.clone(),
-                        reasoning_effort: None,
-                        developer_instructions: None,
-                    },
-                }),
-                ..Default::default()
-            },
-            trace: None,
-            cyber_access_program: None,
-        })
-        .await
-        .expect("recovered turn should start");
+    let submission = test.ava
+        - code
+            .recover_turn_if_idle(RecoverTurnRequest {
+                turn_id: turn_id.to_string(),
+                thread_settings: ThreadSettingsOverrides {
+                    collaboration_mode: Some(CollaborationMode {
+                        mode: ModeKind::Plan,
+                        settings: Settings {
+                            model: test.session_configured.model.clone(),
+                            reasoning_effort: None,
+                            developer_instructions: None,
+                        },
+                    }),
+                    ..Default::default()
+                },
+                trace: None,
+                cyber_access_program: None,
+            })
+            .await
+            .expect("recovered turn should start");
     assert_eq!(
         submission,
         StartIfIdleSubmission::Started {
@@ -492,10 +488,8 @@ async fn recover_turn_if_idle_preserves_id_and_resumes_plan_mode() {
         ModeKind::Plan
     );
 
-    let started = wait_for_event(&test.ava, |event| {
-        matches!(event, EventMsg::TurnStarted(_))
-    })
-    .await;
+    let started =
+        wait_for_event(&test.ava, |event| matches!(event, EventMsg::TurnStarted(_))).await;
     let EventMsg::TurnStarted(started) = started else {
         unreachable!("wait_for_event returned unexpected event");
     };
@@ -538,14 +532,14 @@ async fn continue_turn_if_idle_starts_new_turn_with_internal_input() {
     responses::mount_sse_once(&server, responses::sse_completed("original")).await;
     let TurnInputSubmission::Started {
         turn_id: previous_turn_id,
-    } = test
-        .ava-code
-        .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
-            text: "Do the work".to_string(),
-            text_elements: Vec::new(),
-        }]))
-        .await
-        .unwrap()
+    } = test.ava
+        - code
+            .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
+                text: "Do the work".to_string(),
+                text_elements: Vec::new(),
+            }]))
+            .await
+            .unwrap()
     else {
         panic!("original turn did not start")
     };
@@ -559,21 +553,21 @@ async fn continue_turn_if_idle_starts_new_turn_with_internal_input() {
         "Continue the interrupted work.",
     ));
     let schema = serde_json::json!({"type":"object","properties":{},"additionalProperties":false});
-    let submission = test
-        .ava-code
-        .continue_turn_if_idle(
-            TurnInputRequest::new(TurnInput::ResponseItem(input.clone())).on_start(
-                TurnStartOptions {
-                    final_output_json_schema: Some(schema.clone()),
-                    service_tier: Some("priority".to_string()),
-                    root_turn_id: Some("originating-turn".to_string()),
-                    ..Default::default()
-                },
-            ),
-            previous_turn_id.clone(),
-        )
-        .await
-        .unwrap();
+    let submission = test.ava
+        - code
+            .continue_turn_if_idle(
+                TurnInputRequest::new(TurnInput::ResponseItem(input.clone())).on_start(
+                    TurnStartOptions {
+                        final_output_json_schema: Some(schema.clone()),
+                        service_tier: Some("priority".to_string()),
+                        root_turn_id: Some("originating-turn".to_string()),
+                        ..Default::default()
+                    },
+                ),
+                previous_turn_id.clone(),
+            )
+            .await
+            .unwrap();
     let TurnInputSubmission::Started { turn_id } = submission else {
         panic!("continuation did not start")
     };
@@ -982,10 +976,10 @@ async fn sampling_is_ready_for_daemon_recovery(
         builder = builder.with_exec_server_url(&remote.websocket_url);
     }
     let test = builder.build_with_streaming_server(&server).await?;
-    let StartIfIdleSubmission::Started { turn_id } = test
-        .ava-code
-        .start_turn_if_idle(TurnInputRequest::user_input(input))
-        .await?
+    let StartIfIdleSubmission::Started { turn_id } = test.ava
+        - code
+            .start_turn_if_idle(TurnInputRequest::user_input(input))
+            .await?
     else {
         panic!("sampling should start");
     };
@@ -1040,20 +1034,20 @@ async fn daemon_recovery_includes_local_environment_that_finished_starting() -> 
     let selection = local(cwd.clone());
     // A different workspace starts a new attachment. On this single-threaded runtime,
     // turn startup captures it before the spawned setup task can run.
-    let started = test
-        .ava-code
-        .start_turn_if_idle(
-            user_message_request("wait for the environment").with_thread_settings(
-                ThreadSettingsOverrides {
-                    environments: Some(TurnEnvironmentSelections::new(
-                        cwd,
-                        vec![selection.clone()],
-                    )),
-                    ..Default::default()
-                },
-            ),
-        )
-        .await?;
+    let started = test.ava
+        - code
+            .start_turn_if_idle(
+                user_message_request("wait for the environment").with_thread_settings(
+                    ThreadSettingsOverrides {
+                        environments: Some(TurnEnvironmentSelections::new(
+                            cwd,
+                            vec![selection.clone()],
+                        )),
+                        ..Default::default()
+                    },
+                ),
+            )
+            .await?;
     let StartIfIdleSubmission::Started { turn_id } = started else {
         anyhow::bail!("turn should start");
     };

@@ -900,10 +900,6 @@ mod tests {
     use std::sync::atomic::AtomicUsize;
     use std::sync::atomic::Ordering;
 
-    use axum::Json;
-    use axum::Router;
-    use axum::routing::get;
-    use axum::routing::post;
     use ava_config::types::AuthKeyringBackendKind;
     use ava_config::types::OAuthCredentialsStoreMode;
     use ava_exec_server::ExecServerError;
@@ -914,6 +910,10 @@ mod tests {
     use ava_exec_server::RouteAwareHttpClient;
     use ava_http_client::HttpClientFactory;
     use ava_http_client::OutboundProxyPolicy;
+    use axum::Json;
+    use axum::Router;
+    use axum::routing::get;
+    use axum::routing::post;
     use futures::future::BoxFuture;
     use http::HeaderMap;
     use oauth2::TokenResponse;

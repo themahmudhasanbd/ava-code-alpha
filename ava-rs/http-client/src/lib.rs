@@ -1,3 +1,4 @@
+pub mod antigravity_adapter;
 mod chatgpt_cloudflare_cookies;
 mod chatgpt_hosts;
 mod client;

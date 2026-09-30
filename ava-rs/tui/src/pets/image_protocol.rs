@@ -7,12 +7,12 @@ use std::str::FromStr;
 use anyhow::Context;
 use anyhow::Result;
 use anyhow::bail;
-use base64::Engine as _;
-use base64::engine::general_purpose;
 use ava_terminal_detection::Multiplexer;
 use ava_terminal_detection::TerminalInfo;
 use ava_terminal_detection::TerminalName;
 use ava_terminal_detection::terminal_info;
+use base64::Engine as _;
+use base64::engine::general_purpose;
 use image::imageops::FilterType;
 
 use super::sixel;

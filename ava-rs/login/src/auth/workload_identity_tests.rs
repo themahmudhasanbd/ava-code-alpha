@@ -2,8 +2,8 @@ use std::path::Path;
 use std::sync::atomic::AtomicUsize;
 use std::time::Duration;
 
-use base64::Engine as _;
 use ava_http_client::OutboundProxyPolicy;
+use base64::Engine as _;
 use pretty_assertions::assert_eq;
 use wiremock::Mock;
 use wiremock::MockServer;

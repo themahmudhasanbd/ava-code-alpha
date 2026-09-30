@@ -233,8 +233,7 @@ async fn misalignment_review_requires_current_findings() {
 
     for steer in [None, Some(" ".to_string()), Some("a".repeat(1025))] {
         let mut details = review_details();
-        details.steer =
-            steer.map(|message| ava_app_server_protocol::MisalignmentSteer { message });
+        details.steer = steer.map(|message| ava_app_server_protocol::MisalignmentSteer { message });
         chat.on_misalignment_error(Some("turn-1".to_string()), Some(details));
         let review = select_review(&mut chat, &mut rx);
         chat.show_misalignment_review_confirmation(Arc::clone(&review));

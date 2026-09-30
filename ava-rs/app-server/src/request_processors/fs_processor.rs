@@ -2,8 +2,6 @@ use crate::error_code::internal_error;
 use crate::error_code::invalid_request;
 use crate::fs_watch::FsWatchManager;
 use crate::outgoing_message::ConnectionId;
-use base64::Engine;
-use base64::engine::general_purpose::STANDARD;
 use ava_app_server_protocol::FsCopyParams;
 use ava_app_server_protocol::FsCopyResponse;
 use ava_app_server_protocol::FsCreateDirectoryParams;
@@ -30,6 +28,8 @@ use ava_exec_server::EnvironmentManager;
 use ava_exec_server::ExecutorFileSystem;
 use ava_exec_server::RemoveOptions;
 use ava_utils_path_uri::PathUri;
+use base64::Engine;
+use base64::engine::general_purpose::STANDARD;
 use std::io;
 use std::sync::Arc;
 

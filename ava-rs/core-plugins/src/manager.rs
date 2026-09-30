@@ -605,10 +605,7 @@ impl PluginLoadCacheKey {
         auth_identity: RemoteInstalledPluginsAuthIdentity,
     ) -> Self {
         Self {
-            configured_plugins: configured_plugins_from_stack(
-                &config.config_layer_stack,
-                ava_home,
-            ),
+            configured_plugins: configured_plugins_from_stack(&config.config_layer_stack, ava_home),
             skill_config_rules: skill_config_rules_from_stack(&config.config_layer_stack),
             remote_global_catalog_active,
             // Local curated loads are auth-independent; only remote snapshots vary by account.
@@ -2930,12 +2927,10 @@ impl PluginsManager {
             ));
         }
         if !outcome.upgraded_roots.is_empty() {
-            let mut configured_plugin_keys = configured_plugins_from_stack(
-                &config.config_layer_stack,
-                self.ava_home.as_path(),
-            )
-            .into_keys()
-            .collect::<Vec<_>>();
+            let mut configured_plugin_keys =
+                configured_plugins_from_stack(&config.config_layer_stack, self.ava_home.as_path())
+                    .into_keys()
+                    .collect::<Vec<_>>();
             configured_plugin_keys.sort_unstable();
             match refresh_non_curated_plugin_cache_force_reinstall_detailed(
                 self.ava_home.as_path(),

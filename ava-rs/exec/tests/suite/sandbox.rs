@@ -390,7 +390,10 @@ async fn sandbox_blocks_first_time_dot_ava_creation() {
     .await
     .expect("should spawn command creating .ava-code");
 
-    let status = child.wait().await.expect("should wait for .ava-code command");
+    let status = child
+        .wait()
+        .await
+        .expect("should wait for .ava-code command");
     assert!(
         !status.success(),
         "sandbox unexpectedly allowed first-time .ava-code creation: {status:?}"

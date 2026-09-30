@@ -186,12 +186,7 @@ impl TraceReducer {
                 ava_turn_id,
                 thread_id,
             } => {
-                self.start_ava_turn(
-                    event.seq,
-                    event.wall_time_unix_ms,
-                    ava_turn_id,
-                    thread_id,
-                )?;
+                self.start_ava_turn(event.seq, event.wall_time_unix_ms, ava_turn_id, thread_id)?;
             }
             RawTraceEventPayload::AvaTurnEnded {
                 ava_turn_id,

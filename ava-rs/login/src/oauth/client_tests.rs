@@ -2,9 +2,9 @@
 
 use std::collections::BTreeMap;
 
-use base64::Engine;
 use ava_http_client::HttpClient;
 use ava_http_client::HttpClientBuilder;
+use base64::Engine;
 use http::HeaderMap;
 use http::HeaderValue;
 use http::StatusCode;

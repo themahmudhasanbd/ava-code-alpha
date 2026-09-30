@@ -1,9 +1,9 @@
 //! Measures tool-generated PCM WAV clips using the audio bytes actually present.
 //! Unknown formats retain the existing audio output behavior.
 
+use ava_protocol::models::MAX_PROMPT_AUDIO_INPUT_BYTES;
 use base64::Engine;
 use base64::engine::general_purpose::STANDARD as BASE64_STANDARD;
-use ava_protocol::models::MAX_PROMPT_AUDIO_INPUT_BYTES;
 
 pub(super) fn wav_duration_seconds(audio_url: &str) -> Option<f64> {
     let (metadata, payload) = audio_url.split_once(',')?;

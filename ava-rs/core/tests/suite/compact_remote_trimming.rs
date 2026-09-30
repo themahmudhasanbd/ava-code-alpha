@@ -64,8 +64,7 @@ async fn remote_compact_v2_token_estimate_ignores_message_bookkeeping_and_json_e
             "content": [{"type": "input_text", "text": text}],
             "internal_chat_message_metadata_passthrough": metadata,
         });
-        ava
-            .inject_response_items(vec![serde_json::from_value(message.clone())?])
+        ava.inject_response_items(vec![serde_json::from_value(message.clone())?])
             .await?;
         let mock = mount_sse_once(harness.server(), compact_response()).await;
         ava.submit(Op::Compact).await?;
@@ -109,7 +108,7 @@ async fn remote_compact_v2_trims_tool_search_output_to_empty_tools_array() -> Re
                 }),
         )
         .await?;
-        let ava = &harness.test().ava-code;
+        let ava = &harness.test().ava - code;
         let history = [
             json!({"type": "message", "role": "user", "content": [{"type": "input_text", "text": "find the tool"}]}),
             json!({"type": "tool_search_call", "call_id": call_id, "execution": "client", "arguments": {"query": "oversized deferred tool"}}),
@@ -167,7 +166,7 @@ async fn remote_compact_v2_trim_estimate_uses_session_base_instructions() -> Res
                 }),
         )
         .await?;
-        let ava = &harness.test().ava-code;
+        let ava = &harness.test().ava - code;
         let history = [
             json!({"type": "message", "role": "user", "content": [{"type": "input_text", "text": "older user"}]}),
             json!({"type": "function_call", "call_id": "retained", "name": "exec_command", "arguments": "{}"}),

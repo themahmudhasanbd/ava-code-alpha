@@ -1,5 +1,5 @@
-use clap::Parser;
 use ava_responses_api_proxy::Args as ResponsesApiProxyArgs;
+use clap::Parser;
 
 #[ctor::ctor]
 fn pre_main() {

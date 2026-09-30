@@ -3,9 +3,6 @@ use crate::error::ApiError;
 use crate::rate_limits::parse_promo_message;
 use crate::rate_limits::parse_rate_limit_for_limit;
 use crate::rate_limits::parse_rate_limit_reached_type;
-use base64::Engine;
-use chrono::DateTime;
-use chrono::Utc;
 use ava_protocol::auth::PlanType;
 use ava_protocol::error::AvaErr;
 use ava_protocol::error::AvaErrorDetails;
@@ -14,6 +11,9 @@ use ava_protocol::error::RetryLimitReachedError;
 use ava_protocol::error::UnexpectedResponseError;
 use ava_protocol::error::UsageLimitReachedError;
 use ava_protocol::protocol::MisalignmentErrorDetails;
+use base64::Engine;
+use chrono::DateTime;
+use chrono::Utc;
 use http::HeaderMap;
 use serde::Deserialize;
 use serde_json::Value;
@@ -53,9 +53,7 @@ pub fn map_api_error(err: ApiError) -> AvaErr {
             })
         }
         ApiError::InvalidRequest { message } => AvaErr::InvalidRequest(message),
-        ApiError::CyberPolicy { message } => {
-            AvaErr::new(AvaErrorDetails::CyberPolicy { message })
-        }
+        ApiError::CyberPolicy { message } => AvaErr::new(AvaErrorDetails::CyberPolicy { message }),
         ApiError::BioPolicy { message } => AvaErr::new(AvaErrorDetails::BioPolicy { message }),
         ApiError::MisalignmentPolicyViolation {
             message,

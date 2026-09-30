@@ -1,6 +1,6 @@
+use ava_exec_server_protocol::JSONRPCErrorError;
 use base64::Engine as _;
 use base64::engine::general_purpose::STANDARD;
-use ava_exec_server_protocol::JSONRPCErrorError;
 use serde::Deserialize;
 use serde::Serialize;
 use tokio::io;

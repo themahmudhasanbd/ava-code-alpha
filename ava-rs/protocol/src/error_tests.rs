@@ -1,11 +1,11 @@
 use super::*;
 use crate::exec_output::StreamOutput;
 use crate::protocol::RateLimitWindow;
+use ava_http_client::HttpResponse;
 use chrono::DateTime;
 use chrono::Duration as ChronoDuration;
 use chrono::TimeZone;
 use chrono::Utc;
-use ava_http_client::HttpResponse;
 use http::Response as RawHttpResponse;
 use http::StatusCode;
 use pretty_assertions::assert_eq;
@@ -204,10 +204,7 @@ fn usage_limit_reached_error_formats_rate_limit_reached_types() {
 #[test]
 fn server_overloaded_maps_to_protocol() {
     let err = AvaErr::ServerOverloaded;
-    assert_eq!(
-        err.to_ava_protocol_error(),
-        AvaErrorInfo::ServerOverloaded
-    );
+    assert_eq!(err.to_ava_protocol_error(), AvaErrorInfo::ServerOverloaded);
 }
 
 #[test]

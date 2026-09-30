@@ -152,9 +152,8 @@ impl FileSystemSandboxRunner {
         let helper = &self.runtime_paths.ava_self_exe;
         let sandbox_manager = SandboxManager::for_file_system_helpers();
         #[cfg(target_os = "macos")]
-        let sandbox_manager = sandbox_manager.with_allowed_symlinked_ava_home(
-            self.runtime_paths.allowed_symlinked_ava_home.clone(),
-        );
+        let sandbox_manager = sandbox_manager
+            .with_allowed_symlinked_ava_home(self.runtime_paths.allowed_symlinked_ava_home.clone());
         let (sandbox, windows_sandbox_level) = crate::sandbox_selection::select_sandbox(
             &sandbox_manager,
             permission_profile,
@@ -712,9 +711,8 @@ mod tests {
         let path_key = path_key.to_string_lossy().into_owned();
         let path = path.to_string_lossy().into_owned();
         let ava_self_exe = std::env::current_exe().expect("current exe");
-        let runtime_paths =
-            ExecServerRuntimePaths::new(ava_self_exe.clone(), Some(ava_self_exe))
-                .expect("runtime paths");
+        let runtime_paths = ExecServerRuntimePaths::new(ava_self_exe.clone(), Some(ava_self_exe))
+            .expect("runtime paths");
         let runner = FileSystemSandboxRunner::new(runtime_paths);
         let native_cwd = AbsolutePathBuf::current_dir().expect("cwd");
         let cwd = PathUri::from_abs_path(&native_cwd);
@@ -768,9 +766,8 @@ mod tests {
     #[test]
     fn sandbox_exec_request_uses_filesystem_root_and_preserves_policy_cwd() {
         let ava_self_exe = std::env::current_exe().expect("current exe");
-        let runtime_paths =
-            ExecServerRuntimePaths::new(ava_self_exe.clone(), Some(ava_self_exe))
-                .expect("runtime paths");
+        let runtime_paths = ExecServerRuntimePaths::new(ava_self_exe.clone(), Some(ava_self_exe))
+            .expect("runtime paths");
         let runner = FileSystemSandboxRunner::new(runtime_paths);
         let selected = tempfile::tempdir().expect("selected directory");
         let selected_cwd = AbsolutePathBuf::from_absolute_path(selected.path()).expect("cwd");
@@ -967,10 +964,8 @@ mod tests {
         );
 
         assert!(
-            policy.can_read_local_path_with_cwd(
-                runtime_paths.ava_self_exe.as_path(),
-                cwd.as_path(),
-            )
+            policy
+                .can_read_local_path_with_cwd(runtime_paths.ava_self_exe.as_path(), cwd.as_path(),)
         );
         assert!(!policy.can_read_local_path_with_cwd(parent.as_path(), cwd.as_path()));
         assert!(!policy.can_read_local_path_with_cwd(sibling.as_path(), cwd.as_path()));
@@ -981,9 +976,8 @@ mod tests {
         let root = tempfile::tempdir().expect("temp dir");
         let ava_self_exe = root.path().join("bin").join("ava");
         let ava_linux_sandbox_exe = root.path().join("aliases").join("ava-linux-sandbox");
-        let runtime_paths =
-            ExecServerRuntimePaths::new(ava_self_exe, Some(ava_linux_sandbox_exe))
-                .expect("runtime paths");
+        let runtime_paths = ExecServerRuntimePaths::new(ava_self_exe, Some(ava_linux_sandbox_exe))
+            .expect("runtime paths");
         let cwd = AbsolutePathBuf::from_absolute_path(std::env::temp_dir().as_path())
             .expect("absolute cwd");
         let mut policy = restricted_policy(Vec::new());
@@ -1001,10 +995,8 @@ mod tests {
         );
 
         assert!(
-            policy.can_read_local_path_with_cwd(
-                runtime_paths.ava_self_exe.as_path(),
-                cwd.as_path(),
-            )
+            policy
+                .can_read_local_path_with_cwd(runtime_paths.ava_self_exe.as_path(), cwd.as_path(),)
         );
         assert!(policy.can_read_local_path_with_cwd(alias.as_path(), cwd.as_path()));
         assert!(!policy.can_read_local_path_with_cwd(ava_parent.as_path(), cwd.as_path()));

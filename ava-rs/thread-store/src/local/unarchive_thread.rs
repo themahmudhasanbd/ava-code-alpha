@@ -144,10 +144,10 @@ pub(super) async fn unarchive_thread(
 
 #[cfg(test)]
 mod tests {
-    use chrono::Utc;
     use ava_protocol::ThreadId;
     use ava_protocol::protocol::SessionSource;
     use ava_utils_absolute_path::test_support::PathExt;
+    use chrono::Utc;
     use pretty_assertions::assert_eq;
     use tempfile::TempDir;
     use uuid::Uuid;

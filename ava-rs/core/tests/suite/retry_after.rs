@@ -306,6 +306,7 @@ async fn http_retry_backoff_exhausts_attempts() {
                 retry_429: false,
                 retry_5xx: true,
                 retry_transport: false,
+                retry_auth: false,
             },
         },
         || Request::new(Method::POST, "http://localhost/v1/responses".into()),
@@ -376,10 +377,7 @@ async fn responses_http_overload_without_retry_after_exhausts_request_retries() 
             match wait_for_event(&test.ava, |_| true).await {
                 EventMsg::Error(error) => {
                     error_events += 1;
-                    assert_eq!(
-                        error.ava_error_info,
-                        Some(AvaErrorInfo::ServerOverloaded)
-                    );
+                    assert_eq!(error.ava_error_info, Some(AvaErrorInfo::ServerOverloaded));
                     assert_eq!(
                         error.message,
                         "Selected model is at capacity. Please try a different model."
@@ -622,10 +620,7 @@ async fn compact_v2_stream_failure_without_retry_after_exhausts_stream_retries()
         match wait_for_event(&test.ava, |_| true).await {
             EventMsg::Error(error) => {
                 error_events += 1;
-                assert_eq!(
-                    error.ava_error_info,
-                    Some(AvaErrorInfo::RateLimitExceeded)
-                );
+                assert_eq!(error.ava_error_info, Some(AvaErrorInfo::RateLimitExceeded));
                 assert!(error.message.contains("Rate limit exceeded."));
             }
             EventMsg::StreamError(_) => stream_error_events += 1,
@@ -872,10 +867,7 @@ async fn compact_v2_overload_without_retry_after_exhausts_request_retries() -> R
         match wait_for_event(&test.ava, |_| true).await {
             EventMsg::Error(error) => {
                 error_events += 1;
-                assert_eq!(
-                    error.ava_error_info,
-                    Some(AvaErrorInfo::ServerOverloaded)
-                );
+                assert_eq!(error.ava_error_info, Some(AvaErrorInfo::ServerOverloaded));
                 assert!(
                     error
                         .message
@@ -1041,10 +1033,7 @@ async fn sse_failure_without_retry_after_exhausts_stream_retries(code: &str) -> 
         match wait_for_event(&test.ava, |_| true).await {
             EventMsg::Error(error) => {
                 error_events += 1;
-                assert_eq!(
-                    error.ava_error_info,
-                    Some(AvaErrorInfo::RateLimitExceeded)
-                );
+                assert_eq!(error.ava_error_info, Some(AvaErrorInfo::RateLimitExceeded));
                 assert!(error.message.contains("Rate limit exceeded."));
             }
             EventMsg::StreamError(_) => stream_error_events += 1,
@@ -1214,10 +1203,7 @@ async fn sse_overload_with_retry_after_is_terminal() -> Result<()> {
         match wait_for_event(&test.ava, |_| true).await {
             EventMsg::Error(error) => {
                 error_events += 1;
-                assert_eq!(
-                    error.ava_error_info,
-                    Some(AvaErrorInfo::ServerOverloaded)
-                );
+                assert_eq!(error.ava_error_info, Some(AvaErrorInfo::ServerOverloaded));
                 assert_eq!(
                     error.message,
                     "Selected model is at capacity. Please try a different model."
@@ -1286,10 +1272,7 @@ async fn sse_overload_without_retry_after_is_terminal() -> Result<()> {
         match wait_for_event(&test.ava, |_| true).await {
             EventMsg::Error(error) => {
                 error_events += 1;
-                assert_eq!(
-                    error.ava_error_info,
-                    Some(AvaErrorInfo::ServerOverloaded)
-                );
+                assert_eq!(error.ava_error_info, Some(AvaErrorInfo::ServerOverloaded));
                 assert_eq!(
                     error.message,
                     "Selected model is at capacity. Please try a different model."
@@ -1651,10 +1634,7 @@ async fn websocket_overload_with_nested_retry_after_is_terminal() -> Result<()> 
         match wait_for_event(&test.ava, |_| true).await {
             EventMsg::Error(error) => {
                 error_events += 1;
-                assert_eq!(
-                    error.ava_error_info,
-                    Some(AvaErrorInfo::ServerOverloaded)
-                );
+                assert_eq!(error.ava_error_info, Some(AvaErrorInfo::ServerOverloaded));
                 assert_eq!(
                     error.message,
                     "Selected model is at capacity. Please try a different model."
@@ -1735,10 +1715,7 @@ async fn websocket_overload_without_retry_after_is_terminal() -> Result<()> {
         match wait_for_event(&test.ava, |_| true).await {
             EventMsg::Error(error) => {
                 error_events += 1;
-                assert_eq!(
-                    error.ava_error_info,
-                    Some(AvaErrorInfo::ServerOverloaded)
-                );
+                assert_eq!(error.ava_error_info, Some(AvaErrorInfo::ServerOverloaded));
                 assert_eq!(
                     error.message,
                     "Selected model is at capacity. Please try a different model."

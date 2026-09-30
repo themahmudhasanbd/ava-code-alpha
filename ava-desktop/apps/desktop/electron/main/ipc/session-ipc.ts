@@ -25,7 +25,7 @@ function threadToSessionSummary(thread: any): SessionSummary {
     title: thread.name || thread.preview || "Untitled Session",
     messageCount: Array.isArray(thread.turns) ? thread.turns.length : 1,
     projectPath: thread.cwd || "/var/www/ava-code",
-    modelId: thread.model || "powerful-coding-combo",
+    modelId: thread.model || "",
     providerId: thread.modelProvider || "omniroute",
     mode: "agent",
     thinkingLevel: (thread.reasoningEffort as any) || "max",

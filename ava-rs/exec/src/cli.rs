@@ -1,10 +1,10 @@
+use ava_protocol::protocol::ThreadSource;
+use ava_utils_cli::CliConfigOverrides;
+use ava_utils_cli::SharedCliOptions;
 use clap::Args;
 use clap::FromArgMatches;
 use clap::Parser;
 use clap::ValueEnum;
-use ava_protocol::protocol::ThreadSource;
-use ava_utils_cli::CliConfigOverrides;
-use ava_utils_cli::SharedCliOptions;
 use std::path::PathBuf;
 
 #[derive(Parser, Debug)]

@@ -72,8 +72,7 @@ impl ChatWidget {
             || self.config.cwd.as_path() != session.cwd.as_path();
         self.thread_id = Some(session.thread_id);
         #[cfg(target_os = "windows")]
-        if self.windows_sandbox_local_server
-            && matches!(self.ava_op_target, AvaOpTarget::AppEvent)
+        if self.windows_sandbox_local_server && matches!(self.ava_op_target, AvaOpTarget::AppEvent)
         {
             self.windows_sandbox_config = Default::default();
             self.set_windows_sandbox_mode(/*mode*/ None);

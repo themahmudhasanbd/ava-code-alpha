@@ -112,12 +112,10 @@ async fn refreshed_bundle_rechecks_source_during_config_reload() -> anyhow::Resu
     )
     .await?;
     let refreshed =
-        ava_config::test_support::CloudConfigBundleFixture::loader_with_enterprise_config(
-            format!(
-                "[projects.{}]\ntrust_level = \"untrusted\"\n",
-                serde_json::to_string(&ava_config::loader::project_trust_key(&nested))?
-            ),
-        );
+        ava_config::test_support::CloudConfigBundleFixture::loader_with_enterprise_config(format!(
+            "[projects.{}]\ntrust_level = \"untrusted\"\n",
+            serde_json::to_string(&ava_config::loader::project_trust_key(&nested))?
+        ));
     let err = crate::load_config_with_worktree_source_policy(
         Vec::new(),
         overrides,

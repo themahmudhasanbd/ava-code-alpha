@@ -176,18 +176,18 @@ async fn local_mcp_startup_and_refresh_use_configured_http_client() -> Result<()
         .set(servers)
         .expect("test MCP servers should accept the refreshed configuration");
     fixture.ava.refresh_runtime_config(refreshed_config).await;
-    let result = fixture
-        .ava-code
-        .call_mcp_tool(
-            SERVER_NAME,
-            "calendar_create_event",
-            Some(json!({
-                "title": "Proxy refresh",
-                "starts_at": "2026-07-23T12:00:00Z",
-            })),
-            /*meta*/ None,
-        )
-        .await?;
+    let result = fixture.ava
+        - code
+            .call_mcp_tool(
+                SERVER_NAME,
+                "calendar_create_event",
+                Some(json!({
+                    "title": "Proxy refresh",
+                    "starts_at": "2026-07-23T12:00:00Z",
+                })),
+                /*meta*/ None,
+            )
+            .await?;
     assert_eq!(result.is_error, Some(false));
     Ok(())
 }
@@ -383,28 +383,28 @@ async fn skill_mcp_dependency_oauth_uses_configured_http_client() -> Result<()> 
         network_policy: None,
         selected_capability_roots: Vec::new(),
     });
-    fixture
-        .ava-code
-        .start_or_steer_turn(
-            TurnInputRequest::user_input(vec![
-                UserInput::Text {
-                    text: "please use $proxy-skill".to_string(),
-                    text_elements: Vec::new(),
-                },
-                UserInput::Skill {
-                    name: "proxy-skill".to_string(),
-                    path: skill_path.to_path_buf(),
-                },
-            ])
-            .with_thread_settings(ThreadSettingsOverrides {
-                environments: Some(environments),
-                approval_policy: Some(AskForApproval::Never),
-                sandbox_policy: Some(sandbox_policy),
-                permission_profile,
-                ..Default::default()
-            }),
-        )
-        .await?;
+    fixture.ava
+        - code
+            .start_or_steer_turn(
+                TurnInputRequest::user_input(vec![
+                    UserInput::Text {
+                        text: "please use $proxy-skill".to_string(),
+                        text_elements: Vec::new(),
+                    },
+                    UserInput::Skill {
+                        name: "proxy-skill".to_string(),
+                        path: skill_path.to_path_buf(),
+                    },
+                ])
+                .with_thread_settings(ThreadSettingsOverrides {
+                    environments: Some(environments),
+                    approval_policy: Some(AskForApproval::Never),
+                    sandbox_policy: Some(sandbox_policy),
+                    permission_profile,
+                    ..Default::default()
+                }),
+            )
+            .await?;
     core_test_support::wait_for_event(fixture.ava.as_ref(), |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })

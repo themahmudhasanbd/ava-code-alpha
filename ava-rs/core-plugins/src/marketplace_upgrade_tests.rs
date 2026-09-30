@@ -119,10 +119,8 @@ fn automatic_marketplace_git_ignores_inherited_repository_configuration() {
             ConfiguredMarketplaceUpgradeOutcome {
                 selected_marketplaces: vec!["trusted".to_string()],
                 upgraded_roots: vec![
-                    AbsolutePathBuf::try_from(
-                        marketplace_install_root(&ava_home).join("trusted")
-                    )
-                    .expect("installed marketplace root"),
+                    AbsolutePathBuf::try_from(marketplace_install_root(&ava_home).join("trusted"))
+                        .expect("installed marketplace root"),
                 ],
                 errors: Vec::new(),
             }
@@ -492,12 +490,8 @@ fn changed_config_rolls_back_marketplace_activation() {
     let system = format!("[marketplaces.good]\nsource_type = \"git\"\nsource = {source:?}\n");
     let stack = system_marketplace_stack(ava_home.path(), &system, "");
     let reload_config = config_reloader(ava_home.path());
-    let initial = upgrade_configured_git_marketplaces(
-        ava_home.path(),
-        &stack,
-        Some("good"),
-        &reload_config,
-    );
+    let initial =
+        upgrade_configured_git_marketplaces(ava_home.path(), &stack, Some("good"), &reload_config);
     assert!(initial.all_succeeded());
     let root = &initial.upgraded_roots[0];
     let original_metadata = std::fs::read(root.join(".ava-marketplace-install.json")).unwrap();

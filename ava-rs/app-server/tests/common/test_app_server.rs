@@ -1971,10 +1971,7 @@ impl TestAppServerBuilder {
             Some(ava_home) => (ava_home, None),
             None => {
                 let owned_ava_home = TempDir::new()?;
-                (
-                    owned_ava_home.path().to_path_buf(),
-                    Some(owned_ava_home),
-                )
+                (owned_ava_home.path().to_path_buf(), Some(owned_ava_home))
             }
         };
         let attribution_settings_server = if mock_chatgpt_backend
@@ -2031,9 +2028,8 @@ impl TestAppServerBuilder {
                             !is_remote_test_environment(),
                             "TestAppServer exec-server delay only supports the local test environment"
                         );
-                        let exec_server_program =
-                            ava_utils_cargo_bin::cargo_bin("exec-server")
-                                .context("should find binary for delayed exec-server fixture")?;
+                        let exec_server_program = ava_utils_cargo_bin::cargo_bin("exec-server")
+                            .context("should find binary for delayed exec-server fixture")?;
                         // Local auto environments normally use stdio. Start a
                         // host-local WebSocket fixture so the delay interposer has a
                         // socket stream to wrap.
@@ -2060,10 +2056,7 @@ impl TestAppServerBuilder {
                         AVA_EXEC_SERVER_URL_ENV_VAR.to_string(),
                         auto_env.exec_server_url().map(str::to_string),
                     ),
-                    (
-                        AVA_EXEC_SERVER_NOISE_REGISTRY_URL_ENV_VAR.to_string(),
-                        None,
-                    ),
+                    (AVA_EXEC_SERVER_NOISE_REGISTRY_URL_ENV_VAR.to_string(), None),
                     (
                         AVA_EXEC_SERVER_NOISE_ENVIRONMENT_ID_ENV_VAR.to_string(),
                         None,
@@ -2095,8 +2088,7 @@ impl TestAppServerBuilder {
         let mut owned_install_dir = None;
         if !custom_program
             && ava_utils_cargo_bin::runfiles_available()
-            && let Ok(code_mode_host_program) =
-                ava_utils_cargo_bin::cargo_bin("ava-code-mode-host")
+            && let Ok(code_mode_host_program) = ava_utils_cargo_bin::cargo_bin("ava-code-mode-host")
         {
             // Bazel keeps binary targets in separate package directories.
             // Recreate the installed sibling layout without a path override.

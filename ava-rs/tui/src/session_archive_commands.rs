@@ -84,13 +84,8 @@ pub async fn run_session_archive_command(
     let ava_home = find_ava_home().wrap_err("failed to find Ava home")?;
     let mut app_server =
         start_app_server_for_session_command(options, ava_home.to_path_buf()).await?;
-    run_session_archive_action_with_app_server(
-        &mut app_server,
-        ava_home.as_path(),
-        action,
-        &target,
-    )
-    .await
+    run_session_archive_action_with_app_server(&mut app_server, ava_home.as_path(), action, &target)
+        .await
 }
 
 async fn run_session_archive_action_with_app_server(

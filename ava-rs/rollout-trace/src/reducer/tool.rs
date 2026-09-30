@@ -384,9 +384,7 @@ impl TraceReducer {
             .ava_turns
             .get(ava_turn_id)
             .map(|turn| turn.thread_id.clone())
-            .with_context(|| {
-                format!("tool call start referenced unknown Ava turn {ava_turn_id}")
-            })
+            .with_context(|| format!("tool call start referenced unknown Ava turn {ava_turn_id}"))
     }
 
     fn validate_tool_turn(&self, thread_id: &str, ava_turn_id: Option<&str>) -> Result<()> {

@@ -1,8 +1,8 @@
 //! Append-only raw trace events.
 
 use crate::model::AgentThreadId;
-use crate::model::CodeCellRuntimeStatus;
 use crate::model::AvaTurnId;
+use crate::model::CodeCellRuntimeStatus;
 use crate::model::CompactionId;
 use crate::model::CompactionRequestId;
 use crate::model::EdgeId;

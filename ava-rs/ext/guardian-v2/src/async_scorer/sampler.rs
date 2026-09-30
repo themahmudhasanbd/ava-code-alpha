@@ -30,7 +30,7 @@ use thiserror::Error;
 use tokio::sync::oneshot;
 use uuid::Uuid;
 
-pub(crate) const MODEL: &str = "gpt-5.6-luna";
+pub(crate) const MODEL: &str = "ava-auto-review";
 pub(crate) const CLASSIFICATION_TOKEN_USAGE_METRIC: &str =
     "ava.guardian_v2.classification.token_usage";
 const MAX_OUTPUT_BYTES: usize = 8 * 1024;
@@ -214,7 +214,11 @@ impl LunaSampler {
             return Err(LunaSamplerError::InputTooLarge);
         }
         let request = ResponsesApiRequest {
-            model: MODEL.to_owned(),
+            model: self
+                .config
+                .provider
+                .approval_review_preferred_model()
+                .to_owned(),
             instructions: String::new(),
             input,
             tools: None,

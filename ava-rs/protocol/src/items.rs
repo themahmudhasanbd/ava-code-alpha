@@ -167,6 +167,12 @@ pub struct AgentMessageItem {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     #[ts(optional)]
     pub questions: Option<Vec<AsyncUserInputQuestion>>,
+    /// Generic client-facing metadata. Used to carry agent-attached media
+    /// (`{"media": [...]}`) to clients that render attachments from message parts.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
+    #[ts(type = "unknown")]
+    pub meta: Option<JsonValue>,
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize, TS, JsonSchema)]

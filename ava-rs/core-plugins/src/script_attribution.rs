@@ -224,8 +224,9 @@ impl TrustedPluginRoots {
                 let expected_root =
                     store.plugin_root(plugin_id, &curated_plugin_cache_version(&curated_sha));
                 let marketplace_path = match plugin_id.marketplace_name.as_str() {
-                    OPENAI_CURATED_MARKETPLACE_NAME => curated_plugins_repo_path(ava_home)
-                        .join(".agents/plugins/marketplace.json"),
+                    OPENAI_CURATED_MARKETPLACE_NAME => {
+                        curated_plugins_repo_path(ava_home).join(".agents/plugins/marketplace.json")
+                    }
                     OPENAI_API_CURATED_MARKETPLACE_NAME => {
                         curated_plugins_api_marketplace_path(ava_home)
                     }

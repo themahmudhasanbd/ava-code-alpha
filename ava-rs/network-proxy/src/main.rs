@@ -3,7 +3,6 @@
 use anyhow::Context as _;
 use anyhow::Result;
 use anyhow::ensure;
-use clap::Parser;
 use ava_network_proxy::ConfigReloader;
 use ava_network_proxy::ConfigReloaderFuture;
 use ava_network_proxy::ConfigState;
@@ -14,6 +13,7 @@ use ava_network_proxy::NetworkProxyConstraints;
 use ava_network_proxy::NetworkProxyState;
 use ava_network_proxy::Platform;
 use ava_network_proxy::build_config_state;
+use clap::Parser;
 use serde::Deserialize;
 use std::path::PathBuf;
 use std::sync::Arc;

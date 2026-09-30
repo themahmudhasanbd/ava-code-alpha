@@ -23,8 +23,7 @@ const RESERVED_GATEWAY_OAUTH_HEADERS: &[&str] = &[
     "upgrade",
     "chatgpt-account-id",
 ];
-const RESERVED_GATEWAY_OAUTH_HEADER_PREFIXES: &[&str] =
-    &["x-ava-", "x-openai-", "sec-websocket-"];
+const RESERVED_GATEWAY_OAUTH_HEADER_PREFIXES: &[&str] = &["x-ava-", "x-openai-", "sec-websocket-"];
 
 #[derive(Clone, Deserialize, Serialize, PartialEq, Eq, JsonSchema)]
 #[serde(deny_unknown_fields)]

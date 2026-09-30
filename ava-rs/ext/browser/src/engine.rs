@@ -1062,4 +1062,225 @@ impl BrowserEngine {
         self.refs.write().await.clear();
         Ok(())
     }
+    /// Moves the mouse to the center of an element (hover), triggering
+    /// mouseover/mouseenter handlers (e.g. dropdown menus, tooltips).
+    pub async fn hover(&self, ref_or_selector: &str) -> Result<String, String> {
+        let selector = self.resolve_selector(ref_or_selector).await;
+        let bounds_script = format!(
+            r#"(() => {{
+                const el = document.querySelector({sel:?});
+                if (!el) return null;
+                el.scrollIntoView({{ block: 'center', inline: 'center', behavior: 'instant' }});
+                const rect = el.getBoundingClientRect();
+                return {{ x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 }};
+            }})()"#,
+            sel = selector
+        );
+        let bounds_res = self.evaluate_raw(&bounds_script).await?;
+        let (x, y) = match &bounds_res {
+            Value::Object(map) => (
+                map.get("x").and_then(Value::as_f64),
+                map.get("y").and_then(Value::as_f64),
+            ),
+            _ => (None, None),
+        };
+        let (x, y) = match (x, y) {
+            (Some(x), Some(y)) => (x, y),
+            _ => {
+                return Err(format!(
+                    "Element not found for hover [{ref_or_selector}]"
+                ))
+            }
+        };
+        let client = self.ensure_client().await?;
+        client
+            .call(
+                "Input.dispatchMouseEvent",
+                Some(json!({ "type": "mouseMoved", "x": x, "y": y })),
+            )
+            .await
+            .map_err(|e| format!("hover failed: {e}"))?;
+        Ok(format!("Hovered [{ref_or_selector}] at ({x:.0}, {y:.0})"))
+    }
+
+    /// Presses a keyboard key. Accepts friendly names ("Enter", "Tab",
+    /// "Escape", "ArrowDown", "ArrowUp", "ArrowLeft", "ArrowRight",
+    /// "Backspace", "Delete", "Space") or a single character.
+    pub async fn press_key(&self, key: &str) -> Result<String, String> {
+        let client = self.ensure_client().await?;
+        let (key_name, code, vk, text) = match key.to_lowercase().as_str() {
+            "enter" => ("Enter", "Enter", 13, None),
+            "tab" => ("Tab", "Tab", 9, None),
+            "escape" | "esc" => ("Escape", "Escape", 27, None),
+            "arrowdown" | "down" => ("ArrowDown", "ArrowDown", 40, None),
+            "arrowup" | "up" => ("ArrowUp", "ArrowUp", 38, None),
+            "arrowleft" | "left" => ("ArrowLeft", "ArrowLeft", 37, None),
+            "arrowright" | "right" => ("ArrowRight", "ArrowRight", 39, None),
+            "backspace" => ("Backspace", "Backspace", 8, None),
+            "delete" => ("Delete", "Delete", 46, None),
+            "space" => (" ", "Space", 32, Some(" ".to_string())),
+            _ if key.chars().count() == 1 => {
+                let c = key.chars().next().unwrap();
+                (key, key, c as u32, Some(key.to_string()))
+            }
+            _ => (key, key, 0, None),
+        };
+        for event_type in ["keyDown", "keyUp"] {
+            let mut params = json!({
+                "type": event_type,
+                "key": key_name,
+                "code": code,
+                "windowsVirtualKeyCode": vk,
+                "nativeVirtualKeyCode": vk,
+            });
+            if event_type == "keyDown" {
+                if let Some(t) = &text {
+                    params["text"] = json!(t);
+                    params["unmodifiedText"] = json!(t);
+                }
+            }
+            client
+                .call("Input.dispatchKeyEvent", Some(params))
+                .await
+                .map_err(|e| format!("press_key({key}) failed: {e}"))?;
+        }
+        Ok(format!("Pressed key '{key}'"))
+    }
+
+    /// Drags from one element (or selector) to another via mouse events.
+    pub async fn drag(&self, from_ref: &str, to_ref: &str) -> Result<String, String> {
+        let from_sel = self.resolve_selector(from_ref).await;
+        let to_sel = self.resolve_selector(to_ref).await;
+        let pos_script = format!(
+            r#"(() => {{
+                const pos = (sel) => {{
+                    const el = document.querySelector(sel);
+                    if (!el) return null;
+                    el.scrollIntoView({{ block: 'center', inline: 'center', behavior: 'instant' }});
+                    const r = el.getBoundingClientRect();
+                    return {{ x: r.left + r.width / 2, y: r.top + r.height / 2 }};
+                }};
+                return {{ from: pos({from:?}), to: pos({to:?}) }};
+            }})()"#,
+            from = from_sel,
+            to = to_sel
+        );
+        let res = self.evaluate_raw(&pos_script).await?;
+        let get_xy = |v: &Value| -> Option<(f64, f64)> {
+            let m = v.as_object()?;
+            Some((
+                m.get("x")?.as_f64()?,
+                m.get("y")?.as_f64()?,
+            ))
+        };
+        let (fx, fy) = get_xy(res.get("from").unwrap_or(&Value::Null))
+            .ok_or_else(|| format!("Drag source not found [{from_ref}]"))?;
+        let (tx, ty) = get_xy(res.get("to").unwrap_or(&Value::Null))
+            .ok_or_else(|| format!("Drag target not found [{to_ref}]"))?;
+        let client = self.ensure_client().await?;
+        let seq = [
+            ("mouseMoved", fx, fy, true),
+            ("mousePressed", fx, fy, false),
+            ("mouseMoved", tx, ty, false),
+            ("mouseReleased", tx, ty, false),
+        ];
+        for (i, (t, x, y, _)) in seq.iter().enumerate() {
+            let mut params = json!({ "type": t, "x": x, "y": y, "button": "left" });
+            if *t == "mousePressed" {
+                params["clickCount"] = json!(1);
+            }
+            // Small pause between steps so the page processes the drag.
+            if i > 0 {
+                tokio::time::sleep(std::time::Duration::from_millis(60)).await;
+            }
+            client
+                .call("Input.dispatchMouseEvent", Some(params))
+                .await
+                .map_err(|e| format!("drag step {t} failed: {e}"))?;
+        }
+        Ok(format!(
+            "Dragged [{from_ref}] to [{to_ref}] ({fx:.0},{fy:.0} -> {tx:.0},{ty:.0})"
+        ))
+    }
+
+    /// Lists open targets (tabs/pages).
+    pub async fn tab_list(&self) -> Result<Value, String> {
+        let client = self.ensure_client().await?;
+        client
+            .call("Target.getTargets", None)
+            .await
+            .map_err(|e| format!("tab_list failed: {e}"))
+    }
+
+    /// Opens a new tab (target). If `url` is given, navigates there.
+    pub async fn tab_new(&self, url: Option<&str>) -> Result<String, String> {
+        let client = self.ensure_client().await?;
+        let mut params = json!({});
+        if let Some(u) = url {
+            params["url"] = json!(u);
+        }
+        let res = client
+            .call("Target.createTarget", Some(params))
+            .await
+            .map_err(|e| format!("tab_new failed: {e}"))?;
+        let target_id = res
+            .get("targetId")
+            .and_then(Value::as_str)
+            .unwrap_or_default()
+            .to_string();
+        Ok(target_id)
+    }
+
+    /// Activates (switches to) a tab by target id.
+    pub async fn tab_switch(&self, target_id: &str) -> Result<String, String> {
+        let client = self.ensure_client().await?;
+        client
+            .call(
+                "Target.activateTarget",
+                Some(json!({ "targetId": target_id })),
+            )
+            .await
+            .map_err(|e| format!("tab_switch failed: {e}"))?;
+        // Re-resolve refs for the newly active page.
+        let _ = self.scan_dom().await;
+        Ok(format!("Switched to tab {target_id}"))
+    }
+
+    /// Closes a tab by target id.
+    pub async fn tab_close(&self, target_id: &str) -> Result<String, String> {
+        let client = self.ensure_client().await?;
+        client
+            .call("Target.closeTarget", Some(json!({ "targetId": target_id })))
+            .await
+            .map_err(|e| format!("tab_close failed: {e}"))?;
+        Ok(format!("Closed tab {target_id}"))
+    }
+
+    /// Captures a lightweight base64 JPEG frame for live view.
+    /// Returns (base64_data, width, height). Optimized for frequent polling:
+    /// reduced size and JPEG compression.
+    pub async fn live_frame(&self) -> Result<(String, u32, u32), String> {
+        let client = self.ensure_client().await?;
+        // Capture at reduced scale for bandwidth efficiency.
+        let res = client
+            .call(
+                "Page.captureScreenshot",
+                Some(json!({
+                    "format": "jpeg",
+                    "quality": 60,
+                    "clip": null,
+                    "captureBeyondViewport": false,
+                })),
+            )
+            .await
+            .map_err(|e| format!("live_frame failed: {e}"))?;
+        let data = res
+            .get("data")
+            .and_then(Value::as_str)
+            .ok_or_else(|| "live_frame: no data in response".to_string())?
+            .to_string();
+        let (w, h, _) = self.current_viewport_info().await;
+        Ok((data, w, h))
+    }
+
 }

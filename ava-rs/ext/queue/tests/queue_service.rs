@@ -437,13 +437,13 @@ async fn starting_a_selected_item_while_active_leaves_it_queued() -> anyhow::Res
         .enqueue(thread_id, user_input("stay queued"))
         .await?;
 
-    let active_turn = test
-        .ava-code
-        .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
-            text: "active turn".to_string(),
-            text_elements: Vec::new(),
-        }]))
-        .await?;
+    let active_turn = test.ava
+        - code
+            .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
+                text: "active turn".to_string(),
+                text_elements: Vec::new(),
+            }]))
+            .await?;
     assert!(matches!(active_turn, TurnInputSubmission::Started { .. }));
     tokio::time::timeout(
         Duration::from_secs(5),

@@ -1,7 +1,7 @@
 use super::*;
+use ava_protocol::auth::KnownPlan;
 use chrono::TimeZone;
 use chrono::Utc;
-use ava_protocol::auth::KnownPlan;
 use pretty_assertions::assert_eq;
 use serde::Serialize;
 

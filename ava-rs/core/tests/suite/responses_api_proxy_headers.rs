@@ -224,11 +224,7 @@ where
     .map_err(|_| anyhow!("timed out waiting for {label}"))
 }
 
-async fn wait_for_event_result<F>(
-    test: &TestAva,
-    stage: &str,
-    mut predicate: F,
-) -> Result<EventMsg>
+async fn wait_for_event_result<F>(test: &TestAva, stage: &str, mut predicate: F) -> Result<EventMsg>
 where
     F: FnMut(&EventMsg) -> bool,
 {

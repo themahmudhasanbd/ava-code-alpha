@@ -95,6 +95,7 @@ impl<T: HttpTransport> EndpointSession<T> {
             req
         };
 
+        let auth = self.auth.clone();
         let response = run_with_request_telemetry(
             self.provider.retry.to_policy(),
             self.request_telemetry.clone(),
@@ -106,6 +107,9 @@ impl<T: HttpTransport> EndpointSession<T> {
                     let req = auth.apply_auth(req).await.map_err(TransportError::from)?;
                     transport.execute(req).await
                 }
+            },
+            move |_err| {
+                auth.rotate_credentials();
             },
         )
         .await?;
@@ -136,6 +140,7 @@ impl<T: HttpTransport> EndpointSession<T> {
         let request = request.into_prepared().map_err(TransportError::Build)?;
         let make_request = || request.clone();
 
+        let auth = self.auth.clone();
         let stream = run_with_request_telemetry(
             self.provider.retry.to_policy(),
             self.request_telemetry.clone(),
@@ -147,6 +152,9 @@ impl<T: HttpTransport> EndpointSession<T> {
                     let req = auth.apply_auth(req).await.map_err(TransportError::from)?;
                     transport.stream(req).await
                 }
+            },
+            move |_err| {
+                auth.rotate_credentials();
             },
         )
         .await?;

@@ -771,11 +771,9 @@ async fn network_approval_uses_published_task_authority_within_same_turn(
             config.permissions.approval_policy = Constrained::allow_any(admitted_policy);
             config.approvals_reviewer = ApprovalsReviewer::AutoReview;
             config
-                    .permissions
-                    .set_permission_profile(
-                        ava_protocol::models::PermissionProfile::workspace_write(),
-                    )
-                    .expect("set managed permissions");
+                .permissions
+                .set_permission_profile(ava_protocol::models::PermissionProfile::workspace_write())
+                .expect("set managed permissions");
         },
     )
     .await;

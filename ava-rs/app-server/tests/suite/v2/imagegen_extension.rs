@@ -199,12 +199,9 @@ async fn standalone_image_generation_returns_saved_path_hint_to_model() -> Resul
         "standalone image generation should not emit the legacy developer-message hint"
     );
 
-    let event = wait_for_analytics_event(
-        &server,
-        DEFAULT_READ_TIMEOUT,
-        "ava_image_generation_event",
-    )
-    .await?;
+    let event =
+        wait_for_analytics_event(&server, DEFAULT_READ_TIMEOUT, "ava_image_generation_event")
+            .await?;
     assert_eq!(
         event["event_params"]["imagegen_request_id"],
         json!("req-imagegen-123")

@@ -34,14 +34,12 @@ async fn unicode_math_termination_preserves_source_through_mode_and_resize() -> 
             let source = format!("Intro.\n\n$$\n\\frac{{a+b+c+d+e+f}}{{g+h}}{ending}");
             for delta in ["Intro.\n\n", &source[8..]] {
                 let notification = if plan {
-                    ServerNotification::PlanDelta(
-                        ava_app_server_protocol::PlanDeltaNotification {
-                            thread_id: thread_id.to_string(),
-                            turn_id: "math-turn".into(),
-                            item_id: "math-message".into(),
-                            delta: delta.into(),
-                        },
-                    )
+                    ServerNotification::PlanDelta(ava_app_server_protocol::PlanDeltaNotification {
+                        thread_id: thread_id.to_string(),
+                        turn_id: "math-turn".into(),
+                        item_id: "math-message".into(),
+                        delta: delta.into(),
+                    })
                 } else {
                     agent_message_delta_notification(thread_id, "math-turn", "math-message", delta)
                 };

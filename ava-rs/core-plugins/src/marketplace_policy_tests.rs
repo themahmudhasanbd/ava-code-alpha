@@ -710,12 +710,8 @@ source = "https://github.com/example/blocked.git"
         )),
     );
 
-    let outcome = upgrade_configured_git_marketplaces(
-        ava_home.path(),
-        &stack,
-        Some("debug"),
-        &reload_config,
-    );
+    let outcome =
+        upgrade_configured_git_marketplaces(ava_home.path(), &stack, Some("debug"), &reload_config);
 
     assert_eq!(outcome.selected_marketplaces, vec!["debug".to_string()]);
     assert_eq!(outcome.upgraded_roots, Vec::new());

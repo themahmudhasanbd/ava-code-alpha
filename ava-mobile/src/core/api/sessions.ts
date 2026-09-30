@@ -36,6 +36,7 @@ export async function listSessions(rpc: RpcClient, limit = 50): Promise<Session[
         directory: str(t.cwd, "/"),
         model: t.model ? str(t.model) : undefined,
         updatedAt: typeof t.updatedAt === "number" ? t.updatedAt * 1000 : undefined,
+        source: str(t.threadSource ?? t.thread_source) || undefined,
         status: statusType,
         active: isStatusActive,
       };

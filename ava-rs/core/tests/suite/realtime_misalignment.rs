@@ -95,8 +95,7 @@ async fn misalignment_retires_late_voice_handoff_before_it_starts_a_turn() -> Re
             flush_transcript_tail_on_session_end: false,
             ava_responses_as_items: false,
             ava_response_item_prefix: None,
-            ava_response_handoff_mode:
-                ava_protocol::protocol::AvaResponseHandoffMode::Thinking,
+            ava_response_handoff_mode: ava_protocol::protocol::AvaResponseHandoffMode::Thinking,
             ava_response_handoff_channel_prefixes: None,
             model: None,
             output_modality: RealtimeOutputModality::Audio,

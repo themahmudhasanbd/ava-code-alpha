@@ -1,8 +1,8 @@
 use anyhow::Result;
 use app_test_support::MockResponsesConfig;
 use app_test_support::TestAppServer;
-use ava_app_server_protocol::ClientRequest;
 use ava_app_server_protocol::AvaErrorInfo;
+use ava_app_server_protocol::ClientRequest;
 use ava_app_server_protocol::ErrorNotification;
 use ava_app_server_protocol::MisalignmentErrorDetails;
 use ava_app_server_protocol::MisalignmentSteer;

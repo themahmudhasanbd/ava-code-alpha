@@ -178,9 +178,7 @@ async fn guardian_revalidates_owning_session_before_allow(
         .await?;
     }
     assert_eq!(
-        GuardianContextMode::from_history(
-            test.ava.conversation_history_snapshot().await.as_ref()
-        ),
+        GuardianContextMode::from_history(test.ava.conversation_history_snapshot().await.as_ref()),
         review_mode,
     );
     test.ava

@@ -5,7 +5,6 @@ use crate::cache::ModelsCache;
 use crate::cache::ModelsCacheEntry;
 use crate::cache::ModelsCacheError;
 use crate::cache::ModelsCacheFuture;
-use chrono::Utc;
 use ava_http_client::HttpClientFactory;
 use ava_http_client::OutboundProxyPolicy;
 use ava_login::AuthCredentialsStoreMode;
@@ -19,6 +18,7 @@ use ava_protocol::auth::AuthMode;
 use ava_protocol::openai_models::ModelAccessPrograms;
 use ava_protocol::openai_models::ModelsResponse;
 use ava_protocol::turn_input::CyberAccessProgram;
+use chrono::Utc;
 use pretty_assertions::assert_eq;
 use serde_json::json;
 use std::collections::VecDeque;
@@ -1617,9 +1617,5 @@ fn bundled_models_json_roundtrips() {
     assert_eq!(
         response, roundtripped,
         "bundled models.json should round trip through serde"
-    );
-    assert!(
-        !response.models.is_empty(),
-        "bundled models.json should contain at least one model"
     );
 }

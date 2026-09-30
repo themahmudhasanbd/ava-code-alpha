@@ -555,8 +555,64 @@ impl ActionDispatcher {
                 })
             }
 
+            "hover" => {
+                let target_ref = params.get("ref").and_then(Value::as_str);
+                let selector = params.get("selector").and_then(Value::as_str);
+                let target = target_ref.or(selector).ok_or_else(|| {
+                    "Missing target parameter: provide either 'ref' or 'selector'".to_string()
+                })?;
+                coordinator.hover(target).await
+            }
+
+            "press_key" => {
+                let key = params
+                    .get("key")
+                    .and_then(Value::as_str)
+                    .ok_or_else(|| "Missing required parameter 'key'".to_string())?;
+                coordinator.press_key(key).await
+            }
+
+            "drag" => {
+                let from_ref = params.get("from_ref").and_then(Value::as_str);
+                let from_sel = params.get("from_selector").and_then(Value::as_str);
+                let to_ref = params.get("to_ref").and_then(Value::as_str);
+                let to_sel = params.get("to_selector").and_then(Value::as_str);
+                let from = from_ref.or(from_sel).ok_or_else(|| {
+                    "Missing drag source: provide 'from_ref' or 'from_selector'".to_string()
+                })?;
+                let to = to_ref.or(to_sel).ok_or_else(|| {
+                    "Missing drag target: provide 'to_ref' or 'to_selector'".to_string()
+                })?;
+                coordinator.drag(from, to).await
+            }
+
+            "tab_list" => coordinator.tab_list().await,
+
+            "tab_new" => {
+                let url = params.get("url").and_then(Value::as_str);
+                coordinator.tab_new(url).await
+            }
+
+            "tab_switch" => {
+                let target_id = params
+                    .get("target_id")
+                    .and_then(Value::as_str)
+                    .ok_or_else(|| "Missing required parameter 'target_id'".to_string())?;
+                coordinator.tab_switch(target_id).await
+            }
+
+            "tab_close" => {
+                let target_id = params
+                    .get("target_id")
+                    .and_then(Value::as_str)
+                    .ok_or_else(|| "Missing required parameter 'target_id'".to_string())?;
+                coordinator.tab_close(target_id).await
+            }
+
+            "live_frame" => coordinator.live_frame().await,
+
             _ => Err(format!(
-                "Unknown browser action: '{action}'. Valid actions: open, login, observe, click, fill, fill_form, scroll, wait, viewport, screenshot, responsive_audit, scrape_data, scrape_source, scrape_content, scrape_links, scrape_images, evaluate_js, console_errors, state, clear_session, close."
+                "Unknown browser action: '{action}'. Valid actions: open, login, observe, click, fill, fill_form, scroll, wait, viewport, screenshot, responsive_audit, scrape_data, scrape_source, scrape_content, scrape_links, scrape_images, evaluate_js, console_errors, state, clear_session, close, hover, press_key, drag, tab_list, tab_new, tab_switch, tab_close, live_frame."
             )),
         }
     }

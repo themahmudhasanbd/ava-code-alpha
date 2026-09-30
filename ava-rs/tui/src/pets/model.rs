@@ -661,8 +661,7 @@ mod tests {
         let ava_home = tempfile::tempdir().unwrap();
         super::super::asset_pack::write_test_pack(ava_home.path());
 
-        let pet =
-            Pet::load_with_ava_home("dewey", /*ava_home*/ Some(ava_home.path())).unwrap();
+        let pet = Pet::load_with_ava_home("dewey", /*ava_home*/ Some(ava_home.path())).unwrap();
 
         assert_eq!(pet.id, "dewey");
         assert_eq!(pet.display_name, "Dewey");

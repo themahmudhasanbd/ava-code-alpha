@@ -507,12 +507,13 @@ async fn snapshot_model_visible_layout_resume_with_personality_change() -> Resul
     skip_if_no_network!(Ok(()));
 
     let server = start_mock_server().await;
-    let mut initial_builder = test_ava()
-        .with_extensions(skills_extensions())
-        .with_config(|config| {
-            config.update_plan_enabled = true;
-            config.model = Some("gpt-5.5".to_string());
-        });
+    let mut initial_builder =
+        test_ava()
+            .with_extensions(skills_extensions())
+            .with_config(|config| {
+                config.update_plan_enabled = true;
+                config.model = Some("gpt-5.5".to_string());
+            });
     let initial = initial_builder.build(&server).await?;
     let ava = Arc::clone(&initial.ava);
 
@@ -525,12 +526,11 @@ async fn snapshot_model_visible_layout_resume_with_personality_change() -> Resul
         ]),
     )
     .await;
-    ava
-        .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
-            text: "seed resume history".into(),
-            text_elements: Vec::new(),
-        }]))
-        .await?;
+    ava.start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
+        text: "seed resume history".into(),
+        text_elements: Vec::new(),
+    }]))
+    .await?;
     wait_for_event(&ava, |event| matches!(event, EventMsg::TurnComplete(_))).await;
     let initial_request = initial_mock.single_request();
 
@@ -544,13 +544,14 @@ async fn snapshot_model_visible_layout_resume_with_personality_change() -> Resul
     )
     .await;
 
-    let mut resume_builder = test_ava()
-        .with_extensions(skills_extensions())
-        .with_config(|config| {
-            config.update_plan_enabled = true;
-            config.model = Some("gpt-5.4".to_string());
-            config.personality = Some(Personality::Pragmatic);
-        });
+    let mut resume_builder =
+        test_ava()
+            .with_extensions(skills_extensions())
+            .with_config(|config| {
+                config.update_plan_enabled = true;
+                config.model = Some("gpt-5.4".to_string());
+                config.personality = Some(Personality::Pragmatic);
+            });
     let resumed = resume_builder.restart(&server, &initial).await?;
     let resume_override_cwd = resumed.cwd_path().join(PRETURN_CONTEXT_DIFF_CWD);
     fs::create_dir_all(&resume_override_cwd)?;
@@ -559,31 +560,31 @@ async fn snapshot_model_visible_layout_resume_with_personality_change() -> Resul
         PermissionProfile::read_only(),
         resume_override_cwd.as_path(),
     );
-    resumed
-        .ava-code
-        .start_or_steer_turn(
-            TurnInputRequest::user_input(vec![UserInput::Text {
-                text: "resume and change personality".into(),
-                text_elements: Vec::new(),
-            }])
-            .with_thread_settings(ThreadSettingsOverrides {
-                environments: Some(local_selections(resume_override_cwd)),
-                approval_policy: Some(AskForApproval::Never),
-                sandbox_policy: Some(sandbox_policy),
-                permission_profile,
-                personality: Some(Personality::Friendly),
-                collaboration_mode: Some(CollaborationMode {
-                    mode: ModeKind::Default,
-                    settings: Settings {
-                        model: resumed.session_configured.model.clone(),
-                        reasoning_effort: resumed.config.model_reasoning_effort.clone(),
-                        developer_instructions: None,
-                    },
+    resumed.ava
+        - code
+            .start_or_steer_turn(
+                TurnInputRequest::user_input(vec![UserInput::Text {
+                    text: "resume and change personality".into(),
+                    text_elements: Vec::new(),
+                }])
+                .with_thread_settings(ThreadSettingsOverrides {
+                    environments: Some(local_selections(resume_override_cwd)),
+                    approval_policy: Some(AskForApproval::Never),
+                    sandbox_policy: Some(sandbox_policy),
+                    permission_profile,
+                    personality: Some(Personality::Friendly),
+                    collaboration_mode: Some(CollaborationMode {
+                        mode: ModeKind::Default,
+                        settings: Settings {
+                            model: resumed.session_configured.model.clone(),
+                            reasoning_effort: resumed.config.model_reasoning_effort.clone(),
+                            developer_instructions: None,
+                        },
+                    }),
+                    ..Default::default()
                 }),
-                ..Default::default()
-            }),
-        )
-        .await?;
+            )
+            .await?;
     wait_for_event(&resumed.ava, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
@@ -615,12 +616,13 @@ async fn snapshot_model_visible_layout_resume_override_matches_rollout_model() -
     skip_if_no_network!(Ok(()));
 
     let server = start_mock_server().await;
-    let mut initial_builder = test_ava()
-        .with_extensions(skills_extensions())
-        .with_config(|config| {
-            config.update_plan_enabled = true;
-            config.model = Some("gpt-5.2".to_string());
-        });
+    let mut initial_builder =
+        test_ava()
+            .with_extensions(skills_extensions())
+            .with_config(|config| {
+                config.update_plan_enabled = true;
+                config.model = Some("gpt-5.2".to_string());
+            });
     let initial = initial_builder.build(&server).await?;
     let ava = Arc::clone(&initial.ava);
 
@@ -633,12 +635,11 @@ async fn snapshot_model_visible_layout_resume_override_matches_rollout_model() -
         ]),
     )
     .await;
-    ava
-        .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
-            text: "seed resume history".into(),
-            text_elements: Vec::new(),
-        }]))
-        .await?;
+    ava.start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
+        text: "seed resume history".into(),
+        text_elements: Vec::new(),
+    }]))
+    .await?;
     wait_for_event(&ava, |event| matches!(event, EventMsg::TurnComplete(_))).await;
     let initial_request = initial_mock.single_request();
 
@@ -652,12 +653,13 @@ async fn snapshot_model_visible_layout_resume_override_matches_rollout_model() -
     )
     .await;
 
-    let mut resume_builder = test_ava()
-        .with_extensions(skills_extensions())
-        .with_config(|config| {
-            config.update_plan_enabled = true;
-            config.model = Some("gpt-5.4".to_string());
-        });
+    let mut resume_builder =
+        test_ava()
+            .with_extensions(skills_extensions())
+            .with_config(|config| {
+                config.update_plan_enabled = true;
+                config.model = Some("gpt-5.4".to_string());
+            });
     let resumed = resume_builder.restart(&server, &initial).await?;
     let resume_override_cwd = resumed.cwd_path().join(PRETURN_CONTEXT_DIFF_CWD);
     fs::create_dir_all(&resume_override_cwd)?;
@@ -671,13 +673,13 @@ async fn snapshot_model_visible_layout_resume_override_matches_rollout_model() -
         },
     )
     .await?;
-    resumed
-        .ava-code
-        .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
-            text: "first resumed turn after model override".into(),
-            text_elements: Vec::new(),
-        }]))
-        .await?;
+    resumed.ava
+        - code
+            .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
+                text: "first resumed turn after model override".into(),
+                text_elements: Vec::new(),
+            }]))
+            .await?;
     wait_for_event(&resumed.ava, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })

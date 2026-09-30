@@ -1,8 +1,8 @@
+pub use ava_rmcp_client::McpProtocolMode;
 pub use binding::McpBinding;
 pub use binding::PreparedMcpCall;
 pub use client_capabilities::client_mcp_extensions;
 pub use client_tool_catalog::AvaAppsToolSnapshot;
-pub use ava_rmcp_client::McpProtocolMode;
 pub use connection_manager::tool_is_model_visible;
 pub use elicitation::ElicitationLifecycle;
 pub use elicitation::ElicitationReviewRequest;

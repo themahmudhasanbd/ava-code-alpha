@@ -426,10 +426,8 @@ pub fn build_models_manager(
     auth_manager: Arc<AuthManager>,
 ) -> SharedModelsManager {
     let provider = create_model_provider(config.model_provider.clone(), Some(auth_manager));
-    let manager = provider.models_manager(
-        config.ava_home.to_path_buf(),
-        config.model_catalog.clone(),
-    );
+    let manager =
+        provider.models_manager(config.ava_home.to_path_buf(), config.model_catalog.clone());
     manager.set_api_key_model_discovery_enabled(
         config.features.enabled(Feature::ApiKeyModelDiscovery),
     );
@@ -618,10 +616,8 @@ impl ThreadManager {
         provider: ModelProviderInfo,
     ) -> Self {
         set_thread_manager_test_mode_for_tests(/*enabled*/ true);
-        let ava_home = std::env::temp_dir().join(format!(
-            "ava-thread-manager-test-{}",
-            uuid::Uuid::new_v4()
-        ));
+        let ava_home =
+            std::env::temp_dir().join(format!("ava-thread-manager-test-{}", uuid::Uuid::new_v4()));
         std::fs::create_dir_all(&ava_home)
             .unwrap_or_else(|err| panic!("temp ava home dir create failed: {err}"));
         let mut manager = Self::with_models_provider_and_home_for_tests(
@@ -932,9 +928,7 @@ impl ThreadManager {
             })
             .await
             .map_err(|err| match err {
-                ThreadStoreError::ThreadNotFound { thread_id } => {
-                    AvaErr::ThreadNotFound(thread_id)
-                }
+                ThreadStoreError::ThreadNotFound { thread_id } => AvaErr::ThreadNotFound(thread_id),
                 err => thread_store_metadata_update_error(thread_id, err),
             })?;
         match updated {
@@ -1658,9 +1652,7 @@ impl ThreadManagerState {
             .load_latest_model_context(params)
             .await
             .map_err(|err| match err {
-                ThreadStoreError::ThreadNotFound { thread_id } => {
-                    AvaErr::ThreadNotFound(thread_id)
-                }
+                ThreadStoreError::ThreadNotFound { thread_id } => AvaErr::ThreadNotFound(thread_id),
                 err => AvaErr::Fatal(format!(
                     "failed to load model context for thread {thread_id}: {err}"
                 )),

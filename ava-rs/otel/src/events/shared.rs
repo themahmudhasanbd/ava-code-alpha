@@ -1,7 +1,7 @@
-use chrono::SecondsFormat;
-use chrono::Utc;
 use ava_protocol::DEFAULT_FUNCTION_NAMESPACE;
 use ava_protocol::ToolName;
+use chrono::SecondsFormat;
+use chrono::Utc;
 
 pub(crate) fn tool_namespace(tool_name: &ToolName) -> &str {
     tool_name

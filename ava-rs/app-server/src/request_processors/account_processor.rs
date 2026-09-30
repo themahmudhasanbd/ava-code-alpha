@@ -6,12 +6,12 @@ use super::*;
 use crate::auth_mode::auth_mode_to_api;
 use crate::external_auth::ExternalAuthBridge;
 use crate::outgoing_message::AccountNotification;
-use chrono::DateTime;
 use ava_app_server_protocol::DesktopOnboardingEntrypoint;
 use ava_app_server_protocol::GetAccountRateLimitsParams;
 use ava_login::LoginOnboardingEntrypoint;
 use ava_login::login_with_bedrock_access_keys;
 use ava_model_provider::is_supported_amazon_bedrock_region;
+use chrono::DateTime;
 
 mod bedrock_setup;
 mod rate_limit_resets;
@@ -1256,20 +1256,17 @@ impl AccountRequestProcessor {
                     groups: usage
                         .groups
                         .into_iter()
-                        .map(
-                            |group| ava_app_server_protocol::ThreadUsageBreakdownGroup {
-                                model: group.model,
-                                reasoning_effort: group.reasoning_effort,
-                                speed: group.speed,
-                                estimated_usage_credits_micros: group
-                                    .estimated_usage_credits_micros,
-                                net_new_input_tokens: group.net_new_input_tokens,
-                                cached_input_tokens: group.cached_input_tokens,
-                                input_tokens: group.input_tokens,
-                                output_tokens: group.output_tokens,
-                                total_tokens: group.total_tokens,
-                            },
-                        )
+                        .map(|group| ava_app_server_protocol::ThreadUsageBreakdownGroup {
+                            model: group.model,
+                            reasoning_effort: group.reasoning_effort,
+                            speed: group.speed,
+                            estimated_usage_credits_micros: group.estimated_usage_credits_micros,
+                            net_new_input_tokens: group.net_new_input_tokens,
+                            cached_input_tokens: group.cached_input_tokens,
+                            input_tokens: group.input_tokens,
+                            output_tokens: group.output_tokens,
+                            total_tokens: group.total_tokens,
+                        })
                         .collect(),
                 }),
                 Err(err)

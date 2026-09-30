@@ -479,13 +479,13 @@ async fn root_reconciliation_reuses_pending_apps_startup() -> Result<()> {
     .await
     .expect("initial Apps startup should begin before root reconciliation");
 
-    let selection = test
-        .ava-code
-        .environment_selections()
-        .await
-        .into_iter()
-        .next()
-        .expect("thread should select its executor environment");
+    let selection = test.ava
+        - code
+            .environment_selections()
+            .await
+            .into_iter()
+            .next()
+            .expect("thread should select its executor environment");
     test.ava
         .environment_ready(
             &selection,
@@ -608,15 +608,15 @@ async fn timeout_refresh_replaces_pending_startup_and_reuses_ready_connection() 
     })
     .await
     .expect("pending startup should begin before refresh");
-    let ready_result = test
-        .ava-code
-        .call_mcp_tool(
-            "ready",
-            "calendar_list_events",
-            /*arguments*/ None,
-            /*meta*/ None,
-        )
-        .await?;
+    let ready_result = test.ava
+        - code
+            .call_mcp_tool(
+                "ready",
+                "calendar_list_events",
+                /*arguments*/ None,
+                /*meta*/ None,
+            )
+            .await?;
 
     let mut refresh_config = test.config.clone();
     let mut servers = refresh_config.mcp_servers.get().clone();
@@ -626,26 +626,26 @@ async fn timeout_refresh_replaces_pending_startup_and_reuses_ready_connection() 
     refresh_config.mcp_servers.set(servers)?;
     test.ava.refresh_mcp_config(refresh_config).await;
     // Publish without waiting for the held initialize to finish.
-    let error = test
-        .ava-code
-        .read_mcp_resource("unknown", ReadResourceRequestParams::new("test://resource"))
-        .await
-        .expect_err("the unknown server should not exist");
+    let error = test.ava
+        - code
+            .read_mcp_resource("unknown", ReadResourceRequestParams::new("test://resource"))
+            .await
+            .expect_err("the unknown server should not exist");
     assert_eq!(error.to_string(), "unknown MCP server 'unknown'");
     release_startup
         .send(())
         .expect("the mock initialize should remain held until publication");
 
     for name in ["pending", "ready"] {
-        let result = test
-            .ava-code
-            .call_mcp_tool(
-                name,
-                "calendar_list_events",
-                /*arguments*/ None,
-                /*meta*/ None,
-            )
-            .await?;
+        let result = test.ava
+            - code
+                .call_mcp_tool(
+                    name,
+                    "calendar_list_events",
+                    /*arguments*/ None,
+                    /*meta*/ None,
+                )
+                .await?;
         assert_eq!(result, ready_result);
     }
     assert_eq!(
@@ -858,13 +858,13 @@ startup_timeout_sec = 0.1
     test.ava.refresh_runtime_config(refresh_config).await;
     test.ava.submit(Op::RefreshMcpServers).await?;
 
-    let _ = test
-        .ava-code
-        .read_mcp_resource(
-            "refreshed",
-            ReadResourceRequestParams::new("test://resource"),
-        )
-        .await;
+    let _ = test.ava
+        - code
+            .read_mcp_resource(
+                "refreshed",
+                ReadResourceRequestParams::new("test://resource"),
+            )
+            .await;
     assert!(resource_client.has_server("refreshed").await);
     Ok(())
 }
@@ -1507,11 +1507,11 @@ async fn later_follow_up_uses_background_recovered_apps_after_mid_thread_startup
         let mut turn_complete = false;
         let mut apps_ready = false;
         while !turn_complete || !apps_ready {
-            let event = test
-                .ava-code
-                .next_event()
-                .await
-                .expect("event stream should stay open");
+            let event = test.ava
+                - code
+                    .next_event()
+                    .await
+                    .expect("event stream should stay open");
             match event.msg {
                 EventMsg::TurnComplete(_) => turn_complete = true,
                 EventMsg::McpStartupUpdate(update)

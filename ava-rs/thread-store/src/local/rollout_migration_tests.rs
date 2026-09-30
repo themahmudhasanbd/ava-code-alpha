@@ -1309,12 +1309,10 @@ async fn migration_preserves_answers_before_a_rolled_back_steer() {
         checkpoint
             .verified_answers()
             .cloned()
-            .map(
-                |answer| ava_rollout::RetainedContextEvent::VerifiedAnswer {
-                    answer,
-                    acceptance_order: None,
-                }
-            )
+            .map(|answer| ava_rollout::RetainedContextEvent::VerifiedAnswer {
+                answer,
+                acceptance_order: None,
+            })
             .collect::<Vec<_>>(),
         answers[..1]
     );

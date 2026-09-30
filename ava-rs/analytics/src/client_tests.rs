@@ -119,23 +119,21 @@ impl AnalyticsEventsClient {
 }
 
 fn sample_accepted_line_fingerprint_event(thread_id: &str) -> TrackEventRequest {
-    TrackEventRequest::AcceptedLineFingerprints(Box::new(
-        AvaAcceptedLineFingerprintsEventRequest {
-            event_type: "ava_accepted_line_fingerprints",
-            event_params: AvaAcceptedLineFingerprintsEventParams {
-                event_type: "ava.accepted_line_fingerprints",
-                turn_id: "turn-1".to_string(),
-                thread_id: thread_id.to_string(),
-                product_surface: Some("ava".to_string()),
-                model_slug: Some("gpt-5.1-ava".to_string()),
-                completed_at: 1,
-                repo_hash: None,
-                accepted_added_lines: 1,
-                accepted_deleted_lines: 0,
-                line_fingerprints: [],
-            },
+    TrackEventRequest::AcceptedLineFingerprints(Box::new(AvaAcceptedLineFingerprintsEventRequest {
+        event_type: "ava_accepted_line_fingerprints",
+        event_params: AvaAcceptedLineFingerprintsEventParams {
+            event_type: "ava.accepted_line_fingerprints",
+            turn_id: "turn-1".to_string(),
+            thread_id: thread_id.to_string(),
+            product_surface: Some("ava".to_string()),
+            model_slug: Some("gpt-5.1-ava".to_string()),
+            completed_at: 1,
+            repo_hash: None,
+            accepted_added_lines: 1,
+            accepted_deleted_lines: 0,
+            line_fingerprints: [],
         },
-    ))
+    }))
 }
 
 fn sample_skill_track_event(thread_id: &str, plugin_id: Option<&str>) -> TrackEventRequest {
@@ -419,9 +417,8 @@ async fn api_key_auth_sends_only_plugin_events_to_ava_backend() {
     let destination = AnalyticsEventsDestination::CaptureFile {
         path: capture_path.clone(),
     };
-    let auth_manager = ava_login::AuthManager::from_auth_for_testing(
-        ava_login::AvaAuth::from_api_key("sk-test"),
-    );
+    let auth_manager =
+        ava_login::AuthManager::from_auth_for_testing(ava_login::AvaAuth::from_api_key("sk-test"));
     let plugin_measurement = |thread_id: &str, plugin_id: &str| {
         TrackEventRequest::PluginMeasurement(AvaPluginMeasurementEventRequest {
             event_type: "ava_plugin_measurement_event",

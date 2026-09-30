@@ -1,21 +1,27 @@
 import { AppState } from "react-native";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
+import type { QueryClient } from "@tanstack/react-query";
 
 import {
   addPromptToQueue,
+  answerApproval,
+  approvalDetail,
   attachToRunningTurn,
   deleteQueuedPrompt,
   interruptTurn,
+  isApprovalMethod,
   listQueuedPrompts,
   runTurn,
   startQueuedPrompt,
   type TurnHandlers,
 } from "@/core/api/chat";
 import { startSession } from "@/core/api/sessions";
+import { generateSessionTitle } from "@/core/api/title";
 import { formatCoreError } from "@/core/errors";
-import type { ChatMessage, MessagePart } from "@/core/types";
+import type { ChatMessage, MessagePart, PendingApproval } from "@/core/types";
 import { useAva } from "./ava-provider";
+import type { RpcClient } from "@/core/rpc-client";
 import { keys, useSessionHistory } from "./queries";
 import { APP } from "@/config/app";
 import { chatStore, type ChatStatus, type QueuedPromptItem } from "./chat-store";
@@ -35,6 +41,51 @@ export function makeUniqueId(prefix = "id"): string {
 }
 
 const isOptimisticId = (id: string) => /^u_\d+_/.test(id);
+
+/** Sessions already considered for auto-titling this app launch. */
+const autoTitledThreads = new Set<string>();
+
+/**
+ * TUI parity: after the first successful turn of a session, generate a short
+ * title from the opening exchange on an ephemeral helper thread and rename
+ * the real session. Best-effort — failures are swallowed.
+ */
+async function maybeAutoTitleSession(opts: {
+  rpc: RpcClient;
+  threadId: string;
+  qc: QueryClient;
+  cwd: string;
+  model?: string;
+}): Promise<void> {
+  const { rpc, threadId, qc, cwd, model } = opts;
+  if (!threadId || autoTitledThreads.has(threadId)) return;
+  autoTitledThreads.add(threadId);
+  try {
+    const messages = chatStore.getState(threadId)?.messages ?? [];
+    const userMsgs = messages.filter((m) => m.role === "user");
+    // Only brand-new sessions (single exchange) — never overwrite a rename.
+    if (userMsgs.length !== 1) return;
+    const textOf = (m: ChatMessage | undefined) =>
+      m?.parts
+        ?.filter((p) => p.kind === "text" && p.text)
+        .map((p) => p.text)
+        .join("\n") ?? "";
+    const userText = textOf(userMsgs[0]).slice(0, 2000);
+    if (!userText.trim()) return;
+    const lastAssistant = [...messages].reverse().find((m) => m.role === "assistant");
+    const assistantText = textOf(lastAssistant).slice(0, 2000);
+    const title = await generateSessionTitle(rpc, {
+      sessionId: threadId,
+      cwd,
+      model,
+      userText,
+      assistantText: assistantText || undefined,
+    });
+    if (title) qc.invalidateQueries({ queryKey: keys.sessions });
+  } catch {
+    /* auto-title must never break chat */
+  }
+}
 const userText = (m: ChatMessage) =>
   (m.parts ?? []).map((p) => p.text ?? "").join("\n").trim();
 
@@ -138,6 +189,7 @@ export function useChat(explicitSessionId?: string | null, opts: { passive?: boo
   const [error, setError] = useState<string | null>(() => initialStore?.error ?? null);
   const [visibleCount, setVisibleCount] = useState(() => initialStore?.visibleCount ?? 30);
   const [queuedPrompts, setQueuedPrompts] = useState<QueuedPromptItem[]>(() => initialStore?.queuedItems ?? []);
+  const [pendingApprovals, setPendingApprovals] = useState<PendingApproval[]>([]);
 
   const allHistoryRef = useRef<ChatMessage[]>([]);
   const offRef = useRef<(() => void) | null>(null);
@@ -381,8 +433,26 @@ export function useChat(explicitSessionId?: string | null, opts: { passive?: boo
         }));
       },
       onQuestion: (question, requestId) => {
+        const qId = question.id || makeUniqueId("q");
+        if (question.method && isApprovalMethod(question.method)) {
+          const detail = approvalDetail(question.method, question.params);
+          setPendingApprovals((prev) =>
+            prev.some((a) => a.id === qId)
+              ? prev
+              : [
+                  ...prev,
+                  {
+                    id: qId,
+                    method: question.method!,
+                    title: question.title,
+                    detail,
+                    params: question.params,
+                    requestId,
+                  },
+                ]
+          );
+        }
         chatStore.patchAssistant(threadId, aid, (parts) => {
-          const qId = question.id || makeUniqueId("q");
           if (parts.some((p) => p.kind === "question" && p.text === question.title)) return parts;
           return [
             ...parts,
@@ -476,6 +546,17 @@ export function useChat(explicitSessionId?: string | null, opts: { passive?: boo
         qc.invalidateQueries({ queryKey: keys.sessions });
         if (threadId) {
           qc.invalidateQueries({ queryKey: keys.session(threadId) });
+        }
+
+        // TUI parity: auto-generate a session title after the first turn.
+        if (rpc && !err && info !== "Stopped") {
+          void maybeAutoTitleSession({
+            rpc,
+            threadId,
+            qc,
+            cwd: workingCwd || defaultCwd || APP.defaultCwd,
+            model: modelId || undefined,
+          });
         }
 
         // Auto-drain queue: If server has queued items, start next prompt.
@@ -1007,11 +1088,51 @@ export function useChat(explicitSessionId?: string | null, opts: { passive?: boo
     setError(null);
   }, [currentSessionId, setSessionRunning]);
 
+  /**
+   * Responds to a pending approval from the sticky card above the composer.
+   * Sends the structured protocol response, removes the card, and marks the
+   * corresponding question part in the transcript as answered.
+   */
+  const answerPendingApproval = useCallback(
+    (id: string, approved: boolean) => {
+      const approval = pendingApprovals.find((a) => a.id === id);
+      if (!approval) return;
+      try {
+        if (rpc) answerApproval(rpc, approval.requestId, approval.method, approved, approval.params);
+      } catch (e) {
+        console.warn("[useChat.answerPendingApproval] failed:", e);
+      }
+      setPendingApprovals((prev) => prev.filter((a) => a.id !== id));
+      const aid = activeAidRef.current;
+      const threadId = currentSessionId;
+      if (aid && threadId) {
+        chatStore.patchAssistant(threadId, aid, (parts) =>
+          parts.map((p) =>
+            p.kind === "question" && p.meta?.questions?.some((q) => q.id === id)
+              ? {
+                  ...p,
+                  meta: {
+                    ...p.meta,
+                    questions: (p.meta.questions ?? []).map((q) =>
+                      q.id === id ? { ...q, answered: true } : q
+                    ),
+                  },
+                }
+              : p
+          )
+        );
+      }
+    },
+    [pendingApprovals, rpc, currentSessionId]
+  );
+
   return {
     messages,
     status,
     error,
     queuedPrompts,
+    pendingApprovals,
+    answerPendingApproval,
     send,
     stop,
     resume,

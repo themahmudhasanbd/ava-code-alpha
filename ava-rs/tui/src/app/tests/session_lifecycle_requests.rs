@@ -626,8 +626,7 @@ pub(super) async fn start_recording_app_server_with_realtime_speech(
     .await?;
 
     Ok((
-        AppServerSession::new(app_server, thread_params_mode)
-            .with_local_ava_home(&config.ava_home),
+        AppServerSession::new(app_server, thread_params_mode).with_local_ava_home(&config.ava_home),
         requests,
         proxy,
     ))
@@ -1228,10 +1227,9 @@ async fn local_daemon_registers_approval_gated_mcp_tools_for_both_start_paths() 
         forked["config"]["mcp_servers.ava_tui"],
         starts[0]["config"]["mcp_servers.ava_tui"]
     );
-    let authorization =
-        starts[0]["config"]["mcp_servers.ava_tui"]["http_headers"]["Authorization"]
-            .as_str()
-            .expect("MCP bearer token");
+    let authorization = starts[0]["config"]["mcp_servers.ava_tui"]["http_headers"]["Authorization"]
+        .as_str()
+        .expect("MCP bearer token");
     let client = ava_http_client::HttpClientBuilder::new().build_direct()?;
     let call_tool = |id: u32, tool: &'static str, arguments: serde_json::Value| {
         client
@@ -4142,8 +4140,7 @@ fn session_lifecycle_avoids_redundant_subagent_metadata_reads() -> Result<()> {
                 let (mut app, mut app_event_rx, _op_rx) = make_test_app_with_channels().await;
                 let ava_home = tempdir()?;
                 app.config.ava_home = ava_home.path().to_path_buf().abs();
-                app.config.sqlite =
-                    ava_state::SqliteConfig::new_for_testing(ava_home.path().abs());
+                app.config.sqlite = ava_state::SqliteConfig::new_for_testing(ava_home.path().abs());
                 let root_timestamp = "2026-01-01T00-00-00";
                 let root_thread_id = ThreadId::from_string(
                     &create_fake_rollout(
@@ -4178,11 +4175,8 @@ fn session_lifecycle_avoids_redundant_subagent_metadata_reads() -> Result<()> {
                     )
                     .expect("create child rollout"),
                 )?;
-                let root_rollout_path = rollout_path(
-                    ava_home.path(),
-                    root_timestamp,
-                    &root_thread_id.to_string(),
-                );
+                let root_rollout_path =
+                    rollout_path(ava_home.path(), root_timestamp, &root_thread_id.to_string());
                 let (started_tx, started_rx) = oneshot::channel();
                 let (release_tx, release_rx) = oneshot::channel();
                 let (mut app_server, requests, proxy) = start_recording_app_server(

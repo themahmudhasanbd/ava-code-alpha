@@ -122,8 +122,10 @@ impl<'de> Deserialize<'de> for WireApi {
         let value = String::deserialize(deserializer)?;
         match value.to_lowercase().as_str() {
             "responses" | "openai" => Ok(Self::Responses),
-            "chat" | "chat_completions" => Err(serde::de::Error::custom("wire_api = \"chat\" is not directly supported; AvA core requires an OpenAI Responses-compatible endpoint (`/v1/responses`). Use an endpoint or proxy supporting Responses, or set wire_api = \"responses\".")),
-            other => Err(serde::de::Error::custom(format!("unsupported wire_api: \"{other}\". Supported value is \"responses\" (OpenAI Responses API)"))),
+            "chat" | "chat_completions" => Err(serde::de::Error::custom(CHAT_WIRE_API_REMOVED_ERROR)),
+            other => Err(serde::de::Error::custom(format!(
+                "unsupported wire_api: \"{other}\". Supported value is \"responses\" (OpenAI Responses API)"
+            ))),
         }
     }
 }
@@ -142,6 +144,8 @@ pub struct ModelProviderInfo {
     pub model_catalog_url: Option<RedactedString>,
     /// Environment variable that stores the user's API key for this provider.
     pub env_key: Option<String>,
+    /// Multiple API keys or access tokens for automatic rotation when rate limits (429) or auth errors occur.
+    pub api_keys: Option<Vec<RedactedString>>,
 
     /// Optional instructions to help the user get a valid value for the
     /// variable and set it.
@@ -447,12 +451,23 @@ other non-default provider fields are not supported"
             };
             headers.insert(RESIDENCY_HEADER_NAME, value);
         }
+        let all_keys = self.all_api_keys().unwrap_or_default();
+        let has_multiple_keys = all_keys.len() > 1;
+        let retry_429 = has_multiple_keys;
+        let retry_auth = has_multiple_keys;
+        let max_attempts = if has_multiple_keys {
+            self.request_max_retries().max(all_keys.len() as u64)
+        } else {
+            self.request_max_retries()
+        };
+
         let retry = ApiRetryConfig {
-            max_attempts: self.request_max_retries(),
+            max_attempts,
             base_delay: Duration::from_millis(200),
-            retry_429: false,
+            retry_429,
             retry_5xx: true,
             retry_transport: true,
+            retry_auth,
         };
 
         Ok(ApiProvider {
@@ -470,36 +485,69 @@ other non-default provider fields are not supported"
         })
     }
 
-    /// If `env_key` is Some, returns the API key for this provider if present
-    /// in the environment or saved in auth.json. If `env_key` is required but
-    /// cannot be found, returns an error.
-    pub fn api_key(&self) -> AvaResult<Option<String>> {
-        match &self.env_key {
-            Some(env_key) => {
-                // 1. Check direct environment variable
-                if let Ok(val) = std::env::var(env_key) {
-                    let trimmed = val.trim();
-                    if !trimmed.is_empty() {
-                        return Ok(Some(trimmed.to_string()));
+    /// If `env_key` or `api_keys` is set, returns all available API keys/tokens for this provider
+    /// for load-balancing and automatic rotation upon rate-limit or auth failure.
+    pub fn all_api_keys(&self) -> AvaResult<Vec<String>> {
+        let mut keys = Vec::new();
+
+        if let Some(configured_keys) = &self.api_keys {
+            for key in configured_keys {
+                let s = key.as_str().trim();
+                if !s.is_empty() && !keys.contains(&s.to_string()) {
+                    keys.push(s.to_string());
+                }
+            }
+        }
+
+        if let Some(env_key) = &self.env_key {
+            // 1. Direct environment variable (supports comma, semicolon, newline separation)
+            if let Ok(val) = std::env::var(env_key) {
+                for part in val.split([',', '\n', ';']) {
+                    let trimmed = part.trim();
+                    if !trimmed.is_empty() && !keys.contains(&trimmed.to_string()) {
+                        keys.push(trimmed.to_string());
                     }
                 }
+            }
 
-                // 2. Check saved auth.json credentials
-                if let Some(token) = Self::find_token_in_auth_storage(env_key) {
-                    return Ok(Some(token));
+            // 2. Saved auth.json credentials
+            let stored_tokens = Self::find_all_tokens_in_auth_storage(env_key);
+            for token in stored_tokens {
+                let trimmed = token.trim();
+                if !trimmed.is_empty() && !keys.contains(&trimmed.to_string()) {
+                    keys.push(trimmed.to_string());
                 }
+            }
+        }
 
-                Err(AvaErr::EnvVar(EnvVarError {
+        if let Some(token) = &self.experimental_bearer_token {
+            let s = token.as_str().trim();
+            if !s.is_empty() && !keys.contains(&s.to_string()) {
+                keys.push(s.to_string());
+            }
+        }
+
+        if keys.is_empty() && self.env_key.is_some() {
+            if let Some(env_key) = &self.env_key {
+                return Err(AvaErr::EnvVar(EnvVarError {
                     var: env_key.clone(),
                     instructions: self.env_key_instructions.clone(),
-                }))
+                }));
             }
-            None => Ok(None),
         }
+
+        Ok(keys)
     }
 
-    /// Searches for token in standard auth.json credential locations
-    fn find_token_in_auth_storage(env_key: &str) -> Option<String> {
+    /// If `env_key` or `api_keys` is Some, returns the primary API key for this provider.
+    pub fn api_key(&self) -> AvaResult<Option<String>> {
+        let keys = self.all_api_keys()?;
+        Ok(keys.into_iter().next())
+    }
+
+    /// Searches for all matching tokens in standard auth.json credential locations
+    fn find_all_tokens_in_auth_storage(env_key: &str) -> Vec<String> {
+        let mut tokens = Vec::new();
         let mut candidate_paths = Vec::new();
 
         if let Ok(home_env) = std::env::var("AVA_CODE_HOME").or_else(|_| std::env::var("AVA_HOME"))
@@ -514,20 +562,46 @@ other non-default provider fields are not supported"
         for path in candidate_paths {
             if let Ok(content) = std::fs::read_to_string(&path) {
                 if let Ok(val) = serde_json::from_str::<serde_json::Value>(&content) {
-                    // 1. Check exact key match (e.g. "ANTIGRAVITY_API_KEY", "OPENAI_API_KEY", "CUSTOM_API_KEY")
-                    if let Some(token) = val.get(env_key).and_then(|v| v.as_str()) {
-                        let trimmed = token.trim();
-                        if !trimmed.is_empty() {
-                            return Some(trimmed.to_string());
+                    // Check array in "api_keys"
+                    if let Some(arr) = val.get("api_keys").and_then(|v| v.as_array()) {
+                        for item in arr {
+                            if let Some(s) = item.as_str() {
+                                let trimmed = s.trim();
+                                if !trimmed.is_empty() && !tokens.contains(&trimmed.to_string()) {
+                                    tokens.push(trimmed.to_string());
+                                }
+                            }
                         }
                     }
 
-                    // 2. Check "access_token" or nested "tokens.access_token" (Google Antigravity OAuth)
+                    // Check array in [env_key]
+                    if let Some(arr) = val.get(env_key).and_then(|v| v.as_array()) {
+                        for item in arr {
+                            if let Some(s) = item.as_str() {
+                                let trimmed = s.trim();
+                                if !trimmed.is_empty() && !tokens.contains(&trimmed.to_string()) {
+                                    tokens.push(trimmed.to_string());
+                                }
+                            }
+                        }
+                    }
+
+                    // Check string in [env_key]
+                    if let Some(token) = val.get(env_key).and_then(|v| v.as_str()) {
+                        for part in token.split([',', '\n', ';']) {
+                            let trimmed = part.trim();
+                            if !trimmed.is_empty() && !tokens.contains(&trimmed.to_string()) {
+                                tokens.push(trimmed.to_string());
+                            }
+                        }
+                    }
+
+                    // Check "access_token" or nested "tokens.access_token"
                     if env_key == "ANTIGRAVITY_API_KEY" || env_key == "OPENAI_API_KEY" {
                         if let Some(token) = val.get("access_token").and_then(|v| v.as_str()) {
                             let trimmed = token.trim();
-                            if !trimmed.is_empty() {
-                                return Some(trimmed.to_string());
+                            if !trimmed.is_empty() && !tokens.contains(&trimmed.to_string()) {
+                                tokens.push(trimmed.to_string());
                             }
                         }
                         if let Some(token) = val
@@ -536,32 +610,34 @@ other non-default provider fields are not supported"
                             .and_then(|v| v.as_str())
                         {
                             let trimmed = token.trim();
-                            if !trimmed.is_empty() {
-                                return Some(trimmed.to_string());
+                            if !trimmed.is_empty() && !tokens.contains(&trimmed.to_string()) {
+                                tokens.push(trimmed.to_string());
                             }
                         }
                     }
 
-                    // 3. Check "api_key"
+                    // Check "api_key"
                     if let Some(token) = val.get("api_key").and_then(|v| v.as_str()) {
-                        let trimmed = token.trim();
-                        if !trimmed.is_empty() {
-                            return Some(trimmed.to_string());
+                        for part in token.split([',', '\n', ';']) {
+                            let trimmed = part.trim();
+                            if !trimmed.is_empty() && !tokens.contains(&trimmed.to_string()) {
+                                tokens.push(trimmed.to_string());
+                            }
                         }
                     }
 
-                    // 4. Check "OPENAI_API_KEY"
+                    // Check "OPENAI_API_KEY"
                     if let Some(token) = val.get("OPENAI_API_KEY").and_then(|v| v.as_str()) {
                         let trimmed = token.trim();
-                        if !trimmed.is_empty() {
-                            return Some(trimmed.to_string());
+                        if !trimmed.is_empty() && !tokens.contains(&trimmed.to_string()) {
+                            tokens.push(trimmed.to_string());
                         }
                     }
                 }
             }
         }
 
-        None
+        tokens
     }
 
     /// Effective maximum number of request retries for this provider.
@@ -598,6 +674,7 @@ other non-default provider fields are not supported"
             base_url,
             model_catalog_url: None,
             env_key: None,
+            api_keys: None,
             env_key_instructions: None,
             experimental_bearer_token: None,
             auth: None,
@@ -646,6 +723,7 @@ other non-default provider fields are not supported"
             base_url: None,
             model_catalog_url: None,
             env_key: None,
+            api_keys: None,
             env_key_instructions: None,
             experimental_bearer_token: None,
             auth: None,
@@ -691,11 +769,10 @@ other non-default provider fields are not supported"
 
     pub fn supports_ava_backend_routes(&self) -> bool {
         self.is_openai()
-            && self.base_url.as_deref().is_none_or(|base_url| {
-                base_url
-                    .trim_end_matches('/')
-                    .ends_with("/backend-api/ava")
-            })
+            && self
+                .base_url
+                .as_deref()
+                .is_none_or(|base_url| { let u = base_url.trim_end_matches('/'); u.ends_with("/backend-api/ava") || u.ends_with("/backend-api/codex") })
     }
 
     pub fn uses_openai_actor_authorization(&self) -> bool {
@@ -705,6 +782,13 @@ other non-default provider fields are not supported"
                     name.eq_ignore_ascii_case(OPENAI_ACTOR_AUTHORIZATION_HEADER)
                         && !value.trim().is_empty()
                 })
+            })
+    }
+
+    pub fn is_antigravity(&self) -> bool {
+        self.name == "Google Antigravity"
+            || self.base_url.as_deref().is_some_and(|u| {
+                u.contains("cloudcode-pa.googleapis.com") || u.contains("daily-cloudcode-pa")
             })
     }
 
@@ -889,6 +973,7 @@ pub fn create_antigravity_provider() -> ModelProviderInfo {
         base_url: Some("https://daily-cloudcode-pa.googleapis.com".into()),
         model_catalog_url: None,
         env_key: Some("ANTIGRAVITY_API_KEY".into()),
+        api_keys: None,
         env_key_instructions: Some(
             "Set your Google Antigravity OAuth access token (ya29...) or API key in the ANTIGRAVITY_API_KEY environment variable."
                 .into(),
@@ -938,6 +1023,7 @@ pub fn create_custom_provider(
         base_url: Some(base_url.to_string()),
         model_catalog_url: None,
         env_key: env_key.map(str::to_string),
+        api_keys: None,
         env_key_instructions: None,
         experimental_bearer_token: None,
         auth: None,
@@ -985,6 +1071,7 @@ pub fn create_oss_provider_with_base_url(base_url: &str, wire_api: WireApi) -> M
         base_url: Some(base_url.into()),
         model_catalog_url: None,
         env_key: None,
+        api_keys: None,
         env_key_instructions: None,
         experimental_bearer_token: None,
         auth: None,

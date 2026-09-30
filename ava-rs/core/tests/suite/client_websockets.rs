@@ -145,10 +145,7 @@ fn turn_metadata(harness: &WebsocketTestHarness, turn_id: Option<&str>) -> AvaRe
     responses_metadata(harness, turn_id, TestAvaResponsesRequestKind::Turn)
 }
 
-fn prewarm_metadata(
-    harness: &WebsocketTestHarness,
-    turn_id: Option<&str>,
-) -> AvaResponsesMetadata {
+fn prewarm_metadata(harness: &WebsocketTestHarness, turn_id: Option<&str>) -> AvaResponsesMetadata {
     responses_metadata(harness, turn_id, TestAvaResponsesRequestKind::Prewarm)
 }
 
@@ -1355,9 +1352,7 @@ async fn responses_websocket_preconnect_runs_when_only_v2_feature_enabled() {
         None
     );
     assert_eq!(
-        server
-            .single_handshake()
-            .header(X_AVA_ROUTING_HINT_HEADER),
+        server.single_handshake().header(X_AVA_ROUTING_HINT_HEADER),
         None
     );
 
@@ -1873,17 +1868,16 @@ async fn responses_websocket_usage_limit_error_emits_rate_limit_event() {
         .await
         .expect("build websocket ava");
 
-    let submission = test
-        .ava-code
-        .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
-            text: "hello".into(),
-            text_elements: Vec::new(),
-        }]))
-        .await
-        .expect("submission should succeed while emitting usage limit error events");
+    let submission = test.ava
+        - code
+            .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
+                text: "hello".into(),
+                text_elements: Vec::new(),
+            }]))
+            .await
+            .expect("submission should succeed while emitting usage limit error events");
 
-    let token_event =
-        wait_for_event(&test.ava, |msg| matches!(msg, EventMsg::TokenCount(_))).await;
+    let token_event = wait_for_event(&test.ava, |msg| matches!(msg, EventMsg::TokenCount(_))).await;
     let EventMsg::TokenCount(event) = token_event else {
         unreachable!();
     };
@@ -1962,14 +1956,14 @@ async fn responses_websocket_invalid_request_error_with_status_is_forwarded() {
         .await
         .expect("build websocket ava");
 
-    let submission = test
-        .ava-code
-        .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
-            text: "hello".into(),
-            text_elements: Vec::new(),
-        }]))
-        .await
-        .expect("submission should succeed while emitting invalid request events");
+    let submission = test.ava
+        - code
+            .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
+                text: "hello".into(),
+                text_elements: Vec::new(),
+            }]))
+            .await
+            .expect("submission should succeed while emitting invalid request events");
 
     let error_event = wait_for_event(&test.ava, |msg| matches!(msg, EventMsg::Error(_))).await;
     let EventMsg::Error(error_event) = error_event else {

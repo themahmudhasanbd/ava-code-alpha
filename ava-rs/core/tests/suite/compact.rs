@@ -566,18 +566,17 @@ async fn summarize_context_three_requests_and_instructions(
     let rollout_path = test.session_configured.rollout_path.expect("rollout path");
 
     // 1) Normal user input – should hit server once.
-    ava
-        .start_or_steer_turn(TurnInputRequest::user_input(vec![
-            UserInput::Text {
-                text: "hello world".into(),
-                text_elements: Vec::new(),
-            },
-            UserInput::Text {
-                text: " second fragment".into(),
-                text_elements: Vec::new(),
-            },
-        ]))
-        .await?;
+    ava.start_or_steer_turn(TurnInputRequest::user_input(vec![
+        UserInput::Text {
+            text: "hello world".into(),
+            text_elements: Vec::new(),
+        },
+        UserInput::Text {
+            text: " second fragment".into(),
+            text_elements: Vec::new(),
+        },
+    ]))
+    .await?;
     wait_for_event(&ava, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
 
     // 2) Summarize – second hit should include the summarization prompt.
@@ -590,12 +589,11 @@ async fn summarize_context_three_requests_and_instructions(
     wait_for_event(&ava, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
 
     // 3) Next user input – third hit; history should include only the summary.
-    ava
-        .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
-            text: THIRD_USER_MSG.into(),
-            text_elements: Vec::new(),
-        }]))
-        .await?;
+    ava.start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
+        text: THIRD_USER_MSG.into(),
+        text_elements: Vec::new(),
+    }]))
+    .await?;
     wait_for_event(&ava, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
 
     // Inspect the three captured requests.
@@ -806,13 +804,12 @@ async fn manual_pre_compact_block_decision_does_not_block_compaction() {
     let test = builder.build(&server).await.expect("create conversation");
     let ava = test.ava.clone();
 
-    ava
-        .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
-            text: "hello before blocked compact".to_string(),
-            text_elements: Vec::new(),
-        }]))
-        .await
-        .expect("submit first user turn");
+    ava.start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
+        text: "hello before blocked compact".to_string(),
+        text_elements: Vec::new(),
+    }]))
+    .await
+    .expect("submit first user turn");
     wait_for_event(&ava, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
 
     ava.submit(Op::Compact).await.expect("trigger compact");
@@ -873,13 +870,12 @@ async fn compact_hooks_respect_matchers_and_post_runs_after_compaction() {
     let test = builder.build(&server).await.expect("create conversation");
     let ava = test.ava.clone();
 
-    ava
-        .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
-            text: "hello before matched compact".to_string(),
-            text_elements: Vec::new(),
-        }]))
-        .await
-        .expect("submit first user turn");
+    ava.start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
+        text: "hello before matched compact".to_string(),
+        text_elements: Vec::new(),
+    }]))
+    .await
+    .expect("submit first user turn");
     wait_for_event(&ava, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
 
     ava.submit(Op::Compact).await.expect("trigger compact");
@@ -895,8 +891,7 @@ async fn compact_hooks_respect_matchers_and_post_runs_after_compaction() {
         "auto matcher should not run for manual compaction"
     );
 
-    let hook_inputs =
-        read_hook_inputs(&test.ava_home_path().join("post_compact_manual_log.jsonl"));
+    let hook_inputs = read_hook_inputs(&test.ava_home_path().join("post_compact_manual_log.jsonl"));
     assert_eq!(hook_inputs.len(), 1);
     let input = &hook_inputs[0];
     assert_eq!(input["hook_event_name"], "PostCompact");
@@ -935,15 +930,15 @@ async fn manual_compact_uses_custom_prompt() {
         .build(&server)
         .await
         .expect("create conversation")
-        .ava-code;
+        .ava
+        - code;
 
-    ava
-        .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
-            text: "USER_ONE".to_string(),
-            text_elements: Vec::new(),
-        }]))
-        .await
-        .expect("submit first user turn");
+    ava.start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
+        text: "USER_ONE".to_string(),
+        text_elements: Vec::new(),
+    }]))
+    .await
+    .expect("submit first user turn");
     wait_for_event(&ava, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
 
     ava.submit(Op::Compact).await.expect("trigger compact");
@@ -1252,15 +1247,14 @@ async fn manual_compact_emits_context_compaction_items() {
         config.model_provider = model_provider;
         set_test_compact_prompt(config);
     });
-    let ava = builder.build(&server).await.unwrap().ava-code;
+    let ava = builder.build(&server).await.unwrap().ava - code;
 
-    ava
-        .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
-            text: "manual compact".into(),
-            text_elements: Vec::new(),
-        }]))
-        .await
-        .unwrap();
+    ava.start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
+        text: "manual compact".into(),
+        text_elements: Vec::new(),
+    }]))
+    .await
+    .unwrap();
     wait_for_event(&ava, |event| matches!(event, EventMsg::TurnComplete(_))).await;
 
     ava.submit(Op::Compact).await.unwrap();
@@ -1882,35 +1876,32 @@ async fn auto_compact_runs_after_token_limit_hit() {
         set_test_compact_prompt(config);
         config.model_auto_compact_token_limit = Some(200_000);
     });
-    let ava = builder.build(&server).await.unwrap().ava-code;
+    let ava = builder.build(&server).await.unwrap().ava - code;
 
-    ava
-        .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
-            text: FIRST_AUTO_MSG.into(),
-            text_elements: Vec::new(),
-        }]))
-        .await
-        .unwrap();
-
-    wait_for_event(&ava, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
-
-    ava
-        .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
-            text: SECOND_AUTO_MSG.into(),
-            text_elements: Vec::new(),
-        }]))
-        .await
-        .unwrap();
+    ava.start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
+        text: FIRST_AUTO_MSG.into(),
+        text_elements: Vec::new(),
+    }]))
+    .await
+    .unwrap();
 
     wait_for_event(&ava, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
 
-    ava
-        .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
-            text: POST_AUTO_USER_MSG.into(),
-            text_elements: Vec::new(),
-        }]))
-        .await
-        .unwrap();
+    ava.start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
+        text: SECOND_AUTO_MSG.into(),
+        text_elements: Vec::new(),
+    }]))
+    .await
+    .unwrap();
+
+    wait_for_event(&ava, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
+
+    ava.start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
+        text: POST_AUTO_USER_MSG.into(),
+        text_elements: Vec::new(),
+    }]))
+    .await
+    .unwrap();
 
     wait_for_event(&ava, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
 
@@ -2062,20 +2053,19 @@ async fn auto_compact_emits_context_compaction_items() {
         set_test_compact_prompt(config);
         config.model_auto_compact_token_limit = Some(200_000);
     });
-    let ava = builder.build(&server).await.unwrap().ava-code;
+    let ava = builder.build(&server).await.unwrap().ava - code;
 
     let mut started_item = None;
     let mut completed_item = None;
     let mut legacy_event = false;
 
     for user in [FIRST_AUTO_MSG, SECOND_AUTO_MSG, POST_AUTO_USER_MSG] {
-        ava
-            .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
-                text: user.into(),
-                text_elements: Vec::new(),
-            }]))
-            .await
-            .unwrap();
+        ava.start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
+            text: user.into(),
+            text_elements: Vec::new(),
+        }]))
+        .await
+        .unwrap();
 
         loop {
             let event = ava.next_event().await.unwrap();
@@ -2142,33 +2132,30 @@ async fn auto_compact_starts_after_turn_started() {
         set_test_compact_prompt(config);
         config.model_auto_compact_token_limit = Some(200_000);
     });
-    let ava = builder.build(&server).await.unwrap().ava-code;
+    let ava = builder.build(&server).await.unwrap().ava - code;
 
-    ava
-        .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
-            text: FIRST_AUTO_MSG.into(),
-            text_elements: Vec::new(),
-        }]))
-        .await
-        .unwrap();
+    ava.start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
+        text: FIRST_AUTO_MSG.into(),
+        text_elements: Vec::new(),
+    }]))
+    .await
+    .unwrap();
     wait_for_event(&ava, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
 
-    ava
-        .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
-            text: SECOND_AUTO_MSG.into(),
-            text_elements: Vec::new(),
-        }]))
-        .await
-        .unwrap();
+    ava.start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
+        text: SECOND_AUTO_MSG.into(),
+        text_elements: Vec::new(),
+    }]))
+    .await
+    .unwrap();
     wait_for_event(&ava, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
 
-    ava
-        .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
-            text: POST_AUTO_USER_MSG.into(),
-            text_elements: Vec::new(),
-        }]))
-        .await
-        .unwrap();
+    ava.start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
+        text: POST_AUTO_USER_MSG.into(),
+        text_elements: Vec::new(),
+    }]))
+    .await
+    .unwrap();
 
     let first = wait_for_event_match(&ava, |ev| match ev {
         EventMsg::TurnStarted(_) => Some("turn"),
@@ -2245,15 +2232,15 @@ async fn auto_compact_runs_after_resume_when_token_usage_is_over_limit() {
     ]);
     let response_mock = mount_sse_sequence(&server, vec![compact_turn, sse_follow_up]).await;
 
-    resumed
-        .ava-code
-        .start_or_steer_turn(disabled_permission_user_turn(
-            follow_up_user,
-            resumed.cwd.path().to_path_buf(),
-            resumed.session_configured.model.clone(),
-        ))
-        .await
-        .unwrap();
+    resumed.ava
+        - code
+            .start_or_steer_turn(disabled_permission_user_turn(
+                follow_up_user,
+                resumed.cwd.path().to_path_buf(),
+                resumed.session_configured.model.clone(),
+            ))
+            .await
+            .unwrap();
 
     wait_for_event(&resumed.ava, |event| {
         matches!(event, EventMsg::ContextCompacted(_))
@@ -2630,25 +2617,25 @@ async fn pre_sampling_compact_falls_back_from_retired_previous_model_after_renam
         .clone()
         .expect("rollout path");
 
-    initial
-        .ava-code
-        .start_or_steer_turn(disabled_permission_user_turn(
-            "before switch",
-            initial.cwd.path().to_path_buf(),
-            retired_model.to_string(),
-        ))
-        .await
-        .expect("submit first user turn");
+    initial.ava
+        - code
+            .start_or_steer_turn(disabled_permission_user_turn(
+                "before switch",
+                initial.cwd.path().to_path_buf(),
+                retired_model.to_string(),
+            ))
+            .await
+            .expect("submit first user turn");
     wait_for_event(&initial.ava, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;
 
-    initial
-        .ava-code
-        .submit(Op::Shutdown)
-        .await
-        .expect("shutdown initial session");
+    initial.ava
+        - code
+            .submit(Op::Shutdown)
+            .await
+            .expect("shutdown initial session");
     wait_for_event(&initial.ava, |event| {
         matches!(event, EventMsg::ShutdownComplete)
     })
@@ -2667,15 +2654,15 @@ async fn pre_sampling_compact_falls_back_from_retired_previous_model_after_renam
         .await
         .expect("resume ava");
 
-    resumed
-        .ava-code
-        .start_or_steer_turn(disabled_permission_user_turn(
-            "after switch",
-            resumed.cwd.path().to_path_buf(),
-            renamed_model.to_string(),
-        ))
-        .await
-        .expect("submit renamed-model turn");
+    resumed.ava
+        - code
+            .start_or_steer_turn(disabled_permission_user_turn(
+                "after switch",
+                resumed.cwd.path().to_path_buf(),
+                renamed_model.to_string(),
+            ))
+            .await
+            .expect("submit renamed-model turn");
     assert_compaction_uses_turn_lifecycle_id(&resumed.ava).await;
 
     let requests = request_log.requests();
@@ -2769,25 +2756,25 @@ async fn pre_sampling_compact_falls_back_when_previous_model_is_not_found() {
         .clone()
         .expect("rollout path");
 
-    initial
-        .ava-code
-        .start_or_steer_turn(disabled_permission_user_turn(
-            "before switch",
-            initial.cwd.path().to_path_buf(),
-            retired_model.to_string(),
-        ))
-        .await
-        .expect("submit first user turn");
+    initial.ava
+        - code
+            .start_or_steer_turn(disabled_permission_user_turn(
+                "before switch",
+                initial.cwd.path().to_path_buf(),
+                retired_model.to_string(),
+            ))
+            .await
+            .expect("submit first user turn");
     wait_for_event(&initial.ava, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;
 
-    initial
-        .ava-code
-        .submit(Op::Shutdown)
-        .await
-        .expect("shutdown initial session");
+    initial.ava
+        - code
+            .submit(Op::Shutdown)
+            .await
+            .expect("shutdown initial session");
     wait_for_event(&initial.ava, |event| {
         matches!(event, EventMsg::ShutdownComplete)
     })
@@ -2807,15 +2794,15 @@ async fn pre_sampling_compact_falls_back_when_previous_model_is_not_found() {
         .await
         .expect("resume ava");
 
-    resumed
-        .ava-code
-        .start_or_steer_turn(disabled_permission_user_turn(
-            "after switch",
-            resumed.cwd.path().to_path_buf(),
-            renamed_model.to_string(),
-        ))
-        .await
-        .expect("submit renamed-model turn");
+    resumed.ava
+        - code
+            .start_or_steer_turn(disabled_permission_user_turn(
+                "after switch",
+                resumed.cwd.path().to_path_buf(),
+                renamed_model.to_string(),
+            ))
+            .await
+            .expect("submit renamed-model turn");
     assert_compaction_uses_turn_lifecycle_id(&resumed.ava).await;
 
     let requests = request_log.requests();
@@ -3410,25 +3397,25 @@ async fn pre_sampling_compact_runs_after_resume_and_switch_to_smaller_model() {
         .clone()
         .expect("rollout path");
 
-    initial
-        .ava-code
-        .start_or_steer_turn(disabled_permission_user_turn(
-            "before resume",
-            initial.cwd.path().to_path_buf(),
-            previous_model.to_string(),
-        ))
-        .await
-        .expect("submit pre-resume turn");
+    initial.ava
+        - code
+            .start_or_steer_turn(disabled_permission_user_turn(
+                "before resume",
+                initial.cwd.path().to_path_buf(),
+                previous_model.to_string(),
+            ))
+            .await
+            .expect("submit pre-resume turn");
     wait_for_event(&initial.ava, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;
 
-    initial
-        .ava-code
-        .submit(Op::Shutdown)
-        .await
-        .expect("shutdown initial session");
+    initial.ava
+        - code
+            .submit(Op::Shutdown)
+            .await
+            .expect("shutdown initial session");
     wait_for_event(&initial.ava, |event| {
         matches!(event, EventMsg::ShutdownComplete)
     })
@@ -3447,15 +3434,15 @@ async fn pre_sampling_compact_runs_after_resume_and_switch_to_smaller_model() {
         .await
         .expect("resume ava");
 
-    resumed
-        .ava-code
-        .start_or_steer_turn(disabled_permission_user_turn(
-            "after resume",
-            resumed.cwd.path().to_path_buf(),
-            next_model.to_string(),
-        ))
-        .await
-        .expect("submit resumed user turn");
+    resumed.ava
+        - code
+            .start_or_steer_turn(disabled_permission_user_turn(
+                "after resume",
+                resumed.cwd.path().to_path_buf(),
+                next_model.to_string(),
+            ))
+            .await
+            .expect("submit resumed user turn");
     assert_compaction_uses_turn_lifecycle_id(&resumed.ava).await;
 
     let requests = request_log.requests();
@@ -3531,25 +3518,25 @@ async fn pre_sampling_compact_recovers_comp_hash_after_resume() {
         .clone()
         .expect("rollout path");
 
-    initial
-        .ava-code
-        .start_or_steer_turn(disabled_permission_user_turn(
-            "before resume",
-            initial.cwd.path().to_path_buf(),
-            previous_model.to_string(),
-        ))
-        .await
-        .expect("submit pre-resume turn");
+    initial.ava
+        - code
+            .start_or_steer_turn(disabled_permission_user_turn(
+                "before resume",
+                initial.cwd.path().to_path_buf(),
+                previous_model.to_string(),
+            ))
+            .await
+            .expect("submit pre-resume turn");
     wait_for_event(&initial.ava, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;
 
-    initial
-        .ava-code
-        .submit(Op::Shutdown)
-        .await
-        .expect("shutdown initial session");
+    initial.ava
+        - code
+            .submit(Op::Shutdown)
+            .await
+            .expect("shutdown initial session");
     wait_for_event(&initial.ava, |event| {
         matches!(event, EventMsg::ShutdownComplete)
     })
@@ -3578,15 +3565,15 @@ async fn pre_sampling_compact_recovers_comp_hash_after_resume() {
         .await
         .expect("resume ava");
 
-    resumed
-        .ava-code
-        .start_or_steer_turn(disabled_permission_user_turn(
-            "after resume",
-            resumed.cwd.path().to_path_buf(),
-            next_model.to_string(),
-        ))
-        .await
-        .expect("submit resumed user turn");
+    resumed.ava
+        - code
+            .start_or_steer_turn(disabled_permission_user_turn(
+                "after resume",
+                resumed.cwd.path().to_path_buf(),
+                next_model.to_string(),
+            ))
+            .await
+            .expect("submit resumed user turn");
     assert_compaction_uses_turn_lifecycle_id(&resumed.ava).await;
 
     let requests = request_log.requests();
@@ -3658,25 +3645,25 @@ async fn pre_sampling_compact_skips_missing_comp_hash_after_resume() {
         .clone()
         .expect("rollout path");
 
-    initial
-        .ava-code
-        .start_or_steer_turn(disabled_permission_user_turn(
-            "before resume",
-            initial.cwd.path().to_path_buf(),
-            previous_model.to_string(),
-        ))
-        .await
-        .expect("submit pre-resume turn");
+    initial.ava
+        - code
+            .start_or_steer_turn(disabled_permission_user_turn(
+                "before resume",
+                initial.cwd.path().to_path_buf(),
+                previous_model.to_string(),
+            ))
+            .await
+            .expect("submit pre-resume turn");
     wait_for_event(&initial.ava, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
     .await;
 
-    initial
-        .ava-code
-        .submit(Op::Shutdown)
-        .await
-        .expect("shutdown initial session");
+    initial.ava
+        - code
+            .submit(Op::Shutdown)
+            .await
+            .expect("shutdown initial session");
     wait_for_event(&initial.ava, |event| {
         matches!(event, EventMsg::ShutdownComplete)
     })
@@ -3703,15 +3690,15 @@ async fn pre_sampling_compact_skips_missing_comp_hash_after_resume() {
         .await
         .expect("resume ava");
 
-    resumed
-        .ava-code
-        .start_or_steer_turn(disabled_permission_user_turn(
-            "after resume",
-            resumed.cwd.path().to_path_buf(),
-            next_model.to_string(),
-        ))
-        .await
-        .expect("submit resumed user turn");
+    resumed.ava
+        - code
+            .start_or_steer_turn(disabled_permission_user_turn(
+                "after resume",
+                resumed.cwd.path().to_path_buf(),
+                next_model.to_string(),
+            ))
+            .await
+            .expect("submit resumed user turn");
     wait_for_event(&resumed.ava, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
@@ -3799,31 +3786,28 @@ async fn auto_compact_persists_rollout_entries() {
     let ava = test.ava.clone();
     let session_configured = test.session_configured;
 
-    ava
-        .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
-            text: FIRST_AUTO_MSG.into(),
-            text_elements: Vec::new(),
-        }]))
-        .await
-        .unwrap();
+    ava.start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
+        text: FIRST_AUTO_MSG.into(),
+        text_elements: Vec::new(),
+    }]))
+    .await
+    .unwrap();
     wait_for_event(&ava, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
 
-    ava
-        .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
-            text: SECOND_AUTO_MSG.into(),
-            text_elements: Vec::new(),
-        }]))
-        .await
-        .unwrap();
+    ava.start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
+        text: SECOND_AUTO_MSG.into(),
+        text_elements: Vec::new(),
+    }]))
+    .await
+    .unwrap();
     wait_for_event(&ava, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
 
-    ava
-        .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
-            text: POST_AUTO_USER_MSG.into(),
-            text_elements: Vec::new(),
-        }]))
-        .await
-        .unwrap();
+    ava.start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
+        text: POST_AUTO_USER_MSG.into(),
+        text_elements: Vec::new(),
+    }]))
+    .await
+    .unwrap();
     wait_for_event(&ava, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
 
     let expected_settings = ava.thread_settings_snapshot().await;
@@ -3905,15 +3889,14 @@ async fn manual_compact_retries_after_context_window_error() {
         set_test_compact_prompt(config);
         config.model_auto_compact_token_limit = Some(200_000);
     });
-    let ava = builder.build(&server).await.unwrap().ava-code;
+    let ava = builder.build(&server).await.unwrap().ava - code;
 
-    ava
-        .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
-            text: "first turn".into(),
-            text_elements: Vec::new(),
-        }]))
-        .await
-        .unwrap();
+    ava.start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
+        text: "first turn".into(),
+        text_elements: Vec::new(),
+    }]))
+    .await
+    .unwrap();
     wait_for_event(&ava, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
 
     ava.submit(Op::Compact).await.unwrap();
@@ -4003,15 +3986,15 @@ async fn manual_compact_non_context_failure_retries_then_emits_task_error() {
         .build(&server)
         .await
         .expect("build ava")
-        .ava-code;
+        .ava
+        - code;
 
-    ava
-        .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
-            text: "first turn".into(),
-            text_elements: Vec::new(),
-        }]))
-        .await
-        .expect("submit user input");
+    ava.start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
+        text: "first turn".into(),
+        text_elements: Vec::new(),
+    }]))
+    .await
+    .expect("submit user input");
     wait_for_event(&ava, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
 
     ava.submit(Op::Compact).await.expect("trigger compact");
@@ -4093,39 +4076,36 @@ async fn manual_compact_twice_preserves_latest_user_messages() {
         config.model_provider = model_provider;
         set_test_compact_prompt(config);
     });
-    let ava = builder.build(&server).await.unwrap().ava-code;
+    let ava = builder.build(&server).await.unwrap().ava - code;
 
-    ava
-        .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
-            text: first_user_message.into(),
-            text_elements: Vec::new(),
-        }]))
-        .await
-        .unwrap();
+    ava.start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
+        text: first_user_message.into(),
+        text_elements: Vec::new(),
+    }]))
+    .await
+    .unwrap();
     wait_for_event(&ava, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
 
     ava.submit(Op::Compact).await.unwrap();
     wait_for_event(&ava, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
 
-    ava
-        .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
-            text: second_user_message.into(),
-            text_elements: Vec::new(),
-        }]))
-        .await
-        .unwrap();
+    ava.start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
+        text: second_user_message.into(),
+        text_elements: Vec::new(),
+    }]))
+    .await
+    .unwrap();
     wait_for_event(&ava, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
 
     ava.submit(Op::Compact).await.unwrap();
     wait_for_event(&ava, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
 
-    ava
-        .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
-            text: final_user_message.into(),
-            text_elements: Vec::new(),
-        }]))
-        .await
-        .unwrap();
+    ava.start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
+        text: final_user_message.into(),
+        text_elements: Vec::new(),
+    }]))
+    .await
+    .unwrap();
     wait_for_event(&ava, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
 
     let requests = responses_mock.requests();
@@ -4314,17 +4294,16 @@ async fn auto_compact_allows_multiple_attempts_when_interleaved_with_other_turn_
         // Leave enough headroom for per-item request metadata before the second compaction.
         config.model_auto_compact_token_limit = Some(300);
     });
-    let ava = builder.build(&server).await.unwrap().ava-code;
+    let ava = builder.build(&server).await.unwrap().ava - code;
 
     let mut auto_compact_lifecycle_events = Vec::new();
     for user in [MULTI_AUTO_MSG, follow_up_user, final_user] {
-        ava
-            .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
-                text: user.into(),
-                text_elements: Vec::new(),
-            }]))
-            .await
-            .unwrap();
+        ava.start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
+            text: user.into(),
+            text_elements: Vec::new(),
+        }]))
+        .await
+        .unwrap();
 
         loop {
             let event = ava.next_event().await.unwrap();
@@ -4416,15 +4395,14 @@ async fn snapshot_request_shape_mid_turn_continuation_compaction() {
         config.model_context_window = Some(context_window);
         config.model_auto_compact_token_limit = Some(limit);
     });
-    let ava = builder.build(&server).await.unwrap().ava-code;
+    let ava = builder.build(&server).await.unwrap().ava - code;
 
-    ava
-        .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
-            text: FUNCTION_CALL_LIMIT_MSG.into(),
-            text_elements: Vec::new(),
-        }]))
-        .await
-        .unwrap();
+    ava.start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
+        text: FUNCTION_CALL_LIMIT_MSG.into(),
+        text_elements: Vec::new(),
+    }]))
+    .await
+    .unwrap();
 
     wait_for_event(&ava, |msg| matches!(msg, EventMsg::TurnComplete(_))).await;
 
@@ -4823,19 +4801,19 @@ async fn auto_compact_accounts_for_encrypted_reasoning(first_response_includes_r
         .build(&server)
         .await
         .expect("build ava")
-        .ava-code;
+        .ava
+        - code;
 
     for (idx, user) in [first_user, second_user, third_user]
         .into_iter()
         .enumerate()
     {
-        ava
-            .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
-                text: user.into(),
-                text_elements: Vec::new(),
-            }]))
-            .await
-            .expect("start user turn");
+        ava.start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
+            text: user.into(),
+            text_elements: Vec::new(),
+        }]))
+        .await
+        .expect("start user turn");
         wait_for_event(&ava, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
 
         if idx < 2 {
@@ -4906,16 +4884,16 @@ async fn snapshot_request_shape_pre_turn_compaction_including_incoming_user_mess
         .build(&server)
         .await
         .expect("build ava")
-        .ava-code;
+        .ava
+        - code;
 
     for user in ["USER_ONE", "USER_TWO"] {
-        ava
-            .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
-                text: user.to_string(),
-                text_elements: Vec::new(),
-            }]))
-            .await
-            .expect("submit user input");
+        ava.start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
+            text: user.to_string(),
+            text_elements: Vec::new(),
+        }]))
+        .await
+        .expect("submit user input");
         wait_for_event(&ava, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
     }
     core_test_support::submit_thread_settings(
@@ -4931,21 +4909,20 @@ async fn snapshot_request_shape_pre_turn_compaction_including_incoming_user_mess
     .expect("override thread settings");
     let image_url = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR4nGP4z8DwHwAFAAH/iZk9HQAAAABJRU5ErkJggg=="
         .to_string();
-    ava
-        .start_or_steer_turn(TurnInputRequest::user_input(vec![
-            UserInput::Image {
-                image: ImageReference::Inline {
-                    image_url: image_url.clone(),
-                },
-                detail: None,
+    ava.start_or_steer_turn(TurnInputRequest::user_input(vec![
+        UserInput::Image {
+            image: ImageReference::Inline {
+                image_url: image_url.clone(),
             },
-            UserInput::Text {
-                text: "USER_THREE".to_string(),
-                text_elements: Vec::new(),
-            },
-        ]))
-        .await
-        .expect("submit user input");
+            detail: None,
+        },
+        UserInput::Text {
+            text: "USER_THREE".to_string(),
+            text_elements: Vec::new(),
+        },
+    ]))
+    .await
+    .expect("submit user input");
     wait_for_event(&ava, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
 
     let requests = request_log.requests();
@@ -5125,24 +5102,23 @@ async fn snapshot_request_shape_pre_turn_compaction_context_window_exceeded() {
         .build(&server)
         .await
         .expect("build ava")
-        .ava-code;
+        .ava
+        - code;
 
-    ava
-        .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
-            text: "USER_ONE".to_string(),
-            text_elements: Vec::new(),
-        }]))
-        .await
-        .expect("submit first user");
+    ava.start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
+        text: "USER_ONE".to_string(),
+        text_elements: Vec::new(),
+    }]))
+    .await
+    .expect("submit first user");
     wait_for_event(&ava, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
 
-    ava
-        .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
-            text: "USER_TWO".to_string(),
-            text_elements: Vec::new(),
-        }]))
-        .await
-        .expect("submit second user");
+    ava.start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
+        text: "USER_TWO".to_string(),
+        text_elements: Vec::new(),
+    }]))
+    .await
+    .expect("submit second user");
     let error_message = wait_for_event_match(&ava, |event| match event {
         EventMsg::Error(err) => Some(err.message.clone()),
         _ => None,
@@ -5199,18 +5175,18 @@ async fn snapshot_request_shape_manual_compact_without_previous_user_messages() 
         .build(&server)
         .await
         .expect("build ava")
-        .ava-code;
+        .ava
+        - code;
 
     ava.submit(Op::Compact).await.expect("run /compact");
     wait_for_event(&ava, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
 
-    ava
-        .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
-            text: "AFTER_MANUAL_EMPTY_COMPACT".to_string(),
-            text_elements: Vec::new(),
-        }]))
-        .await
-        .expect("submit follow-up user input");
+    ava.start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
+        text: "AFTER_MANUAL_EMPTY_COMPACT".to_string(),
+        text_elements: Vec::new(),
+    }]))
+    .await
+    .expect("submit follow-up user input");
     wait_for_event(&ava, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
 
     let requests = request_log.requests();

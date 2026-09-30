@@ -169,8 +169,7 @@ const X_AVA_WS_STREAM_REQUEST_START_MS_CLIENT_METADATA_KEY: &str =
 const WS_REQUEST_HEADER_RESPONSES_LITE_CLIENT_METADATA_KEY: &str =
     "ws_request_header_x_openai_internal_ava_responses_lite";
 const RESPONSES_WEBSOCKETS_V2_BETA_HEADER_VALUE: &str = "responses_websockets=2026-02-06";
-const X_OPENAI_INTERNAL_AVA_RESPONSES_LITE_HEADER: &str =
-    "x-openai-internal-ava-responses-lite";
+const X_OPENAI_INTERNAL_AVA_RESPONSES_LITE_HEADER: &str = "x-openai-internal-ava-responses-lite";
 const REALTIME_CALLS_ENDPOINT: &str = "/realtime/calls";
 const MEMORIES_SUMMARIZE_ENDPOINT: &str = "/memories/trace_summarize";
 #[cfg(test)]

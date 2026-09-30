@@ -539,13 +539,12 @@ mod tests {
         );
         assert!(!provider.uses_aws_auth_recovery());
 
-        let access_keys_auth_manager = AuthManager::from_auth_for_testing(
-            AvaAuth::BedrockAccessKeys(BedrockAccessKeysAuth {
+        let access_keys_auth_manager =
+            AuthManager::from_auth_for_testing(AvaAuth::BedrockAccessKeys(BedrockAccessKeysAuth {
                 access_key_id: "managed-access-key-id".to_string(),
                 secret_access_key: "managed-secret-access-key".to_string(),
                 session_token: None,
-            }),
-        );
+            }));
 
         for auth_manager in [auth_manager, access_keys_auth_manager] {
             let configured_profile_provider = AmazonBedrockModelProvider::new(
@@ -653,8 +652,7 @@ mod tests {
             api_key: "managed-bedrock-api-key".to_string(),
             region: "eu-west-1".to_string(),
         };
-        let auth_manager =
-            AuthManager::from_auth_for_testing(AvaAuth::BedrockApiKey(managed_auth));
+        let auth_manager = AuthManager::from_auth_for_testing(AvaAuth::BedrockApiKey(managed_auth));
         let provider = AmazonBedrockModelProvider::new(
             ModelProviderInfo::create_amazon_bedrock_runtime_provider(/*aws*/ None),
             Some(auth_manager),

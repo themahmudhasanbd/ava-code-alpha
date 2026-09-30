@@ -183,12 +183,10 @@ async fn websocket_first_turn_uses_startup_prewarm_and_create(
     ]])
     .await;
 
-    let mut builder = test_ava()
-        .with_model("gpt-5.2")
-        .with_config(move |config| {
-            config.update_plan_enabled = update_plan_enabled;
-            config.analytics_enabled = Some(false);
-        });
+    let mut builder = test_ava().with_model("gpt-5.2").with_config(move |config| {
+        config.update_plan_enabled = update_plan_enabled;
+        config.analytics_enabled = Some(false);
+    });
     let test = builder.build_with_websocket_server(&server).await?;
     test.submit_turn_with_policy("hello", test.config.legacy_sandbox_policy())
         .await?;

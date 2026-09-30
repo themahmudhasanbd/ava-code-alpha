@@ -750,9 +750,9 @@ SELECT
             ThreadHistoryMode::Paginated,
         )
         .expect("session file");
-        let pool = ava_state::open_thread_history_db(
-            &ava_state::SqliteConfig::new_for_testing(home.path().abs()),
-        )
+        let pool = ava_state::open_thread_history_db(&ava_state::SqliteConfig::new_for_testing(
+            home.path().abs(),
+        ))
         .await
         .expect("open thread history db");
         let thread_id_string = thread_id.to_string();

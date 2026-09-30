@@ -32,9 +32,8 @@ unsafe extern "system" {
 /// Capture the startup request once; this flag never authorizes a package or process.
 pub fn registered_core_requested() -> bool {
     static REQUESTED: OnceLock<bool> = OnceLock::new();
-    *REQUESTED.get_or_init(|| {
-        requested_value(std::env::var_os("AVA_WINDOWS_REGISTERED_CORE").as_deref())
-    })
+    *REQUESTED
+        .get_or_init(|| requested_value(std::env::var_os("AVA_WINDOWS_REGISTERED_CORE").as_deref()))
 }
 
 fn requested_value(value: Option<&OsStr>) -> bool {
@@ -158,8 +157,10 @@ pub(crate) fn registered_setup_is_ready(ava_home: &Path) -> Result<bool> {
     let Some(record) = crate::runtime_ownership::load_installation()? else {
         return Ok(false);
     };
-    Ok(record.ava_home == ava_home.canonicalize()?
-        && record.runtime()?.ready_for_package(&package))
+    Ok(
+        record.ava_home == ava_home.canonicalize()?
+            && record.runtime()?.ready_for_package(&package),
+    )
 }
 
 /// A startup hint only; the service rechecks ownership and readiness under its setup lock.

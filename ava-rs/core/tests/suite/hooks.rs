@@ -1822,14 +1822,12 @@ async fn async_hook_context_is_injected_into_the_active_turn() -> Result<()> {
                 text: "observe async context immediately".to_string(),
                 text_elements: Vec::new(),
             }])
-            .with_thread_settings(
-                ava_protocol::protocol::ThreadSettingsOverrides {
-                    approval_policy: Some(AskForApproval::Never),
-                    sandbox_policy: Some(sandbox_policy),
-                    permission_profile,
-                    ..Default::default()
-                },
-            ),
+            .with_thread_settings(ava_protocol::protocol::ThreadSettingsOverrides {
+                approval_policy: Some(AskForApproval::Never),
+                sandbox_policy: Some(sandbox_policy),
+                permission_profile,
+                ..Default::default()
+            }),
         )
         .await?;
 
@@ -3980,14 +3978,12 @@ Path(r"{hook_finished_path}").write_text("finished", encoding="utf-8")
                 text: "run the original command with async pre-tool hooks".to_string(),
                 text_elements: Vec::new(),
             }])
-            .with_thread_settings(
-                ava_protocol::protocol::ThreadSettingsOverrides {
-                    approval_policy: Some(AskForApproval::Never),
-                    sandbox_policy: Some(sandbox_policy),
-                    permission_profile,
-                    ..Default::default()
-                },
-            ),
+            .with_thread_settings(ava_protocol::protocol::ThreadSettingsOverrides {
+                approval_policy: Some(AskForApproval::Never),
+                sandbox_policy: Some(sandbox_policy),
+                permission_profile,
+                ..Default::default()
+            }),
         )
         .await?;
 

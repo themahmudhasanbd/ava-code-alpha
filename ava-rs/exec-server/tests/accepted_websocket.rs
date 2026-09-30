@@ -6,11 +6,6 @@ use std::time::Duration;
 
 use anyhow::Context;
 use anyhow::Result;
-use axum::Router;
-use axum::extract::State;
-use axum::extract::WebSocketUpgrade;
-use axum::response::IntoResponse;
-use axum::routing::any;
 use ava_api::AuthProvider;
 #[cfg(unix)]
 use ava_exec_server::EnvironmentConnectionState;
@@ -43,6 +38,11 @@ use ava_exec_server_protocol::JSONRPCResponse;
 use ava_http_client::HttpClientFactory;
 use ava_http_client::OutboundProxyPolicy;
 use ava_utils_path_uri::PathUri;
+use axum::Router;
+use axum::extract::State;
+use axum::extract::WebSocketUpgrade;
+use axum::response::IntoResponse;
+use axum::routing::any;
 use common::exec_server::DisconnectableWebSocketProxy;
 use futures::SinkExt;
 use futures::StreamExt;
@@ -162,13 +162,9 @@ async fn accepted_websocket_interoperates_and_recovers_with_real_direct_executor
     let runtime_paths = ExecServerRuntimePaths::new(ava_exe, ava_linux_sandbox_exe)?;
     let (shutdown_tx, shutdown_rx) = tokio::sync::oneshot::channel();
     let executor_task = AbortOnDropHandle::new(tokio::spawn(
-        ava_exec_server::run_remote_environment_until_shutdown(
-            config,
-            runtime_paths,
-            async move {
-                let _ = shutdown_rx.await;
-            },
-        ),
+        ava_exec_server::run_remote_environment_until_shutdown(config, runtime_paths, async move {
+            let _ = shutdown_rx.await;
+        }),
     ));
     let accepted_websocket = timeout(TEST_TIMEOUT, accepted_sockets.recv())
         .await?

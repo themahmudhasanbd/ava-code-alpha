@@ -528,4 +528,148 @@ impl BrowserCoordinator {
         self.engine.close().await?;
         Ok(())
     }
+    pub async fn hover(&self, target: &str) -> Result<crate::actions::ActionResult, String> {
+        let _guard = self.action_mutex.lock().await;
+        let msg = self.engine.hover(target).await?;
+        let reminder = self.mark_dom_mutated().await;
+        let mut output = msg;
+        if reminder == ObserveReminder::NeedsFreshObserve {
+            output.push_str("\nNote: Page state changed. Call 'observe' to update element refs.");
+        }
+        Ok(crate::actions::ActionResult {
+            success: true,
+            title: format!("Hovered {target}"),
+            output,
+            url: self.engine.get_current_url().await.ok(),
+            metadata: None,
+        })
+    }
+
+    pub async fn press_key(&self, key: &str) -> Result<crate::actions::ActionResult, String> {
+        let _guard = self.action_mutex.lock().await;
+        let msg = self.engine.press_key(key).await?;
+        let reminder = self.mark_dom_mutated().await;
+        let mut output = msg;
+        if reminder == ObserveReminder::NeedsFreshObserve {
+            output.push_str("\nNote: Page state changed. Call 'observe' to update element refs.");
+        }
+        Ok(crate::actions::ActionResult {
+            success: true,
+            title: format!("Pressed key {key}"),
+            output,
+            url: self.engine.get_current_url().await.ok(),
+            metadata: None,
+        })
+    }
+
+    pub async fn drag(
+        &self,
+        from: &str,
+        to: &str,
+    ) -> Result<crate::actions::ActionResult, String> {
+        let _guard = self.action_mutex.lock().await;
+        let msg = self.engine.drag(from, to).await?;
+        let reminder = self.mark_dom_mutated().await;
+        let mut output = msg;
+        if reminder == ObserveReminder::NeedsFreshObserve {
+            output.push_str("\nNote: Page state changed. Call 'observe' to update element refs.");
+        }
+        Ok(crate::actions::ActionResult {
+            success: true,
+            title: format!("Dragged {from} to {to}"),
+            output,
+            url: self.engine.get_current_url().await.ok(),
+            metadata: None,
+        })
+    }
+
+    pub async fn tab_list(&self) -> Result<crate::actions::ActionResult, String> {
+        let targets = self.engine.tab_list().await?;
+        let list = targets
+            .get("targetInfos")
+            .and_then(|v| v.as_array())
+            .map(|arr| {
+                arr.iter()
+                    .filter(|t| t.get("type").and_then(|v| v.as_str()) == Some("page"))
+                    .map(|t| {
+                        format!(
+                            "- {} | {} | {}",
+                            t.get("targetId").and_then(|v| v.as_str()).unwrap_or("?"),
+                            t.get("title").and_then(|v| v.as_str()).unwrap_or(""),
+                            t.get("url").and_then(|v| v.as_str()).unwrap_or("")
+                        )
+                    })
+                    .collect::<Vec<_>>()
+                    .join("\n")
+            })
+            .unwrap_or_default();
+        Ok(crate::actions::ActionResult {
+            success: true,
+            title: "Open tabs".to_string(),
+            output: if list.is_empty() {
+                "No pages open.".to_string()
+            } else {
+                list
+            },
+            url: self.engine.get_current_url().await.ok(),
+            metadata: Some(targets),
+        })
+    }
+
+    pub async fn tab_new(
+        &self,
+        url: Option<&str>,
+    ) -> Result<crate::actions::ActionResult, String> {
+        let _guard = self.action_mutex.lock().await;
+        let target_id = self.engine.tab_new(url).await?;
+        Ok(crate::actions::ActionResult {
+            success: true,
+            title: "New tab".to_string(),
+            output: format!("Opened new tab: {target_id}"),
+            url: self.engine.get_current_url().await.ok(),
+            metadata: Some(json!({ "targetId": target_id })),
+        })
+    }
+
+    pub async fn tab_switch(&self, target_id: &str) -> Result<crate::actions::ActionResult, String> {
+        let _guard = self.action_mutex.lock().await;
+        let msg = self.engine.tab_switch(target_id).await?;
+        Ok(crate::actions::ActionResult {
+            success: true,
+            title: "Switched tab".to_string(),
+            output: msg,
+            url: self.engine.get_current_url().await.ok(),
+            metadata: None,
+        })
+    }
+
+    pub async fn tab_close(&self, target_id: &str) -> Result<crate::actions::ActionResult, String> {
+        let _guard = self.action_mutex.lock().await;
+        let msg = self.engine.tab_close(target_id).await?;
+        Ok(crate::actions::ActionResult {
+            success: true,
+            title: "Closed tab".to_string(),
+            output: msg,
+            url: self.engine.get_current_url().await.ok(),
+            metadata: None,
+        })
+    }
+
+
+    pub async fn live_frame(&self) -> Result<crate::actions::ActionResult, String> {
+        let (data, w, h) = self.engine.live_frame().await?;
+        Ok(crate::actions::ActionResult {
+            success: true,
+            title: "Live frame".to_string(),
+            output: format!("Live frame captured ({}x{}, {} bytes).", w, h, data.len()),
+            url: self.engine.get_current_url().await.ok(),
+            metadata: Some(serde_json::json!({
+                "data": data,
+                "width": w,
+                "height": h,
+                "mime": "image/jpeg",
+            })),
+        })
+    }
+
 }

@@ -6,11 +6,11 @@ use std::sync::Mutex;
 use std::sync::atomic::AtomicBool;
 use std::sync::atomic::Ordering;
 
-use base64::Engine;
-use base64::engine::general_purpose::URL_SAFE_NO_PAD;
 use ava_exec_server::RouteAwareHttpClient;
 use ava_http_client::HttpClientFactory;
 use ava_http_client::OutboundProxyPolicy;
+use base64::Engine;
+use base64::engine::general_purpose::URL_SAFE_NO_PAD;
 use keyring::credential::Credential;
 use keyring::credential::CredentialApi;
 use keyring::credential::CredentialBuilderApi;

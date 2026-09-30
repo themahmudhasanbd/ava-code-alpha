@@ -1,4 +1,3 @@
-use chrono::Utc;
 use ava_cloud_tasks_client::ApplyOutcome;
 use ava_cloud_tasks_client::ApplyStatus;
 use ava_cloud_tasks_client::AttemptStatus;
@@ -14,6 +13,7 @@ use ava_cloud_tasks_client::TaskStatus;
 use ava_cloud_tasks_client::TaskSummary;
 use ava_cloud_tasks_client::TaskText;
 use ava_cloud_tasks_client::TurnAttempt;
+use chrono::Utc;
 
 #[derive(Clone, Default)]
 pub struct MockClient;

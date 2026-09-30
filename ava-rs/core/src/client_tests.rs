@@ -14,7 +14,6 @@ use crate::GenerateAttestationFuture;
 use crate::responses_metadata::AvaResponsesMetadata;
 use crate::test_support::TestAvaResponsesRequestKind;
 use crate::test_support::responses_metadata as test_responses_metadata;
-use base64::Engine;
 use ava_api::AgentIdentityTelemetry;
 use ava_api::ApiError;
 use ava_api::ResponseEvent;
@@ -65,6 +64,7 @@ use ava_rollout_trace::RawTraceEventPayload;
 use ava_rollout_trace::RolloutTrace;
 use ava_rollout_trace::TraceWriter;
 use ava_rollout_trace::replay_bundle;
+use base64::Engine;
 use futures::StreamExt;
 use pretty_assertions::assert_eq;
 use serde_json::json;
@@ -122,9 +122,7 @@ fn test_model_client_with_thread_id(
         /*concurrent_reasoning_summaries_enabled*/ false,
         /*attestation_provider*/ None,
         HttpClientFactory::new(OutboundProxyPolicy::ReqwestDefault),
-        ava_model_provider::WorkspaceRoutingContext::new(
-            "https://chatgpt.com/backend-api".into(),
-        ),
+        ava_model_provider::WorkspaceRoutingContext::new("https://chatgpt.com/backend-api".into()),
     )
 }
 
@@ -1641,9 +1639,7 @@ fn model_client_with_counting_attestation(
             calls: attestation_calls.clone(),
         })),
         HttpClientFactory::new(OutboundProxyPolicy::ReqwestDefault),
-        ava_model_provider::WorkspaceRoutingContext::new(
-            "https://chatgpt.com/backend-api".into(),
-        ),
+        ava_model_provider::WorkspaceRoutingContext::new("https://chatgpt.com/backend-api".into()),
     );
     (model_client, attestation_calls)
 }

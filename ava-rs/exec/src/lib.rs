@@ -12,9 +12,6 @@ pub(crate) mod event_processor_with_jsonl_output;
 pub(crate) mod exec_events;
 mod worktree;
 
-pub use cli::Cli;
-pub use cli::Command;
-pub use cli::ReviewArgs;
 use ava_app_server_client::DEFAULT_IN_PROCESS_CHANNEL_CAPACITY;
 use ava_app_server_client::EnvironmentManager;
 use ava_app_server_client::ExecServerRuntimePaths;
@@ -111,6 +108,9 @@ use ava_utils_oss::get_default_model_for_oss_provider;
 use ava_worktree::CreateWorktree;
 use ava_worktree::WorktreeManager;
 use ava_worktree::WorktreeSettings;
+pub use cli::Cli;
+pub use cli::Command;
+pub use cli::ReviewArgs;
 use event_processor_with_human_output::EventProcessorWithHumanOutput;
 pub use event_processor_with_jsonl_output::AvaStatus;
 pub use event_processor_with_jsonl_output::CollectedThreadEvents;
@@ -1420,9 +1420,7 @@ fn sandbox_mode_from_permission_profile(
     cwd: &Path,
 ) -> Option<ava_app_server_protocol::SandboxMode> {
     match permission_profile {
-        PermissionProfile::Disabled => {
-            Some(ava_app_server_protocol::SandboxMode::DangerFullAccess)
-        }
+        PermissionProfile::Disabled => Some(ava_app_server_protocol::SandboxMode::DangerFullAccess),
         PermissionProfile::External { .. } => None,
         PermissionProfile::Managed { .. } => {
             let file_system_policy = permission_profile.file_system_sandbox_policy();

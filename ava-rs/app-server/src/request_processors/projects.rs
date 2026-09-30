@@ -371,8 +371,8 @@ fn api_project(project: StoredProject) -> Result<Project, JSONRPCErrorError> {
                 Ok(ProjectRoot {
                     path: ava_utils_absolute_path::AbsolutePathBuf::from_absolute_path(root.path)
                         .map_err(|error| {
-                            internal_error(format!("stored project root is not absolute: {error}"))
-                        })?,
+                        internal_error(format!("stored project root is not absolute: {error}"))
+                    })?,
                 })
             })
             .collect::<Result<_, JSONRPCErrorError>>()?,

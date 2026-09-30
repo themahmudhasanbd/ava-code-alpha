@@ -211,12 +211,18 @@ mod tests {
     fn server_version_notice_uses_client_release_policy() {
         assert_eq!(
             server_version_notice("0.153.0", Some("0.152.1")),
-            Some("A background Ava service is running v0.152.1, older than your Ava CLI v0.153.0.".to_string())
+            Some(
+                "A background Ava service is running v0.152.1, older than your Ava CLI v0.153.0."
+                    .to_string()
+            )
         );
         assert_eq!(server_version_notice("0.153.0", Some("0.153.0")), None);
         assert_eq!(
             server_version_notice("0.0.0", Some("0.152.1")),
-            Some("A background Ava service is running v0.152.1, different from your Ava CLI v0.0.0.".to_string())
+            Some(
+                "A background Ava service is running v0.152.1, different from your Ava CLI v0.0.0."
+                    .to_string()
+            )
         );
         assert_eq!(server_version_notice("0.153.0", /*server*/ None), None);
         assert_eq!(

@@ -26,9 +26,7 @@ impl IntoProtocol<ImageDetail> for CodeModeImageDetail {
     }
 }
 
-impl IntoProtocol<FunctionCallOutputContentItem>
-    for ava_code_mode::FunctionCallOutputContentItem
-{
+impl IntoProtocol<FunctionCallOutputContentItem> for ava_code_mode::FunctionCallOutputContentItem {
     fn into_protocol(self) -> FunctionCallOutputContentItem {
         let value = self;
         match value {

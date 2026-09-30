@@ -75,9 +75,7 @@ impl WebSocketConnector {
         tls_mode: WebSocketTlsMode,
     ) -> Result<Self, BuildCustomCaTransportError> {
         let tls_config = match tls_mode {
-            WebSocketTlsMode::ExplicitAvaTls => {
-                Some(build_rustls_client_config_with_custom_ca()?)
-            }
+            WebSocketTlsMode::ExplicitAvaTls => Some(build_rustls_client_config_with_custom_ca()?),
             WebSocketTlsMode::TungsteniteDefault => None,
         };
         Ok(Self {

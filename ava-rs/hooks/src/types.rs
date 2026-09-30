@@ -1,10 +1,10 @@
 use std::sync::Arc;
 
+use ava_protocol::ThreadId;
+use ava_utils_absolute_path::AbsolutePathBuf;
 use chrono::DateTime;
 use chrono::SecondsFormat;
 use chrono::Utc;
-use ava_protocol::ThreadId;
-use ava_utils_absolute_path::AbsolutePathBuf;
 use futures::future::BoxFuture;
 use serde::Serialize;
 use serde::Serializer;
@@ -98,11 +98,11 @@ pub enum HookEvent {
 
 #[cfg(test)]
 mod tests {
-    use chrono::TimeZone;
-    use chrono::Utc;
     use ava_protocol::ThreadId;
     use ava_utils_absolute_path::test_support::PathBufExt;
     use ava_utils_absolute_path::test_support::test_path_buf;
+    use chrono::TimeZone;
+    use chrono::Utc;
     use pretty_assertions::assert_eq;
     use serde_json::json;
 

@@ -53,8 +53,6 @@ use crate::turn_metadata::TurnMetadataState;
 use crate::turn_timing::now_unix_timestamp_ms;
 use async_channel::Receiver;
 use async_channel::Sender;
-use chrono::Local;
-use chrono::Utc;
 use ava_analytics::AnalyticsEventsClient;
 use ava_analytics::ImagePreparationFact;
 use ava_analytics::ImagePreparationMetadata;
@@ -178,6 +176,8 @@ use ava_utils_audio::prepare_response_items as prepare_audio_response_items;
 use ava_utils_git_discovery::GitRootDiscovery;
 use ava_utils_output_truncation::with_serialization_allowance;
 use ava_utils_path_uri::PathUri;
+use chrono::Local;
+use chrono::Utc;
 use futures::future::BoxFuture;
 use futures::future::Shared;
 use futures::prelude::*;
@@ -199,9 +199,9 @@ use tracing::instrument;
 use tracing::warn;
 use uuid::Uuid;
 
-use crate::client::ModelClient;
 use crate::ava_thread::AvaThreadSettingsOverrides;
 use crate::ava_thread::ThreadConfigSnapshot;
+use crate::client::ModelClient;
 #[cfg(test)]
 use crate::compact::collect_user_messages;
 use crate::config::Config;
@@ -479,8 +479,7 @@ pub(crate) struct SessionSpawnArgs {
     pub(crate) external_time_provider: Option<Arc<dyn TimeProvider>>,
     pub(crate) inherited_multi_agent_version: Option<MultiAgentVersion>,
     pub(crate) git_enrichment_policy: GitEnrichmentPolicy,
-    pub(crate) windows_sandbox_proxy_settings_mode:
-        ava_sandboxing::WindowsSandboxProxySettingsMode,
+    pub(crate) windows_sandbox_proxy_settings_mode: ava_sandboxing::WindowsSandboxProxySettingsMode,
 }
 
 pub(crate) fn resolve_multi_agent_version(
@@ -1538,11 +1537,39 @@ impl Session {
         state.active_plan = Some(plan);
     }
 
-    pub(crate) async fn get_active_plan(
-        &self,
-    ) -> Option<ava_protocol::plan_tool::UpdatePlanArgs> {
+    pub(crate) async fn get_active_plan(&self) -> Option<ava_protocol::plan_tool::UpdatePlanArgs> {
         let state = self.state.lock().await;
         state.active_plan.clone()
+    }
+
+    pub(crate) async fn add_attached_media(
+        &self,
+        turn_id: &str,
+        items: Vec<crate::tools::handlers::attach_media::AttachedMedia>,
+    ) {
+        let mut state = self.state.lock().await;
+        // Drop stale entries from previous turns so attachments never leak across turns.
+        state.attached_media.retain(|(id, _)| id == turn_id);
+        state
+            .attached_media
+            .extend(items.into_iter().map(|m| (turn_id.to_string(), m)));
+    }
+
+    pub(crate) async fn take_attached_media(
+        &self,
+        turn_id: &str,
+    ) -> Vec<crate::tools::handlers::attach_media::AttachedMedia> {
+        let mut state = self.state.lock().await;
+        let mut taken = Vec::new();
+        state.attached_media.retain(|(id, media)| {
+            if id == turn_id {
+                taken.push(media.clone());
+                false
+            } else {
+                true
+            }
+        });
+        taken
     }
 
     pub(crate) async fn set_last_quality_gate(
@@ -2247,12 +2274,7 @@ impl Session {
                 })
                 .collect::<Vec<_>>();
             if user_config_paths.is_empty() {
-                vec![
-                    state
-                        .session_configuration
-                        .ava_home
-                        .join(CONFIG_TOML_FILE),
-                ]
+                vec![state.session_configuration.ava_home.join(CONFIG_TOML_FILE)]
             } else {
                 user_config_paths
             }
@@ -2626,8 +2648,30 @@ impl Session {
     pub(crate) async fn emit_turn_item_completed(
         &self,
         turn_context: &TurnContext,
-        item: TurnItem,
+        mut item: TurnItem,
     ) {
+        // Attach any media staged by the `attach_media` tool to the next
+        // completed agent message. Drained on first use so attachments appear once.
+        if let TurnItem::AgentMessage(ref mut msg) = item {
+            let pending = self.take_attached_media(&turn_context.sub_id).await;
+            if !pending.is_empty() {
+                let media: Vec<serde_json::Value> =
+                    pending.iter().map(|m| m.to_json()).collect();
+                // Merge into existing meta instead of clobbering unrelated keys.
+                let mut meta_obj = match msg.meta.take() {
+                    Some(serde_json::Value::Object(map)) => map,
+                    _ => serde_json::Map::new(),
+                };
+                // Append to any media already present (e.g. from earlier turns).
+                let mut merged: Vec<serde_json::Value> = match meta_obj.remove("media") {
+                    Some(serde_json::Value::Array(arr)) => arr,
+                    _ => Vec::new(),
+                };
+                merged.extend(media);
+                meta_obj.insert("media".to_string(), serde_json::Value::Array(merged));
+                msg.meta = Some(serde_json::Value::Object(meta_obj));
+            }
+        }
         record_turn_ttfm_metric(turn_context, &item).await;
         for contributor in self.services.extensions.turn_lifecycle_contributors() {
             contributor
@@ -3770,6 +3814,12 @@ impl Session {
             .await?;
         self.emit_instruction_warnings(warnings).await;
         let loaded_agents_md = loaded_agents_md?;
+        let loaded_project_context = crate::project_context::load_project_context(
+            &turn_context.config,
+            &environments,
+        )
+        .or_cancel(cancellation_token)
+        .await?;
         let selected_capability_roots = self
             .resolve_selected_capability_roots_for_step(&environments)
             .await;
@@ -3855,6 +3905,7 @@ impl Session {
             mcp,
             tool_router,
             loaded_agents_md,
+            loaded_project_context: loaded_project_context.map(std::sync::Arc::new),
         }))
     }
 
@@ -4161,7 +4212,8 @@ impl Session {
 - Never instruct the user to manually find, locate, or open local filesystem paths on disk. AvA Mobile automatically attaches and visually renders preview cards, media chips, and inline links directly in the UI.
 - Never suggest desktop keyboard shortcuts (e.g. Ctrl+C, Cmd+K, Shift+Enter, Ctrl+Shift+P, Alt+Enter). All user interactions are touch- and gesture-driven.
 - Mobile Features Awareness: The user has access to the Sessions Drawer (swipe left-to-right), Interactive Live Step Overview Card, Timeline Screen (swipe right-to-left to inspect deep tool outputs/logs), Composer with slash commands, @ mentions, media picker, and voice notes, interactive Choice Cards for request_user_input, and integrated Terminal/MCP tools.";
-                developer_sections.push(DeveloperInstructions::new(MOBILE_CLIENT_INSTRUCTIONS).render_fragment());
+                developer_sections
+                    .push(DeveloperInstructions::new(MOBILE_CLIENT_INSTRUCTIONS).render_fragment());
             }
         }
         let loaded_plugins = self

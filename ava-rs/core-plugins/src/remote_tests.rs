@@ -210,13 +210,12 @@ async fn remote_catalog_cache_modes_control_refresh_and_persist_fetched_results(
         ),
     ] {
         if expire_cache {
-            let cache_path =
-                std::fs::read_dir(ava_home.path().join("cache/remote_plugin_catalog"))
-                    .expect("read catalog cache directory")
-                    .next()
-                    .expect("catalog cache exists")
-                    .expect("read cache entry")
-                    .path();
+            let cache_path = std::fs::read_dir(ava_home.path().join("cache/remote_plugin_catalog"))
+                .expect("read catalog cache directory")
+                .next()
+                .expect("catalog cache exists")
+                .expect("read cache entry")
+                .path();
             let mut cached: serde_json::Value =
                 serde_json::from_slice(&std::fs::read(&cache_path).expect("read cache"))
                     .expect("decode cache");

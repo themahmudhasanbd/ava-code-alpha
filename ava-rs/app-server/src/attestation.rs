@@ -1,13 +1,13 @@
 use std::sync::Arc;
 use std::sync::Weak;
 
-use axum::http::HeaderValue;
 use ava_app_server_protocol::AttestationGenerateParams;
 use ava_app_server_protocol::AttestationGenerateResponse;
 use ava_app_server_protocol::ServerRequestPayload;
 use ava_core::AttestationContext;
 use ava_core::AttestationProvider;
 use ava_core::GenerateAttestationFuture;
+use axum::http::HeaderValue;
 use serde::Serialize;
 use tokio::time::Duration;
 use tokio::time::timeout;

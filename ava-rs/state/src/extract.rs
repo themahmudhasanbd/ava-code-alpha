@@ -176,8 +176,6 @@ mod tests {
     use super::apply_rollout_item;
     use super::rollout_item_affects_thread_metadata;
     use crate::model::ThreadMetadata;
-    use chrono::DateTime;
-    use chrono::Utc;
     use ava_history::RolloutItem;
     use ava_protocol::ThreadId;
     use ava_protocol::config_types::ApprovalsReviewer;
@@ -208,6 +206,8 @@ mod tests {
     use ava_protocol::protocol::USER_MESSAGE_BEGIN;
     use ava_protocol::protocol::UserMessageEvent;
     use ava_protocol::user_input::UserInput;
+    use chrono::DateTime;
+    use chrono::Utc;
 
     use pretty_assertions::assert_eq;
     use std::path::PathBuf;

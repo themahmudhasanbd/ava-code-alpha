@@ -1060,8 +1060,7 @@ plugins = true
 [plugins."counter-sample@test"]
 enabled = true
 "#;
-    let outcome =
-        load_plugins_from_config(config_toml, ava_home.path(), /*auth_mode*/ None).await;
+    let outcome = load_plugins_from_config(config_toml, ava_home.path(), /*auth_mode*/ None).await;
 
     assert_eq!(outcome.plugins()[0].error, None);
     assert_eq!(
@@ -1145,8 +1144,7 @@ approval_mode = "approve"
 output_token_limit = 12000
 "#;
 
-    let outcome =
-        load_plugins_from_config(config_toml, ava_home.path(), /*auth_mode*/ None).await;
+    let outcome = load_plugins_from_config(config_toml, ava_home.path(), /*auth_mode*/ None).await;
     let server = outcome.plugins()[0]
         .mcp_servers
         .get("sample")
@@ -1829,8 +1827,7 @@ enabled = false
 [plugins."sample@test"]
 enabled = true
 "#;
-    let outcome =
-        load_plugins_from_config(config_toml, ava_home.path(), /*auth_mode*/ None).await;
+    let outcome = load_plugins_from_config(config_toml, ava_home.path(), /*auth_mode*/ None).await;
     let skill_path = std::fs::canonicalize(skill_path)
         .expect("skill path should canonicalize")
         .abs();
@@ -1870,8 +1867,7 @@ enabled = false
 [plugins."sample@test"]
 enabled = true
 "#;
-    let outcome =
-        load_plugins_from_config(config_toml, ava_home.path(), /*auth_mode*/ None).await;
+    let outcome = load_plugins_from_config(config_toml, ava_home.path(), /*auth_mode*/ None).await;
 
     assert!(outcome.plugins()[0].disabled_skill_paths.is_empty());
     assert!(outcome.plugins()[0].has_enabled_skills);
@@ -2297,9 +2293,11 @@ async fn install_plugin_materializes_default_command_skills() {
             )
             .unwrap(),
             AbsolutePathBuf::from_absolute_path_checked(
-                fs::canonicalize(result.installed_path.join(
-                    ".ava-plugin/migrated-command-skills/source-command-summarize/SKILL.md"
-                ))
+                fs::canonicalize(
+                    result.installed_path.join(
+                        ".ava-plugin/migrated-command-skills/source-command-summarize/SKILL.md"
+                    )
+                )
                 .unwrap()
             )
             .unwrap()
@@ -3431,8 +3429,7 @@ source = {marketplace_root:?}
 "#
     );
     write_file(&ava_home.path().join(CONFIG_TOML_FILE), &user_config);
-    let config =
-        config_layer_stack_with_requirements(ava_home.path(), &user_config, &requirements);
+    let config = config_layer_stack_with_requirements(ava_home.path(), &user_config, &requirements);
     let outcome = manager
         .install_plugin(
             &config,
@@ -7288,11 +7285,7 @@ async fn reconcile_remote_installed_plugins_reports_cached_state_changes() {
         &ava_home.path().join(CONFIG_TOML_FILE),
         "[features]\nplugins = true\n",
     );
-    write_cached_plugin(
-        ava_home.path(),
-        REMOTE_WORKSPACE_MARKETPLACE_NAME,
-        "linear",
-    );
+    write_cached_plugin(ava_home.path(), REMOTE_WORKSPACE_MARKETPLACE_NAME, "linear");
     let plugin_root = ava_home
         .path()
         .join("plugins/cache/workspace-directory/linear/local");
@@ -7337,9 +7330,7 @@ async fn reconcile_remote_installed_plugins_reports_cached_state_changes() {
         if enabled.is_none() {
             // Fail cleanup before it reaches the bundle; removal hints must survive.
             write_file(
-                &ava_home
-                    .path()
-                    .join("plugins/cache/openai-curated-remote"),
+                &ava_home.path().join("plugins/cache/openai-curated-remote"),
                 "not a directory",
             );
         }

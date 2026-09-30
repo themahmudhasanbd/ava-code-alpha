@@ -19,7 +19,11 @@ import * as DocumentPicker from "expo-document-picker";
 import { File } from "expo-file-system";
 import { BlurView } from "expo-blur";
 import {
+  Camera,
+  ChevronLeft,
   ChevronRight,
+  FileText,
+  Images,
   Paperclip,
   Server,
   UploadCloud,
@@ -59,6 +63,7 @@ export function MediaSelectorModal({
   const [uploading, setUploading] = useState(false);
   const [uploadStatus, setUploadStatus] = useState<string | null>(null);
   const [serverModalOpen, setServerModalOpen] = useState(false);
+  const [deviceSubView, setDeviceSubView] = useState(false);
 
   const isSmallMobile = windowWidth < 380;
   const isTabletOrWeb = windowWidth >= 640;
@@ -107,100 +112,101 @@ export function MediaSelectorModal({
     };
   };
 
+  const pickDocument = async () => {
+    try {
+      const result = await DocumentPicker.getDocumentAsync({
+        copyToCacheDirectory: true,
+        type: "*/*",
+      });
+
+      if (!result.canceled && result.assets && result.assets[0]) {
+        const doc = result.assets[0];
+        setUploading(true);
+        const ext = doc.name.split(".").pop()?.toLowerCase() || "";
+        let kind: SelectedMedia["kind"] = "document";
+        if (["png", "jpg", "jpeg", "webp", "gif"].includes(ext)) kind = "image";
+        else if (["mp4", "mov", "webm"].includes(ext)) kind = "video";
+        else if (["mp3", "wav", "m4a"].includes(ext)) kind = "audio";
+        else if (["ts", "tsx", "js", "jsx", "py", "sh", "json"].includes(ext)) kind = "code";
+
+        const media = await uploadFileToServer(doc.uri, doc.name, kind);
+        setUploading(false);
+        setUploadStatus(null);
+        if (!media) return;
+        onSelect(media);
+        onClose();
+      }
+    } catch (e: any) {
+      setUploading(false);
+      setUploadStatus(null);
+      Alert.alert("File Picker Error", e?.message || "Failed to pick file.");
+    }
+  };
+
+  const pickGallery = async () => {
+    try {
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.All,
+        quality: 0.85,
+      });
+
+      if (!result.canceled && result.assets && result.assets[0]) {
+        const asset = result.assets[0];
+        setUploading(true);
+        const ext = asset.type === "video" ? "mp4" : "jpg";
+        const kind = asset.type === "video" ? "video" : "image";
+        const rawName = asset.fileName || `media_${Date.now()}.${ext}`;
+
+        const media = await uploadFileToServer(asset.uri, rawName, kind);
+        setUploading(false);
+        setUploadStatus(null);
+        if (!media) return;
+        onSelect(media);
+        onClose();
+      }
+    } catch (e: any) {
+      setUploading(false);
+      setUploadStatus(null);
+      Alert.alert("Gallery Error", e?.message || "Failed to pick from gallery.");
+    }
+  };
+
+  const pickCamera = async () => {
+    try {
+      const { status } = await ImagePicker.requestCameraPermissionsAsync();
+      if (status !== "granted") {
+        Alert.alert("Permission needed", "Camera permission is required.");
+        return;
+      }
+
+      const result = await ImagePicker.launchCameraAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.All,
+        quality: 0.85,
+      });
+
+      if (!result.canceled && result.assets && result.assets[0]) {
+        const asset = result.assets[0];
+        setUploading(true);
+        const ext = asset.type === "video" ? "mp4" : "jpg";
+        const kind = asset.type === "video" ? "video" : "image";
+        const name = `camera_${Date.now()}.${ext}`;
+
+        const media = await uploadFileToServer(asset.uri, name, kind);
+        setUploading(false);
+        setUploadStatus(null);
+        if (!media) return;
+        onSelect(media);
+        onClose();
+      }
+    } catch (e: any) {
+      setUploading(false);
+      setUploadStatus(null);
+      Alert.alert("Camera Error", e?.message || "Failed to capture photo.");
+    }
+  };
+
   // 1. Device: Pick Document or Media
   const handleSelectFromDevice = async () => {
-    const pickDocument = async () => {
-      try {
-        const result = await DocumentPicker.getDocumentAsync({
-          copyToCacheDirectory: true,
-          type: "*/*",
-        });
-
-        if (!result.canceled && result.assets && result.assets[0]) {
-          const doc = result.assets[0];
-          setUploading(true);
-          const ext = doc.name.split(".").pop()?.toLowerCase() || "";
-          let kind: SelectedMedia["kind"] = "document";
-          if (["png", "jpg", "jpeg", "webp", "gif"].includes(ext)) kind = "image";
-          else if (["mp4", "mov", "webm"].includes(ext)) kind = "video";
-          else if (["mp3", "wav", "m4a"].includes(ext)) kind = "audio";
-          else if (["ts", "tsx", "js", "jsx", "py", "sh", "json"].includes(ext)) kind = "code";
-
-          const media = await uploadFileToServer(doc.uri, doc.name, kind);
-          setUploading(false);
-          setUploadStatus(null);
-          if (!media) return;
-          onSelect(media);
-          onClose();
-        }
-      } catch (e: any) {
-        setUploading(false);
-        setUploadStatus(null);
-        Alert.alert("File Picker Error", e?.message || "Failed to pick file.");
-      }
-    };
-
-    const pickGallery = async () => {
-      try {
-        const result = await ImagePicker.launchImageLibraryAsync({
-          mediaTypes: ImagePicker.MediaTypeOptions.All,
-          quality: 0.85,
-        });
-
-        if (!result.canceled && result.assets && result.assets[0]) {
-          const asset = result.assets[0];
-          setUploading(true);
-          const ext = asset.type === "video" ? "mp4" : "jpg";
-          const kind = asset.type === "video" ? "video" : "image";
-          const rawName = asset.fileName || `media_${Date.now()}.${ext}`;
-
-          const media = await uploadFileToServer(asset.uri, rawName, kind);
-          setUploading(false);
-          setUploadStatus(null);
-          if (!media) return;
-          onSelect(media);
-          onClose();
-        }
-      } catch (e: any) {
-        setUploading(false);
-        setUploadStatus(null);
-        Alert.alert("Gallery Error", e?.message || "Failed to pick from gallery.");
-      }
-    };
-
-    const pickCamera = async () => {
-      try {
-        const { status } = await ImagePicker.requestCameraPermissionsAsync();
-        if (status !== "granted") {
-          Alert.alert("Permission needed", "Camera permission is required.");
-          return;
-        }
-
-        const result = await ImagePicker.launchCameraAsync({
-          mediaTypes: ImagePicker.MediaTypeOptions.All,
-          quality: 0.85,
-        });
-
-        if (!result.canceled && result.assets && result.assets[0]) {
-          const asset = result.assets[0];
-          setUploading(true);
-          const ext = asset.type === "video" ? "mp4" : "jpg";
-          const kind = asset.type === "video" ? "video" : "image";
-          const name = `camera_${Date.now()}.${ext}`;
-
-          const media = await uploadFileToServer(asset.uri, name, kind);
-          setUploading(false);
-          setUploadStatus(null);
-          if (!media) return;
-          onSelect(media);
-          onClose();
-        }
-      } catch (e: any) {
-        setUploading(false);
-        setUploadStatus(null);
-        Alert.alert("Camera Error", e?.message || "Failed to capture photo.");
-      }
-    };
 
     if (Platform.OS === "ios") {
       ActionSheetIOS.showActionSheetWithOptions(
@@ -215,17 +221,8 @@ export function MediaSelectorModal({
         }
       );
     } else {
-      Alert.alert(
-        "Select from Device",
-        "Choose file source",
-        [
-          { text: "Photo / Video Library", onPress: pickGallery },
-          { text: "Files & Documents", onPress: pickDocument },
-          { text: "Camera", onPress: pickCamera },
-          { text: "Cancel", style: "cancel" },
-        ],
-        { cancelable: true }
-      );
+      // Bottom-sheet sub-view instead of Alert.alert (Android/web parity with iOS sheet)
+      setDeviceSubView(true);
     }
   };
 
@@ -269,6 +266,7 @@ export function MediaSelectorModal({
         }),
       ]).start();
     } else {
+      setDeviceSubView(false);
       Animated.parallel([
         Animated.timing(fadeAnim, {
           toValue: 0,
@@ -377,8 +375,56 @@ export function MediaSelectorModal({
                   </View>
                 )}
 
-                {/* 2 Primary Options */}
+                {/* 2 Primary Options / Device source sub-view */}
                 <View style={styles.optionsContainer}>
+                  {deviceSubView && (
+                    <TouchableOpacity
+                      style={styles.backRow}
+                      onPress={() => setDeviceSubView(false)}
+                      activeOpacity={0.7}
+                    >
+                      <ChevronLeft size={16} color={colors.mutedForeground} />
+                      <Text
+                        style={[styles.backText, { color: colors.mutedForeground }, font("medium")]}
+                      >
+                        Back
+                      </Text>
+                    </TouchableOpacity>
+                  )}
+                  {deviceSubView ? (
+                    <>
+                      {[
+                        { icon: Images, color: colors.primary, title: "Photo / Video Library", sub: "Pick from your gallery", fn: pickGallery },
+                        { icon: FileText, color: "#8B5CF6", title: "Files & Documents", sub: "Pick any file or document", fn: pickDocument },
+                        { icon: Camera, color: "#F59E0B", title: "Camera", sub: "Take a photo or video", fn: pickCamera },
+                      ].map((opt) => (
+                        <TouchableOpacity
+                          key={opt.title}
+                          style={[
+                            styles.optionCard,
+                            { backgroundColor: colors.secondary, borderColor: colors.border },
+                          ]}
+                          onPress={() => { setDeviceSubView(false); opt.fn(); }}
+                          disabled={uploading}
+                          activeOpacity={0.7}
+                        >
+                          <View style={[styles.optionIconBox, { backgroundColor: `${opt.color}1A` }]}>
+                            <opt.icon size={20} color={opt.color} />
+                          </View>
+                          <View style={styles.optionContent}>
+                            <Text style={[styles.optionTitle, { color: colors.foreground }, font("semibold")]}>
+                              {opt.title}
+                            </Text>
+                            <Text style={[styles.optionSubtitle, { color: colors.mutedForeground }, font("regular")]}>
+                              {opt.sub}
+                            </Text>
+                          </View>
+                          <ChevronRight size={16} color={colors.mutedForeground} />
+                        </TouchableOpacity>
+                      ))}
+                    </>
+                  ) : (
+                    <>
                   {/* Option 1: Select from your device */}
                   <TouchableOpacity
                     style={[
@@ -432,6 +478,8 @@ export function MediaSelectorModal({
                     </View>
                     <ChevronRight size={16} color={colors.mutedForeground} />
                   </TouchableOpacity>
+                    </>
+                  )}
                 </View>
                 </Animated.View>
               </TouchableWithoutFeedback>
@@ -558,5 +606,15 @@ const styles = StyleSheet.create({
     fontSize: 11,
     marginTop: 2,
     lineHeight: 15,
+  },
+  backRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    paddingVertical: 6,
+    marginBottom: 4,
+  },
+  backText: {
+    fontSize: 13,
   },
 });

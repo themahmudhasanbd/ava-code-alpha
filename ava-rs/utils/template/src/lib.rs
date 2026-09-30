@@ -296,10 +296,7 @@ mod tests {
         )
         .unwrap();
 
-        assert_eq!(
-            rendered,
-            "Hello, Ava. You are in ava-rs. Ava is repeated."
-        );
+        assert_eq!(rendered, "Hello, Ava. You are in ava-rs. Ava is repeated.");
     }
 
     #[test]
@@ -342,10 +339,7 @@ mod tests {
         )
         .unwrap();
 
-        assert_eq!(
-            rendered,
-            "literal open: {{, literal close: }}, value: Ava"
-        );
+        assert_eq!(rendered, "literal open: {{, literal close: }}, value: Ava");
     }
 
     #[test]

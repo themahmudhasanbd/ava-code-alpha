@@ -3,9 +3,9 @@ use ava_client::Request;
 use ava_client::RequestTelemetry;
 use ava_client::Response;
 use ava_client::RetryPolicy;
+use ava_client::run_with_retry_hook;
 use ava_client::StreamResponse;
 use ava_client::TransportError;
-use ava_client::run_with_retry;
 use http::StatusCode;
 use std::future::Future;
 use std::sync::Arc;
@@ -65,34 +65,41 @@ impl WithStatus for StreamResponse {
     }
 }
 
-pub(crate) async fn run_with_request_telemetry<T, F, Fut>(
+pub(crate) async fn run_with_request_telemetry<T, F, Fut, H>(
     policy: RetryPolicy,
     telemetry: Option<Arc<dyn RequestTelemetry>>,
     make_request: impl FnMut() -> Request,
     send: F,
+    on_retry: H,
 ) -> Result<T, TransportError>
 where
     T: WithStatus,
     F: Clone + Fn(Request) -> Fut,
     Fut: Future<Output = Result<T, TransportError>>,
+    H: FnMut(&TransportError),
 {
-    // Wraps `run_with_retry` to attach per-attempt request telemetry for both
-    // unary and streaming HTTP calls.
-    run_with_retry(policy, make_request, move |req, attempt| {
-        let telemetry = telemetry.clone();
-        let send = send.clone();
-        async move {
-            let start = Instant::now();
-            let result = send(req).await;
-            if let Some(t) = telemetry.as_ref() {
-                let (status, err) = match &result {
-                    Ok(resp) => (Some(resp.status()), None),
-                    Err(err) => (http_status(err), Some(err)),
-                };
-                t.on_request(attempt, status, err, start.elapsed());
+    // Wraps `run_with_retry_hook` to attach per-attempt request telemetry for both
+    // unary and streaming HTTP calls, and rotates credentials / executes hook on retry.
+    run_with_retry_hook(
+        policy,
+        make_request,
+        move |req, attempt| {
+            let telemetry = telemetry.clone();
+            let send = send.clone();
+            async move {
+                let start = Instant::now();
+                let result = send(req).await;
+                if let Some(t) = telemetry.as_ref() {
+                    let (status, err) = match &result {
+                        Ok(resp) => (Some(resp.status()), None),
+                        Err(err) => (http_status(err), Some(err)),
+                    };
+                    t.on_request(attempt, status, err, start.elapsed());
+                }
+                result
             }
-            result
-        }
-    })
+        },
+        on_retry,
+    )
     .await
 }

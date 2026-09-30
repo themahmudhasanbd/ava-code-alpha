@@ -54,8 +54,7 @@ impl ReviewContextPolicy {
         if self == Self::Legacy {
             return Ok(None);
         }
-        let Some(checkpoint) =
-            ava_history::CompactionCheckpoint::latest(history.annotated_items())
+        let Some(checkpoint) = ava_history::CompactionCheckpoint::latest(history.annotated_items())
         else {
             return Ok(None);
         };

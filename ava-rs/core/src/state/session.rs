@@ -14,6 +14,7 @@ use super::auto_compact_window::AutoCompactWindow;
 use super::auto_compact_window::AutoCompactWindowIds;
 use super::auto_compact_window::AutoCompactWindowSnapshot;
 use crate::context_manager::ContextManager;
+use crate::tools::handlers::attach_media::AttachedMedia;
 use crate::context_manager::HistoryReplacement;
 use crate::session::PreviousTurnSettings;
 use crate::session::session::SessionConfiguration;
@@ -81,6 +82,7 @@ pub(crate) struct SessionState {
     pub(crate) mcp_dependency_prompted: HashSet<String>,
     pub(crate) additional_context: AdditionalContextStore,
     pub(crate) active_plan: Option<ava_protocol::plan_tool::UpdatePlanArgs>,
+    pub(crate) attached_media: Vec<(String, AttachedMedia)>,
     pub(crate) last_quality_gate: Option<crate::quality_gate::types::QualityGateResult>,
     /// Settings used by the latest regular user turn, used for turn-to-turn
     /// model/realtime handling on subsequent regular turns (including full-context
@@ -132,6 +134,7 @@ impl SessionState {
             mcp_dependency_prompted: HashSet::new(),
             additional_context: AdditionalContextStore::default(),
             active_plan: None,
+            attached_media: Vec::new(),
             last_quality_gate: None,
             previous_turn_settings: None,
             last_started_turn_id: None,

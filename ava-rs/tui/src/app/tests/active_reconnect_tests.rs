@@ -357,9 +357,7 @@ async fn reconnect_restores_history_permissions_and_keeps_old_input_paused() -> 
         let history = drain_history(&mut app, &mut tui, &mut session, &mut events).await?;
         let notices = history
             .lines()
-            .filter(|line| {
-                line.contains("Reconnected.") || line.contains("background Ava service")
-            })
+            .filter(|line| line.contains("Reconnected.") || line.contains("background Ava service"))
             .collect::<Vec<_>>()
             .join("\n");
         if deferred_notice {

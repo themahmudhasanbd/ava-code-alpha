@@ -5,10 +5,7 @@ use super::parse_ava_version;
 
 #[test]
 fn parses_ava_cli_version_output() {
-    assert_eq!(
-        parse_ava_version("ava 1.2.3\n").expect("version"),
-        "1.2.3"
-    );
+    assert_eq!(parse_ava_version("ava 1.2.3\n").expect("version"), "1.2.3");
 }
 
 #[test]

@@ -1,9 +1,9 @@
 use super::*;
+use ava_protocol::config_types::MultiAgentMode;
 #[cfg(test)]
 use chrono::DateTime;
 #[cfg(test)]
 use chrono::Utc;
-use ava_protocol::config_types::MultiAgentMode;
 
 #[cfg(test)]
 pub(crate) async fn read_summary_from_rollout(

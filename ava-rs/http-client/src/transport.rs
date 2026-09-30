@@ -122,6 +122,13 @@ impl HttpTransport for ReqwestTransport {
     async fn execute(&self, req: Request) -> Result<Response, TransportError> {
         self.trace_request(&req);
 
+        let is_ag = crate::antigravity_adapter::is_antigravity_request(&req.url, &req.headers);
+        let req = if is_ag {
+            crate::antigravity_adapter::adapt_antigravity_request(req, false)?
+        } else {
+            req
+        };
+
         let url = req.url.clone();
         let response_body_limit_bytes = req.response_body_limit_bytes;
         let builder = self.build(req)?;
@@ -147,15 +154,27 @@ impl HttpTransport for ReqwestTransport {
                 body,
             });
         }
-        Ok(Response {
+        let response = Response {
             status,
             headers,
             body: bytes?,
-        })
+        };
+        if is_ag {
+            crate::antigravity_adapter::adapt_antigravity_response(response)
+        } else {
+            Ok(response)
+        }
     }
 
     async fn stream(&self, req: Request) -> Result<StreamResponse, TransportError> {
         self.trace_request(&req);
+
+        let is_ag = crate::antigravity_adapter::is_antigravity_request(&req.url, &req.headers);
+        let req = if is_ag {
+            crate::antigravity_adapter::adapt_antigravity_request(req, true)?
+        } else {
+            req
+        };
 
         let url = req.url.clone();
         let response_body_limit_bytes = req.response_body_limit_bytes;
@@ -186,12 +205,17 @@ impl HttpTransport for ReqwestTransport {
                 body,
             });
         }
-        let bytes = match response_body_limit_bytes {
+        let raw_bytes: ByteStream = match response_body_limit_bytes {
             Some(max_bytes) => bounded_response_stream(resp, max_bytes)?,
             None => Box::pin(
                 resp.bytes_stream()
                     .map(|result| result.map_err(Self::map_error)),
             ),
+        };
+        let bytes = if is_ag {
+            crate::antigravity_adapter::adapt_antigravity_stream(raw_bytes)
+        } else {
+            raw_bytes
         };
         Ok(StreamResponse {
             status,

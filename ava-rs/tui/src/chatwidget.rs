@@ -494,7 +494,6 @@ use crate::streaming::controller::PlanStreamController;
 use crate::streaming::controller::StreamController;
 use crate::workspace_command::WorkspaceCommandRunner;
 
-use chrono::Local;
 use ava_app_server_protocol::AskForApproval;
 use ava_file_search::FileMatch;
 use ava_protocol::models::ActivePermissionProfile;
@@ -506,6 +505,7 @@ use ava_protocol::plan_tool::StepStatus;
 use ava_protocol::plan_tool::UpdatePlanArgs;
 use ava_utils_approval_presets::ApprovalPreset;
 use ava_utils_approval_presets::builtin_approval_presets;
+use chrono::Local;
 use strum::IntoEnumIterator;
 use unicode_segmentation::UnicodeSegmentation;
 
@@ -1071,10 +1071,8 @@ impl ChatWidget {
         let snapshot = self.feedback.snapshot(self.thread_id);
         #[cfg(target_os = "windows")]
         let include_windows_sandbox_log =
-            ava_windows_sandbox::current_log_file_path_for_ava_home(
-                &self.local_settings.ava_home,
-            )
-            .is_file();
+            ava_windows_sandbox::current_log_file_path_for_ava_home(&self.local_settings.ava_home)
+                .is_file();
         #[cfg(not(target_os = "windows"))]
         let include_windows_sandbox_log = false;
         let params = crate::bottom_pane::feedback_upload_consent_params(

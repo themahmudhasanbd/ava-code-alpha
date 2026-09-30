@@ -1018,18 +1018,18 @@ async fn start_server_task(
     )
     .await
     .map_err(StartupOutcomeError::from)?;
-    let client_tools: Arc<[ToolInfo]> =
-        match (ava_apps_tools_cache_context.as_ref(), fetch_ticket) {
-            (Some(context), Some(ticket)) if server_disables_tool_catalog_cache => {
-                context.publish_runtime_if_newest_accepted(ticket, &server_info, tools.clone());
-                tools.into()
-            }
-            (Some(context), Some(ticket)) => context
-                .publish_runtime_if_newest_accepted(ticket, &server_info, tools)
-                .shared_tools(),
-            (None, None) => tools.into(),
-            _ => unreachable!("Ava Apps fetch ticket requires cache context"),
-        };
+    let client_tools: Arc<[ToolInfo]> = match (ava_apps_tools_cache_context.as_ref(), fetch_ticket)
+    {
+        (Some(context), Some(ticket)) if server_disables_tool_catalog_cache => {
+            context.publish_runtime_if_newest_accepted(ticket, &server_info, tools.clone());
+            tools.into()
+        }
+        (Some(context), Some(ticket)) => context
+            .publish_runtime_if_newest_accepted(ticket, &server_info, tools)
+            .shared_tools(),
+        (None, None) => tools.into(),
+        _ => unreachable!("Ava Apps fetch ticket requires cache context"),
+    };
     if let (Some(cache_context), Some(fetch_ticket)) = (
         tool_catalog_cache_context.as_ref(),
         tool_catalog_fetch_ticket,

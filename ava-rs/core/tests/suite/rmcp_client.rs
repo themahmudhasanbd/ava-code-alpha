@@ -260,13 +260,7 @@ fn copy_binary_to_remote_env(
 ) -> anyhow::Result<String> {
     let remote_path = unique_remote_path(binary_name)?;
     let mkdir_output = StdCommand::new("docker")
-        .args([
-            "exec",
-            container_name,
-            "mkdir",
-            "-p",
-            "/tmp/ava-remote-env",
-        ])
+        .args(["exec", container_name, "mkdir", "-p", "/tmp/ava-remote-env"])
         .output()
         .context("create remote MCP test binary directory")?;
     ensure!(
@@ -428,19 +422,17 @@ async fn call_structured_tool(
     )
     .await;
 
-    fixture
-        .ava-code
-        .start_or_steer_turn(read_only_user_turn(fixture, "call the requested rmcp tool"))
-        .await?;
+    fixture.ava
+        - code
+            .start_or_steer_turn(read_only_user_turn(fixture, "call the requested rmcp tool"))
+            .await?;
 
     wait_for_event(&fixture.ava, |ev| {
         matches!(ev, EventMsg::McpToolCallBegin(_))
     })
     .await;
-    let end_event = wait_for_event(&fixture.ava, |ev| {
-        matches!(ev, EventMsg::McpToolCallEnd(_))
-    })
-    .await;
+    let end_event =
+        wait_for_event(&fixture.ava, |ev| matches!(ev, EventMsg::McpToolCallEnd(_))).await;
     let EventMsg::McpToolCallEnd(end) = end_event else {
         unreachable!("event guard guarantees McpToolCallEnd");
     };
@@ -578,10 +570,10 @@ async fn mcp_namespace_instructions_are_preserved_without_hiding_tools() -> anyh
         .await?;
     wait_for_mcp_server(&fixture.ava, "bounded").await?;
 
-    fixture
-        .ava-code
-        .start_or_steer_turn(read_only_user_turn(&fixture, "show the bounded MCP tools"))
-        .await?;
+    fixture.ava
+        - code
+            .start_or_steer_turn(read_only_user_turn(&fixture, "show the bounded MCP tools"))
+            .await?;
     wait_for_event(&fixture.ava, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
@@ -661,10 +653,10 @@ async fn text_only_mcp_content_uses_content_items() -> anyhow::Result<()> {
         .await?;
     wait_for_mcp_server(&fixture.ava, server_name).await?;
 
-    fixture
-        .ava-code
-        .start_or_steer_turn(read_only_user_turn(&fixture, "return content items"))
-        .await?;
+    fixture.ava
+        - code
+            .start_or_steer_turn(read_only_user_turn(&fixture, "return content items"))
+            .await?;
     wait_for_event(&fixture.ava, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
@@ -767,13 +759,13 @@ async fn environment_mcp_policy_filters_runtime_config_and_model_tools(
         .build_with_environment(&server, test_env)
         .await?;
 
-    let selection = fixture
-        .ava-code
-        .environment_selections()
-        .await
-        .into_iter()
-        .next()
-        .expect("thread should select its executor environment");
+    let selection = fixture.ava
+        - code
+            .environment_selections()
+            .await
+            .into_iter()
+            .next()
+            .expect("thread should select its executor environment");
     submit_thread_settings(
         &fixture.ava,
         ThreadSettingsOverrides {
@@ -821,41 +813,41 @@ async fn environment_mcp_policy_filters_runtime_config_and_model_tools(
         }
     };
 
-    fixture
-        .ava-code
-        .environment_ready(
-            &selection,
-            EnvironmentConfig {
-                allow_login_shell: true,
-                workspace_roots: selection.workspace_roots.clone(),
-                permission_profile: PermissionProfileSnapshot::legacy(
-                    fixture.config.permissions.permission_profile().clone(),
-                ),
-                shell_environment_policy: Default::default(),
-                windows_sandbox_level: WindowsSandboxLevel::from_config(&fixture.config),
-                windows_sandbox_type: fixture.config.permissions.windows_sandbox_type,
-                use_legacy_landlock: fixture.config.features.use_legacy_landlock(),
-                exec_policy: None,
-                mcp_policy: Some(mcp_policy),
-                network_policy: None,
-                selected_capability_roots: Vec::new(),
-            },
-        )
-        .await?;
+    fixture.ava
+        - code
+            .environment_ready(
+                &selection,
+                EnvironmentConfig {
+                    allow_login_shell: true,
+                    workspace_roots: selection.workspace_roots.clone(),
+                    permission_profile: PermissionProfileSnapshot::legacy(
+                        fixture.config.permissions.permission_profile().clone(),
+                    ),
+                    shell_environment_policy: Default::default(),
+                    windows_sandbox_level: WindowsSandboxLevel::from_config(&fixture.config),
+                    windows_sandbox_type: fixture.config.permissions.windows_sandbox_type,
+                    use_legacy_landlock: fixture.config.features.use_legacy_landlock(),
+                    exec_policy: None,
+                    mcp_policy: Some(mcp_policy),
+                    network_policy: None,
+                    selected_capability_roots: Vec::new(),
+                },
+            )
+            .await?;
 
     let (runtime_config, _) = fixture.ava.current_mcp_config_and_runtime_context().await;
     let runtime_servers = runtime_config.mcp_server_catalog.configured_servers();
     assert!(!runtime_servers["blocked"].enabled);
     assert!(!runtime_servers["unselected"].enabled);
-    fixture
-        .ava-code
-        .call_mcp_tool(
-            "allowed",
-            "echo",
-            Some(json!({ "message": "ready" })),
-            /*meta*/ None,
-        )
-        .await?;
+    fixture.ava
+        - code
+            .call_mcp_tool(
+                "allowed",
+                "echo",
+                Some(json!({ "message": "ready" })),
+                /*meta*/ None,
+            )
+            .await?;
 
     let response = mount_sse_once(
         &server,
@@ -873,10 +865,10 @@ async fn environment_mcp_policy_filters_runtime_config_and_model_tools(
     assert!(responses::namespace_child_tool(&body, "mcp__allowed", "echo").is_some());
     assert!(responses::namespace_child_tool(&body, "mcp__blocked", "echo").is_none());
 
-    fixture
-        .ava-code
-        .environment_failed(&selection, "environment policy unavailable".to_string())
-        .await?;
+    fixture.ava
+        - code
+            .environment_failed(&selection, "environment policy unavailable".to_string())
+            .await?;
     let (failed_config, _) = fixture.ava.current_mcp_config_and_runtime_context().await;
     let failed_servers = failed_config.mcp_server_catalog.configured_servers();
     assert!(!failed_servers["allowed"].enabled);
@@ -978,13 +970,13 @@ async fn future_environment_mcp_policy_applies_on_the_next_turn() -> anyhow::Res
         ..Default::default()
     };
     submit_thread_settings(&fixture.ava, settings(config.clone())).await?;
-    fixture
-        .ava-code
-        .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
-            text: "pause before continuing".into(),
-            text_elements: Vec::new(),
-        }]))
-        .await?;
+    fixture.ava
+        - code
+            .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
+                text: "pause before continuing".into(),
+                text_elements: Vec::new(),
+            }]))
+            .await?;
     let EventMsg::RequestUserInput(request) = wait_for_event(&fixture.ava, |event| {
         matches!(event, EventMsg::RequestUserInput(_))
     })
@@ -995,20 +987,20 @@ async fn future_environment_mcp_policy_applies_on_the_next_turn() -> anyhow::Res
 
     config.mcp_policy.as_mut().unwrap().servers = Some(BTreeMap::new());
     submit_thread_settings(&fixture.ava, settings(config)).await?;
-    fixture
-        .ava-code
-        .submit(Op::UserInputAnswer {
-            id: request.turn_id,
-            response: RequestUserInputResponse {
-                answers: HashMap::from([(
-                    "continue".to_string(),
-                    RequestUserInputAnswer {
-                        answers: vec!["Yes (Recommended)".to_string()],
-                    },
-                )]),
-            },
-        })
-        .await?;
+    fixture.ava
+        - code
+            .submit(Op::UserInputAnswer {
+                id: request.turn_id,
+                response: RequestUserInputResponse {
+                    answers: HashMap::from([(
+                        "continue".to_string(),
+                        RequestUserInputAnswer {
+                            answers: vec!["Yes (Recommended)".to_string()],
+                        },
+                    )]),
+                },
+            })
+            .await?;
     wait_for_event(&fixture.ava, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
@@ -1108,10 +1100,10 @@ async fn stdio_server_round_trip(server_name: &'static str, namespace: &str) -> 
         .await?;
     wait_for_mcp_server(&fixture.ava, server_name).await?;
 
-    fixture
-        .ava-code
-        .start_or_steer_turn(read_only_user_turn(&fixture, "call the rmcp echo tool"))
-        .await?;
+    fixture.ava
+        - code
+            .start_or_steer_turn(read_only_user_turn(&fixture, "call the rmcp echo tool"))
+            .await?;
 
     let begin_event = wait_for_event(&fixture.ava, |ev| {
         matches!(ev, EventMsg::McpToolCallBegin(_))
@@ -1124,10 +1116,8 @@ async fn stdio_server_round_trip(server_name: &'static str, namespace: &str) -> 
     assert_eq!(begin.invocation.server, server_name);
     assert_eq!(begin.invocation.tool, "echo");
 
-    let end_event = wait_for_event(&fixture.ava, |ev| {
-        matches!(ev, EventMsg::McpToolCallEnd(_))
-    })
-    .await;
+    let end_event =
+        wait_for_event(&fixture.ava, |ev| matches!(ev, EventMsg::McpToolCallEnd(_))).await;
     let EventMsg::McpToolCallEnd(end) = end_event else {
         unreachable!("event guard guarantees McpToolCallEnd");
     };
@@ -1409,13 +1399,13 @@ async fn modern_mcp_pagination_preserves_valid_tools_and_rejects_oversized_curso
         failure.error
     );
 
-    fixture
-        .ava-code
-        .start_or_steer_turn(read_only_user_turn(
-            &fixture,
-            "show the paginated MCP tools",
-        ))
-        .await?;
+    fixture.ava
+        - code
+            .start_or_steer_turn(read_only_user_turn(
+                &fixture,
+                "show the paginated MCP tools",
+            ))
+            .await?;
     wait_for_event(&fixture.ava, |event| {
         matches!(event, EventMsg::TurnComplete(_))
     })
@@ -1484,11 +1474,11 @@ async fn apps_enabled_turn_skips_pending_optional_mcp_without_cached_tools() -> 
             .context("optional MCP startup should connect before the first turn")??;
     tokio::time::timeout(Duration::from_secs(5), async {
         loop {
-            let event = fixture
-                .ava-code
-                .next_event()
-                .await
-                .context("event stream ended before Ava Apps became ready")?;
+            let event = fixture.ava
+                - code
+                    .next_event()
+                    .await
+                    .context("event stream ended before Ava Apps became ready")?;
             if let EventMsg::McpStartupUpdate(update) = event.msg
                 && update.server == AVA_APPS_MCP_SERVER_NAME
                 && matches!(update.status, McpStartupStatus::Ready)
@@ -1655,17 +1645,17 @@ async fn interrupt_during_mcp_startup_preserves_user_input_in_history(
     })
     .await;
     let (reply, outcome) = tokio::sync::oneshot::channel();
-    fixture
-        .ava-code
-        .submit(Op::TurnSettings {
-            turn_id,
-            update: TurnSettingsUpdate {
-                model: Some("startup-image-model".to_string()),
-                ..Default::default()
-            },
-            reply,
-        })
-        .await?;
+    fixture.ava
+        - code
+            .submit(Op::TurnSettings {
+                turn_id,
+                update: TurnSettingsUpdate {
+                    model: Some("startup-image-model".to_string()),
+                    ..Default::default()
+                },
+                reply,
+            })
+            .await?;
     assert_eq!(
         tokio::time::timeout(Duration::from_secs(/*secs*/ 10), outcome).await??,
         TurnSettingsUpdateOutcome::Applied
@@ -1677,10 +1667,7 @@ async fn interrupt_during_mcp_startup_preserves_user_input_in_history(
     })
     .await;
 
-    let history = fixture
-        .ava-code
-        .load_history(/*include_archived*/ false)
-        .await?;
+    let history = fixture.ava - code.load_history(/*include_archived*/ false).await?;
     let user_prompt_index = history
         .items
         .iter()
@@ -2007,13 +1994,13 @@ async fn stdio_mcp_tool_call_includes_sandbox_state_meta(
         PermissionProfile::read_only()
     };
     let owner_workspace_roots = if attachment_owned_permissions {
-        let selection = fixture
-            .ava-code
-            .environment_selections()
-            .await
-            .into_iter()
-            .find(|selection| selection.environment_id == remote_aware_environment_id())
-            .context("thread should select the MCP server's executor environment")?;
+        let selection = fixture.ava
+            - code
+                .environment_selections()
+                .await
+                .into_iter()
+                .find(|selection| selection.environment_id == remote_aware_environment_id())
+                .context("thread should select the MCP server's executor environment")?;
         let workspace_roots = vec![PathUri::parse(if cfg!(windows) {
             "file:///foreign/workspace"
         } else {
@@ -2033,27 +2020,27 @@ async fn stdio_mcp_tool_call_includes_sandbox_state_meta(
             },
         )
         .await?;
-        fixture
-            .ava-code
-            .environment_ready(
-                &selection,
-                EnvironmentConfig {
-                    allow_login_shell: fixture.config.permissions.allow_login_shell,
-                    workspace_roots: workspace_roots.clone(),
-                    permission_profile: PermissionProfileSnapshot::legacy(
-                        owner_permission_profile.clone(),
-                    ),
-                    shell_environment_policy: Default::default(),
-                    windows_sandbox_level: WindowsSandboxLevel::from_config(&fixture.config),
-                    windows_sandbox_type: fixture.config.permissions.windows_sandbox_type,
-                    use_legacy_landlock: fixture.config.features.use_legacy_landlock(),
-                    exec_policy: None,
-                    mcp_policy: None,
-                    network_policy: None,
-                    selected_capability_roots: Vec::new(),
-                },
-            )
-            .await?;
+        fixture.ava
+            - code
+                .environment_ready(
+                    &selection,
+                    EnvironmentConfig {
+                        allow_login_shell: fixture.config.permissions.allow_login_shell,
+                        workspace_roots: workspace_roots.clone(),
+                        permission_profile: PermissionProfileSnapshot::legacy(
+                            owner_permission_profile.clone(),
+                        ),
+                        shell_environment_policy: Default::default(),
+                        windows_sandbox_level: WindowsSandboxLevel::from_config(&fixture.config),
+                        windows_sandbox_type: fixture.config.permissions.windows_sandbox_type,
+                        use_legacy_landlock: fixture.config.features.use_legacy_landlock(),
+                        exec_policy: None,
+                        mcp_policy: None,
+                        network_policy: None,
+                        selected_capability_roots: Vec::new(),
+                    },
+                )
+                .await?;
         workspace_roots
     } else {
         Vec::new()
@@ -2237,16 +2224,16 @@ async fn stdio_mcp_parallel_tool_calls_default_false_runs_serially() -> anyhow::
         .await?;
     wait_for_mcp_server(&fixture.ava, server_name).await?;
 
-    fixture
-        .ava-code
-        // Keep this baseline on the mutable sync tool so read-only hints do not
-        // make the call parallel-safe. Bypass read-only turn permissions so
-        // approval behavior does not block the scheduling assertion.
-        .start_or_steer_turn(auto_approved_user_turn(
-            &fixture,
-            "call the rmcp sync tool twice",
-        ))
-        .await?;
+    fixture.ava
+        - code
+            // Keep this baseline on the mutable sync tool so read-only hints do not
+            // make the call parallel-safe. Bypass read-only turn permissions so
+            // approval behavior does not block the scheduling assertion.
+            .start_or_steer_turn(auto_approved_user_turn(
+                &fixture,
+                "call the rmcp sync tool twice",
+            ))
+            .await?;
 
     let mut call_events = Vec::new();
     while call_events.len() < 4 {
@@ -2378,13 +2365,13 @@ async fn stdio_mcp_read_only_tool_calls_run_concurrently_without_server_opt_in()
         .await?;
     wait_for_mcp_server(&fixture.ava, server_name).await?;
 
-    fixture
-        .ava-code
-        .start_or_steer_turn(read_only_user_turn(
-            &fixture,
-            "call the rmcp sync_readonly tool twice",
-        ))
-        .await?;
+    fixture.ava
+        - code
+            .start_or_steer_turn(read_only_user_turn(
+                &fixture,
+                "call the rmcp sync_readonly tool twice",
+            ))
+            .await?;
 
     wait_for_event(&fixture.ava, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
 
@@ -2468,16 +2455,16 @@ async fn stdio_mcp_parallel_tool_calls_opt_in_runs_concurrently() -> anyhow::Res
         .await?;
     wait_for_mcp_server(&fixture.ava, server_name).await?;
 
-    fixture
-        .ava-code
-        // Exercise the server opt-in with the mutable sync tool rather than the
-        // read-only sync_readonly tool. Bypass read-only turn permissions so
-        // approval behavior does not block the scheduling assertion.
-        .start_or_steer_turn(auto_approved_user_turn(
-            &fixture,
-            "call the rmcp sync tool twice",
-        ))
-        .await?;
+    fixture.ava
+        - code
+            // Exercise the server opt-in with the mutable sync tool rather than the
+            // read-only sync_readonly tool. Bypass read-only turn permissions so
+            // approval behavior does not block the scheduling assertion.
+            .start_or_steer_turn(auto_approved_user_turn(
+                &fixture,
+                "call the rmcp sync tool twice",
+            ))
+            .await?;
 
     wait_for_event(&fixture.ava, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
 
@@ -2551,13 +2538,13 @@ async fn stdio_encrypted_content_responses_round_trip() -> anyhow::Result<()> {
         .await?;
     wait_for_mcp_server(&fixture.ava, server_name).await?;
 
-    fixture
-        .ava-code
-        .start_or_steer_turn(read_only_user_turn(
-            &fixture,
-            "call the rmcp encrypted output tool",
-        ))
-        .await?;
+    fixture.ava
+        - code
+            .start_or_steer_turn(read_only_user_turn(
+                &fixture,
+                "call the rmcp encrypted output tool",
+            ))
+            .await?;
     wait_for_event(&fixture.ava, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
 
     let output_item = final_mock.single_request().function_call_output(call_id);
@@ -2650,10 +2637,10 @@ async fn stdio_image_responses_round_trip() -> anyhow::Result<()> {
         .await?;
     wait_for_mcp_server(&fixture.ava, server_name).await?;
 
-    fixture
-        .ava-code
-        .start_or_steer_turn(read_only_user_turn(&fixture, "call the rmcp image tool"))
-        .await?;
+    fixture.ava
+        - code
+            .start_or_steer_turn(read_only_user_turn(&fixture, "call the rmcp image tool"))
+            .await?;
 
     let turn_id = core_test_support::wait_for_event_match(&fixture.ava, |event| match event {
         EventMsg::TurnStarted(started) => Some(started.turn_id.clone()),
@@ -2690,10 +2677,8 @@ async fn stdio_image_responses_round_trip() -> anyhow::Result<()> {
         },
     );
 
-    let end_event = wait_for_event(&fixture.ava, |ev| {
-        matches!(ev, EventMsg::McpToolCallEnd(_))
-    })
-    .await;
+    let end_event =
+        wait_for_event(&fixture.ava, |ev| matches!(ev, EventMsg::McpToolCallEnd(_))).await;
     let EventMsg::McpToolCallEnd(end) = end_event else {
         unreachable!("end");
     };
@@ -2816,13 +2801,13 @@ async fn stdio_image_responses_resize_large_image() -> anyhow::Result<()> {
         .await?;
     wait_for_mcp_server(&fixture.ava, server_name).await?;
 
-    fixture
-        .ava-code
-        .start_or_steer_turn(read_only_user_turn(
-            &fixture,
-            "call the rmcp image_scenario tool",
-        ))
-        .await?;
+    fixture.ava
+        - code
+            .start_or_steer_turn(read_only_user_turn(
+                &fixture,
+                "call the rmcp image_scenario tool",
+            ))
+            .await?;
     wait_for_event(&fixture.ava, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
 
     let output_item = final_mock.single_request().function_call_output(call_id);
@@ -2904,13 +2889,13 @@ async fn stdio_image_responses_preserve_original_detail_metadata() -> anyhow::Re
         .await?;
     wait_for_mcp_server(&fixture.ava, server_name).await?;
 
-    fixture
-        .ava-code
-        .start_or_steer_turn(read_only_user_turn(
-            &fixture,
-            "call the rmcp image_scenario tool",
-        ))
-        .await?;
+    fixture.ava
+        - code
+            .start_or_steer_turn(read_only_user_turn(
+                &fixture,
+                "call the rmcp image_scenario tool",
+            ))
+            .await?;
 
     wait_for_event(&fixture.ava, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
 
@@ -3069,23 +3054,20 @@ async fn stdio_image_responses_are_sanitized_for_text_only_model() -> anyhow::Re
         .await;
     assert_eq!(models_mock.requests().len(), 1);
 
-    fixture
-        .ava-code
-        .start_or_steer_turn(read_only_user_turn_with_model(
-            &fixture,
-            "call the rmcp image tool",
-            text_only_model_slug.to_string(),
-        ))
-        .await?;
+    fixture.ava
+        - code
+            .start_or_steer_turn(read_only_user_turn_with_model(
+                &fixture,
+                "call the rmcp image tool",
+                text_only_model_slug.to_string(),
+            ))
+            .await?;
 
     wait_for_event(&fixture.ava, |ev| {
         matches!(ev, EventMsg::McpToolCallBegin(_))
     })
     .await;
-    wait_for_event(&fixture.ava, |ev| {
-        matches!(ev, EventMsg::McpToolCallEnd(_))
-    })
-    .await;
+    wait_for_event(&fixture.ava, |ev| matches!(ev, EventMsg::McpToolCallEnd(_))).await;
     wait_for_event(&fixture.ava, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
 
     let output_item = final_mock.single_request().function_call_output(call_id);
@@ -3170,10 +3152,10 @@ async fn stdio_server_propagates_whitelisted_env_vars() -> anyhow::Result<()> {
         .await?;
     wait_for_mcp_server(&fixture.ava, server_name).await?;
 
-    fixture
-        .ava-code
-        .start_or_steer_turn(read_only_user_turn(&fixture, "call the rmcp echo tool"))
-        .await?;
+    fixture.ava
+        - code
+            .start_or_steer_turn(read_only_user_turn(&fixture, "call the rmcp echo tool"))
+            .await?;
 
     let begin_event = wait_for_event(&fixture.ava, |ev| {
         matches!(ev, EventMsg::McpToolCallBegin(_))
@@ -3186,10 +3168,8 @@ async fn stdio_server_propagates_whitelisted_env_vars() -> anyhow::Result<()> {
     assert_eq!(begin.invocation.server, server_name);
     assert_eq!(begin.invocation.tool, "echo");
 
-    let end_event = wait_for_event(&fixture.ava, |ev| {
-        matches!(ev, EventMsg::McpToolCallEnd(_))
-    })
-    .await;
+    let end_event =
+        wait_for_event(&fixture.ava, |ev| matches!(ev, EventMsg::McpToolCallEnd(_))).await;
     let EventMsg::McpToolCallEnd(end) = end_event else {
         unreachable!("event guard guarantees McpToolCallEnd");
     };
@@ -3295,19 +3275,17 @@ async fn stdio_server_propagates_explicit_local_env_var_source() -> anyhow::Resu
         .await?;
     wait_for_mcp_server(&fixture.ava, server_name).await?;
 
-    fixture
-        .ava-code
-        .start_or_steer_turn(read_only_user_turn(&fixture, "call the rmcp echo tool"))
-        .await?;
+    fixture.ava
+        - code
+            .start_or_steer_turn(read_only_user_turn(&fixture, "call the rmcp echo tool"))
+            .await?;
 
     wait_for_event(&fixture.ava, |ev| {
         matches!(ev, EventMsg::McpToolCallBegin(_))
     })
     .await;
-    let end_event = wait_for_event(&fixture.ava, |ev| {
-        matches!(ev, EventMsg::McpToolCallEnd(_))
-    })
-    .await;
+    let end_event =
+        wait_for_event(&fixture.ava, |ev| matches!(ev, EventMsg::McpToolCallEnd(_))).await;
     let EventMsg::McpToolCallEnd(end) = end_event else {
         unreachable!("event guard guarantees McpToolCallEnd");
     };
@@ -3391,19 +3369,17 @@ async fn remote_stdio_env_var_source_does_not_copy_local_env() -> anyhow::Result
         .await?;
     wait_for_mcp_server(&fixture.ava, server_name).await?;
 
-    fixture
-        .ava-code
-        .start_or_steer_turn(read_only_user_turn(&fixture, "call the rmcp echo tool"))
-        .await?;
+    fixture.ava
+        - code
+            .start_or_steer_turn(read_only_user_turn(&fixture, "call the rmcp echo tool"))
+            .await?;
 
     wait_for_event(&fixture.ava, |ev| {
         matches!(ev, EventMsg::McpToolCallBegin(_))
     })
     .await;
-    let end_event = wait_for_event(&fixture.ava, |ev| {
-        matches!(ev, EventMsg::McpToolCallEnd(_))
-    })
-    .await;
+    let end_event =
+        wait_for_event(&fixture.ava, |ev| matches!(ev, EventMsg::McpToolCallEnd(_))).await;
     let EventMsg::McpToolCallEnd(end) = end_event else {
         unreachable!("event guard guarantees McpToolCallEnd");
     };
@@ -3637,13 +3613,13 @@ async fn streamable_http_tool_call_round_trip(mode: HeadersHelperMode) -> anyhow
     }
 
     // Phase 4: submit the user turn that should trigger the MCP tool call.
-    fixture
-        .ava-code
-        .start_or_steer_turn(read_only_user_turn(
-            &fixture,
-            "call the rmcp streamable http echo tool",
-        ))
-        .await?;
+    fixture.ava
+        - code
+            .start_or_steer_turn(read_only_user_turn(
+                &fixture,
+                "call the rmcp streamable http echo tool",
+            ))
+            .await?;
 
     // Phase 5: assert Ava begins the expected tool invocation.
     let begin_event = wait_for_event(&fixture.ava, |ev| {
@@ -3659,10 +3635,8 @@ async fn streamable_http_tool_call_round_trip(mode: HeadersHelperMode) -> anyhow
 
     // Phase 6: assert the tool result proves the server handled the request and
     // propagated the expected environment value.
-    let end_event = wait_for_event(&fixture.ava, |ev| {
-        matches!(ev, EventMsg::McpToolCallEnd(_))
-    })
-    .await;
+    let end_event =
+        wait_for_event(&fixture.ava, |ev| matches!(ev, EventMsg::McpToolCallEnd(_))).await;
     let EventMsg::McpToolCallEnd(end) = end_event else {
         unreachable!("event guard guarantees McpToolCallEnd");
     };
@@ -4083,13 +4057,13 @@ async fn streamable_http_with_oauth_round_trip_impl() -> anyhow::Result<()> {
         .write(true)
         .open(temp_home.path().join("mcp-oauth-locks/file-store.lock"))?;
     store_lock.try_lock()?;
-    fixture
-        .ava-code
-        .start_or_steer_turn(read_only_user_turn(
-            &fixture,
-            "continue while OAuth credentials are locked",
-        ))
-        .await?;
+    fixture.ava
+        - code
+            .start_or_steer_turn(read_only_user_turn(
+                &fixture,
+                "continue while OAuth credentials are locked",
+            ))
+            .await?;
     let (contended_turn, refreshed_failure, refreshed_failed_servers) =
         tokio::time::timeout(Duration::from_secs(5), async {
             let mut contended_turn = None;
@@ -4156,17 +4130,14 @@ async fn streamable_http_with_oauth_round_trip_impl() -> anyhow::Result<()> {
         .set(refreshed_servers)
         .expect("test MCP servers should accept the discovered OAuth server");
     let discovered_turn = tokio::time::timeout(Duration::from_secs(5), async {
-        fixture
-            .ava-code
-            .refresh_runtime_config(refreshed_config.clone())
-            .await;
-        fixture
-            .ava-code
-            .start_or_steer_turn(read_only_user_turn(
-                &fixture,
-                "continue while a newly discovered OAuth server is starting",
-            ))
-            .await?;
+        fixture.ava - code.refresh_runtime_config(refreshed_config.clone()).await;
+        fixture.ava
+            - code
+                .start_or_steer_turn(read_only_user_turn(
+                    &fixture,
+                    "continue while a newly discovered OAuth server is starting",
+                ))
+                .await?;
         loop {
             if let EventMsg::TurnComplete(turn) = fixture.ava.next_event().await?.msg {
                 return Ok::<_, anyhow::Error>(turn);
@@ -4233,13 +4204,13 @@ async fn streamable_http_with_oauth_round_trip_impl() -> anyhow::Result<()> {
     .await?;
 
     // Phase 6: submit the user turn that should invoke the OAuth-backed tool.
-    fixture
-        .ava-code
-        .start_or_steer_turn(read_only_user_turn(
-            &fixture,
-            "call the rmcp streamable http oauth echo tool",
-        ))
-        .await?;
+    fixture.ava
+        - code
+            .start_or_steer_turn(read_only_user_turn(
+                &fixture,
+                "call the rmcp streamable http oauth echo tool",
+            ))
+            .await?;
 
     // Phase 7: assert Ava begins the expected tool invocation.
     let begin_event = wait_for_event(&fixture.ava, |ev| {
@@ -4261,10 +4232,8 @@ async fn streamable_http_with_oauth_round_trip_impl() -> anyhow::Result<()> {
 
     // Phase 8: assert the tool result proves the authenticated request reached
     // the server and preserved the expected environment value.
-    let end_event = wait_for_event(&fixture.ava, |ev| {
-        matches!(ev, EventMsg::McpToolCallEnd(_))
-    })
-    .await;
+    let end_event =
+        wait_for_event(&fixture.ava, |ev| matches!(ev, EventMsg::McpToolCallEnd(_))).await;
     let EventMsg::McpToolCallEnd(end) = end_event else {
         unreachable!("event guard guarantees McpToolCallEnd");
     };

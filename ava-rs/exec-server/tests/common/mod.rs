@@ -252,9 +252,9 @@ fn maybe_run_exec_server_from_test_binary(guard: Option<&TestBinaryDispatchGuard
                 &ava_config::NoopThreadConfigLoader,
             )
             .await?;
-            runtime_paths.with_allowed_symlinked_ava_home(
-                ava_config::allowed_symlinked_ava_home(&config, &home),
-            )
+            runtime_paths.with_allowed_symlinked_ava_home(ava_config::allowed_symlinked_ava_home(
+                &config, &home,
+            ))
         };
         ava_exec_server::run_main_with_telemetry(
             &listen_url,

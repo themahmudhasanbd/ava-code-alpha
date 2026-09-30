@@ -21,9 +21,7 @@ impl PluginRequestProcessor {
         let config = self.load_latest_config(/*fallback_cwd*/ None).await?;
         let plugins_input = config.plugins_config_input();
         let auth = self.auth_manager.auth().await;
-        if !plugins_input.plugins_enabled
-            || !auth.as_ref().is_some_and(AvaAuth::uses_ava_backend)
-        {
+        if !plugins_input.plugins_enabled || !auth.as_ref().is_some_and(AvaAuth::uses_ava_backend) {
             return Ok(Some(PluginReconcileResponse::default().into()));
         }
 

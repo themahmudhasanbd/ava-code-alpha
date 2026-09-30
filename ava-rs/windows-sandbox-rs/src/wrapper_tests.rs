@@ -50,10 +50,7 @@ fn windows_wrapper_args_round_trip() {
     ];
 
     let args = create_windows_sandbox_command_args_for_permission_profile(
-        vec![
-            "ava.exe".to_string(),
-            "--ava-run-as-fs-helper".to_string(),
-        ],
+        vec!["ava.exe".to_string(), "--ava-run-as-fs-helper".to_string()],
         &command_cwd,
         workspace_roots.as_slice(),
         &env,
@@ -90,10 +87,7 @@ fn windows_wrapper_args_round_trip() {
     let parsed =
         parse_windows_sandbox_wrapper_args(args[1..].to_vec()).expect("parse wrapper args");
 
-    assert_eq!(
-        parsed.command,
-        vec!["ava.exe", "--ava-run-as-fs-helper"]
-    );
+    assert_eq!(parsed.command, vec!["ava.exe", "--ava-run-as-fs-helper"]);
     assert_eq!(parsed.command_cwd, command_cwd);
     assert_eq!(parsed.workspace_roots, workspace_roots);
     assert_eq!(parsed.env_map, env);

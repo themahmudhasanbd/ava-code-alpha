@@ -2,10 +2,6 @@ use std::path::Path;
 
 use anyhow::Context;
 use anyhow::Result;
-use base64::Engine;
-use base64::engine::general_purpose::URL_SAFE_NO_PAD;
-use chrono::DateTime;
-use chrono::Utc;
 use ava_config::types::AuthCredentialsStoreMode;
 use ava_login::AuthDotJson;
 use ava_login::AuthKeyringBackendKind;
@@ -13,6 +9,10 @@ use ava_login::save_auth;
 use ava_login::token_data::TokenData;
 use ava_login::token_data::parse_chatgpt_jwt_claims;
 use ava_protocol::auth::AuthMode;
+use base64::Engine;
+use base64::engine::general_purpose::URL_SAFE_NO_PAD;
+use chrono::DateTime;
+use chrono::Utc;
 use serde_json::json;
 
 pub async fn mount_workspace_routing(server: &wiremock::MockServer) {

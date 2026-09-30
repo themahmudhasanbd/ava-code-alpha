@@ -17,7 +17,6 @@ use crate::outgoing_message::QueuedOutgoingMessage;
 use crate::transport::CHANNEL_CAPACITY;
 use crate::transport::ConnectionOrigin;
 use crate::transport::TransportEvent;
-use base64::Engine;
 use ava_app_server_protocol::ConfigWarningNotification;
 use ava_app_server_protocol::JSONRPCMessage;
 use ava_app_server_protocol::RemoteControlConnectionStatus;
@@ -40,6 +39,7 @@ use ava_protocol::auth::AuthMode;
 use ava_state::RemoteControlEnrollmentRecord;
 use ava_state::StateRuntime;
 use ava_utils_absolute_path::test_support::PathExt;
+use base64::Engine;
 use futures::SinkExt;
 use futures::StreamExt;
 use gethostname::gethostname;
@@ -1821,18 +1821,17 @@ async fn remote_control_http_mode_enrolls_before_connecting() {
 
     let backend_client_id = ClientId("backend-test-client".to_string());
     let writer = {
-        let initialize_message =
-            JSONRPCMessage::Request(ava_app_server_protocol::JSONRPCRequest {
-                id: ava_app_server_protocol::RequestId::Integer(11),
-                method: "initialize".to_string(),
-                params: Some(json!({
-                    "clientInfo": {
-                        "name": "remote-backend-client",
-                        "version": "0.1.0"
-                    }
-                })),
-                trace: None,
-            });
+        let initialize_message = JSONRPCMessage::Request(ava_app_server_protocol::JSONRPCRequest {
+            id: ava_app_server_protocol::RequestId::Integer(11),
+            method: "initialize".to_string(),
+            params: Some(json!({
+                "clientInfo": {
+                    "name": "remote-backend-client",
+                    "version": "0.1.0"
+                }
+            })),
+            trace: None,
+        });
         send_client_event(
             &mut websocket,
             ClientEnvelope {
@@ -1882,16 +1881,14 @@ async fn remote_control_http_mode_enrolls_before_connecting() {
         .send(QueuedOutgoingMessage::new(OutgoingMessage::Response(
             crate::outgoing_message::OutgoingResponse {
                 id: ava_app_server_protocol::RequestId::Integer(11),
-                result: Box::new(
-                    ava_app_server_protocol::ClientResponsePayload::Initialize(
-                        ava_app_server_protocol::InitializeResponse {
-                            user_agent: "ava-test-agent".to_string(),
-                            ava_home: ava_home.path().abs(),
-                            platform_family: "test-family".to_string(),
-                            platform_os: "test-os".to_string(),
-                        },
-                    ),
-                ),
+                result: Box::new(ava_app_server_protocol::ClientResponsePayload::Initialize(
+                    ava_app_server_protocol::InitializeResponse {
+                        user_agent: "ava-test-agent".to_string(),
+                        ava_home: ava_home.path().abs(),
+                        platform_family: "test-family".to_string(),
+                        platform_os: "test-os".to_string(),
+                    },
+                )),
             },
         )))
         .await

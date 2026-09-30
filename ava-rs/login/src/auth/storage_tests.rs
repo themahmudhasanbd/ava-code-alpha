@@ -1,12 +1,12 @@
 use super::*;
 use crate::token_data::IdTokenInfo;
 use anyhow::Context;
-use base64::Engine;
 use ava_secrets::LocalSecretsNamespace;
 use ava_secrets::SecretScope;
 use ava_secrets::SecretsBackendKind;
 use ava_secrets::SecretsManager;
 use ava_secrets::compute_keyring_account;
+use base64::Engine;
 use pretty_assertions::assert_eq;
 use serde_json::json;
 use tempfile::tempdir;

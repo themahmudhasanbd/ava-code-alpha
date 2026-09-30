@@ -4,8 +4,8 @@ use std::io;
 
 use crate::oauth::OAuthError;
 use crate::oauth::sanitize_url_for_logging;
-use chrono::Utc;
 use ava_secrets::redact_secrets;
+use chrono::Utc;
 use serde::Deserialize;
 use serde::Serialize;
 

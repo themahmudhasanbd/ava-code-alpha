@@ -4,9 +4,6 @@ use std::path::Path;
 use std::sync::Arc;
 
 use anyhow::Result;
-use chrono::DateTime;
-use chrono::TimeZone;
-use chrono::Utc;
 use ava_core::config::Constrained;
 use ava_login::AvaAuth;
 use ava_models_manager::client_version_to_whole;
@@ -30,6 +27,9 @@ use ava_protocol::protocol::AskForApproval;
 use ava_protocol::protocol::EventMsg;
 use ava_protocol::protocol::ThreadSettingsOverrides;
 use ava_protocol::user_input::UserInput;
+use chrono::DateTime;
+use chrono::TimeZone;
+use chrono::Utc;
 use core_test_support::responses;
 use core_test_support::responses::ev_assistant_message;
 use core_test_support::responses::ev_completed;
@@ -207,29 +207,28 @@ async fn renews_cache_ttl_on_matching_models_etag() -> Result<()> {
     let (sandbox_policy, permission_profile) =
         turn_permission_fields(PermissionProfile::Disabled, test.cwd_path());
 
-    ava
-        .start_or_steer_turn(
-            TurnInputRequest::user_input(vec![UserInput::Text {
-                text: "hi".into(),
-                text_elements: Vec::new(),
-            }])
-            .with_thread_settings(ThreadSettingsOverrides {
-                environments: Some(local_selections(test.config.cwd.clone())),
-                approval_policy: Some(ava_protocol::protocol::AskForApproval::Never),
-                sandbox_policy: Some(sandbox_policy),
-                permission_profile,
-                collaboration_mode: Some(CollaborationMode {
-                    mode: ModeKind::Default,
-                    settings: Settings {
-                        model: test.session_configured.model.clone(),
-                        reasoning_effort: None,
-                        developer_instructions: None,
-                    },
-                }),
-                ..Default::default()
+    ava.start_or_steer_turn(
+        TurnInputRequest::user_input(vec![UserInput::Text {
+            text: "hi".into(),
+            text_elements: Vec::new(),
+        }])
+        .with_thread_settings(ThreadSettingsOverrides {
+            environments: Some(local_selections(test.config.cwd.clone())),
+            approval_policy: Some(ava_protocol::protocol::AskForApproval::Never),
+            sandbox_policy: Some(sandbox_policy),
+            permission_profile,
+            collaboration_mode: Some(CollaborationMode {
+                mode: ModeKind::Default,
+                settings: Settings {
+                    model: test.session_configured.model.clone(),
+                    reasoning_effort: None,
+                    developer_instructions: None,
+                },
             }),
-        )
-        .await?;
+            ..Default::default()
+        }),
+    )
+    .await?;
 
     let _ = wait_for_event(&ava, |event| matches!(event, EventMsg::TurnComplete(_))).await;
 

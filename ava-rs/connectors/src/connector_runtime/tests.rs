@@ -383,8 +383,7 @@ fn ava_apps_tools_cache_publishes_newest_shared_snapshot() {
         "newer"
     );
     assert_eq!(
-        read_cached_ava_apps_tools(&cache_context_1).expect("persisted snapshot")[0]
-            .callable_name,
+        read_cached_ava_apps_tools(&cache_context_1).expect("persisted snapshot")[0].callable_name,
         "newer"
     );
 }
@@ -464,9 +463,7 @@ fn connector_runtime_without_cache_publishes_without_writing() {
 #[cfg(unix)]
 #[test]
 fn ava_apps_tools_cache_scopes_non_utf8_home_disk_paths() {
-    let ava_home = PathBuf::from(std::ffi::OsString::from_vec(
-        b"/tmp/ava-home-\xff".to_vec(),
-    ));
+    let ava_home = PathBuf::from(std::ffi::OsString::from_vec(b"/tmp/ava-home-\xff".to_vec()));
     let cache = ConnectorRuntimeManager::<TestTool>::default();
     let user_one_context = cache.context(
         ava_home.clone(),

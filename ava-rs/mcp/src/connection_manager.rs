@@ -282,10 +282,7 @@ impl McpConnectionSet {
             .map(ava_model_provider::auth_provider_from_auth);
         let ava_apps_auth_provider = auth_manager.as_ref().and_then(|auth_manager| {
             auth.filter(|auth| auth.uses_ava_backend()).map(|auth| {
-                ava_model_provider::auth_provider_from_auth_manager(
-                    Arc::clone(auth_manager),
-                    auth,
-                )
+                ava_model_provider::auth_provider_from_auth_manager(Arc::clone(auth_manager), auth)
             })
         });
         for (server_name, server) in mcp_servers

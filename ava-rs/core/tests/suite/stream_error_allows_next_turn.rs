@@ -95,17 +95,15 @@ async fn continue_after_stream_error() {
         .await
         .unwrap();
 
-    ava
-        .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
-            text: "first message".into(),
-            text_elements: Vec::new(),
-        }]))
-        .await
-        .unwrap();
+    ava.start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
+        text: "first message".into(),
+        text_elements: Vec::new(),
+    }]))
+    .await
+    .unwrap();
 
     // Expect an Error followed by TurnComplete so the session is released.
-    let EventMsg::Error(error) =
-        wait_for_event(&ava, |ev| matches!(ev, EventMsg::Error(_))).await
+    let EventMsg::Error(error) = wait_for_event(&ava, |ev| matches!(ev, EventMsg::Error(_))).await
     else {
         unreachable!("predicate guarantees an error event");
     };
@@ -120,13 +118,12 @@ async fn continue_after_stream_error() {
     // 2) Second turn: now send another prompt that should succeed using the
     // mock server SSE stream. If the agent failed to clear the running task on
     // error above, this submission would be rejected/queued indefinitely.
-    ava
-        .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
-            text: "follow up".into(),
-            text_elements: Vec::new(),
-        }]))
-        .await
-        .unwrap();
+    ava.start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
+        text: "follow up".into(),
+        text_elements: Vec::new(),
+    }]))
+    .await
+    .unwrap();
 
     wait_for_event(&ava, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
 }

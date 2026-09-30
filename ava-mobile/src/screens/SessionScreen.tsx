@@ -17,6 +17,7 @@ import { AvaMascot } from "@/components/ui/ava-mascot";
 import { Shimmer } from "@/components/ai-elements/shimmer";
 import { ChatMessageView } from "@/components/chat/message-parts";
 import { Composer } from "@/components/chat/composer";
+import { ApprovalCard } from "@/components/chat/ApprovalCard";
 import { APP } from "@/config/app";
 import { useAva } from "@/state/ava-provider";
 import { useSessions } from "@/state/queries";
@@ -84,6 +85,8 @@ export function SessionScreen({
     status,
     error,
     queuedPrompts,
+    pendingApprovals,
+    answerPendingApproval,
     send,
     stop,
     resume,
@@ -389,23 +392,38 @@ export function SessionScreen({
               });
             }, 300);
           }}
-          renderItem={({ item, index }) => (
-            <ChatMessageView
-              message={item}
-              sessionId={sessionId}
-              onOpenTimeline={(msgId) =>
-                navigation?.navigate("Timeline", {
-                  sessionId,
-                  messageId: msgId,
-                })
+          renderItem={({ item, index }) => {
+            // Preceding user prompt text for intent derivation (assistant turns only)
+            let userPrompt: string | undefined;
+            if (item.role === "assistant" && index > 0) {
+              const prev = messages[index - 1];
+              if (prev && prev.role === "user") {
+                userPrompt = prev.parts
+                  .filter((pt) => pt.kind === "text" && pt.text)
+                  .map((pt) => pt.text)
+                  .join("\n")
+                  .trim() || undefined;
               }
-              live={
-                (status === "submitted" || status === "streaming") &&
-                index === messages.length - 1 &&
-                item.role === "assistant"
-              }
-            />
-          )}
+            }
+            return (
+              <ChatMessageView
+                message={item}
+                sessionId={sessionId}
+                userPrompt={userPrompt}
+                onOpenTimeline={(msgId) =>
+                  navigation?.navigate("Timeline", {
+                    sessionId,
+                    messageId: msgId,
+                  })
+                }
+                live={
+                  (status === "submitted" || status === "streaming") &&
+                  index === messages.length - 1 &&
+                  item.role === "assistant"
+                }
+              />
+            );
+          }}
           contentContainerStyle={styles.listContent}
           ListHeaderComponent={
             loadingHistory ? (
@@ -520,6 +538,14 @@ export function SessionScreen({
           <View style={styles.stoppingContainer}>
             <ActivityIndicator size="small" color={colors.warning} />
             <Text style={[styles.stoppingText, { color: colors.warning }]}>Stopping agent…</Text>
+          </View>
+        ) : null}
+
+        {pendingApprovals.length > 0 ? (
+          <View style={styles.approvalStack}>
+            {pendingApprovals.map((approval) => (
+              <ApprovalCard key={approval.id} approval={approval} onRespond={answerPendingApproval} />
+            ))}
           </View>
         ) : null}
 
@@ -712,6 +738,10 @@ const styles = StyleSheet.create({
   },
   stoppingText: {
     fontSize: 12,
+  },
+  approvalStack: {
+    paddingHorizontal: 12,
+    paddingTop: 4,
   },
   composerWrapper: {
     paddingHorizontal: 10,

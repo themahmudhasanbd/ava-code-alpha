@@ -1,6 +1,5 @@
 use super::*;
 use anyhow::Result;
-use axum::http::HeaderValue;
 use ava_app_server_protocol::AppConfig;
 use ava_app_server_protocol::AppToolApproval;
 use ava_app_server_protocol::AppsConfig;
@@ -12,6 +11,7 @@ use ava_config::test_support::CloudConfigBundleFixture;
 use ava_http_client::HttpClientFactory;
 use ava_http_client::OutboundProxyPolicy;
 use ava_utils_absolute_path::AbsolutePathBuf;
+use axum::http::HeaderValue;
 use pretty_assertions::assert_eq;
 use tempfile::tempdir;
 
@@ -1339,10 +1339,9 @@ async fn managed_auth_policy_survives_unusable_requirements_file_changes() -> Re
         CloudConfigBundleLoader::default(),
     );
     let startup = service.load_latest_config(/*fallback_cwd*/ None).await?;
-    let auth_manager = ava_login::AuthManager::shared_from_config(
-        &startup, /*enable_ava_api_key_env*/ false,
-    )
-    .await?;
+    let auth_manager =
+        ava_login::AuthManager::shared_from_config(&startup, /*enable_ava_api_key_env*/ false)
+            .await?;
     std::fs::write(
         &requirements_path,
         "allowed_login_methods = [\"chatgpt\"]\nallowed_chatgpt_workspaces = []\n",
@@ -2654,10 +2653,9 @@ async fn allowed_login_methods_follow_current_forced_workspaces() -> Result<()> 
         CloudConfigBundleLoader::default(),
     );
     let config = service.load_latest_config(/*fallback_cwd*/ None).await?;
-    let auth = ava_login::AuthManager::shared_from_config(
-        &config, /*enable_ava_api_key_env*/ false,
-    )
-    .await?;
+    let auth =
+        ava_login::AuthManager::shared_from_config(&config, /*enable_ava_api_key_env*/ false)
+            .await?;
     for (workspaces, expected) in [
         (
             Some(vec!["managed".to_string()]),

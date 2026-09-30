@@ -5,8 +5,8 @@ use std::net::TcpListener;
 use std::sync::Arc;
 use std::time::Duration;
 
-use chrono::Utc;
 use ava_keyring_store::tests::MockKeyringStore;
+use chrono::Utc;
 use pretty_assertions::assert_eq;
 use serde_json::json;
 use wiremock::Mock;
@@ -461,12 +461,7 @@ async fn gateway_credentials_use_a_dedicated_encrypted_file_and_reload_large_tok
         })
         .expect("save encrypted provider OAuth token");
     assert_eq!(keyring.saved_value(&client.credential_id()), None);
-    assert!(
-        ava_home
-            .path()
-            .join("secrets/gateway_oauth.age")
-            .is_file()
-    );
+    assert!(ava_home.path().join("secrets/gateway_oauth.age").is_file());
     assert!(!ava_home.path().join("secrets/ava_auth.age").exists());
 
     let reloaded = GatewayAuthManager::new(

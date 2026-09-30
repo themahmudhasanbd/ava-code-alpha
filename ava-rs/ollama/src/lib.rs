@@ -4,8 +4,8 @@ mod parser;
 mod pull;
 mod url;
 
-pub use client::OllamaClient;
 use ava_core::config::Config;
+pub use client::OllamaClient;
 pub use pull::CliProgressReporter;
 pub use pull::PullEvent;
 pub use pull::PullProgressReporter;

@@ -1355,9 +1355,8 @@ pub(crate) fn synthetic_mount_registry_root() -> PathBuf {
                     temp_dir.display()
                 )
             });
-            let registry_root = temp_dir.join(format!(
-                "ava-bwrap-synthetic-mount-targets-{effective_uid}"
-            ));
+            let registry_root =
+                temp_dir.join(format!("ava-bwrap-synthetic-mount-targets-{effective_uid}"));
             // A registry symlink can redirect bookkeeping into a writable root
             // that does not overlap TMPDIR, bypassing its read-only mount.
             assert!(

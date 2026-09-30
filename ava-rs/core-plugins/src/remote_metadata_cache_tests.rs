@@ -6,9 +6,7 @@ use pretty_assertions::assert_eq;
 #[tokio::test]
 async fn display_refresh_preserves_loaded_skills_and_tool_suggestions() {
     let ava_home = TempDir::new().unwrap();
-    let marketplace_root = ava_home
-        .path()
-        .join("plugins/cache/openai-curated-remote");
+    let marketplace_root = ava_home.path().join("plugins/cache/openai-curated-remote");
     write_plugin(&marketplace_root, "sample/local", "sample");
     let plugin_root = marketplace_root.join("sample/local");
     write_file(

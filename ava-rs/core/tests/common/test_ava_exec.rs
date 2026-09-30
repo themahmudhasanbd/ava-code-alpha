@@ -11,8 +11,7 @@ pub struct TestAvaExecBuilder {
 impl TestAvaExecBuilder {
     pub fn cmd(&self) -> assert_cmd::Command {
         let mut cmd = assert_cmd::Command::new(
-            ava_utils_cargo_bin::cargo_bin("ava-exec")
-                .expect("should find binary for ava-exec"),
+            ava_utils_cargo_bin::cargo_bin("ava-exec").expect("should find binary for ava-exec"),
         );
         cmd.current_dir(self.cwd.path())
             .env("AVA_HOME", self.home.path())

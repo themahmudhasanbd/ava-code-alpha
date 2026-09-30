@@ -5,7 +5,6 @@ use crate::ResponseItemEnvelope;
 use crate::RolloutItem;
 use crate::RolloutLine;
 use crate::config::RolloutConfig;
-use chrono::TimeZone;
 use ava_protocol::SanitizedGitUrl;
 use ava_protocol::SessionId;
 use ava_protocol::ThreadId;
@@ -26,6 +25,7 @@ use ava_protocol::protocol::TurnContextItem;
 use ava_protocol::protocol::UserMessageEvent;
 use ava_protocol::security_risk::SecurityRiskScore;
 use ava_utils_absolute_path::test_support::PathExt;
+use chrono::TimeZone;
 use pretty_assertions::assert_eq;
 use std::collections::BTreeMap;
 use std::fs;
@@ -1452,12 +1452,8 @@ async fn list_threads_default_filter_returns_filesystem_scan_results() -> std::i
         .with_ymd_and_hms(2025, 1, 3, 13, 0, 0)
         .single()
         .expect("valid datetime");
-    let mut builder = ava_state::ThreadMetadataBuilder::new(
-        thread_id,
-        real_path,
-        created_at,
-        SessionSource::Cli,
-    );
+    let mut builder =
+        ava_state::ThreadMetadataBuilder::new(thread_id, real_path, created_at, SessionSource::Cli);
     builder.model_provider = Some(config.model_provider_id.clone());
     builder.cwd = stale_cwd.clone();
     let mut metadata = builder.build(config.model_provider_id.as_str());
@@ -1715,12 +1711,8 @@ async fn list_threads_search_repairs_stale_state_db_hits_before_returning() -> s
         .with_ymd_and_hms(2025, 1, 3, 15, 0, 0)
         .single()
         .expect("valid datetime");
-    let mut builder = ava_state::ThreadMetadataBuilder::new(
-        thread_id,
-        real_path,
-        created_at,
-        SessionSource::Cli,
-    );
+    let mut builder =
+        ava_state::ThreadMetadataBuilder::new(thread_id, real_path, created_at, SessionSource::Cli);
     builder.model_provider = Some(config.model_provider_id.clone());
     builder.cwd = home.path().to_path_buf();
     let mut metadata = builder.build(config.model_provider_id.as_str());

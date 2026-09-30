@@ -1,7 +1,6 @@
 use crate::compact::content_items_to_text;
 use crate::event_mapping::is_contextual_user_message_content;
 use crate::session::session::Session;
-use chrono::Utc;
 use ava_exec_server::LOCAL_FS;
 use ava_git_utils::resolve_root_git_project_for_trust;
 use ava_protocol::models::ResponseItem;
@@ -13,6 +12,7 @@ use ava_thread_store::ThreadSortKey;
 use ava_utils_absolute_path::AbsolutePathBuf;
 use ava_utils_output_truncation::TruncationPolicy;
 use ava_utils_output_truncation::truncate_text;
+use chrono::Utc;
 use dirs::home_dir;
 use std::cmp::Reverse;
 use std::collections::HashMap;

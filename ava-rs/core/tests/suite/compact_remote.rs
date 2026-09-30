@@ -2,8 +2,6 @@
 
 use anyhow::Context;
 use anyhow::Result;
-use base64::Engine;
-use base64::engine::general_purpose::STANDARD as BASE64_STANDARD;
 use ava_core::StartThreadOptions;
 use ava_core::TurnInputRequest;
 use ava_features::Feature;
@@ -28,6 +26,8 @@ use ava_protocol::protocol::RealtimeEvent;
 use ava_protocol::protocol::RealtimeOutputModality;
 use ava_protocol::protocol::ThreadHistoryMode;
 use ava_protocol::user_input::UserInput;
+use base64::Engine;
+use base64::engine::general_purpose::STANDARD as BASE64_STANDARD;
 use core_test_support::responses;
 use core_test_support::responses::mount_sse_once;
 use core_test_support::responses::sse;
@@ -95,29 +95,27 @@ async fn start_remote_realtime_server() -> responses::WebSocketTestServer {
 }
 
 async fn start_realtime_conversation(ava: &ava_core::AvaThread) -> Result<()> {
-    ava
-        .submit(Op::RealtimeConversationStart(ConversationStartParams {
-            client_managed_handoffs: false,
-            delegation_ack_filler: None,
-            flush_transcript_tail_on_session_end: false,
-            ava_responses_as_items: false,
-            ava_response_item_prefix: None,
-            ava_response_handoff_mode:
-                ava_protocol::protocol::AvaResponseHandoffMode::Thinking,
-            ava_response_handoff_channel_prefixes: None,
-            model: None,
-            output_modality: RealtimeOutputModality::Audio,
-            include_startup_context: true,
-            initial_items: Vec::new(),
-            realtime_start_instructions: None,
-            realtime_end_instructions: None,
-            prompt: Some(Some("backend prompt".to_string())),
-            realtime_session_id: None,
-            transport: None,
-            version: None,
-            voice: None,
-        }))
-        .await?;
+    ava.submit(Op::RealtimeConversationStart(ConversationStartParams {
+        client_managed_handoffs: false,
+        delegation_ack_filler: None,
+        flush_transcript_tail_on_session_end: false,
+        ava_responses_as_items: false,
+        ava_response_item_prefix: None,
+        ava_response_handoff_mode: ava_protocol::protocol::AvaResponseHandoffMode::Thinking,
+        ava_response_handoff_channel_prefixes: None,
+        model: None,
+        output_modality: RealtimeOutputModality::Audio,
+        include_startup_context: true,
+        initial_items: Vec::new(),
+        realtime_start_instructions: None,
+        realtime_end_instructions: None,
+        prompt: Some(Some("backend prompt".to_string())),
+        realtime_session_id: None,
+        transport: None,
+        version: None,
+        voice: None,
+    }))
+    .await?;
 
     wait_for_event_match(ava, |msg| match msg {
         EventMsg::RealtimeConversationStarted(started) => Some(Ok(started.clone())),
@@ -371,10 +369,9 @@ async fn remote_compact_v2_retains_only_client_developer_messages_when_enabled(
         phase: None,
         internal_chat_message_metadata_passthrough: None,
     };
-    let ava = &harness.test().ava-code;
+    let ava = &harness.test().ava - code;
     let rollout_path = ava.rollout_path().context("rollout path")?;
-    ava
-        .inject_response_items(vec![developer("INJECTED_CLIENT_DEVELOPER")])
+    ava.inject_response_items(vec![developer("INJECTED_CLIENT_DEVELOPER")])
         .await?;
     let response_mock = responses::mount_sse_sequence(
         harness.server(),
@@ -444,7 +441,7 @@ async fn remote_compact_v2_records_usage_before_output_validation() -> Result<()
             }),
     )
     .await?;
-    let ava = &harness.test().ava-code;
+    let ava = &harness.test().ava - code;
     let rollout_path = ava.rollout_path().context("rollout path")?;
     let responses_mock = responses::mount_sse_sequence(
         harness.server(),
@@ -475,12 +472,11 @@ async fn remote_compact_v2_records_usage_before_output_validation() -> Result<()
     .await;
 
     harness.test().submit_turn("before compact").await?;
-    ava
-        .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
-            text: "turn that triggers auto compact".into(),
-            text_elements: Vec::new(),
-        }]))
-        .await?;
+    ava.start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
+        text: "turn that triggers auto compact".into(),
+        text_elements: Vec::new(),
+    }]))
+    .await?;
     let mut preserved_prompts = Vec::new();
     wait_for_event(ava, |event| {
         if let EventMsg::UserMessage(message) = event {
@@ -531,12 +527,11 @@ async fn remote_compact_v2_records_usage_before_output_validation() -> Result<()
 async fn amazon_bedrock_automatic_compaction_uses_v2_responses_endpoint() -> Result<()> {
     skip_if_no_network!(Ok(()));
 
-    let harness = TestAvaHarness::with_auto_env_builder(amazon_bedrock_test_ava().with_config(
-        |config| {
+    let harness =
+        TestAvaHarness::with_auto_env_builder(amazon_bedrock_test_ava().with_config(|config| {
             config.model_auto_compact_token_limit = Some(200);
-        },
-    ))
-    .await?;
+        }))
+        .await?;
     let response_mock = responses::mount_sse_sequence(
         harness.server(),
         vec![
@@ -629,7 +624,7 @@ async fn remote_compact_v2_charges_retained_images_to_token_budget(
             }),
     )
     .await?;
-    let ava = &harness.test().ava-code;
+    let ava = &harness.test().ava - code;
     // Each original-detail image costs 10,000 estimated patch tokens.
     let image_inputs = (1..=8)
         .map(|number| {
@@ -672,8 +667,7 @@ async fn remote_compact_v2_charges_retained_images_to_token_budget(
         ]),
     )
     .await;
-    ava
-        .start_or_steer_turn(TurnInputRequest::user_input(input))
+    ava.start_or_steer_turn(TurnInputRequest::user_input(input))
         .await?;
     wait_for_turn_complete(ava).await;
     let initial_request = initial_mock.single_request();
@@ -726,12 +720,11 @@ async fn remote_compact_v2_charges_retained_images_to_token_budget(
             ]),
         )
         .await;
-        ava
-            .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
-                text: "after compact".to_string(),
-                text_elements: Vec::new(),
-            }]))
-            .await?;
+        ava.start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
+            text: "after compact".to_string(),
+            text_elements: Vec::new(),
+        }]))
+        .await?;
         wait_for_turn_complete(ava).await;
         let follow_up = follow_up_mock.single_request();
         assert_eq!(
@@ -788,8 +781,7 @@ async fn remote_compact_v2_charges_retained_images_to_token_budget(
                 ]),
             )
             .await;
-            ava
-                .start_or_steer_turn(TurnInputRequest::user_input(vec![image_inputs[7].clone()]))
+            ava.start_or_steer_turn(TurnInputRequest::user_input(vec![image_inputs[7].clone()]))
                 .await?;
             wait_for_turn_complete(ava).await;
             let _ = append_mock.single_request();
@@ -891,12 +883,11 @@ async fn remote_compact_v2_reuses_compaction_trigger_for_followups() -> Result<(
     )
     .await;
 
-    ava
-        .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
-            text: "hello remote compact".into(),
-            text_elements: Vec::new(),
-        }]))
-        .await?;
+    ava.start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
+        text: "hello remote compact".into(),
+        text_elements: Vec::new(),
+    }]))
+    .await?;
     wait_for_turn_complete(&ava).await;
 
     ava
@@ -925,45 +916,42 @@ async fn remote_compact_v2_reuses_compaction_trigger_for_followups() -> Result<(
         })
         .await?;
     let delegated_task_ciphertext = format!("delegated compact task{}", "x".repeat(40_000));
-    ava
-        .submit(Op::InterAgentCommunication {
-            communication: InterAgentCommunication::new_encrypted(
-                AgentPath::root(),
-                AgentPath::root().join("worker").expect("valid worker path"),
-                Vec::new(),
-                delegated_task_ciphertext.clone(),
-                /*trigger_turn*/ true,
-            ),
-            start_options: Default::default(),
-        })
-        .await?;
+    ava.submit(Op::InterAgentCommunication {
+        communication: InterAgentCommunication::new_encrypted(
+            AgentPath::root(),
+            AgentPath::root().join("worker").expect("valid worker path"),
+            Vec::new(),
+            delegated_task_ciphertext.clone(),
+            /*trigger_turn*/ true,
+        ),
+        start_options: Default::default(),
+    })
+    .await?;
     wait_for_turn_complete(&ava).await;
 
     let descendant_followup_ciphertext = "descendant follow-up task";
     let worker_path = AgentPath::root().join("worker").expect("valid worker path");
-    ava
-        .submit(Op::InterAgentCommunication {
-            communication: InterAgentCommunication::new_encrypted(
-                worker_path.join("child").expect("valid grandchild path"),
-                worker_path,
-                Vec::new(),
-                descendant_followup_ciphertext.to_string(),
-                /*trigger_turn*/ true,
-            ),
-            start_options: Default::default(),
-        })
-        .await?;
+    ava.submit(Op::InterAgentCommunication {
+        communication: InterAgentCommunication::new_encrypted(
+            worker_path.join("child").expect("valid grandchild path"),
+            worker_path,
+            Vec::new(),
+            descendant_followup_ciphertext.to_string(),
+            /*trigger_turn*/ true,
+        ),
+        start_options: Default::default(),
+    })
+    .await?;
     wait_for_turn_complete(&ava).await;
 
     let compact_turn_id = ava.submit(Op::Compact).await?;
     wait_for_turn_complete(&ava).await;
 
-    ava
-        .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
-            text: "after compact".into(),
-            text_elements: Vec::new(),
-        }]))
-        .await?;
+    ava.start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
+        text: "after compact".into(),
+        text_elements: Vec::new(),
+    }]))
+    .await?;
     wait_for_turn_complete(&ava).await;
 
     let response_requests = responses_mock.requests();
@@ -1162,7 +1150,7 @@ async fn remote_compact_v2_retries_failures_with_stream_retry_budget() -> Result
             }),
     )
     .await?;
-    let ava = harness.test().ava-code.clone();
+    let ava = harness.test().ava - code.clone();
 
     let responses_mock = responses::mount_response_sequence(
         harness.server(),
@@ -1197,23 +1185,21 @@ async fn remote_compact_v2_retries_failures_with_stream_retry_budget() -> Result
     )
     .await;
 
-    ava
-        .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
-            text: "hello remote compact".into(),
-            text_elements: Vec::new(),
-        }]))
-        .await?;
+    ava.start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
+        text: "hello remote compact".into(),
+        text_elements: Vec::new(),
+    }]))
+    .await?;
     wait_for_turn_complete(&ava).await;
 
     ava.submit(Op::Compact).await?;
     wait_for_turn_complete(&ava).await;
 
-    ava
-        .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
-            text: "after compact".into(),
-            text_elements: Vec::new(),
-        }]))
-        .await?;
+    ava.start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
+        text: "after compact".into(),
+        text_elements: Vec::new(),
+    }]))
+    .await?;
     wait_for_turn_complete(&ava).await;
 
     let response_requests = responses_mock.requests();
@@ -1278,7 +1264,7 @@ async fn remote_compact_v2_rewrites_multiple_trailing_function_call_outputs(
             }),
     )
     .await?;
-    let ava = harness.test().ava-code.clone();
+    let ava = harness.test().ava - code.clone();
 
     let initial_mock = mount_sse_once(
         harness.server(),
@@ -1436,10 +1422,7 @@ async fn active_realtime_refreshes_changed_start_instructions_only_after_compact
     initial.submit_turn("USER_ONE").await?;
     close_realtime_conversation(initial.ava.as_ref()).await?;
     initial.ava.submit(Op::Shutdown).await?;
-    wait_for_event(&initial.ava, |ev| {
-        matches!(ev, EventMsg::ShutdownComplete)
-    })
-    .await;
+    wait_for_event(&initial.ava, |ev| matches!(ev, EventMsg::ShutdownComplete)).await;
     initial_realtime_server.shutdown().await;
 
     let resumed_realtime_server = start_remote_realtime_server().await;
@@ -1496,7 +1479,7 @@ async fn remote_mid_turn_compact_v2_sends_turn_state_over_http() -> Result<()> {
             }),
     )
     .await?;
-    let ava = harness.test().ava-code.clone();
+    let ava = harness.test().ava - code.clone();
     let responses_mock = responses::mount_response_sequence(
         harness.server(),
         vec![
@@ -1530,12 +1513,11 @@ async fn remote_mid_turn_compact_v2_sends_turn_state_over_http() -> Result<()> {
     .await;
 
     // Phase 1: sampling mints state and schedules inline v2 compaction.
-    ava
-        .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
-            text: "RUN_WITH_MID_TURN_COMPACT_V2".to_string(),
-            text_elements: Vec::new(),
-        }]))
-        .await?;
+    ava.start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
+        text: "RUN_WITH_MID_TURN_COMPACT_V2".to_string(),
+        text_elements: Vec::new(),
+    }]))
+    .await?;
     wait_for_turn_complete(&ava).await;
 
     let requests = responses_mock.requests();

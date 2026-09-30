@@ -6,9 +6,9 @@ use std::time::SystemTime;
 
 use anyhow::Context;
 use anyhow::Result;
-use bytes::Bytes;
 use ava_http_client::RouteAwareClientPool;
 use ava_http_client::RouteAwareRequestBuilder;
+use bytes::Bytes;
 use flate2::Compression;
 use flate2::write::GzEncoder;
 use http::HeaderMap;

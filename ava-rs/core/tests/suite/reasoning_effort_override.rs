@@ -258,13 +258,13 @@ async fn reasoning_effort_override_recovery_reuses_trusted_tail_update() -> anyh
         })
     };
     let test = builder().build_with_auto_env(&server).await?;
-    let submission = test
-        .ava-code
-        .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
-            text: "recover this turn".to_string(),
-            text_elements: Vec::new(),
-        }]))
-        .await?;
+    let submission = test.ava
+        - code
+            .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
+                text: "recover this turn".to_string(),
+                text_elements: Vec::new(),
+            }]))
+            .await?;
     let TurnInputSubmission::Started { turn_id } = submission else {
         panic!("expected a new turn");
     };
@@ -300,20 +300,17 @@ async fn reasoning_effort_override_recovery_reuses_trusted_tail_update() -> anyh
     let resumed = resume_builder
         .resume(&recovery_server, Arc::clone(&test.home), rollout_path)
         .await?;
-    resumed
-        .ava-code
-        .restore_thread_settings(thread_settings)
-        .await?;
+    resumed.ava - code.restore_thread_settings(thread_settings).await?;
     assert_eq!(
-        resumed
-            .ava-code
-            .recover_turn_if_idle(RecoverTurnRequest {
-                turn_id: turn_id.clone(),
-                thread_settings: Default::default(),
-                trace: None,
-                cyber_access_program: None,
-            })
-            .await?,
+        resumed.ava
+            - code
+                .recover_turn_if_idle(RecoverTurnRequest {
+                    turn_id: turn_id.clone(),
+                    thread_settings: Default::default(),
+                    trace: None,
+                    cyber_access_program: None,
+                })
+                .await?,
         StartIfIdleSubmission::Started { turn_id },
     );
     wait_for_event(&resumed.ava, |event| {
@@ -942,12 +939,12 @@ async fn reasoning_effort_override_unavailable_recovers_saved_history(
         "recipient": "/root",
         "content": [{"type": "input_text", "text": "The worker has finished."}],
     }))?;
-    let submission = initial
-        .ava-code
-        .start_turn_if_idle(TurnInputRequest::new(TurnInput::ResponseItem(
-            agent_message,
-        )))
-        .await?;
+    let submission = initial.ava
+        - code
+            .start_turn_if_idle(TurnInputRequest::new(TurnInput::ResponseItem(
+                agent_message,
+            )))
+            .await?;
     assert!(matches!(submission, StartIfIdleSubmission::Started { .. }));
     wait_for_event(&initial.ava, |event| {
         matches!(event, EventMsg::TurnComplete(_))
@@ -966,20 +963,20 @@ async fn reasoning_effort_override_unavailable_recovers_saved_history(
     }
     let resumed = builder.restart(&server, &initial).await?;
     resumed.submit_text_turn("after resume").await?;
-    let saved_updates = resumed
-        .ava-code
-        .load_history(/*include_archived*/ false)
-        .await?
-        .items
-        .into_iter()
-        .filter_map(|item| match item {
-            RolloutItem::ResponseItem(ResponseItemEnvelope {
-                item: item @ ResponseItem::ConfigurationUpdate { .. },
-                ..
-            }) => Some(serde_json::to_value(item).expect("serialize saved update")),
-            _ => None,
-        })
-        .collect::<Vec<_>>();
+    let saved_updates = resumed.ava
+        - code
+            .load_history(/*include_archived*/ false)
+            .await?
+            .items
+            .into_iter()
+            .filter_map(|item| match item {
+                RolloutItem::ResponseItem(ResponseItemEnvelope {
+                    item: item @ ResponseItem::ConfigurationUpdate { .. },
+                    ..
+                }) => Some(serde_json::to_value(item).expect("serialize saved update")),
+                _ => None,
+            })
+            .collect::<Vec<_>>();
     assert_eq!(saved_updates, vec![effort_update(ReasoningEffort::Medium)]);
     resumed.ava.submit(Op::Compact).await?;
     wait_for_event(&resumed.ava, |event| {
@@ -1203,20 +1200,20 @@ async fn reasoning_effort_override_unsupported_model_round_trip() -> anyhow::Res
         );
     }
     test.ava.shutdown_and_wait().await?;
-    let saved_updates = test
-        .ava-code
-        .load_history(/*include_archived*/ false)
-        .await?
-        .items
-        .into_iter()
-        .filter_map(|item| match item {
-            RolloutItem::ResponseItem(ResponseItemEnvelope {
-                item: item @ ResponseItem::ConfigurationUpdate { .. },
-                ..
-            }) => Some(serde_json::to_value(item).expect("serialize saved update")),
-            _ => None,
-        })
-        .collect::<Vec<_>>();
+    let saved_updates = test.ava
+        - code
+            .load_history(/*include_archived*/ false)
+            .await?
+            .items
+            .into_iter()
+            .filter_map(|item| match item {
+                RolloutItem::ResponseItem(ResponseItemEnvelope {
+                    item: item @ ResponseItem::ConfigurationUpdate { .. },
+                    ..
+                }) => Some(serde_json::to_value(item).expect("serialize saved update")),
+                _ => None,
+            })
+            .collect::<Vec<_>>();
     assert_eq!(saved_updates, final_updates);
     Ok(())
 }

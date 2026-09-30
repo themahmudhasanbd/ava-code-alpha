@@ -1,7 +1,6 @@
 use std::path::Path;
 use std::path::PathBuf;
 
-use chrono::Utc;
 use ava_protocol::SanitizedGitUrl;
 use ava_protocol::ThreadId;
 use ava_protocol::protocol::GitInfo;
@@ -16,6 +15,7 @@ use ava_rollout::RolloutRecorderParams;
 use ava_rollout::append_thread_name;
 use ava_rollout::read_session_meta_line;
 use ava_state::ThreadMetadataBuilder;
+use chrono::Utc;
 use tracing::warn;
 
 use super::LocalThreadStore;

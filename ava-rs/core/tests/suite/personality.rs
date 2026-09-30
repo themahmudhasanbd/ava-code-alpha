@@ -283,15 +283,13 @@ async fn legacy_personality_session_resumes_and_completes() -> anyhow::Result<()
     )
     .await;
     let legacy_instructions = "Legacy model instructions\n# Personality\nBe pragmatic.";
-    let mut builder = test_ava()
-        .with_model("gpt-5.5")
-        .with_config(move |config| {
-            config.personality = Some(Personality::Pragmatic);
-            config.base_instructions = Some(legacy_instructions.to_string());
-            config.base_instructions_provenance = Some(BaseInstructionsProvenance::Model {
-                model: "gpt-5.5".to_string(),
-            });
+    let mut builder = test_ava().with_model("gpt-5.5").with_config(move |config| {
+        config.personality = Some(Personality::Pragmatic);
+        config.base_instructions = Some(legacy_instructions.to_string());
+        config.base_instructions_provenance = Some(BaseInstructionsProvenance::Model {
+            model: "gpt-5.5".to_string(),
         });
+    });
     let original = builder.build_with_auto_env(&server).await?;
     original.submit_turn("first turn").await?;
 

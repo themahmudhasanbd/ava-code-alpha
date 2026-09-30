@@ -1,6 +1,5 @@
 use std::path::PathBuf;
 
-use chrono::Utc;
 use ava_config::types::MemoriesConfig;
 use ava_extension_api::FunctionCallError;
 use ava_extension_api::JsonToolOutput;
@@ -14,6 +13,7 @@ use ava_otel::MetricsClient;
 use ava_tools::ResponsesApiNamespace;
 use ava_tools::ResponsesApiNamespaceTool;
 use ava_tools::default_namespace_description;
+use chrono::Utc;
 use schemars::JsonSchema;
 use serde::Deserialize;
 use serde::Serialize;

@@ -1,4 +1,3 @@
-use clap::Parser;
 use ava_arg0::Arg0DispatchPaths;
 use ava_arg0::arg0_dispatch_or_else;
 use ava_config::LoaderOverrides;
@@ -6,6 +5,7 @@ use ava_tui::Cli;
 use ava_tui::ExitReason;
 use ava_tui::run_main;
 use ava_utils_cli::CliConfigOverrides;
+use clap::Parser;
 use std::io::Write;
 use supports_color::Stream;
 

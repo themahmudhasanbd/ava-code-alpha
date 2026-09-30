@@ -92,10 +92,10 @@ async fn http_auth_challenge_reaches_agent_tool_call_events_without_replay() -> 
         .build_with_remote_and_local_env(&responses_server)
         .await?;
     wait_for_mcp_server(&fixture.ava, "reauth").await?;
-    fixture
-        .ava-code
-        .start_or_steer_turn(read_only_user_turn(&fixture, "List calendar events."))
-        .await?;
+    fixture.ava
+        - code
+            .start_or_steer_turn(read_only_user_turn(&fixture, "List calendar events."))
+            .await?;
 
     let mut end_results = Vec::new();
     let mut completed_results = Vec::new();
@@ -194,15 +194,15 @@ async fn oauth_mode_refresh_replaces_the_live_connection(
         .build_with_remote_and_local_env(&responses_server)
         .await?;
 
-    let initial_result = fixture
-        .ava-code
-        .call_mcp_tool(
-            server_name,
-            "calendar_list_events",
-            /*arguments*/ None,
-            /*meta*/ None,
-        )
-        .await?;
+    let initial_result = fixture.ava
+        - code
+            .call_mcp_tool(
+                server_name,
+                "calendar_list_events",
+                /*arguments*/ None,
+                /*meta*/ None,
+            )
+            .await?;
     assert_eq!(startup_control.initialize_attempts(), 1);
 
     for (enabled, expected_initializations) in [(true, 2), (true, 2), (false, 3)] {
@@ -219,15 +219,15 @@ async fn oauth_mode_refresh_replaces_the_live_connection(
             }
         }
         // A normal tool call reconciles the refreshed config without forcing a reconnect.
-        let result = fixture
-            .ava-code
-            .call_mcp_tool(
-                server_name,
-                "calendar_list_events",
-                /*arguments*/ None,
-                /*meta*/ None,
-            )
-            .await?;
+        let result = fixture.ava
+            - code
+                .call_mcp_tool(
+                    server_name,
+                    "calendar_list_events",
+                    /*arguments*/ None,
+                    /*meta*/ None,
+                )
+                .await?;
         assert_eq!(result, initial_result);
         assert_eq!(
             startup_control.initialize_attempts(),

@@ -146,14 +146,12 @@ fn marketplace_plugin_source_to_info(source: MarketplacePluginSource) -> PluginS
 fn load_shared_plugin_ids_by_local_path(
     config: &Config,
 ) -> Result<std::collections::BTreeMap<AbsolutePathBuf, String>, JSONRPCErrorError> {
-    ava_core_plugins::remote::load_plugin_share_remote_ids_by_local_path(
-        config.ava_home.as_path(),
-    )
-    .map_err(|err| {
-        internal_error(format!(
-            "failed to load plugin share local path mapping: {err}"
-        ))
-    })
+    ava_core_plugins::remote::load_plugin_share_remote_ids_by_local_path(config.ava_home.as_path())
+        .map_err(|err| {
+            internal_error(format!(
+                "failed to load plugin share local path mapping: {err}"
+            ))
+        })
 }
 
 fn remote_plugin_service_config(config: &Config) -> RemotePluginServiceConfig {
@@ -358,23 +356,21 @@ fn remote_plugin_share_targets(
 ) -> Vec<ava_core_plugins::remote::RemotePluginShareTarget> {
     targets
         .into_iter()
-        .map(
-            |target| ava_core_plugins::remote::RemotePluginShareTarget {
-                principal_type: match target.principal_type {
-                    PluginSharePrincipalType::User => {
-                        ava_core_plugins::remote::RemotePluginSharePrincipalType::User
-                    }
-                    PluginSharePrincipalType::Group => {
-                        ava_core_plugins::remote::RemotePluginSharePrincipalType::Group
-                    }
-                    PluginSharePrincipalType::Workspace => {
-                        ava_core_plugins::remote::RemotePluginSharePrincipalType::Workspace
-                    }
-                },
-                principal_id: target.principal_id,
-                role: remote_plugin_share_target_role(target.role),
+        .map(|target| ava_core_plugins::remote::RemotePluginShareTarget {
+            principal_type: match target.principal_type {
+                PluginSharePrincipalType::User => {
+                    ava_core_plugins::remote::RemotePluginSharePrincipalType::User
+                }
+                PluginSharePrincipalType::Group => {
+                    ava_core_plugins::remote::RemotePluginSharePrincipalType::Group
+                }
+                PluginSharePrincipalType::Workspace => {
+                    ava_core_plugins::remote::RemotePluginSharePrincipalType::Workspace
+                }
             },
-        )
+            principal_id: target.principal_id,
+            role: remote_plugin_share_target_role(target.role),
+        })
         .collect()
 }
 
@@ -1742,8 +1738,7 @@ impl PluginRequestProcessor {
             return Vec::new();
         }
 
-        let plugin_apps =
-            ava_plugin::app_connector_ids_from_declarations(plugin_app_declarations);
+        let plugin_apps = ava_plugin::app_connector_ids_from_declarations(plugin_app_declarations);
         let app_category_by_id = plugin_app_declarations
             .iter()
             .filter_map(|app| {
@@ -1811,8 +1806,7 @@ impl PluginRequestProcessor {
         );
         for (name, server) in plugin_mcp_servers {
             // EMA uses the account's enterprise grant, never per-plugin OAuth fallback.
-            if !server.enabled || matches!(server.auth, ava_config::types::McpServerAuth::EmaAuth)
-            {
+            if !server.enabled || matches!(server.auth, ava_config::types::McpServerAuth::EmaAuth) {
                 continue;
             }
             if !server.is_local_environment() {

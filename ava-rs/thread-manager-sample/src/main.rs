@@ -7,7 +7,6 @@ use std::sync::Arc;
 
 use anyhow::Context;
 use anyhow::bail;
-use clap::Parser;
 use ava_core_api::AbsolutePathBuf;
 use ava_core_api::AltScreenMode;
 use ava_core_api::ApprovalsReviewer;
@@ -70,6 +69,7 @@ use ava_core_api::passthrough_image_store;
 use ava_core_api::resolve_installation_id;
 use ava_core_api::set_default_originator;
 use ava_core_api::thread_store_from_config;
+use clap::Parser;
 
 #[derive(Debug, Parser)]
 #[command(

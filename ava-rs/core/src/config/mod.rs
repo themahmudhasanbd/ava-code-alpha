@@ -603,6 +603,41 @@ pub enum ThreadStoreConfig {
     InMemory { id: String },
 }
 
+/// Resolved .ava-code project context index options.
+#[derive(Clone, Debug)]
+pub struct ProjectContextConfig {
+    /// Master switch for the context index injection.
+    pub enabled: bool,
+    /// Whether the .ava-code/rules/ index is loaded.
+    pub rules: bool,
+    /// Whether the .ava-code/workflows/ index is loaded.
+    pub workflows: bool,
+    /// Whether the .ava-code/design/ index is loaded.
+    pub design: bool,
+    /// Whether the .ava-code/plans/ index is loaded.
+    pub plans: bool,
+}
+
+impl ProjectContextConfig {
+    /// Sections enabled, in display order.
+    pub fn enabled_sections(&self) -> Vec<&'static str> {
+        let mut sections = Vec::new();
+        if self.rules {
+            sections.push("rules");
+        }
+        if self.workflows {
+            sections.push("workflows");
+        }
+        if self.design {
+            sections.push("design");
+        }
+        if self.plans {
+            sections.push("plans");
+        }
+        sections
+    }
+}
+
 /// Application configuration loaded from disk and merged with overrides.
 #[derive(Debug, Clone, PartialEq)]
 pub struct Config {
@@ -642,6 +677,9 @@ pub struct Config {
 
     /// Info needed to make an API request to the model.
     pub model_provider: ModelProviderInfo,
+
+    /// Ordered fallback chain of models to try if the primary model fails.
+    pub model_fallback_chain: Vec<String>,
 
     /// Deprecated: `friendly` and `pragmatic` no longer select a style.
     pub personality: Option<Personality>,
@@ -885,6 +923,9 @@ pub struct Config {
 
     /// Additional filenames to try when looking for project-level docs.
     pub project_doc_fallback_filenames: Vec<String>,
+
+    /// .ava-code project context index loading options.
+    pub project_context: ProjectContextConfig,
 
     /// Token budget applied when storing tool/function outputs in the context manager.
     pub tool_output_token_limit: Option<usize>,
@@ -1829,10 +1870,9 @@ impl Config {
                 ElicitationCapability::default()
             },
             mcp_server_catalog: catalog.build(),
-            connector_snapshot:
-                ava_connectors::ConnectorSnapshot::from_plugin_capability_summaries(
-                    loaded_plugins.capability_summaries(),
-                ),
+            connector_snapshot: ava_connectors::ConnectorSnapshot::from_plugin_capability_summaries(
+                loaded_plugins.capability_summaries(),
+            ),
         }
     }
 
@@ -1926,11 +1966,8 @@ impl Config {
         cli_overrides: Vec<(String, TomlValue)>,
     ) -> std::io::Result<Self> {
         let ava_home = find_ava_home()?;
-        Self::load_default_with_cli_overrides_for_ava_home(
-            ava_home.to_path_buf(),
-            cli_overrides,
-        )
-        .await
+        Self::load_default_with_cli_overrides_for_ava_home(ava_home.to_path_buf(), cli_overrides)
+            .await
     }
 
     /// Load a default configuration for a specific Ava home without reading
@@ -4197,6 +4234,7 @@ impl Config {
                 .unwrap_or_default(),
             model_provider_id,
             model_provider,
+            model_fallback_chain: cfg.model_fallback_chain.unwrap_or_default(),
             cwd: resolved_cwd,
             workspace_roots: workspace_roots.clone(),
             workspace_roots_explicit,
@@ -4256,6 +4294,16 @@ impl Config {
                 .unwrap_or(DEFAULT_OPTIONAL_MCP_STARTUP_GRACE),
             model_providers,
             project_doc_max_bytes: cfg.project_doc_max_bytes.unwrap_or(AGENTS_MD_MAX_BYTES),
+            project_context: {
+                let pc = cfg.project_context.as_ref();
+                ProjectContextConfig {
+                    enabled: pc.and_then(|p| p.enabled).unwrap_or(true),
+                    rules: pc.and_then(|p| p.rules).unwrap_or(true),
+                    workflows: pc.and_then(|p| p.workflows).unwrap_or(true),
+                    design: pc.and_then(|p| p.design).unwrap_or(true),
+                    plans: pc.and_then(|p| p.plans).unwrap_or(true),
+                }
+            },
             project_doc_fallback_filenames: cfg
                 .project_doc_fallback_filenames
                 .unwrap_or_default()

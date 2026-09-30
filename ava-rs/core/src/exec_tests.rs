@@ -642,10 +642,9 @@ fn windows_restricted_token_allows_workspace_write_profiles() {
 #[test]
 fn windows_elevated_allows_split_restricted_read_policies() {
     let temp_dir = tempfile::TempDir::new().expect("tempdir");
-    let docs = ava_utils_absolute_path::AbsolutePathBuf::from_absolute_path(
-        temp_dir.path().join("docs"),
-    )
-    .expect("absolute docs");
+    let docs =
+        ava_utils_absolute_path::AbsolutePathBuf::from_absolute_path(temp_dir.path().join("docs"))
+            .expect("absolute docs");
     std::fs::create_dir_all(docs.as_path()).expect("create docs");
     let file_system_policy = FileSystemSandboxPolicy::restricted(vec![
         ava_protocol::permissions::FileSystemSandboxEntry {

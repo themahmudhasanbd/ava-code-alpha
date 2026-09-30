@@ -1,11 +1,11 @@
 use std::time::Duration;
 
 use crate::AuthProvider;
-use bytes::Bytes;
 use ava_http_client::HttpResponse;
 use ava_http_client::RouteAwareClientPool;
 use ava_http_client::RouteAwareRequestBuilder;
 use ava_http_client::RouteAwareRequestError;
+use bytes::Bytes;
 use futures::Stream;
 use http::Method;
 use http::StatusCode;

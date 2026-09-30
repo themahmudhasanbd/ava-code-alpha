@@ -162,12 +162,12 @@ fn pick_tooltip<R: Rng + ?Sized>(rng: &mut R) -> Option<&'static str> {
 pub(crate) mod announcement {
     use crate::tooltips::ANNOUNCEMENT_TIP_URL;
     use crate::version::AVA_CLI_VERSION;
-    use chrono::NaiveDate;
-    use chrono::Utc;
     use ava_http_client::ClientRouteClass;
     use ava_http_client::HttpClientFactory;
     use ava_http_client::RouteAwareClientPool;
     use ava_protocol::account::PlanType;
+    use chrono::NaiveDate;
+    use chrono::Utc;
     use regex_lite::Regex;
     use serde::Deserialize;
     use std::sync::OnceLock;

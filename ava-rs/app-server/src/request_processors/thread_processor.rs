@@ -1351,11 +1351,9 @@ impl ThreadRequestProcessor {
         let effective_permissions_trust_project = match &effective_permission_profile {
             ava_protocol::models::PermissionProfile::Disabled
             | ava_protocol::models::PermissionProfile::External { .. } => true,
-            ava_protocol::models::PermissionProfile::Managed { .. } => {
-                effective_permission_profile
-                    .file_system_sandbox_policy()
-                    .can_write_local_path_with_cwd(config.cwd.as_path(), config.cwd.as_path())
-            }
+            ava_protocol::models::PermissionProfile::Managed { .. } => effective_permission_profile
+                .file_system_sandbox_policy()
+                .can_write_local_path_with_cwd(config.cwd.as_path(), config.cwd.as_path()),
         };
 
         if requested_cwd.is_some()
@@ -1670,8 +1668,7 @@ impl ThreadRequestProcessor {
             cwd: cwd.map(PathBuf::from),
             workspace_roots: runtime_workspace_roots,
             default_permissions: permissions,
-            approval_policy: approval_policy
-                .map(ava_app_server_protocol::AskForApproval::to_core),
+            approval_policy: approval_policy.map(ava_app_server_protocol::AskForApproval::to_core),
             approvals_reviewer: approvals_reviewer
                 .map(ava_app_server_protocol::ApprovalsReviewer::to_core),
             sandbox_mode: sandbox.map(SandboxMode::to_core),

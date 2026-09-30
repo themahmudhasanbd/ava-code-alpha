@@ -3,11 +3,11 @@ use crate::legacy_core::config::Config;
 use crate::status::StatusAccountDisplay;
 use crate::text_formatting;
 use crate::width::display_width;
-use chrono::DateTime;
-use chrono::Local;
 use ava_protocol::account::PlanType;
 use ava_utils_path_uri::PathConvention;
 use ava_utils_path_uri::PathUri;
+use chrono::DateTime;
+use chrono::Local;
 use std::path::Path;
 
 fn normalize_agents_display_path(path: &Path) -> String {

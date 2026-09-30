@@ -139,12 +139,11 @@ async fn window_id_advances_after_compact_persists_on_resume_and_resets_on_fork(
 }
 
 async fn submit_user_turn(ava: &Arc<AvaThread>, text: &str) -> Result<()> {
-    ava
-        .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
-            text: text.to_string(),
-            text_elements: Vec::new(),
-        }]))
-        .await?;
+    ava.start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
+        text: text.to_string(),
+        text_elements: Vec::new(),
+    }]))
+    .await?;
     wait_for_event(ava, |event| matches!(event, EventMsg::TurnComplete(_))).await;
     Ok(())
 }

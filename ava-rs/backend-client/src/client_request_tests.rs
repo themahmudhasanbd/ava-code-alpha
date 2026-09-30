@@ -325,10 +325,7 @@ async fn bootstrap_get_recovers_from_stalled_body_before_cloud_startup_timeout()
             .expect("proxy request finishes while issuer body is pending");
     });
     let proxy = MockServer::start().await;
-    cache_system_proxy_route_for_test(
-        &format!("{issuer_url}/api/ava/config/bundle"),
-        proxy.uri(),
-    );
+    cache_system_proxy_route_for_test(&format!("{issuer_url}/api/ava/config/bundle"), proxy.uri());
     Mock::given(method("GET"))
         .respond_with(ResponseTemplate::new(200).set_body_json(serde_json::json!({})))
         .expect(1)

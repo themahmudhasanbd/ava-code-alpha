@@ -1,13 +1,13 @@
 #![allow(clippy::unwrap_used)]
 
 use anyhow::Context;
-use base64::Engine;
-use base64::engine::general_purpose::URL_SAFE_NO_PAD;
 use ava_config::types::AuthCredentialsStoreMode;
 use ava_login::AuthKeyringBackendKind;
 use ava_login::ServerOptions;
 use ava_login::auth::load_auth_dot_json;
 use ava_login::run_device_code_login;
+use base64::Engine;
+use base64::engine::general_purpose::URL_SAFE_NO_PAD;
 use serde_json::json;
 use std::sync::Arc;
 use std::sync::atomic::AtomicUsize;

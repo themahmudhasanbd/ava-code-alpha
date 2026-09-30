@@ -27,7 +27,6 @@ use std::time::Duration;
 use std::time::Instant;
 
 use anyhow::Context;
-use clap::Parser;
 use ava_api::ApiError;
 use ava_api::ResponsesWebsocketClient;
 use ava_api::is_azure_responses_provider;
@@ -47,10 +46,10 @@ use ava_install_context::AvaPackageLayout;
 use ava_install_context::InstallContext;
 use ava_install_context::InstallMethod;
 use ava_install_context::StandalonePlatform;
-use ava_login::AuthDotJson;
-use ava_login::AuthManager;
 use ava_login::AVA_ACCESS_TOKEN_ENV_VAR;
 use ava_login::AVA_API_KEY_ENV_VAR;
+use ava_login::AuthDotJson;
+use ava_login::AuthManager;
 use ava_login::AvaAuth;
 use ava_login::OPENAI_API_KEY_ENV_VAR;
 use ava_login::default_client::create_client_without_request_logging;
@@ -65,6 +64,7 @@ use ava_terminal_detection::TerminalName;
 use ava_terminal_detection::terminal_info;
 use ava_tui::Cli as TuiCli;
 use ava_utils_cli::CliConfigOverrides;
+use clap::Parser;
 use http::HeaderMap;
 use http::HeaderValue;
 use http::Method;
@@ -2118,8 +2118,7 @@ async fn sqlite_integrity_detail(
         return CheckStatus::Ok;
     }
 
-    let (rows, timed_out) = match ava_state::sqlite_integrity_check(sqlite, path, deadline).await
-    {
+    let (rows, timed_out) = match ava_state::sqlite_integrity_check(sqlite, path, deadline).await {
         Ok(ava_state::SqliteIntegrityCheck::Complete(rows)) => (rows, false),
         Ok(ava_state::SqliteIntegrityCheck::TimedOut(rows)) => (rows, true),
         Err(err) => {
@@ -3030,8 +3029,8 @@ mod tests {
     use std::net::TcpListener;
     use std::sync::Mutex;
 
-    use clap::Parser;
     use ava_protocol::config_types::SandboxMode;
+    use clap::Parser;
     use pretty_assertions::assert_eq;
 
     use super::*;

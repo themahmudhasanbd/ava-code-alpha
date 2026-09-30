@@ -168,11 +168,7 @@ async fn assert_catalog_budget(evidence: BudgetEvidence) -> Result<()> {
             phase: Some(MessagePhase::Commentary),
             internal_chat_message_metadata_passthrough: None,
         }));
-        fixture
-            .test
-            .ava-code
-            .inject_response_items(history.clone())
-            .await?;
+        fixture.test.ava - code.inject_response_items(history.clone()).await?;
         let history: Arc<dyn ConversationHistorySnapshot> = match evidence {
             BudgetEvidence::Checkpoint => Arc::new(TestRetainedHistory {
                 retained_context: None,

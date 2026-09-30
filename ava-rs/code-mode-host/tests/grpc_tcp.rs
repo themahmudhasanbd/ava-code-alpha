@@ -4,11 +4,11 @@ use std::time::Duration;
 
 use anyhow::Context;
 use anyhow::Result;
+use ava_code_mode_protocol::grpc;
+use ava_code_mode_protocol::grpc::code_mode_host_client::CodeModeHostClient;
 use axum::http::Request;
 use axum::http::StatusCode;
 use axum::http::Version;
-use ava_code_mode_protocol::grpc;
-use ava_code_mode_protocol::grpc::code_mode_host_client::CodeModeHostClient;
 use pretty_assertions::assert_eq;
 use tokio::io::AsyncBufReadExt;
 use tokio::io::AsyncReadExt;

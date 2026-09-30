@@ -43,12 +43,7 @@ async fn refreshed_cloud_bundle_updates_later_sessions() -> Result<()> {
         AskForApproval::Never
     );
     assert_eq!(
-        initial
-            .ava-code
-            .config()
-            .await
-            .developer_instructions
-            .as_deref(),
+        initial.ava - code.config().await.developer_instructions.as_deref(),
         Some("initial managed instructions")
     );
 
@@ -58,21 +53,14 @@ async fn refreshed_cloud_bundle_updates_later_sessions() -> Result<()> {
     .add_enterprise_config(r#"developer_instructions = "refreshed managed instructions""#)
     .into_bundle();
 
-    let mut refreshed_builder = test_ava()
-        .with_home(home)
-        .with_cloud_config_bundle(loader);
+    let mut refreshed_builder = test_ava().with_home(home).with_cloud_config_bundle(loader);
     let refreshed = refreshed_builder.build_with_auto_env(&server).await?;
     assert_eq!(
         refreshed.session_configured.approval_policy,
         AskForApproval::OnRequest
     );
     assert_eq!(
-        refreshed
-            .ava-code
-            .config()
-            .await
-            .developer_instructions
-            .as_deref(),
+        refreshed.ava - code.config().await.developer_instructions.as_deref(),
         Some("refreshed managed instructions")
     );
 
@@ -131,15 +119,15 @@ async fn managed_deny_read_requirements_follow_thread_permission_updates() -> Re
         /*exclude_tmpdir_env_var*/ false,
         /*exclude_slash_tmp*/ false,
     );
-    let error = test
-        .ava-code
-        .preview_thread_settings_overrides(AvaThreadSettingsOverrides {
-            permission_profile: Some(conflicting_profile),
-            ..Default::default()
-        })
-        .await
-        .err()
-        .context("a concrete writable root must not override a managed deny")?;
+    let error = test.ava
+        - code
+            .preview_thread_settings_overrides(AvaThreadSettingsOverrides {
+                permission_profile: Some(conflicting_profile),
+                ..Default::default()
+            })
+            .await
+            .err()
+            .context("a concrete writable root must not override a managed deny")?;
     assert!(error.to_string().contains("permissions.filesystem"));
 
     Ok(())

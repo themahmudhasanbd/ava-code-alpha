@@ -266,13 +266,13 @@ approvals_reviewer = "user"
         &app::ClientResponsePayload::ThreadStart(thread_response),
     );
 
-    let submitted = test
-        .ava-code
-        .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
-            text: "Use [$calendar](app://calendar) to create a calendar event.".to_string(),
-            text_elements: Vec::new(),
-        }]))
-        .await?;
+    let submitted = test.ava
+        - code
+            .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
+                text: "Use [$calendar](app://calendar) to create a calendar event.".to_string(),
+                text_elements: Vec::new(),
+            }]))
+            .await?;
     let TurnInputSubmission::Started { turn_id } = submitted else {
         anyhow::bail!("expected a new turn, got {submitted:?}");
     };

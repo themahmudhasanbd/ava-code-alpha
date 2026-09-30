@@ -1,14 +1,14 @@
 use std::path::PathBuf;
 use std::sync::Arc;
 
-use chrono::DateTime;
-use chrono::Utc;
 use ava_protocol::ThreadId;
 use ava_protocol::protocol::SessionMeta;
 use ava_protocol::protocol::SessionMetaLine;
 use ava_protocol::protocol::SessionSource;
 use ava_state::ThreadMetadataBuilder;
 use ava_utils_absolute_path::test_support::PathExt;
+use chrono::DateTime;
+use chrono::Utc;
 use pretty_assertions::assert_eq;
 use tempfile::TempDir;
 
@@ -392,8 +392,7 @@ async fn trusts_sqlite_name_over_legacy_index_for_delete() -> color_eyre::Result
         ))
         .await
         .map_err(std::io::Error::other)?;
-    ava_rollout::append_thread_name(config.ava_home.as_path(), thread_id, "old-session")
-        .await?;
+    ava_rollout::append_thread_name(config.ava_home.as_path(), thread_id, "old-session").await?;
 
     let mut app_server = start_app_server(config.clone()).await?;
     let error = run_session_queue_action_with_app_server(

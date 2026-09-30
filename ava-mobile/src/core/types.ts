@@ -4,6 +4,8 @@ export interface Session {
   id: string;
   title: string;
   directory: string;
+  /** Thread-source tag, e.g. "scheduled-task" for scheduler runs. */
+  source?: string | undefined;
   model?: string | undefined;
   updatedAt?: number | undefined;
   status?: "idle" | "active" | "inProgress" | string | undefined;
@@ -21,6 +23,22 @@ export interface AgentQuestion {
   id?: string;
   title: string;
   options?: string[];
+  requestId?: number | string;
+  /** RPC method for server-initiated approval/elicitation requests (e.g. "item/commandExecution/requestApproval"). */
+  method?: string;
+  /** Raw server params for the request (used to build approval responses). */
+  params?: unknown;
+  /** Set when the question was answered via the sticky approval card. */
+  answered?: boolean;
+}
+
+/** A pending server approval shown as a sticky card above the composer. */
+export interface PendingApproval {
+  id: string;
+  method: string;
+  title: string;
+  detail?: string;
+  params?: unknown;
   requestId?: number | string;
 }
 
@@ -50,6 +68,9 @@ export interface PartMeta {
   tone?: "info" | "warning" | "error" | undefined;
   media?: MediaItem[] | undefined;
   questions?: AgentQuestion[] | undefined;
+  intent?: string | undefined;
+  summary?: string | undefined;
+  stopped?: boolean | undefined;
 }
 
 export interface MessagePart {
@@ -141,4 +162,6 @@ export interface ServerConfig {
   projectDocMaxBytes?: number | undefined;
   hideAgentReasoning?: boolean | undefined;
   webSearch?: string | undefined;
+  model_fallback_chain?: string[] | undefined;
+  modelFallbackChain?: string[] | undefined;
 }

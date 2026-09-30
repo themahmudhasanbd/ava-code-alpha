@@ -332,9 +332,6 @@ fn validate_target(
             sandbox_member = true;
         }
     }
-    ensure!(
-        sandbox_member,
-        "runtime account is not in AvaSandboxUsers"
-    );
+    ensure!(sandbox_member, "runtime account is not in AvaSandboxUsers");
     Ok(user_sid)
 }

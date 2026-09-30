@@ -97,8 +97,7 @@ async fn lost_mutation_reply_preserves_work_without_resubmitting() -> Result<()>
         loop {
             if let Ok(text) =
                 tokio::fs::read_to_string(app.config.ava_home.join("history.jsonl")).await
-                && let Ok(entry) =
-                    serde_json::from_str::<ava_message_history::HistoryEntry>(&text)
+                && let Ok(entry) = serde_json::from_str::<ava_message_history::HistoryEntry>(&text)
             {
                 break entry;
             }

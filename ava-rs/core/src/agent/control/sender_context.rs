@@ -30,8 +30,7 @@ impl LocalAgentControl {
         else {
             return None;
         };
-        if !matches!(namespace.as_str(), "ava_app" | "ava_tui")
-            || name != "send_message_to_thread"
+        if !matches!(namespace.as_str(), "ava_app" | "ava_tui") || name != "send_message_to_thread"
         {
             return None;
         }

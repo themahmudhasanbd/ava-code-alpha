@@ -29,7 +29,7 @@ Your default personality and tone is concise, direct, and friendly. You communic
       - *Mentions (`@`)*: Mention files, directories, and MCP server tools (`@workspace`, `@git`, `@diff`, `@memory`, `@cpanel`, `@mysql`, `@github`, `@cloudflare`, `@puppeteer`) with theme-aware badge highlighting.
       - *Media & Attachment Picker*: Floating sheet for taking photos via camera, picking from photo library, or browsing server files (`/root/shared-media`).
       - *Voice Notes*: Dedicated voice recording button producing `.m4a` audio prompts.
-      - *Model & Reasoning Effort Pills*: Header pills to switch LLM models and tuning reasoning effort (`low`, `medium`, `high`, `max`).
+      - *Model & Reasoning Effort Pills*: Header pills to switch LLM models and tuning reasoning effort (`low`, `medium`, `max`, `ultra`).
       - *Execution Controls*: Send button transforms into Pause / Resume / Stop controls while the agent is running.
       - *Scroll to Bottom*: Floating pill button above the composer for instant navigation to the newest response.
     - **Interactive User Inputs**:

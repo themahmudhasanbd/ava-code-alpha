@@ -1,5 +1,6 @@
 use std::sync::Arc;
 use std::sync::atomic::AtomicBool;
+use std::sync::atomic::AtomicUsize;
 use std::sync::atomic::Ordering;
 
 use ava_agent_identity::AgentIdentityKey;
@@ -292,8 +293,9 @@ fn should_bootstrap_chatgpt_agent_identity(
 fn bearer_auth_for_provider(
     provider: &ModelProviderInfo,
 ) -> ava_protocol::error::Result<Option<BearerAuthProvider>> {
-    if let Some(api_key) = provider.api_key()? {
-        return Ok(Some(BearerAuthProvider::new(api_key)));
+    let all_keys = provider.all_api_keys()?;
+    if !all_keys.is_empty() {
+        return Ok(Some(BearerAuthProvider::from_tokens(all_keys)));
     }
 
     if let Some(token) = provider.experimental_bearer_token.clone() {
@@ -306,9 +308,7 @@ fn bearer_auth_for_provider(
 /// Builds request-header auth for a first-party Ava auth snapshot.
 pub fn auth_provider_from_auth(auth: &AvaAuth) -> SharedAuthProvider {
     match auth {
-        AvaAuth::AgentIdentity(auth) => {
-            Arc::new(AgentIdentityAuthProvider { auth: auth.clone() })
-        }
+        AvaAuth::AgentIdentity(auth) => Arc::new(AgentIdentityAuthProvider { auth: auth.clone() }),
         AvaAuth::Headers(auth) => Arc::new(HeaderAuthProvider { auth: auth.clone() }),
         AvaAuth::BedrockApiKey(_) | AvaAuth::BedrockAccessKeys(_) => {
             unreachable!("{BEDROCK_API_KEY_UNSUPPORTED_MESSAGE}")
@@ -316,11 +316,17 @@ pub fn auth_provider_from_auth(auth: &AvaAuth) -> SharedAuthProvider {
         AvaAuth::ApiKey(_)
         | AvaAuth::Chatgpt(_)
         | AvaAuth::ChatgptAuthTokens(_)
-        | AvaAuth::PersonalAccessToken(_) => Arc::new(BearerAuthProvider {
-            token: auth.get_token().ok(),
-            account_id: auth.get_account_id(),
-            is_fedramp_account: auth.is_fedramp_account(),
-        }),
+        | AvaAuth::PersonalAccessToken(_) => {
+            let token_opt = auth.get_token().ok();
+            let tokens = token_opt.as_deref().map(|t| vec![t.to_string()]).unwrap_or_default();
+            Arc::new(BearerAuthProvider {
+                token: token_opt,
+                tokens,
+                current_index: Arc::new(AtomicUsize::new(0)),
+                account_id: auth.get_account_id(),
+                is_fedramp_account: auth.is_fedramp_account(),
+            })
+        }
     }
 }
 
@@ -678,9 +684,8 @@ mod tests {
 
     #[tokio::test]
     async fn first_party_run_scope_uses_agent_assertion_and_exposes_telemetry() {
-        let auth = AvaAuth::AgentIdentity(
-            agent_identity_auth(/*chatgpt_account_is_fedramp*/ false).await,
-        );
+        let auth =
+            AvaAuth::AgentIdentity(agent_identity_auth(/*chatgpt_account_is_fedramp*/ false).await);
         let provider = ModelProviderInfo::create_openai_provider(/*base_url*/ None);
 
         let auth = resolve_provider_auth_for_scope(

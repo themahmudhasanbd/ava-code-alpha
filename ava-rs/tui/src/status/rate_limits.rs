@@ -10,15 +10,15 @@ use crate::chatwidget::limit_label_for_window;
 use crate::text_formatting::capitalize_first;
 
 use super::helpers::format_reset_timestamp;
-use chrono::DateTime;
-use chrono::Duration as ChronoDuration;
-use chrono::Local;
-use chrono::Utc;
 use ava_app_server_protocol::CreditsSnapshot as CoreCreditsSnapshot;
 use ava_app_server_protocol::RateLimitSnapshot;
 use ava_app_server_protocol::RateLimitWindow;
 use ava_app_server_protocol::SpendControlLimitSnapshot as CoreSpendControlLimitSnapshot;
 use ava_protocol::num_format::format_with_separators;
+use chrono::DateTime;
+use chrono::Duration as ChronoDuration;
+use chrono::Local;
+use chrono::Utc;
 
 const STATUS_LIMIT_BAR_SEGMENTS: usize = 20;
 const STATUS_LIMIT_BAR_FILLED: &str = "█";

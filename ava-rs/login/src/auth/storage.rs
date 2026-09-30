@@ -227,11 +227,10 @@ impl AuthStorageBackend for FileAuthStorage {
     }
 }
 
-static AVA_AUTH_SECRET_NAME: Lazy<SecretName> =
-    Lazy::new(|| match SecretName::new("AVA_AUTH") {
-        Ok(name) => name,
-        Err(err) => unreachable!("AVA_AUTH should be a valid secret name: {err}"),
-    });
+static AVA_AUTH_SECRET_NAME: Lazy<SecretName> = Lazy::new(|| match SecretName::new("AVA_AUTH") {
+    Ok(name) => name,
+    Err(err) => unreachable!("AVA_AUTH should be a valid secret name: {err}"),
+});
 const KEYRING_SERVICE: &str = "Ava Auth";
 
 // turns ava_home path into a stable, short key string

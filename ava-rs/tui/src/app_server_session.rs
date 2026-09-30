@@ -559,10 +559,7 @@ impl AppServerSession {
         Arc::clone(&self.task_search_generation)
     }
 
-    pub(crate) fn ava_home_path(
-        &self,
-        local_ava_home: &AbsolutePathBuf,
-    ) -> Option<AppServerPath> {
+    pub(crate) fn ava_home_path(&self, local_ava_home: &AbsolutePathBuf) -> Option<AppServerPath> {
         self.client.ava_home(local_ava_home)
     }
 
@@ -1984,9 +1981,7 @@ fn sandbox_mode_from_permission_profile(
     cwd: &std::path::Path,
 ) -> Option<ava_app_server_protocol::SandboxMode> {
     match permission_profile {
-        PermissionProfile::Disabled => {
-            Some(ava_app_server_protocol::SandboxMode::DangerFullAccess)
-        }
+        PermissionProfile::Disabled => Some(ava_app_server_protocol::SandboxMode::DangerFullAccess),
         PermissionProfile::External { .. } => None,
         PermissionProfile::Managed { .. } => {
             let file_system_policy = permission_profile.file_system_sandbox_policy();

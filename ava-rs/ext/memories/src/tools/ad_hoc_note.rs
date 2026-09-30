@@ -71,8 +71,7 @@ where
     async fn handle_call(
         &self,
         call: ToolCall<'_>,
-    ) -> Result<Box<dyn ava_extension_api::ToolOutput>, ava_extension_api::FunctionCallError>
-    {
+    ) -> Result<Box<dyn ava_extension_api::ToolOutput>, ava_extension_api::FunctionCallError> {
         let backend = self.backend.clone();
         let args: AddAdHocNoteArgs = parse_args(&call)?;
         let response = backend

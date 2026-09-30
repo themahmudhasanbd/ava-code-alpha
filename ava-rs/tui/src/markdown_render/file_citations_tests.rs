@@ -113,10 +113,7 @@ fn file_citations_preserve_escaped_nested_and_reference_directives() {
         format!(":::{citation}"),
         format!("ava-file-citation {}", ":x{v=".repeat(16_000)),
         format!("ava-file-citation {}}}", ":x{v=a v=".repeat(16_000)),
-        format!(
-            "ava-file-citation {} x bad}}",
-            ":a{k=".repeat(/*n*/ 16_000)
-        ),
+        format!("ava-file-citation {} x bad}}", ":a{k=".repeat(/*n*/ 16_000)),
     ] {
         assert_eq!(rendered_text(&literal, /*cwd*/ None), literal);
     }

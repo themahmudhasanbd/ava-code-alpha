@@ -5,7 +5,6 @@ use anyhow::Context;
 use anyhow::Result;
 use anyhow::anyhow;
 use anyhow::bail;
-use clap::ArgGroup;
 use ava_config::types::AppToolApproval;
 use ava_config::types::McpServerConfig;
 use ava_config::types::McpServerOAuthConfig;
@@ -39,6 +38,7 @@ use ava_rmcp_client::delete_oauth_tokens;
 use ava_rmcp_client::resolve_mcp_oauth_callback_url;
 use ava_utils_cli::CliConfigOverrides;
 use ava_utils_cli::format_env_display;
+use clap::ArgGroup;
 
 use crate::cloud_config;
 use crate::mcp_login::McpLoginMode;

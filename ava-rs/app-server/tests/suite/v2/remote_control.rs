@@ -547,10 +547,7 @@ async fn stdio_eof_releases_thread_writer_with_pending_remote_control_enable() -
     let mut secondary = TestAppServer::builder()
         .with_ava_home(ava_home.path())
         .without_auto_env()
-        .with_env_overrides(&[(
-            "AVA_SQLITE_HOME",
-            Some(secondary_sqlite_home_path.as_ref()),
-        )])
+        .with_env_overrides(&[("AVA_SQLITE_HOME", Some(secondary_sqlite_home_path.as_ref()))])
         .build_initialized()
         .await?;
     let resume_id = secondary

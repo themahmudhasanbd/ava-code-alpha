@@ -38,19 +38,19 @@ async fn recover_turn_restores_cyber_access_program_without_making_it_sticky() -
         .await;
     let mut builder = test_ava().with_auth(AvaAuth::create_dummy_chatgpt_auth_for_testing());
     let initial = builder.build_with_streaming_server(&initial_server).await?;
-    let TurnInputSubmission::Started { turn_id } = initial
-        .ava-code
-        .start_or_steer_turn(
-            TurnInputRequest::user_input(vec![UserInput::Text {
-                text: "recover this turn".to_owned(),
-                text_elements: Vec::new(),
-            }])
-            .on_start(TurnStartOptions {
-                cyber_access_program: Some(CyberAccessProgram::DaybreakBlue),
-                ..Default::default()
-            }),
-        )
-        .await?
+    let TurnInputSubmission::Started { turn_id } = initial.ava
+        - code
+            .start_or_steer_turn(
+                TurnInputRequest::user_input(vec![UserInput::Text {
+                    text: "recover this turn".to_owned(),
+                    text_elements: Vec::new(),
+                }])
+                .on_start(TurnStartOptions {
+                    cyber_access_program: Some(CyberAccessProgram::DaybreakBlue),
+                    ..Default::default()
+                }),
+            )
+            .await?
     else {
         panic!("expected a new turn");
     };
@@ -67,10 +67,7 @@ async fn recover_turn_restores_cyber_access_program_without_making_it_sticky() -
     let server = responses::start_mock_server().await;
     let test = builder.restart(&server, &initial).await?;
     let (rollout, _, _) = RolloutRecorder::load_rollout_items(
-        &test
-            .ava-code
-            .rollout_path()
-            .expect("recovered turn rollout path"),
+        &test.ava - code.rollout_path().expect("recovered turn rollout path"),
     )
     .await?;
     let persisted_context = rollout
@@ -92,15 +89,15 @@ async fn recover_turn_restores_cyber_access_program_without_making_it_sticky() -
 
     let response_mock =
         responses::mount_sse_once(&server, responses::sse_completed("resp-1")).await;
-    let submission = test
-        .ava-code
-        .recover_turn_if_idle(RecoverTurnRequest {
-            turn_id: turn_id.clone(),
-            thread_settings: Default::default(),
-            trace: None,
-            cyber_access_program: persisted_context.cyber_access_program,
-        })
-        .await?;
+    let submission = test.ava
+        - code
+            .recover_turn_if_idle(RecoverTurnRequest {
+                turn_id: turn_id.clone(),
+                thread_settings: Default::default(),
+                trace: None,
+                cyber_access_program: persisted_context.cyber_access_program,
+            })
+            .await?;
     assert_eq!(
         submission,
         StartIfIdleSubmission::Started {
@@ -132,13 +129,13 @@ async fn recover_turn_restores_cyber_access_program_without_making_it_sticky() -
     .await;
     let TurnInputSubmission::Started {
         turn_id: next_turn_id,
-    } = test
-        .ava-code
-        .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
-            text: "start a new turn".to_owned(),
-            text_elements: Vec::new(),
-        }]))
-        .await?
+    } = test.ava
+        - code
+            .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
+                text: "start a new turn".to_owned(),
+                text_elements: Vec::new(),
+            }]))
+            .await?
     else {
         panic!("expected a new turn");
     };

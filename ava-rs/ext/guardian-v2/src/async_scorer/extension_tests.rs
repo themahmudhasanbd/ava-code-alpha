@@ -958,11 +958,7 @@ async fn sample_configured_conversation_history_with_source(
         arguments: arguments.to_owned(),
     };
     if !conversation_history.is_empty() {
-        Box::pin(
-            test.ava
-                .inject_response_items(conversation_history.clone()),
-        )
-        .await?;
+        Box::pin(test.ava.inject_response_items(conversation_history.clone())).await?;
     }
     let conversation_history = test.ava.conversation_history_snapshot().await;
 
@@ -1181,11 +1177,7 @@ async fn contributor_fails_closed_when_model_configuration_is_invalid() -> Resul
         max_action_tokens: Some(1),
         ..Default::default()
     });
-    fixture
-        .test
-        .ava-code
-        .thread_extension_data()
-        .insert(parent_model);
+    fixture.test.ava - code.thread_extension_data().insert(parent_model);
 
     fixture.score_tool(ToolName::plain("read_file")).await;
     fixture.assert_fails_closed("elevated_risk").await
@@ -1221,14 +1213,13 @@ async fn contributor_fails_closed_when_luna_classification_fails() -> Result<()>
             thread_store: fixture.test.ava.thread_extension_data(),
         })
         .await;
-    fixture
-        .test
-        .ava-code
-        .thread_extension_data()
-        .get::<LunaSampler>()
-        .expect("Guardian v2 should initialize")
-        .wait_for_prewarm(PREWARM_TIMEOUT)
-        .await?;
+    fixture.test.ava
+        - code
+            .thread_extension_data()
+            .get::<LunaSampler>()
+            .expect("Guardian v2 should initialize")
+            .wait_for_prewarm(PREWARM_TIMEOUT)
+            .await?;
 
     fixture.score_tool(ToolName::plain("read_file")).await;
     fixture.assert_fails_closed("elevated_risk").await
@@ -2049,13 +2040,13 @@ async fn assert_luna_pool_context(thread_context_enabled: bool) -> Result<()> {
     assert!(score.sampled_at.is_some());
     test.ava.ensure_rollout_materialized().await;
     assert!(
-        !test
-            .ava-code
-            .load_history(/*include_archived*/ false)
-            .await?
-            .items
-            .into_iter()
-            .any(|item| matches!(item, RolloutItem::SecurityRiskScore(_))),
+        !test.ava
+            - code
+                .load_history(/*include_archived*/ false)
+                .await?
+                .items
+                .into_iter()
+                .any(|item| matches!(item, RolloutItem::SecurityRiskScore(_))),
         "risk scores should not be persisted unless explicitly enabled"
     );
     assert_eq!(
@@ -2152,16 +2143,16 @@ async fn contributor_persists_nested_code_mode_action_with_score() -> Result<()>
 
     let score = tokio::time::timeout(ASYNC_TEST_TIMEOUT, async {
         loop {
-            if let Some(score) = test
-                .ava-code
-                .load_history(/*include_archived*/ false)
-                .await?
-                .items
-                .into_iter()
-                .find_map(|item| match item {
-                    RolloutItem::SecurityRiskScore(score) => Some(score),
-                    _ => None,
-                })
+            if let Some(score) = test.ava
+                - code
+                    .load_history(/*include_archived*/ false)
+                    .await?
+                    .items
+                    .into_iter()
+                    .find_map(|item| match item {
+                        RolloutItem::SecurityRiskScore(score) => Some(score),
+                        _ => None,
+                    })
             {
                 return Ok::<_, anyhow::Error>(score);
             }
@@ -2447,17 +2438,16 @@ async fn assert_compaction_approval_policy(thread_context_enabled: bool) -> Resu
         Some(ReviewDecision::Approved)
     );
     let authorization = fixture.test.ava.guardian_authorization_version().await;
-    fixture
-        .test
-        .ava-code
-        .inject_response_items(vec![ResponseItem::Compaction {
-            id: Some(ResponseItemId::from_server(
-                "incompatible-checkpoint".to_owned(),
-            )),
-            encrypted_content: "opaque parent summary".to_owned(),
-            internal_chat_message_metadata_passthrough: None,
-        }])
-        .await?;
+    fixture.test.ava
+        - code
+            .inject_response_items(vec![ResponseItem::Compaction {
+                id: Some(ResponseItemId::from_server(
+                    "incompatible-checkpoint".to_owned(),
+                )),
+                encrypted_content: "opaque parent summary".to_owned(),
+                internal_chat_message_metadata_passthrough: None,
+            }])
+            .await?;
     let mut model = (*thread_store
         .get::<ModelInfo>()
         .expect("parent model metadata"))

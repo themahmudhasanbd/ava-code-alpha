@@ -1124,8 +1124,7 @@ async fn rate_limit_snapshots_keep_separate_entries_per_limit_id() {
 
     assert_eq!(ava.primary.as_ref().map(|w| w.used_percent), Some(20.0));
     assert_eq!(
-        ava
-            .credits
+        ava.credits
             .as_ref()
             .and_then(|credits| credits.balance.as_deref()),
         Some("5.00")

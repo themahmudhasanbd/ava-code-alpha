@@ -310,8 +310,8 @@ async fn automatic_upgrade_isolates_git_while_explicit_install_preserves_configu
         // Subsequent explicit operations must pick up a repaired user config normally.
         std::fs::write(&config_path, config_before)?;
     }
-    let marketplace_path = marketplace_install_root(ava_home.path())
-        .join("trusted/.agents/plugins/marketplace.json");
+    let marketplace_path =
+        marketplace_install_root(ava_home.path()).join("trusted/.agents/plugins/marketplace.json");
     std::fs::write(
         &marketplace_path,
         serde_json::json!({

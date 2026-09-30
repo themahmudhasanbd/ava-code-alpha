@@ -1,10 +1,10 @@
 //! Exercises installed-metadata refreshes against live MCP and skill caches.
 
 use super::*;
-use axum::Json;
-use axum::routing::get;
 use ava_app_server_protocol::PluginInstalledResponse;
 use ava_app_server_protocol::PluginReconcileResponse;
+use axum::Json;
+use axum::routing::get;
 use flate2::Compression;
 use flate2::write::GzEncoder;
 use pretty_assertions::assert_eq;

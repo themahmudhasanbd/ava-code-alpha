@@ -8,8 +8,6 @@ use crate::http_client_selector::HttpClientSelector;
 use crate::loader::plugin_app_declarations_from_value;
 use crate::store::PLUGINS_CACHE_DIR;
 use crate::store::PluginStore;
-use chrono::DateTime;
-use chrono::Utc;
 use ava_app_server_protocol::JSONRPCErrorError;
 use ava_app_server_protocol::PluginAuthPolicy;
 use ava_app_server_protocol::PluginAvailability;
@@ -33,6 +31,8 @@ use ava_plugin::PluginId;
 use ava_plugin::app_connector_ids_from_declarations;
 use ava_plugin::prompt_safe_plugin_description;
 use ava_utils_absolute_path::AbsolutePathBuf;
+use chrono::DateTime;
+use chrono::Utc;
 use http::Method;
 use http::StatusCode;
 use serde::Deserialize;
@@ -2044,9 +2044,8 @@ async fn fetch_directory_plugins_for_scope_with_cache(
 ) -> Result<DirectoryPluginsFetchOutcome, RemotePluginCatalogError> {
     if cache_mode != RemotePluginCatalogCacheMode::ForceRefetch
         && let Some(ava_home) = ava_home
-        && let Some(cached) = catalog_cache::load_cached_directory_plugins(
-            ava_home, config, auth, scope, collection,
-        )
+        && let Some(cached) =
+            catalog_cache::load_cached_directory_plugins(ava_home, config, auth, scope, collection)
         && (cache_mode == RemotePluginCatalogCacheMode::PreferCache
             || cached.freshness == catalog_cache::RemotePluginCatalogCacheFreshness::Fresh)
     {

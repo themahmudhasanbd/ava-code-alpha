@@ -181,8 +181,7 @@ fn assert_managed_deny_probe(output: &std::process::Output, launch: usize) -> an
 #[test]
 #[serial(ava_home)]
 fn windows_sandbox_cli_preserves_managed_deny_reads_across_launches() -> anyhow::Result<()> {
-    let ava_home =
-        ava_home_for_windows_sandbox_test("windows-cli-managed-deny-read-ava-home")?;
+    let ava_home = ava_home_for_windows_sandbox_test("windows-cli-managed-deny-read-ava-home")?;
 
     let fixture = TempDir::new()?;
     let fixture_root = dunce::canonicalize(fixture.path())?;
@@ -391,8 +390,7 @@ async fn windows_restricted_token_rejects_exact_and_glob_deny_read_policy() -> a
 #[tokio::test]
 #[serial(ava_home)]
 async fn windows_elevated_does_not_create_missing_workspace_metadata() -> anyhow::Result<()> {
-    let ava_home =
-        ava_home_for_windows_sandbox_test("windows-elevated-missing-metadata-ava-home")?;
+    let ava_home = ava_home_for_windows_sandbox_test("windows-elevated-missing-metadata-ava-home")?;
     let _ava_home_guard = EnvVarGuard::set("AVA_HOME", ava_home.path().as_os_str());
     stage_windows_sandbox_helpers()?;
     let workspace = TempDir::new()?;

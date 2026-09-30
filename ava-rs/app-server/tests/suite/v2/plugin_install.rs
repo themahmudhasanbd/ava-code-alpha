@@ -13,15 +13,6 @@ use app_test_support::DEFAULT_CLIENT_NAME;
 use app_test_support::TestAppServer;
 use app_test_support::start_analytics_events_server;
 use app_test_support::write_chatgpt_auth;
-use axum::Json;
-use axum::Router;
-use axum::extract::State;
-use axum::http::HeaderMap;
-use axum::http::StatusCode;
-use axum::http::Uri;
-use axum::http::header::AUTHORIZATION;
-use axum::routing::get;
-use axum::routing::post;
 use ava_app_server_protocol::AppInfo;
 use ava_app_server_protocol::AppSummary;
 use ava_app_server_protocol::AppsListParams;
@@ -44,6 +35,15 @@ use ava_http_client::HttpClientBuilder;
 use ava_rmcp_client::McpOAuthCallbackMode;
 use ava_rmcp_client::resolve_mcp_oauth_callback_url;
 use ava_utils_absolute_path::AbsolutePathBuf;
+use axum::Json;
+use axum::Router;
+use axum::extract::State;
+use axum::http::HeaderMap;
+use axum::http::StatusCode;
+use axum::http::Uri;
+use axum::http::header::AUTHORIZATION;
+use axum::routing::get;
+use axum::routing::post;
 use core_test_support::stdio_server_bin;
 use flate2::Compression;
 use flate2::write::GzEncoder;
@@ -1581,12 +1581,11 @@ async fn plugin_install_skips_mcp_oauth_for_unowned_environment() -> Result<()> 
         ava_home.path().join("config.toml"),
         "[features]\nplugins = true\n",
     )?;
-    let mut executor =
-        tokio::process::Command::new(ava_utils_cargo_bin::cargo_bin("exec-server")?)
-            .stdin(std::process::Stdio::null())
-            .stdout(std::process::Stdio::piped())
-            .kill_on_drop(true)
-            .spawn()?;
+    let mut executor = tokio::process::Command::new(ava_utils_cargo_bin::cargo_bin("exec-server")?)
+        .stdin(std::process::Stdio::null())
+        .stdout(std::process::Stdio::piped())
+        .kill_on_drop(true)
+        .spawn()?;
     let executor_stdout = executor
         .stdout
         .take()
@@ -2165,10 +2164,7 @@ async fn plugin_install_skips_remote_mcp_oauth_disabled_by_requirements() -> Res
     )
     .await;
     configure_remote_plugin_with_apps_test(ava_home.path(), &server)?;
-    std::fs::write(
-        ava_home.path().join("requirements.toml"),
-        "[mcp_servers]\n",
-    )?;
+    std::fs::write(ava_home.path().join("requirements.toml"), "[mcp_servers]\n")?;
     mount_remote_plugin_detail(&server, REMOTE_PLUGIN_ID, "1.2.3", Some(&bundle_url)).await;
     mount_empty_remote_installed_plugins(&server).await;
     mount_remote_plugin_install_with_apps_needing_auth(&server, REMOTE_PLUGIN_ID, &["alpha"]).await;
@@ -2777,10 +2773,7 @@ async fn wait_for_plugin_analytics_payload(
             };
             for request in requests.iter().filter(|request| {
                 request.method == "POST"
-                    && request
-                        .url
-                        .path()
-                        .ends_with("/ava/analytics-events/events")
+                    && request.url.path().ends_with("/ava/analytics-events/events")
             }) {
                 let mut payload: serde_json::Value = serde_json::from_slice(&request.body)
                     .map_err(|err| anyhow::anyhow!("invalid analytics payload: {err}"))?;

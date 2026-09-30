@@ -623,11 +623,8 @@ impl Session {
             }
             Err(err) => {
                 warn!(%err, "session task returned an unexpected error");
-                self.emit_turn_error_lifecycle(
-                    turn_context.as_ref(),
-                    err.to_ava_protocol_error(),
-                )
-                .await;
+                self.emit_turn_error_lifecycle(turn_context.as_ref(), err.to_ava_protocol_error())
+                    .await;
                 self.track_turn_ava_error(turn_context.as_ref(), &err);
                 self.send_event(
                     turn_context.as_ref(),

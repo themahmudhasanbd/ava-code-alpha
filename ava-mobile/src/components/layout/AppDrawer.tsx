@@ -20,6 +20,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import {
   ChevronDown,
   ChevronRight,
+  Clock,
   Edit2,
   Folder,
   LogOut,
@@ -37,6 +38,7 @@ import { storage } from "@/core/storage";
 import { useAva } from "@/state/ava-provider";
 import { useDeleteSession, useRenameSession, useSessions, useUserProfile } from "@/state/queries";
 import type { Session } from "@/core/types";
+import { SCHEDULED_THREAD_SOURCE } from "@/core/api/schedule";
 import { COLORS } from "@/theme/colors";
 import { font, mono } from "@/theme/fonts";
 
@@ -561,6 +563,11 @@ export function AppDrawer(props: DrawerContentComponentProps) {
                                     >
                                       {s.title || "Untitled Session"}
                                     </Text>
+                                    {s.source === SCHEDULED_THREAD_SOURCE && (
+                                      <View style={styles.scheduledPill}>
+                                        <Clock size={10} color={COLORS.primary} />
+                                      </View>
+                                    )}
                                     {isRunning && (
                                       <View style={styles.runningBadge}>
                                         <Text style={[styles.runningBadgeText, font("bold")]}>
@@ -995,6 +1002,15 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
     paddingRight: 4,
     minWidth: 0,
+  },
+  scheduledPill: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 6,
+    paddingVertical: 3,
+    borderRadius: 999,
+    backgroundColor: COLORS.accent,
+    marginLeft: 6,
   },
   sessionDot: {
     width: 4,

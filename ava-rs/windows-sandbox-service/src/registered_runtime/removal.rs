@@ -97,8 +97,7 @@ pub(crate) fn prepare(
     let mut targets = Vec::new();
     for index in 0..record.runtime()?.accounts.len() {
         let account = record.runtime()?.accounts[index].clone();
-        let Some(flags) = ava_windows_sandbox::local_user_flags(account.account.username())?
-        else {
+        let Some(flags) = ava_windows_sandbox::local_user_flags(account.account.username())? else {
             ensure!(
                 super::registered_packages(&account.user_sid, &record.runtime()?.package_family)?
                     .is_empty(),
@@ -123,16 +122,12 @@ pub(crate) fn prepare(
                 &ava_windows_sandbox::sandbox_secrets_dir(&record.ava_home),
                 &mut pins,
             )?;
-            ava_windows_sandbox::logon_existing_sandbox_account(
-                &record.ava_home,
-                account.account,
-            )
+            ava_windows_sandbox::logon_existing_sandbox_account(&record.ava_home, account.account)
         });
         if flags & UF_ACCOUNTDISABLE != 0 {
             super::validate_account_sid(&account)?;
-            let current_flags =
-                ava_windows_sandbox::local_user_flags(account.account.username())?
-                    .context("cleanup account disappeared before flag restoration")?;
+            let current_flags = ava_windows_sandbox::local_user_flags(account.account.username())?
+                .context("cleanup account disappeared before flag restoration")?;
             ava_windows_sandbox::set_local_user_flags(
                 account.account.username(),
                 current_flags | UF_ACCOUNTDISABLE,

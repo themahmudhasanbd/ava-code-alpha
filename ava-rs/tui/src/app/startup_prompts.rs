@@ -117,22 +117,7 @@ pub(super) fn model_upgrade_for_migration(
     if let Some(preset) = available_models.iter().find(|preset| preset.model == model) {
         return preset.upgrade.clone();
     }
-
-    // Saved selections can outlive their catalog entries. Keep only their migration metadata.
-    let (target_model, current_name, target_name) = match model {
-        "gpt-5.4-mini" => ("gpt-5.6-luna", "GPT-5.4 Mini", "GPT-5.6 Luna"),
-        _ => return None,
-    };
-    Some(ModelUpgrade {
-        id: target_model.to_string(),
-        migration_config_key: model.to_string(),
-        model_link: None,
-        upgrade_copy: None,
-        migration_markdown: Some(format!(
-            "{current_name} is no longer available\n\nAva now uses {target_name} in place of {current_name}. Switch to {target_name} to continue.\n"
-        )),
-        retirement_at: None,
-    })
+    None
 }
 
 pub(super) fn should_show_model_migration_prompt(

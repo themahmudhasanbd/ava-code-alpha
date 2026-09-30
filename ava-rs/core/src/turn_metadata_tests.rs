@@ -2,9 +2,9 @@ use super::*;
 
 use crate::responses_metadata::ANALYTICS_ENABLED_KEY;
 use crate::responses_metadata::AUTO_REVIEW_ENABLED_KEY;
-use crate::responses_metadata::CONTEXT_WINDOW_ID_KEY;
 use crate::responses_metadata::AvaResponsesMetadata;
 use crate::responses_metadata::AvaResponsesRequestKind;
+use crate::responses_metadata::CONTEXT_WINDOW_ID_KEY;
 use crate::responses_metadata::CompactionTurnMetadata;
 use crate::responses_metadata::FORKED_FROM_ORDINAL_EXCLUSIVE_KEY;
 use crate::responses_metadata::INSTALLATION_ID_KEY;

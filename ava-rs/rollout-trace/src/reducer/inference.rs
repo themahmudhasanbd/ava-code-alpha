@@ -55,9 +55,7 @@ impl TraceReducer {
         let ava_turn_id = started.ava_turn_id.clone();
         let request_payload = started.request_payload.clone();
         let Some(turn) = self.rollout.ava_turns.get(&ava_turn_id) else {
-            bail!(
-                "inference start {inference_call_id} referenced unknown ava turn {ava_turn_id}"
-            );
+            bail!("inference start {inference_call_id} referenced unknown ava turn {ava_turn_id}");
         };
         if turn.thread_id != thread_id {
             bail!(

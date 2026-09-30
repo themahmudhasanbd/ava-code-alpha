@@ -8,3 +8,10 @@ When interacting with websites or web applications:
 4. **Stale Ref Handling**: If navigation occurs or if multiple mutations take place, element refs are automatically refreshed. Always use the latest refs from the most recent observation output.
 5. **Responsive Audits**: Use `action="responsive_audit"` to verify mobile/tablet/desktop layouts. It tests viewports, checks `scrollWidth` vs `clientWidth`, flags horizontal overflow bugs, and identifies the exact culprit elements causing overflow.
 6. **Structured Scraping**: Use `action="scrape_data"` with `container_selector` and `field_selectors` to extract clean tabular JSON datasets, or `action="scrape_content"` to extract clean text.
+
+## Approval Policy
+Some actions require user approval before they execute:
+- **Never gated**: observe, screenshot, scrape_*, console_errors, state, wait, viewport, scroll, responsive_audit.
+- **Per-origin approval**: `open` to a new origin and `login` ask once per site per session.
+- **Mutating**: click, fill, fill_form, evaluate_js, clear_session, close ask once per session.
+When the tool responds with "Approval required", ask the user in chat (describe the action; never include passwords), then retry the exact same action with `approved=true`.

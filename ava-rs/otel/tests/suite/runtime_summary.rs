@@ -95,16 +95,8 @@ fn runtime_metrics_summary_collects_tool_api_and_streaming_metrics() -> Result<(
             .into(),
     ))));
     manager.record_websocket_event(&ws_timing_response, Duration::from_millis(20));
-    manager.record_duration(
-        "ava.turn.ttft.duration_ms",
-        Duration::from_millis(95),
-        &[],
-    );
-    manager.record_duration(
-        "ava.turn.ttfm.duration_ms",
-        Duration::from_millis(180),
-        &[],
-    );
+    manager.record_duration("ava.turn.ttft.duration_ms", Duration::from_millis(95), &[]);
+    manager.record_duration("ava.turn.ttfm.duration_ms", Duration::from_millis(180), &[]);
 
     let summary = manager
         .runtime_metrics_summary()

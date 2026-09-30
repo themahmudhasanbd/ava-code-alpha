@@ -173,9 +173,7 @@ fn custom_pet_entries(ava_home: &Path) -> Vec<PetPickerEntry> {
                 continue;
             }
             let selector = custom_pet_selector(id);
-            let Ok(pet) =
-                Pet::load_with_ava_home(&selector, /*ava_home*/ Some(ava_home))
-            else {
+            let Ok(pet) = Pet::load_with_ava_home(&selector, /*ava_home*/ Some(ava_home)) else {
                 continue;
             };
             entries_by_selector.insert(

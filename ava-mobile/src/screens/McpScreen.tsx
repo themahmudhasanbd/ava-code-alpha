@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useState } from "react";
 import {
   Alert,
   Linking,
+  Modal,
   ScrollView,
   StyleSheet,
   Text,
@@ -17,11 +18,13 @@ import {
   Key,
   Lock,
   Plug,
+  Plus,
   RefreshCw,
   RotateCcw,
   Shield,
   Unlock,
   Wrench,
+  X,
   XCircle,
   type LucideIcon,
 } from "lucide-react-native";
@@ -35,20 +38,23 @@ import {
   Surface,
   Badge,
   GlassCapsule,
+  Button,
+  Input,
+  Label,
 } from "@/components/kit";
 import type { McpServer } from "@/core/types";
 import { useAva } from "@/state/ava-provider";
-import { keys, useMcpServers, useReloadMcp, useMcpOAuth, useServerConfig, useWriteConfig } from "@/state/queries";
+import { keys, useMcpServers, useReloadMcp, useMcpOAuth, useAddMcpServer, useServerConfig, useWriteConfig } from "@/state/queries";
 import { COLORS } from "@/theme/colors";
 import { font, mono } from "@/theme/fonts";
 
 // ── Approval policy options ───────────────────────────────────────────────
 
+// Must match core AskForApproval (kebab-case): untrusted | on-request | never
 const APPROVAL_POLICIES = [
-  { id: "auto", label: "Auto", description: "All tools run automatically without approval", icon: Unlock },
-  { id: "prompt", label: "Prompt", description: "Ask before running any tool", icon: Shield },
-  { id: "writes", label: "Writes Only", description: "Only ask for tools that write/modify files", icon: Lock },
-  { id: "approve", label: "Approve All", description: "Require approval for every tool call", icon: Key },
+  { id: "untrusted", label: "Prompt on Untrusted", description: "Ask for commands that modify system state outside the workspace", icon: Shield },
+  { id: "on-request", label: "On Request", description: "Prompt only when the agent marks an action as high-risk", icon: Lock },
+  { id: "never", label: "Never Prompt", description: "Run tools automatically without approval", icon: Unlock },
 ] as const;
 
 // ── Status icon helper ────────────────────────────────────────────────────
@@ -188,6 +194,14 @@ export function McpScreen() {
   }, [rpc, queryClient]);
 
   const [applyingPolicy, setApplyingPolicy] = useState(false);
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [addTransport, setAddTransport] = useState<"stdio" | "http">("http");
+  const [addName, setAddName] = useState("");
+  const [addCommand, setAddCommand] = useState("");
+  const [addArgs, setAddArgs] = useState("");
+  const [addUrl, setAddUrl] = useState("");
+  const [addBearerEnv, setAddBearerEnv] = useState("");
+  const addMcp = useAddMcpServer();
 
   const currentPolicy = config.data?.approvalPolicy || "auto";
 
@@ -253,6 +267,24 @@ export function McpScreen() {
     [writeConfig]
   );
 
+  const handleAddServer = useCallback(async () => {
+    try {
+      await addMcp.mutateAsync({
+        name: addName,
+        transport: addTransport,
+        command: addTransport === "stdio" ? addCommand : undefined,
+        args: addTransport === "stdio" && addArgs.trim() ? addArgs.split(/\s+/) : undefined,
+        url: addTransport === "http" ? addUrl : undefined,
+        bearerTokenEnvVar: addTransport === "http" ? addBearerEnv || undefined : undefined,
+      });
+      setShowAddModal(false);
+      setAddName(""); setAddCommand(""); setAddArgs(""); setAddUrl(""); setAddBearerEnv("");
+      Alert.alert("Added", "MCP server added and reloaded.");
+    } catch (err: any) {
+      Alert.alert("Error", err?.message || "Failed to add server.");
+    }
+  }, [addMcp, addName, addTransport, addCommand, addArgs, addUrl, addBearerEnv]);
+
   const activeCount = servers.filter((s) => s.status === "ready" || s.status === "connected").length;
   const authRequiredCount = servers.filter((s) => s.authStatus === "notLoggedIn").length;
   const totalTools = servers.reduce((sum, s) => sum + s.tools.length, 0);
@@ -260,7 +292,12 @@ export function McpScreen() {
   return (
     <AppShell
       title="MCP Servers"
-      actions={<GlassIconButton icon={RefreshCw} size={18} onPress={handleReload} disabled={reload.isPending} />}
+      actions={
+        <View style={{ flexDirection: "row", gap: 8 }}>
+          <GlassIconButton icon={Plus} size={18} onPress={() => setShowAddModal(true)} />
+          <GlassIconButton icon={RefreshCw} size={18} onPress={handleReload} disabled={reload.isPending} />
+        </View>
+      }
     >
       <ScrollView style={styles.container} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         <PageIntro
@@ -324,7 +361,7 @@ export function McpScreen() {
             <EmptyState
               icon={Plug}
               title="No MCP servers configured"
-              description="Add MCP servers to your config.toml to give your agent additional tools."
+              description="Tap + to add an MCP server and give your agent additional tools."
             />
           )}
 
@@ -337,10 +374,72 @@ export function McpScreen() {
         <View style={styles.infoBox}>
           <Info size={14} color={COLORS.mutedForeground} />
           <Text style={[styles.infoText, font("regular")]}>
-            MCP servers are configured in the server's config.toml. OAuth-enabled servers require browser authentication. Use Reload after editing config.
+            OAuth-enabled servers require browser authentication. Use Reload after changing server config.
           </Text>
         </View>
       </ScrollView>
+
+      {/* ── Add Server Modal ── */}
+      <Modal visible={showAddModal} animationType="slide" transparent onRequestClose={() => setShowAddModal(false)}>
+        <View style={styles.modalBackdrop}>
+          <Surface style={styles.modalSheet}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Add MCP Server</Text>
+              <TouchableOpacity onPress={() => setShowAddModal(false)}>
+                <X size={18} color={COLORS.mutedForeground} />
+              </TouchableOpacity>
+            </View>
+            <View style={styles.form}>
+              <View style={styles.fieldGroup}>
+                <Label>Server name</Label>
+                <Input placeholder="e.g. my-tools" value={addName} onChangeText={setAddName} autoCapitalize="none" />
+              </View>
+              <View style={styles.fieldGroup}>
+                <Label>Transport</Label>
+                <View style={{ flexDirection: "row", gap: 8 }}>
+                  {(["http", "stdio"] as const).map((t) => (
+                    <TouchableOpacity
+                      key={t}
+                      onPress={() => setAddTransport(t)}
+                      style={[styles.transportPill, addTransport === t && styles.transportPillActive]}
+                    >
+                      <Text style={[styles.transportPillText, addTransport === t && styles.transportPillTextActive]}>
+                        {t === "http" ? "HTTP" : "Stdio"}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              </View>
+              {addTransport === "http" ? (
+                <>
+                  <View style={styles.fieldGroup}>
+                    <Label>Server URL</Label>
+                    <Input placeholder="https://example.com/mcp" value={addUrl} onChangeText={setAddUrl} autoCapitalize="none" />
+                  </View>
+                  <View style={styles.fieldGroup}>
+                    <Label>Bearer token env var (optional)</Label>
+                    <Input placeholder="e.g. MY_MCP_TOKEN" value={addBearerEnv} onChangeText={setAddBearerEnv} autoCapitalize="none" />
+                  </View>
+                </>
+              ) : (
+                <>
+                  <View style={styles.fieldGroup}>
+                    <Label>Command</Label>
+                    <Input placeholder="e.g. npx" value={addCommand} onChangeText={setAddCommand} autoCapitalize="none" />
+                  </View>
+                  <View style={styles.fieldGroup}>
+                    <Label>Args (space-separated, optional)</Label>
+                    <Input placeholder="e.g. -y @modelcontextprotocol/server-filesystem" value={addArgs} onChangeText={setAddArgs} autoCapitalize="none" />
+                  </View>
+                </>
+              )}
+              <Button variant="default" loading={addMcp.isPending} onPress={handleAddServer} style={{ marginTop: 8 }}>
+                Add server
+              </Button>
+            </View>
+          </Surface>
+        </View>
+      </Modal>
     </AppShell>
   );
 }
@@ -408,4 +507,46 @@ const styles = StyleSheet.create({
   // Info
   infoBox: { flexDirection: "row", gap: 8, padding: 12, backgroundColor: COLORS.secondary, borderRadius: 12, borderWidth: 1, borderColor: COLORS.border },
   infoText: { flex: 1, fontSize: 11, color: COLORS.mutedForeground, lineHeight: 16 },
+  modalBackdrop: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.5)",
+    justifyContent: "flex-end",
+  },
+  modalSheet: {
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    padding: 20,
+    maxHeight: "85%",
+  },
+  modalHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: 16,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: "600",
+  },
+  form: {
+    gap: 4,
+  },
+  fieldGroup: {
+    marginBottom: 12,
+  },
+  transportPill: {
+    flex: 1,
+    paddingVertical: 10,
+    borderRadius: 10,
+    alignItems: "center",
+  },
+  transportPillActive: {
+    opacity: 1,
+  },
+  transportPillText: {
+    fontWeight: "600",
+  },
+  transportPillTextActive: {
+    fontWeight: "700",
+  },
 });

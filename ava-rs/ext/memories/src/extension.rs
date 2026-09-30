@@ -146,9 +146,8 @@ impl ToolContributor for MemoriesExtension {
         &self,
         _session_store: &ExtensionData,
         thread_store: &ExtensionData,
-    ) -> Vec<
-        Arc<dyn for<'call> ava_extension_api::ToolExecutor<ava_extension_api::ToolCall<'call>>>,
-    > {
+    ) -> Vec<Arc<dyn for<'call> ava_extension_api::ToolExecutor<ava_extension_api::ToolCall<'call>>>>
+    {
         let Some(config) = thread_store.get::<MemoriesExtensionConfig>() else {
             return Vec::new();
         };

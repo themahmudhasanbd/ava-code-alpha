@@ -1495,10 +1495,7 @@ async fn external_agent_config_import_reports_session_config_error_subtype() -> 
         .with_env_overrides(&[("HOME", Some(home_dir.as_str()))])
         .build_initialized_with_timeout(DEFAULT_TIMEOUT)
         .await?;
-    std::fs::write(
-        ava_home.path().join("config.toml"),
-        "chatgpt_base_url = [",
-    )?;
+    std::fs::write(ava_home.path().join("config.toml"), "chatgpt_base_url = [")?;
 
     let request_id = mcp
         .send_raw_request(
@@ -1831,8 +1828,8 @@ async fn external_agent_config_import_creates_session_rollouts() -> Result<()> {
         chrono::DateTime::parse_from_rfc3339(source_updated_at_text)?.timestamp();
     let session_dir = external_agent_home(ava_home.path()).join("projects/repo");
     let session_path = session_dir.join("session.jsonl");
-    let manifest_dir = connector_metadata_root(ava_home.path())
-        .join("claude-code-sessions/account/organization");
+    let manifest_dir =
+        connector_metadata_root(ava_home.path()).join("claude-code-sessions/account/organization");
     let control_request = "<ide_selection>src/auth.rs:1-5</ide_selection>";
     let first_request = "Fix auth flow";
     std::fs::create_dir_all(&project_root)?;

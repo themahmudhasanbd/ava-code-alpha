@@ -138,12 +138,10 @@ impl VerifiedAccess {
 
 impl Notice {
     pub(crate) fn for_model(self, model: &str) -> Self {
-        match model {
-            // Same identifiers as the app's isDaybreakUnavailableModel.
-            "gpt-6-astra" | "gpt-6-astra-wm" => Self::Astra,
-            "gpt-5.6-sol" => self,
-            // Other model/access-program mappings are not established for the TUI.
-            _ => Self::Limited,
+        if model.contains("astra") {
+            Self::Astra
+        } else {
+            Self::Limited
         }
     }
 }

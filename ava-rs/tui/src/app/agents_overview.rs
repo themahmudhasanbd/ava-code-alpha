@@ -1009,11 +1009,7 @@ impl App {
                             name == "ava-tui"
                         }
                     }) {
-                    current_executable.with_file_name(if cfg!(windows) {
-                        "ava.exe"
-                    } else {
-                        "ava"
-                    })
+                    current_executable.with_file_name(if cfg!(windows) { "ava.exe" } else { "ava" })
                 } else {
                     current_executable
                 };

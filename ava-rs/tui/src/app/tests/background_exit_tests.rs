@@ -367,8 +367,7 @@ async fn exit_interrupts_before_requesting_shutdown() -> Result<()> {
                 .next_event()
                 .await
                 .expect("app-server event stream should remain open");
-            if let ava_app_server_client::AppServerEvent::ServerNotification(notification) = event
-            {
+            if let ava_app_server_client::AppServerEvent::ServerNotification(notification) = event {
                 match notification.as_ref() {
                     ServerNotification::TurnStarted(notification)
                         if notification.thread_id == thread_id.to_string() =>

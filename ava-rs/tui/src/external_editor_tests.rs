@@ -232,12 +232,7 @@ fn editor_directory_rejects_workspace_fallback_symlink_to_writable_target() {
     assert!(!policy.can_write_local_path_with_cwd(&workspace_ava_home, &paths.cwd));
     assert!(policy.can_write_local_path_with_cwd(&paths.ava_home, &paths.cwd));
     assert!(
-        editor_directory(
-            &[&paths.ava_home, &workspace_ava_home],
-            &policy,
-            &paths.cwd,
-        )
-        .is_err()
+        editor_directory(&[&paths.ava_home, &workspace_ava_home], &policy, &paths.cwd,).is_err()
     );
 }
 
@@ -326,8 +321,8 @@ async fn editor_process_uses_protected_workspace_fallback_with_default_temporary
     fs::create_dir(&ava_home).expect("create Ava home");
     fs::create_dir(&cwd).expect("create workspace");
     let default_ava_home = dirs::home_dir().expect("home directory").join(".ava-code");
-    let writable_default_ava_home = AbsolutePathBuf::from_absolute_path(&default_ava_home)
-        .expect("absolute default Ava home");
+    let writable_default_ava_home =
+        AbsolutePathBuf::from_absolute_path(&default_ava_home).expect("absolute default Ava home");
     let policy = FileSystemSandboxPolicy::workspace_write(
         &[writable_default_ava_home],
         /*exclude_tmpdir_env_var*/ false,

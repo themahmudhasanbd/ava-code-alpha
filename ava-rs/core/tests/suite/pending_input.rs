@@ -81,12 +81,12 @@ async fn idle_response_items_include_pending_mailbox_in_first_request() -> anyho
     let test = test_ava().build_with_auto_env(&server).await?;
 
     submit_queue_only_agent_mail(test.ava.as_ref(), "pending mailbox input").await;
-    let submission = test
-        .ava-code
-        .start_turn_if_idle(TurnInputRequest::new(TurnInput::ResponseItem(
-            responses::user_message_item("automatic response item"),
-        )))
-        .await?;
+    let submission = test.ava
+        - code
+            .start_turn_if_idle(TurnInputRequest::new(TurnInput::ResponseItem(
+                responses::user_message_item("automatic response item"),
+            )))
+            .await?;
     let StartIfIdleSubmission::Started { turn_id } = submission else {
         panic!("automatic input should start a turn");
     };
@@ -138,10 +138,10 @@ async fn standalone_tool_output_starts_instruction_turn() -> anyhow::Result<()> 
     });
     let output = serde_json::from_value(expected_output.clone())?;
 
-    let submission = test
-        .ava-code
-        .start_or_steer_turn(TurnInputRequest::new(TurnInput::ResponseItem(output)))
-        .await?;
+    let submission = test.ava
+        - code
+            .start_or_steer_turn(TurnInputRequest::new(TurnInput::ResponseItem(output)))
+            .await?;
     let TurnInputSubmission::Started { turn_id } = submission else {
         panic!("standalone output should start a turn");
     };
@@ -194,13 +194,13 @@ async fn assert_idle_user_input_reaches_the_first_model_request(
         text: "queued user input reaches the first request".to_string(),
         text_elements: Vec::new(),
     }];
-    let submission = test
-        .ava-code
-        .start_turn_if_idle(TurnInputRequest::new(TurnInput::UserInput {
-            content: expected_input.clone(),
-            client_id: Some("queued-user-message".to_string()),
-        }))
-        .await?;
+    let submission = test.ava
+        - code
+            .start_turn_if_idle(TurnInputRequest::new(TurnInput::UserInput {
+                content: expected_input.clone(),
+                client_id: Some("queued-user-message".to_string()),
+            }))
+            .await?;
     assert!(matches!(submission, StartIfIdleSubmission::Started { .. }));
 
     let user_message = core_test_support::wait_for_event_match(test.ava.as_ref(), |event| {
@@ -323,17 +323,17 @@ async fn build_ava(server: &StreamingSseServer) -> Arc<AvaThread> {
         .build_with_streaming_server(server)
         .await
         .expect("build streaming Ava test session")
-        .ava-code
+        .ava
+        - code
 }
 
 async fn submit_user_input(ava: &AvaThread, text: &str) {
-    ava
-        .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
-            text: text.to_string(),
-            text_elements: Vec::new(),
-        }]))
-        .await
-        .expect("submit user input");
+    ava.start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
+        text: text.to_string(),
+        text_elements: Vec::new(),
+    }]))
+    .await
+    .expect("submit user input");
 }
 
 async fn submit_danger_full_access_user_turn(test: &TestAva, text: &str) {
@@ -377,25 +377,23 @@ async fn steer_user_input(ava: &AvaThread, text: &str) {
 }
 
 async fn enqueue_queue_only_agent_mail(ava: &AvaThread, text: &str) {
-    ava
-        .submit(Op::InterAgentCommunication {
-            communication: InterAgentCommunication::new(
-                AgentPath::try_from("/root/worker").expect("worker path should parse"),
-                AgentPath::root(),
-                Vec::new(),
-                text.to_string(),
-                /*trigger_turn*/ false,
-            ),
-            start_options: Default::default(),
-        })
-        .await
-        .expect("submit queue-only agent mail");
+    ava.submit(Op::InterAgentCommunication {
+        communication: InterAgentCommunication::new(
+            AgentPath::try_from("/root/worker").expect("worker path should parse"),
+            AgentPath::root(),
+            Vec::new(),
+            text.to_string(),
+            /*trigger_turn*/ false,
+        ),
+        start_options: Default::default(),
+    })
+    .await
+    .expect("submit queue-only agent mail");
 }
 
 async fn submit_queue_only_agent_mail(ava: &AvaThread, text: &str) {
     enqueue_queue_only_agent_mail(ava, text).await;
-    ava
-        .submit(Op::RealtimeConversationListVoices)
+    ava.submit(Op::RealtimeConversationListVoices)
         .await
         .expect("submit list-voices barrier");
     wait_for_event(ava, |event| {
@@ -523,21 +521,21 @@ async fn queue_only_agent_mail_wakes_sleeping_root_with_previous_turn_context() 
         .build_with_auto_env(&server)
         .await
         .expect("build Ava test session")
-        .ava-code;
+        .ava
+        - code;
 
-    ava
-        .start_or_steer_turn(
-            TurnInputRequest::user_input(vec![UserInput::Text {
-                text: "wait for the worker".to_string(),
-                text_elements: Vec::new(),
-            }])
-            .on_start(TurnStartOptions {
-                cyber_access_program: Some(CyberAccessProgram::Standard),
-                ..Default::default()
-            }),
-        )
-        .await
-        .expect("start initial turn");
+    ava.start_or_steer_turn(
+        TurnInputRequest::user_input(vec![UserInput::Text {
+            text: "wait for the worker".to_string(),
+            text_elements: Vec::new(),
+        }])
+        .on_start(TurnStartOptions {
+            cyber_access_program: Some(CyberAccessProgram::Standard),
+            ..Default::default()
+        }),
+    )
+    .await
+    .expect("start initial turn");
     wait_for_turn_complete(&ava).await;
     enqueue_queue_only_agent_mail(&ava, CHILD_MESSAGE).await;
     wait_for_turn_complete(&ava).await;
@@ -601,7 +599,8 @@ async fn steer_interrupts_wait_agent_and_is_sent_in_follow_up_request() {
         .build_with_streaming_server(&server)
         .await
         .expect("build Ava test session")
-        .ava-code;
+        .ava
+        - code;
 
     submit_user_input(&ava, INITIAL_PROMPT).await;
     wait_for_event(&ava, |event| {
@@ -685,7 +684,8 @@ async fn any_new_input_interrupts_sleep() {
         .build_with_streaming_server(&server)
         .await
         .expect("build Ava test session")
-        .ava-code;
+        .ava
+        - code;
 
     submit_user_input(&ava, INITIAL_PROMPT).await;
     wait_for_sleep_item_started(&ava, FIRST_SLEEP_CALL_ID, SLEEP_DURATION_MS).await;
@@ -816,28 +816,27 @@ async fn injected_user_input_triggers_follow_up_request_with_deltas() {
         .build_with_streaming_server(&server)
         .await
         .unwrap()
-        .ava-code;
+        .ava
+        - code;
 
-    ava
-        .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
-            text: "first prompt".into(),
-            text_elements: Vec::new(),
-        }]))
-        .await
-        .unwrap();
+    ava.start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
+        text: "first prompt".into(),
+        text_elements: Vec::new(),
+    }]))
+    .await
+    .unwrap();
 
     wait_for_event(&ava, |event| {
         matches!(event, EventMsg::AgentMessageContentDelta(_))
     })
     .await;
 
-    ava
-        .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
-            text: "second prompt".into(),
-            text_elements: Vec::new(),
-        }]))
-        .await
-        .unwrap();
+    ava.start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
+        text: "second prompt".into(),
+        text_elements: Vec::new(),
+    }]))
+    .await
+    .unwrap();
 
     let _ = gate_completed_tx.send(());
 
@@ -1074,13 +1073,11 @@ async fn injected_response_item_reopens_turn_after_final_answer() {
     wait_for_reasoning_item_started(&ava).await;
 
     assert!(
-        ava
-            .inject_if_running(vec![responses::user_message_item(INJECTED_CONTEXT)])
+        ava.inject_if_running(vec![responses::user_message_item(INJECTED_CONTEXT)])
             .await
             .is_ok()
     );
-    ava
-        .inject_response_items(vec![responses::user_message_item(EXTERNAL_CONTEXT)])
+    ava.inject_response_items(vec![responses::user_message_item(EXTERNAL_CONTEXT)])
         .await
         .expect("external context should be injected");
     let _ = gate_completed_tx.send(());
@@ -1272,18 +1269,17 @@ async fn terminal_compaction_error_does_not_retry_pending_input(
         PendingInputAfterFailure::Steer => steer_user_input(ava, PENDING_MESSAGE).await,
         PendingInputAfterFailure::QueuedMail => {}
         PendingInputAfterFailure::TriggeringMail => {
-            ava
-                .submit(Op::InterAgentCommunication {
-                    communication: InterAgentCommunication::new(
-                        AgentPath::root().join("worker").expect("valid worker path"),
-                        AgentPath::root(),
-                        Vec::new(),
-                        PENDING_MESSAGE.to_string(),
-                        /*trigger_turn*/ true,
-                    ),
-                    start_options: Default::default(),
-                })
-                .await?;
+            ava.submit(Op::InterAgentCommunication {
+                communication: InterAgentCommunication::new(
+                    AgentPath::root().join("worker").expect("valid worker path"),
+                    AgentPath::root(),
+                    Vec::new(),
+                    PENDING_MESSAGE.to_string(),
+                    /*trigger_turn*/ true,
+                ),
+                start_options: Default::default(),
+            })
+            .await?;
             ava.submit(Op::RealtimeConversationListVoices).await?;
             wait_for_event(ava, |event| {
                 matches!(event, EventMsg::RealtimeConversationListVoicesResponse(_))
@@ -1298,10 +1294,7 @@ async fn terminal_compaction_error_does_not_retry_pending_input(
     wait_for_event(ava, |event| {
         match event {
             EventMsg::Error(error) => {
-                assert_eq!(
-                    error.ava_error_info,
-                    Some(AvaErrorInfo::UsageLimitExceeded)
-                );
+                assert_eq!(error.ava_error_info, Some(AvaErrorInfo::UsageLimitExceeded));
                 errors.push(error.clone());
             }
             EventMsg::TurnComplete(completed) => {
@@ -1433,7 +1426,8 @@ async fn steered_user_input_waits_for_model_continuation_after_mid_turn_compact(
         .build_with_streaming_server(&server)
         .await
         .expect("build streaming Ava test session")
-        .ava-code;
+        .ava
+        - code;
 
     submit_user_input(&ava, "first prompt").await;
     submit_user_input(&ava, "second prompt").await;
@@ -1518,7 +1512,8 @@ async fn steered_user_input_follows_compact_when_only_the_steer_needs_follow_up(
         .build_with_streaming_server(&server)
         .await
         .expect("build streaming Ava test session")
-        .ava-code;
+        .ava
+        - code;
 
     submit_user_input(&ava, "first prompt").await;
     wait_for_agent_message(&ava, "first answer").await;

@@ -7,8 +7,8 @@ use super::helpers::validated_rollout_file_name;
 use crate::ArchiveThreadsParams;
 use crate::ThreadStoreError;
 use crate::ThreadStoreResult;
-use chrono::Utc;
 use ava_rollout::RolloutReferenceIndex;
+use chrono::Utc;
 use tracing::warn;
 
 use super::thread_rollout_resolver;
@@ -153,12 +153,12 @@ async fn archive_thread_with_paths(
 mod tests {
     use std::time::Duration;
 
-    use chrono::Utc;
     use ava_protocol::ThreadId;
     use ava_protocol::protocol::SessionSource;
     use ava_protocol::protocol::ThreadHistoryMode;
     use ava_rollout::ARCHIVED_SESSIONS_SUBDIR;
     use ava_utils_absolute_path::test_support::PathExt;
+    use chrono::Utc;
     use pretty_assertions::assert_eq;
     use tempfile::TempDir;
     use uuid::Uuid;

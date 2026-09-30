@@ -768,11 +768,11 @@ fn rate_limit_regex() -> &'static regex_lite::Regex {
 mod tests {
     use super::*;
     use assert_matches::assert_matches;
-    use bytes::Bytes;
     use ava_client::StreamResponse;
     use ava_client::TransportError;
     use ava_protocol::models::MessagePhase;
     use ava_protocol::models::ResponseItem;
+    use bytes::Bytes;
     use futures::TryStreamExt;
     use futures::stream;
     use http::HeaderMap;

@@ -829,10 +829,8 @@ async fn background_network_approval_uses_current_review_settings_and_original_e
         AskForApproval::OnRequest,
     )
     .await?;
-    let EventMsg::TurnStarted(first_turn) = wait_for_event(&test.ava, |event| {
-        matches!(event, EventMsg::TurnStarted(_))
-    })
-    .await
+    let EventMsg::TurnStarted(first_turn) =
+        wait_for_event(&test.ava, |event| matches!(event, EventMsg::TurnStarted(_))).await
     else {
         unreachable!("matched first turn start")
     };
@@ -868,10 +866,8 @@ async fn background_network_approval_uses_current_review_settings_and_original_e
                 }),
             )
             .await?;
-        let EventMsg::TurnStarted(active_turn) = wait_for_event(&test.ava, |event| {
-            matches!(event, EventMsg::TurnStarted(_))
-        })
-        .await
+        let EventMsg::TurnStarted(active_turn) =
+            wait_for_event(&test.ava, |event| matches!(event, EventMsg::TurnStarted(_))).await
         else {
             unreachable!("matched second turn start")
         };
@@ -1185,10 +1181,7 @@ async fn user_network_approval_once_session_and_denial_semantics() -> Result<()>
             decision: ReviewDecision::Abort,
         })
         .await?;
-    wait_for_event(&test.ava, |event| {
-        matches!(event, EventMsg::TurnAborted(_))
-    })
-    .await;
+    wait_for_event(&test.ava, |event| matches!(event, EventMsg::TurnAborted(_))).await;
     abort_response.single_request();
 
     Ok(())
@@ -1706,11 +1699,11 @@ async fn unattributed_network_request_uses_active_turn_environment_fallback(
             )
             .await?;
         tokio::time::timeout(Duration::from_secs(/*secs*/ 5), async {
-            while !test
-                .ava-code
-                .inspect_selected_capability_roots()
-                .ready_roots
-                .contains(&root)
+            while !test.ava
+                - code
+                    .inspect_selected_capability_roots()
+                    .ready_roots
+                    .contains(&root)
             {
                 tokio::task::yield_now().await;
             }
@@ -1800,10 +1793,7 @@ async fn unattributed_network_request_uses_active_turn_environment_fallback(
     assert!(response.starts_with("HTTP/1.1 200") || response.starts_with("HTTP/1.1 502"));
 
     test.ava.submit(Op::Interrupt).await?;
-    wait_for_event(&test.ava, |event| {
-        matches!(event, EventMsg::TurnAborted(_))
-    })
-    .await;
+    wait_for_event(&test.ava, |event| matches!(event, EventMsg::TurnAborted(_))).await;
 
     Ok(())
 }
@@ -1886,10 +1876,7 @@ async fn ambiguous_unattributed_network_request_is_not_assigned_to_active_calls(
     );
 
     test.ava.submit(Op::Interrupt).await?;
-    wait_for_event(&test.ava, |event| {
-        matches!(event, EventMsg::TurnAborted(_))
-    })
-    .await;
+    wait_for_event(&test.ava, |event| matches!(event, EventMsg::TurnAborted(_))).await;
     test.ava.submit(Op::CleanBackgroundTerminals).await?;
     tokio::time::timeout(Duration::from_secs(10), async {
         loop {

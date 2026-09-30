@@ -175,6 +175,7 @@ fn model_provider_from_proto(
         base_url: provider.base_url,
         model_catalog_url: provider.model_catalog_url.map(Into::into),
         env_key: provider.env_key,
+        api_keys: None,
         env_key_instructions: provider.env_key_instructions,
         experimental_bearer_token: provider.experimental_bearer_token.map(Into::into),
         auth: provider
@@ -211,6 +212,7 @@ fn model_provider_to_proto(
         base_url,
         model_catalog_url,
         env_key,
+        api_keys: _,
         env_key_instructions,
         experimental_bearer_token,
         auth,
@@ -238,6 +240,7 @@ fn model_provider_to_proto(
         base_url,
         model_catalog_url: model_catalog_url.map(RedactedString::into_inner),
         env_key,
+        api_keys: _,
         env_key_instructions,
         experimental_bearer_token: experimental_bearer_token.map(RedactedString::into_inner),
         auth: auth.map(model_provider_auth_to_proto),
@@ -557,6 +560,7 @@ mod tests {
             base_url: Some("http://127.0.0.1:8061/api/codex".to_string()),
             model_catalog_url: Some("http://127.0.0.1:8061/api/codex/models".into()),
             env_key: None,
+            api_keys: None,
             env_key_instructions: None,
             experimental_bearer_token: None,
             auth: Some(ModelProviderAuthInfo {

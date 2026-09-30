@@ -15,7 +15,6 @@ use std::sync::PoisonError;
 use std::time::Duration;
 use std::time::Instant;
 
-use bytes::Bytes;
 use ava_api::SharedAuthProvider;
 use ava_exec_server::ExecServerError;
 use ava_exec_server::HttpClient;
@@ -23,6 +22,7 @@ use ava_exec_server::HttpHeader;
 use ava_exec_server::HttpRedirectPolicy;
 use ava_exec_server::HttpRequestParams;
 use ava_exec_server::HttpResponseBodyStream;
+use bytes::Bytes;
 use futures::StreamExt;
 use futures::stream;
 use futures::stream::BoxStream;

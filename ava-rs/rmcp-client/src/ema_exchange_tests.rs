@@ -3,11 +3,11 @@ use std::sync::Arc;
 use std::time::SystemTime;
 use std::time::UNIX_EPOCH;
 
-use base64::Engine;
-use base64::engine::general_purpose::URL_SAFE_NO_PAD;
 use ava_exec_server::RouteAwareHttpClient;
 use ava_http_client::HttpClientFactory;
 use ava_http_client::OutboundProxyPolicy;
+use base64::Engine;
+use base64::engine::general_purpose::URL_SAFE_NO_PAD;
 use futures::FutureExt;
 use pretty_assertions::assert_eq;
 use serde_json::Value;

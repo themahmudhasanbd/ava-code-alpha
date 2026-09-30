@@ -527,9 +527,7 @@ fn unpackaged_pipe_clients_are_rejected_before_sending_a_request() {
         Err(error) => error,
     };
     assert!(
-        error
-            .to_string()
-            .contains("installed Ava package identity"),
+        error.to_string().contains("installed Ava package identity"),
         "unexpected package authorization failure: {error:#}"
     );
 }

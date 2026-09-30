@@ -27,8 +27,8 @@ use crate::windows_proxy_ingress::WindowsProxyRoute;
 use crate::windows_proxy_ingress::WindowsRouteService;
 use anyhow::Context;
 use anyhow::Result;
-use clap::Parser;
 use ava_utils_absolute_path::AbsolutePathBuf;
+use clap::Parser;
 use serde::Deserialize;
 use serde::Serialize;
 use std::collections::HashMap;
@@ -236,8 +236,7 @@ impl NetworkProxyBuilder {
             let runtime_settings = NetworkProxyRuntimeSettings::from_config(&current_cfg)?;
             (current_cfg, runtime_settings, None)
         };
-        let (requested_http_addr, requested_socks_addr, reserved_listeners) = if self
-            .managed_by_ava
+        let (requested_http_addr, requested_socks_addr, reserved_listeners) = if self.managed_by_ava
         {
             let runtime = config::resolve_runtime(&current_cfg, executor_os)?;
             #[cfg(target_os = "windows")]
@@ -680,8 +679,7 @@ pub fn is_managed_proxy_env_var(key: &str, value: &str) -> bool {
     }
     #[cfg(target_os = "macos")]
     {
-        key == PROXY_GIT_SSH_COMMAND_ENV_KEY
-            && value.starts_with(AVA_PROXY_GIT_SSH_COMMAND_MARKER)
+        key == PROXY_GIT_SSH_COMMAND_ENV_KEY && value.starts_with(AVA_PROXY_GIT_SSH_COMMAND_MARKER)
     }
     #[cfg(not(target_os = "macos"))]
     {

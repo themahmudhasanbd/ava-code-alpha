@@ -89,12 +89,7 @@ impl InstallContext {
         method_override: Option<InstallMethod>,
     ) -> Self {
         let ava_home = ava_utils_home_dir::find_ava_home().ok();
-        Self::from_exe_with_ava_home(
-            is_macos,
-            current_exe,
-            method_override,
-            ava_home.as_deref(),
-        )
+        Self::from_exe_with_ava_home(is_macos, current_exe, method_override, ava_home.as_deref())
     }
 
     fn from_exe_with_ava_home(
@@ -307,8 +302,7 @@ fn install_method_from_exe(
     package_layout: Option<&AvaPackageLayout>,
     is_macos: bool,
 ) -> InstallMethod {
-    if let Some(standalone_method) = standalone_install_method(exe_path, ava_home, package_layout)
-    {
+    if let Some(standalone_method) = standalone_install_method(exe_path, ava_home, package_layout) {
         return standalone_method;
     }
 

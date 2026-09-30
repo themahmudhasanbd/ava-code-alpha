@@ -363,22 +363,22 @@ async fn user_turn_selects_symlinked_skill_by_advertised_discovery_path() -> Res
     )
     .await;
 
-    let submission = test
-        .ava-code
-        .start_turn_if_idle(TurnInputRequest::new(TurnInput::UserInput {
-            content: vec![
-                UserInput::Text {
-                    text: format!("please use [$linked-demo]({discovery_path_display})"),
-                    text_elements: Vec::new(),
-                },
-                UserInput::Skill {
-                    name: "linked-demo".to_string(),
-                    path: discovery_path.to_path_buf(),
-                },
-            ],
-            client_id: Some("linked-skill-user-message".to_string()),
-        }))
-        .await?;
+    let submission = test.ava
+        - code
+            .start_turn_if_idle(TurnInputRequest::new(TurnInput::UserInput {
+                content: vec![
+                    UserInput::Text {
+                        text: format!("please use [$linked-demo]({discovery_path_display})"),
+                        text_elements: Vec::new(),
+                    },
+                    UserInput::Skill {
+                        name: "linked-demo".to_string(),
+                        path: discovery_path.to_path_buf(),
+                    },
+                ],
+                client_id: Some("linked-skill-user-message".to_string()),
+            }))
+            .await?;
     assert!(matches!(submission, StartIfIdleSubmission::Started { .. }));
 
     core_test_support::wait_for_event(test.ava.as_ref(), |event| {
@@ -450,22 +450,22 @@ async fn idle_user_turn_includes_skill_instructions_in_the_first_request() -> Re
     )
     .await;
 
-    let submission = test
-        .ava-code
-        .start_turn_if_idle(TurnInputRequest::new(TurnInput::UserInput {
-            content: vec![
-                UserInput::Text {
-                    text: "please use $queued-demo".to_string(),
-                    text_elements: Vec::new(),
-                },
-                UserInput::Skill {
-                    name: "queued-demo".to_string(),
-                    path: skill_path.clone(),
-                },
-            ],
-            client_id: Some("queued-skill-user-message".to_string()),
-        }))
-        .await?;
+    let submission = test.ava
+        - code
+            .start_turn_if_idle(TurnInputRequest::new(TurnInput::UserInput {
+                content: vec![
+                    UserInput::Text {
+                        text: "please use $queued-demo".to_string(),
+                        text_elements: Vec::new(),
+                    },
+                    UserInput::Skill {
+                        name: "queued-demo".to_string(),
+                        path: skill_path.clone(),
+                    },
+                ],
+                client_id: Some("queued-skill-user-message".to_string()),
+            }))
+            .await?;
     assert!(matches!(submission, StartIfIdleSubmission::Started { .. }));
 
     core_test_support::wait_for_event(test.ava.as_ref(), |event| {

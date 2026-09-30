@@ -5,11 +5,11 @@ use crate::endpoint::realtime_websocket::session_update_session_json;
 use crate::endpoint::session::EndpointSession;
 use crate::error::ApiError;
 use crate::provider::Provider;
-use bytes::Bytes;
 use ava_client::HttpTransport;
 use ava_client::Request;
 use ava_client::RequestBody;
 use ava_client::RequestTelemetry;
+use bytes::Bytes;
 use http::HeaderMap;
 use http::HeaderValue;
 use http::Method;
@@ -380,6 +380,7 @@ mod tests {
                 retry_429: false,
                 retry_5xx: true,
                 retry_transport: true,
+                retry_auth: false,
             },
             stream_idle_timeout: Duration::from_secs(1),
         }

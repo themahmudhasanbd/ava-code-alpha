@@ -3,11 +3,11 @@ mod osc9;
 
 use std::io;
 
-use bel::BelBackend;
 use ava_config::types::NotificationMethod;
 use ava_terminal_detection::TerminalInfo;
 use ava_terminal_detection::TerminalName;
 use ava_terminal_detection::terminal_info;
+use bel::BelBackend;
 use osc9::Osc9Backend;
 
 #[derive(Debug)]

@@ -255,9 +255,7 @@ mod tests {
 
     struct StubExtensionExecutor;
 
-    impl<'call> ava_extension_api::ToolExecutor<ava_tools::ToolCall<'call>>
-        for StubExtensionExecutor
-    {
+    impl<'call> ava_extension_api::ToolExecutor<ava_tools::ToolCall<'call>> for StubExtensionExecutor {
         fn tool_name(&self) -> ava_tools::ToolName {
             ava_tools::ToolName::plain("extension_echo")
         }

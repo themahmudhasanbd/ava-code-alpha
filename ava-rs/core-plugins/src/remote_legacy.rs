@@ -179,9 +179,7 @@ pub async fn uninstall_remote_plugin(
     Ok(())
 }
 
-fn ensure_ava_backend_auth(
-    auth: Option<&AvaAuth>,
-) -> Result<&AvaAuth, RemotePluginMutationError> {
+fn ensure_ava_backend_auth(auth: Option<&AvaAuth>) -> Result<&AvaAuth, RemotePluginMutationError> {
     let Some(auth) = auth else {
         return Err(RemotePluginMutationError::AuthRequired);
     };

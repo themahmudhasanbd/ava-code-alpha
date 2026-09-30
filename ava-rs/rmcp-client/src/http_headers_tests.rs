@@ -152,14 +152,14 @@ async fn failed_refresh_is_shared_without_replacing_credentials() {
 #[cfg(unix)]
 #[tokio::test]
 async fn connection_headers_are_cached_and_origin_bound() {
+    use ava_exec_server::RouteAwareHttpClient;
+    use ava_http_client::HttpClientFactory;
+    use ava_http_client::OutboundProxyPolicy;
     use axum::Router;
     use axum::http::StatusCode;
     use axum::response::Redirect;
     use axum::routing::get;
     use axum::routing::post;
-    use ava_exec_server::RouteAwareHttpClient;
-    use ava_http_client::HttpClientFactory;
-    use ava_http_client::OutboundProxyPolicy;
     use std::sync::Arc;
     use tempfile::tempdir;
     use tokio::net::TcpListener;
@@ -254,13 +254,13 @@ async fn connection_headers_are_cached_and_origin_bound() {
 #[cfg(unix)]
 #[tokio::test]
 async fn concurrent_rejected_posts_share_one_headers_refresh() {
+    use ava_exec_server::RouteAwareHttpClient;
+    use ava_http_client::HttpClientFactory;
+    use ava_http_client::OutboundProxyPolicy;
     use axum::Router;
     use axum::extract::State;
     use axum::http::StatusCode;
     use axum::routing::post;
-    use ava_exec_server::RouteAwareHttpClient;
-    use ava_http_client::HttpClientFactory;
-    use ava_http_client::OutboundProxyPolicy;
     use tempfile::tempdir;
     use tokio::net::TcpListener;
     use tokio::sync::Barrier;

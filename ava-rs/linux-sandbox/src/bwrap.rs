@@ -1710,8 +1710,7 @@ mod tests {
         let logical_memories = logical_ava.join("memories");
         std::fs::create_dir_all(&logical_home).expect("create logical home");
         std::fs::create_dir_all(&real_memories).expect("create memories dir");
-        std::os::unix::fs::symlink(&real_ava, &logical_ava)
-            .expect("create symlinked ava home");
+        std::os::unix::fs::symlink(&real_ava, &logical_ava).expect("create symlinked ava home");
 
         let logical_memories_root =
             AbsolutePathBuf::from_absolute_path(&logical_memories).expect("absolute memories");
@@ -1970,7 +1969,11 @@ mod tests {
         assert_empty_directory_mounted_read_only(&args.args, &workspace.join(".ava-code"));
         assert_eq!(
             synthetic_mount_target_paths(&args),
-            vec![workspace.join(".ava-code"), dot_git, workspace.join(".agents")],
+            vec![
+                workspace.join(".ava-code"),
+                dot_git,
+                workspace.join(".agents")
+            ],
         );
         assert!(
             protected_create_target_paths(&args).is_empty(),
@@ -2007,7 +2010,11 @@ mod tests {
         assert_empty_directory_mounted_read_only(&args.args, &workspace.join(".ava-code"));
         assert_eq!(
             synthetic_mount_target_paths(&args),
-            vec![workspace.join(".ava-code"), dot_git, workspace.join(".agents")],
+            vec![
+                workspace.join(".ava-code"),
+                dot_git,
+                workspace.join(".agents")
+            ],
         );
         assert!(
             protected_create_target_paths(&args).is_empty(),
@@ -2175,8 +2182,7 @@ mod tests {
                 PathBuf::from("/dev/.ava-code"),
             ]
         );
-        let daemon_directory =
-            path_to_string(&ava_uds::shared_daemon_socket_directory().unwrap());
+        let daemon_directory = path_to_string(&ava_uds::shared_daemon_socket_directory().unwrap());
         assert_eq!(
             args.args,
             vec![
@@ -2279,8 +2285,7 @@ mod tests {
             .windows(3)
             .position(|window| window == ["--ro-bind", "/tmp", "/tmp"])
             .expect("read-only tmp bind");
-        let daemon_directory =
-            path_to_string(&ava_uds::shared_daemon_socket_directory().unwrap());
+        let daemon_directory = path_to_string(&ava_uds::shared_daemon_socket_directory().unwrap());
         assert_eq!(
             &args.args[tmp_bind + 3..tmp_bind + 9],
             [

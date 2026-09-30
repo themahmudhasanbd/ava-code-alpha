@@ -19,11 +19,8 @@ async fn authenticated_plugin_migration_uses_chatgpt_curated_marketplace() {
         r#"{"enabledPlugins":{"sample@openai-curated":true}}"#,
     )
     .expect("write external agent settings");
-    fs::write(
-        ava_home.join("config.toml"),
-        "[features]\nplugins = true\n",
-    )
-    .expect("write Ava config");
+    fs::write(ava_home.join("config.toml"), "[features]\nplugins = true\n")
+        .expect("write Ava config");
     fs::write(
         ava_home.join(".tmp/plugins.sha"),
         "0123456789abcdef0123456789abcdef01234567\n",

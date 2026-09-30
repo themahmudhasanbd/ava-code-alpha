@@ -591,12 +591,8 @@ mod tests {
             )
             .expect("managed permission profile");
 
-        let roots = legacy_session_capability_roots(
-            &permissions,
-            &command_cwd,
-            &HashMap::new(),
-            &ava_home,
-        );
+        let roots =
+            legacy_session_capability_roots(&permissions, &command_cwd, &HashMap::new(), &ava_home);
 
         assert_eq!(
             roots,
@@ -624,15 +620,12 @@ mod tests {
             .expect("workspace sid");
         let caps = load_or_create_cap_sids(&ava_home).expect("load caps");
 
-        let sid_strs = root_capability_sids(
-            &ava_home,
-            &workspace,
-            vec![workspace.clone(), active_root],
-        )
-        .expect("root capabilities")
-        .into_iter()
-        .map(|root_sid| root_sid.sid_str)
-        .collect::<Vec<_>>();
+        let sid_strs =
+            root_capability_sids(&ava_home, &workspace, vec![workspace.clone(), active_root])
+                .expect("root capabilities")
+                .into_iter()
+                .map(|root_sid| root_sid.sid_str)
+                .collect::<Vec<_>>();
 
         assert_eq!(sid_strs.len(), 2);
         assert!(sid_strs.contains(&workspace_sid));

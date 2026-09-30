@@ -96,8 +96,7 @@ async fn user_message_item_is_emitted() -> anyhow::Result<()> {
         },
     ];
 
-    ava
-        .start_or_steer_turn(TurnInputRequest::user_input(expected_input.clone()))
+    ava.start_or_steer_turn(TurnInputRequest::user_input(expected_input.clone()))
         .await?;
 
     let started_item = wait_for_event_match(&ava, |ev| match ev {
@@ -152,12 +151,11 @@ async fn assistant_message_item_is_emitted() -> anyhow::Result<()> {
     ]);
     mount_sse_once(&server, first_response).await;
 
-    ava
-        .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
-            text: "please summarize results".into(),
-            text_elements: Vec::new(),
-        }]))
-        .await?;
+    ava.start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
+        text: "please summarize results".into(),
+        text_elements: Vec::new(),
+    }]))
+    .await?;
 
     let started = wait_for_event_match(&ava, |ev| match ev {
         EventMsg::ItemStarted(ItemStartedEvent {
@@ -207,12 +205,11 @@ async fn reasoning_item_is_emitted() -> anyhow::Result<()> {
     ]);
     mount_sse_once(&server, first_response).await;
 
-    ava
-        .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
-            text: "explain your reasoning".into(),
-            text_elements: Vec::new(),
-        }]))
-        .await?;
+    ava.start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
+        text: "explain your reasoning".into(),
+        text_elements: Vec::new(),
+    }]))
+    .await?;
 
     let started = wait_for_event_match(&ava, |ev| match ev {
         EventMsg::ItemStarted(ItemStartedEvent {
@@ -272,12 +269,11 @@ async fn missing_streamed_reasoning_id_is_reused_for_completion() -> anyhow::Res
     )
     .await;
 
-    ava
-        .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
-            text: "explain your reasoning".into(),
-            text_elements: Vec::new(),
-        }]))
-        .await?;
+    ava.start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
+        text: "explain your reasoning".into(),
+        text_elements: Vec::new(),
+    }]))
+    .await?;
 
     let started_id = wait_for_event_match(&ava, |ev| match ev {
         EventMsg::ItemStarted(ItemStartedEvent {
@@ -325,12 +321,11 @@ async fn web_search_item_is_emitted() -> anyhow::Result<()> {
     ]);
     mount_sse_once(&server, first_response).await;
 
-    ava
-        .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
-            text: "find the weather".into(),
-            text_elements: Vec::new(),
-        }]))
-        .await?;
+    ava.start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
+        text: "find the weather".into(),
+        text_elements: Vec::new(),
+    }]))
+    .await?;
 
     let started = wait_for_event_match(&ava, |ev| match ev {
         EventMsg::ItemStarted(ItemStartedEvent {
@@ -414,12 +409,11 @@ async fn agent_message_content_delta_has_item_metadata() -> anyhow::Result<()> {
     ]);
     mount_sse_once(&server, stream).await;
 
-    ava
-        .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
-            text: "please stream text".into(),
-            text_elements: Vec::new(),
-        }]))
-        .await?;
+    ava.start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
+        text: "please stream text".into(),
+        text_elements: Vec::new(),
+    }]))
+    .await?;
 
     let (started_turn_id, started_item) = wait_for_event_match(&ava, |ev| match ev {
         EventMsg::ItemStarted(ItemStartedEvent {
@@ -487,13 +481,12 @@ async fn plan_mode_emits_plan_item_from_proposed_plan_block() -> anyhow::Result<
         },
     };
 
-    ava
-        .start_or_steer_turn(disabled_plan_turn(
-            "please plan",
-            session_configured.model.clone(),
-            collaboration_mode,
-        )?)
-        .await?;
+    ava.start_or_steer_turn(disabled_plan_turn(
+        "please plan",
+        session_configured.model.clone(),
+        collaboration_mode,
+    )?)
+    .await?;
 
     let plan_delta = wait_for_event_match(&ava, |ev| match ev {
         EventMsg::PlanDelta(event) => Some(event.clone()),
@@ -552,13 +545,12 @@ async fn plan_mode_strips_plan_from_agent_messages() -> anyhow::Result<()> {
         },
     };
 
-    ava
-        .start_or_steer_turn(disabled_plan_turn(
-            "please plan",
-            session_configured.model.clone(),
-            collaboration_mode,
-        )?)
-        .await?;
+    ava.start_or_steer_turn(disabled_plan_turn(
+        "please plan",
+        session_configured.model.clone(),
+        collaboration_mode,
+    )?)
+    .await?;
 
     let mut agent_deltas = Vec::new();
     let mut plan_delta = None;
@@ -649,13 +641,12 @@ async fn plan_mode_streaming_citations_are_stripped_across_added_deltas_and_done
         },
     };
 
-    ava
-        .start_or_steer_turn(disabled_plan_turn(
-            "please plan with citations",
-            session_configured.model.clone(),
-            collaboration_mode,
-        )?)
-        .await?;
+    ava.start_or_steer_turn(disabled_plan_turn(
+        "please plan with citations",
+        session_configured.model.clone(),
+        collaboration_mode,
+    )?)
+    .await?;
 
     let mut agent_started = None;
     let mut agent_started_idx = None;
@@ -824,13 +815,12 @@ async fn plan_mode_streaming_proposed_plan_tag_split_across_added_and_delta_is_p
         },
     };
 
-    ava
-        .start_or_steer_turn(disabled_plan_turn(
-            "please plan",
-            session_configured.model.clone(),
-            collaboration_mode,
-        )?)
-        .await?;
+    ava.start_or_steer_turn(disabled_plan_turn(
+        "please plan",
+        session_configured.model.clone(),
+        collaboration_mode,
+    )?)
+    .await?;
 
     let mut agent_started = None;
     let mut agent_completed = None;
@@ -926,13 +916,12 @@ async fn plan_mode_handles_missing_plan_close_tag() -> anyhow::Result<()> {
         },
     };
 
-    ava
-        .start_or_steer_turn(disabled_plan_turn(
-            "please plan",
-            session_configured.model.clone(),
-            collaboration_mode,
-        )?)
-        .await?;
+    ava.start_or_steer_turn(disabled_plan_turn(
+        "please plan",
+        session_configured.model.clone(),
+        collaboration_mode,
+    )?)
+    .await?;
 
     let mut plan_delta = None;
     let mut plan_item = None;
@@ -992,12 +981,11 @@ async fn reasoning_content_delta_has_item_metadata() -> anyhow::Result<()> {
     ]);
     mount_sse_once(&server, stream).await;
 
-    ava
-        .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
-            text: "reason through it".into(),
-            text_elements: Vec::new(),
-        }]))
-        .await?;
+    ava.start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
+        text: "reason through it".into(),
+        text_elements: Vec::new(),
+    }]))
+    .await?;
 
     let reasoning_item = wait_for_event_match(&ava, |ev| match ev {
         EventMsg::ItemStarted(ItemStartedEvent {
@@ -1063,12 +1051,11 @@ async fn sequential_cutoff_renders_done_summaries_for_active_reasoning_item() ->
     )
     .await;
 
-    ava
-        .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
-            text: "reason through it".into(),
-            text_elements: Vec::new(),
-        }]))
-        .await?;
+    ava.start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
+        text: "reason through it".into(),
+        text_elements: Vec::new(),
+    }]))
+    .await?;
 
     let reasoning_item = wait_for_event_match(&ava, |ev| match ev {
         EventMsg::ItemStarted(ItemStartedEvent {
@@ -1127,12 +1114,11 @@ async fn reasoning_raw_content_delta_respects_flag() -> anyhow::Result<()> {
     ]);
     mount_sse_once(&server, stream).await;
 
-    ava
-        .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
-            text: "show raw reasoning".into(),
-            text_elements: Vec::new(),
-        }]))
-        .await?;
+    ava.start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
+        text: "show raw reasoning".into(),
+        text_elements: Vec::new(),
+    }]))
+    .await?;
 
     let reasoning_item = wait_for_event_match(&ava, |ev| match ev {
         EventMsg::ItemStarted(ItemStartedEvent {

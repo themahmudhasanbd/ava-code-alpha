@@ -43,8 +43,7 @@ pub(super) fn migration_journal_path(ava_home: &Path, thread_id: ThreadId) -> Pa
 pub(super) async fn pending_migration_thread_ids(
     ava_home: &Path,
 ) -> ThreadStoreResult<HashSet<ThreadId>> {
-    let mut entries = match tokio::fs::read_dir(ava_home.join(MIGRATION_JOURNAL_DIRECTORY)).await
-    {
+    let mut entries = match tokio::fs::read_dir(ava_home.join(MIGRATION_JOURNAL_DIRECTORY)).await {
         Ok(entries) => entries,
         Err(error) if error.kind() == io::ErrorKind::NotFound => return Ok(HashSet::new()),
         Err(error) => return Err(migration_error(error)),

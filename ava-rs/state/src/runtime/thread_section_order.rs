@@ -1,7 +1,7 @@
 use super::StateRuntime;
+use ava_protocol::ThreadId;
 use chrono::DateTime;
 use chrono::Utc;
-use ava_protocol::ThreadId;
 use sqlx::QueryBuilder;
 use sqlx::Sqlite;
 use std::collections::HashMap;

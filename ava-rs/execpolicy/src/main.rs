@@ -1,6 +1,6 @@
 use anyhow::Result;
-use clap::Parser;
 use ava_execpolicy::ExecPolicyCheckCommand;
+use clap::Parser;
 
 /// CLI for evaluating exec policies
 #[derive(Parser)]

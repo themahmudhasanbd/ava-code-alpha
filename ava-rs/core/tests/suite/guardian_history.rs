@@ -1,8 +1,6 @@
 //! Exercises retained review history through compaction, resume, fork, eviction, and legacy rollback replay.
 
 use anyhow::Result;
-use base64::Engine;
-use base64::engine::general_purpose::STANDARD as BASE64_STANDARD;
 use ava_core::ForkSnapshot;
 use ava_core::TurnInputRequest;
 use ava_core::config::Constrained;
@@ -26,6 +24,8 @@ use ava_thread_store::ForkBoundary;
 use ava_thread_store::InMemoryThreadStore;
 use ava_thread_store::LoadThreadHistoryParams;
 use ava_thread_store::PrepareForkParams;
+use base64::Engine;
+use base64::engine::general_purpose::STANDARD as BASE64_STANDARD;
 use core_test_support::responses::ev_assistant_message;
 use core_test_support::responses::ev_completed;
 use core_test_support::responses::ev_function_call;

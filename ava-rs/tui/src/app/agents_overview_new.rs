@@ -89,10 +89,7 @@ impl App {
         tui: &mut tui::Tui,
         app_server: &mut AppServerSession,
         cwd: Option<AbsolutePathBuf>,
-        managed_worktree: Option<(
-            ava_worktree::WorktreeManager,
-            ava_worktree::ManagedWorktree,
-        )>,
+        managed_worktree: Option<(ava_worktree::WorktreeManager, ava_worktree::ManagedWorktree)>,
         mut startup_draft: Option<&mut StartupDraftPump>,
     ) -> Result<AppRunControl> {
         if self.reconnect.offline || self.windows_sandbox_blocks_thread_switch() {

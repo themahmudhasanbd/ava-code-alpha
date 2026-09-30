@@ -25,8 +25,7 @@ use std::sync::atomic::Ordering;
 use tokio::sync::oneshot;
 
 const MAX_SAMPLING_RETRIES: usize = 2;
-const RESPONSES_LITE_METADATA_KEY: &str =
-    "ws_request_header_x_openai_internal_ava_responses_lite";
+const RESPONSES_LITE_METADATA_KEY: &str = "ws_request_header_x_openai_internal_ava_responses_lite";
 const TURN_METADATA_KEY: &str = "x-ava-turn-metadata";
 
 pub(super) struct SamplingExecution {

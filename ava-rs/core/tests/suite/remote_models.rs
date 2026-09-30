@@ -248,12 +248,11 @@ async fn remote_models_config_context_window_override_clamps_to_max_context_wind
         .build(&server)
         .await?;
 
-    ava
-        .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
-            text: "check context window".into(),
-            text_elements: Vec::new(),
-        }]))
-        .await?;
+    ava.start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
+        text: "check context window".into(),
+        text_elements: Vec::new(),
+    }]))
+    .await?;
 
     let turn_started_event = wait_for_event(&ava, |event| {
         matches!(
@@ -309,12 +308,11 @@ async fn remote_models_config_override_above_max_uses_max_context_window() -> Re
         .build(&server)
         .await?;
 
-    ava
-        .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
-            text: "check context window".into(),
-            text_elements: Vec::new(),
-        }]))
-        .await?;
+    ava.start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
+        text: "check context window".into(),
+        text_elements: Vec::new(),
+    }]))
+    .await?;
 
     let turn_started_event = wait_for_event(&ava, |event| {
         matches!(
@@ -369,12 +367,11 @@ async fn remote_models_use_context_window_when_config_override_is_absent() -> Re
         .build(&server)
         .await?;
 
-    ava
-        .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
-            text: "check context window".into(),
-            text_elements: Vec::new(),
-        }]))
-        .await?;
+    ava.start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
+        text: "check context window".into(),
+        text_elements: Vec::new(),
+    }]))
+    .await?;
 
     let turn_started_event = wait_for_event(&ava, |event| {
         matches!(
@@ -457,12 +454,11 @@ async fn remote_models_long_model_slug_is_sent_with_supported_reasoning(
         .build_with_auto_env(&server)
         .await?;
 
-    ava
-        .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
-            text: "check model slug".into(),
-            text_elements: Vec::new(),
-        }]))
-        .await?;
+    ava.start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
+        text: "check model slug".into(),
+        text_elements: Vec::new(),
+    }]))
+    .await?;
 
     wait_for_event(&ava, |event| matches!(event, EventMsg::TurnComplete(_))).await;
 
@@ -529,12 +525,11 @@ async fn namespaced_model_slug_uses_catalog_metadata_without_fallback_warning() 
         .build(&server)
         .await?;
 
-    ava
-        .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
-            text: "check namespaced model metadata".into(),
-            text_elements: Vec::new(),
-        }]))
-        .await?;
+    ava.start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
+        text: "check namespaced model metadata".into(),
+        text_elements: Vec::new(),
+    }]))
+    .await?;
 
     let mut fallback_warning_count = 0;
     loop {
@@ -686,22 +681,21 @@ async fn remote_models_remote_model_uses_unified_exec() -> Result<()> {
     let cwd_path = cwd.abs();
     let (sandbox_policy, permission_profile) =
         turn_permission_fields(PermissionProfile::Disabled, cwd_path.as_path());
-    ava
-        .start_or_steer_turn(
-            TurnInputRequest::user_input(vec![UserInput::Text {
-                text: "run call".into(),
-                text_elements: Vec::new(),
-            }])
-            .with_thread_settings(ThreadSettingsOverrides {
-                environments: Some(local_selections(cwd_path)),
-                approval_policy: Some(AskForApproval::Never),
-                sandbox_policy: Some(sandbox_policy),
-                permission_profile,
-                summary: Some(ReasoningSummary::Auto),
-                ..Default::default()
-            }),
-        )
-        .await?;
+    ava.start_or_steer_turn(
+        TurnInputRequest::user_input(vec![UserInput::Text {
+            text: "run call".into(),
+            text_elements: Vec::new(),
+        }])
+        .with_thread_settings(ThreadSettingsOverrides {
+            environments: Some(local_selections(cwd_path)),
+            approval_policy: Some(AskForApproval::Never),
+            sandbox_policy: Some(sandbox_policy),
+            permission_profile,
+            summary: Some(ReasoningSummary::Auto),
+            ..Default::default()
+        }),
+    )
+    .await?;
 
     let begin_event = wait_for_event_match(&ava, |msg| match msg {
         EventMsg::ExecCommandBegin(event) if event.call_id == call_id => Some(event.clone()),
@@ -955,22 +949,21 @@ async fn remote_models_apply_legacy_instructions(auth: AvaAuth) -> Result<()> {
     let cwd_path = cwd.abs();
     let (sandbox_policy, permission_profile) =
         turn_permission_fields(PermissionProfile::Disabled, cwd_path.as_path());
-    ava
-        .start_or_steer_turn(
-            TurnInputRequest::user_input(vec![UserInput::Text {
-                text: "hello base".into(),
-                text_elements: Vec::new(),
-            }])
-            .with_thread_settings(ThreadSettingsOverrides {
-                environments: Some(local_selections(cwd_path.clone())),
-                approval_policy: Some(AskForApproval::Never),
-                sandbox_policy: Some(sandbox_policy),
-                permission_profile,
-                summary: Some(ReasoningSummary::Auto),
-                ..Default::default()
-            }),
-        )
-        .await?;
+    ava.start_or_steer_turn(
+        TurnInputRequest::user_input(vec![UserInput::Text {
+            text: "hello base".into(),
+            text_elements: Vec::new(),
+        }])
+        .with_thread_settings(ThreadSettingsOverrides {
+            environments: Some(local_selections(cwd_path.clone())),
+            approval_policy: Some(AskForApproval::Never),
+            sandbox_policy: Some(sandbox_policy),
+            permission_profile,
+            summary: Some(ReasoningSummary::Auto),
+            ..Default::default()
+        }),
+    )
+    .await?;
 
     wait_for_event(&ava, |event| matches!(event, EventMsg::TurnComplete(_))).await;
 
@@ -985,22 +978,21 @@ async fn remote_models_apply_legacy_instructions(auth: AvaAuth) -> Result<()> {
 
     let (sandbox_policy, permission_profile) =
         turn_permission_fields(PermissionProfile::Disabled, cwd_path.as_path());
-    ava
-        .start_or_steer_turn(
-            TurnInputRequest::user_input(vec![UserInput::Text {
-                text: "hello remote".into(),
-                text_elements: Vec::new(),
-            }])
-            .with_thread_settings(ThreadSettingsOverrides {
-                environments: Some(local_selections(cwd_path)),
-                approval_policy: Some(AskForApproval::Never),
-                sandbox_policy: Some(sandbox_policy),
-                permission_profile,
-                summary: Some(ReasoningSummary::Auto),
-                ..Default::default()
-            }),
-        )
-        .await?;
+    ava.start_or_steer_turn(
+        TurnInputRequest::user_input(vec![UserInput::Text {
+            text: "hello remote".into(),
+            text_elements: Vec::new(),
+        }])
+        .with_thread_settings(ThreadSettingsOverrides {
+            environments: Some(local_selections(cwd_path)),
+            approval_policy: Some(AskForApproval::Never),
+            sandbox_policy: Some(sandbox_policy),
+            permission_profile,
+            summary: Some(ReasoningSummary::Auto),
+            ..Default::default()
+        }),
+    )
+    .await?;
 
     wait_for_event(&ava, |event| matches!(event, EventMsg::TurnComplete(_))).await;
 

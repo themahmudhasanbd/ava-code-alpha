@@ -2,7 +2,6 @@ import React, { useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
-  Linking,
   Modal,
   Platform,
   ScrollView,
@@ -16,20 +15,14 @@ import {
 } from "react-native";
 import {
   AlertCircle,
-  Bot,
-  Brain,
   Check,
-  CheckCircle2,
   ChevronDown,
-  ChevronRight,
   ChevronUp,
   Cpu,
-  ExternalLink,
-  Eye,
   Globe,
+  Info,
   Key,
   Layers,
-  LogOut,
   Plug,
   Plus,
   RefreshCw,
@@ -40,45 +33,38 @@ import {
   ShieldCheck,
   Sparkles,
   Trash2,
-  Wrench,
   X,
   Zap,
 } from "lucide-react-native";
 import { useQueryClient } from "@tanstack/react-query";
 import { AppShell } from "@/components/layout/AppShell";
-import { EmptyState, GlassCapsule, PageIntro, SkeletonRows, Surface } from "@/components/kit";
+import { Surface } from "@/components/kit";
 import { useAva } from "@/state/ava-provider";
 import { keys, useModels, useServerConfig, useWriteConfig } from "@/state/queries";
 import {
   BUILTIN_PROVIDER_PRESETS,
-  clearAntigravityAuth,
-  deleteCustomModel,
   deleteCustomProvider,
-  exchangeAntigravityOAuthCode,
-  fetchAntigravityModels,
   fetchOpenAiCompatibleModels,
-  getAntigravityAuth,
-  getCustomModels,
   getCustomProviders,
-  saveAntigravityAuth,
-  saveCustomModel,
+  getModelFallbackChain,
   saveCustomProvider,
+  saveModelFallbackChain,
   toggleCustomProvider,
-  type AntigravityAuthData,
   type CustomProvider,
 } from "@/core/custom-models";
-import { getAntigravityAuthUrl, REASONING_EFFORTS } from "@/config/models";
+import { REASONING_EFFORTS } from "@/config/models";
+import { pushCustomProviderToServer } from "@/core/api/system";
 import type { ModelInfo } from "@/core/types";
-import { COLORS, useTheme } from "@/theme/colors";
+import { useTheme } from "@/theme/colors";
 import { font, mono } from "@/theme/fonts";
 
 type CategoryFilter = "all" | "antigravity" | "openai" | "anthropic" | "google" | "deepseek" | "custom";
 
 export function ModelsScreen() {
-  const { modelId, setModelId, effort, setEffort } = useAva();
-  const { isDark } = useTheme();
+  const { modelId, setModelId, effort, setEffort, rpc } = useAva();
+  const { isDark, colors } = useTheme();
   const qc = useQueryClient();
-  const { data: models = [], isLoading, error, refetch: refetchModels } = useModels();
+  const { data: models = [], isLoading, refetch: refetchModels } = useModels();
   const config = useServerConfig();
   const writeConfig = useWriteConfig();
 
@@ -92,39 +78,50 @@ export function ModelsScreen() {
   // Collapsed sections map
   const [collapsedSections, setCollapsedSections] = useState<Record<string, boolean>>({});
 
-  // Antigravity OAuth State
-  const [antigravityAuth, setAntigravityAuth] = useState<AntigravityAuthData | null>(null);
-  const [showAntigravityAuthBox, setShowAntigravityAuthBox] = useState(false);
-  const [antigravityInput, setAntigravityInput] = useState("");
-  const [isExchangingAntigravity, setIsExchangingAntigravity] = useState(false);
-  const [isSyncingAntigravity, setIsSyncingAntigravity] = useState(false);
-
   // Custom Providers State
   const [customProviders, setCustomProviders] = useState<CustomProvider[]>([]);
   const [showConnectorModal, setShowConnectorModal] = useState(false);
-  const [selectedPresetId, setSelectedPresetId] = useState("openai");
+  const [selectedPresetId, setSelectedPresetId] = useState("antigravity");
   const [providerId, setProviderId] = useState("");
   const [providerName, setProviderName] = useState("");
   const [providerBaseUrl, setProviderBaseUrl] = useState("");
-  const [providerApiKey, setProviderApiKey] = useState("");
+  const [providerProjectId, setProviderProjectId] = useState("");
+  const [providerApiKeys, setProviderApiKeys] = useState<string[]>([]);
+  const [newKeyInput, setNewKeyInput] = useState("");
   const [isTestingProvider, setIsTestingProvider] = useState(false);
   const [testedProviderModels, setTestedProviderModels] = useState<ModelInfo[]>([]);
 
   // Provider Settings / Edit Modal
   const [activeEditingProvider, setActiveEditingProvider] = useState<CustomProvider | null>(null);
+  const [editProviderApiKeys, setEditProviderApiKeys] = useState<string[]>([]);
+  const [editProviderProjectId, setEditProviderProjectId] = useState("");
+  const [editNewKeyInput, setEditNewKeyInput] = useState("");
+
+  // Fallback Chain State
+  const [fallbackChain, setFallbackChain] = useState<string[]>([]);
+  const [showAddChainModal, setShowAddChainModal] = useState(false);
+  const [isSavingChain, setIsSavingChain] = useState(false);
 
   const [applying, setApplying] = useState(false);
 
-  // Load Antigravity & Provider state on mount
+  // Load Provider & Fallback state on mount
   useEffect(() => {
     loadLocalState();
   }, []);
 
   const loadLocalState = async () => {
     try {
-      const [auth, providers] = await Promise.all([getAntigravityAuth(), getCustomProviders()]);
-      setAntigravityAuth(auth);
+      const providers = await getCustomProviders();
       setCustomProviders(providers);
+      const chain = await getModelFallbackChain();
+      if (chain.length > 0) {
+        setFallbackChain(chain);
+      } else if (
+        config.data?.model_fallback_chain &&
+        Array.isArray(config.data.model_fallback_chain)
+      ) {
+        setFallbackChain(config.data.model_fallback_chain as string[]);
+      }
     } catch (e) {
       console.warn("Failed loading local model state:", e);
     }
@@ -169,11 +166,18 @@ export function ModelsScreen() {
     if (activeFilter !== "all") {
       if (activeFilter === "antigravity") {
         filtered = filtered.filter(
-          (m) => m.provider === "antigravity" || m.id.startsWith("antigravity/")
+          (m) =>
+            m.provider === "antigravity" ||
+            m.id.toLowerCase().includes("antigravity") ||
+            (m.description && m.description.toLowerCase().includes("antigravity"))
         );
       } else if (activeFilter === "openai") {
         filtered = filtered.filter(
-          (m) => m.provider === "openai" || m.id.toLowerCase().includes("gpt") || m.id.toLowerCase().includes("o1") || m.id.toLowerCase().includes("o3")
+          (m) =>
+            m.provider === "openai" ||
+            m.id.toLowerCase().includes("gpt") ||
+            m.id.toLowerCase().includes("o1") ||
+            m.id.toLowerCase().includes("o3")
         );
       } else if (activeFilter === "anthropic") {
         filtered = filtered.filter(
@@ -181,28 +185,39 @@ export function ModelsScreen() {
         );
       } else if (activeFilter === "google") {
         filtered = filtered.filter(
-          (m) => m.provider === "google" || m.id.toLowerCase().includes("gemini")
+          (m) => m.provider === "google" || m.provider === "gemini" || m.id.toLowerCase().includes("gemini")
         );
       } else if (activeFilter === "deepseek") {
         filtered = filtered.filter(
           (m) => m.provider === "deepseek" || m.id.toLowerCase().includes("deepseek")
         );
       } else if (activeFilter === "custom") {
-        filtered = filtered.filter((m) => m.provider === "custom");
+        filtered = filtered.filter(
+          (m) =>
+            m.provider === "custom" ||
+            m.provider === "together" ||
+            m.provider === "groq" ||
+            m.provider === "openrouter" ||
+            m.provider === "ollama" ||
+            m.provider === "lmstudio"
+        );
       }
     }
 
     const groups: Record<string, ModelInfo[]> = {};
     for (const m of filtered) {
-      let p = m.provider || "Server Core";
-      if (m.id.startsWith("antigravity/")) p = "Google Antigravity";
-      else if (p === "antigravity") p = "Google Antigravity";
+      let p = m.provider || "AvA Core Server";
+      if (p === "antigravity") p = "Google Antigravity";
       else if (p === "openai") p = "OpenAI";
       else if (p === "anthropic") p = "Anthropic";
-      else if (p === "google") p = "Google Gemini";
+      else if (p === "google" || p === "gemini") p = "Google Gemini";
       else if (p === "deepseek") p = "DeepSeek";
       else if (p === "groq") p = "Groq";
       else if (p === "openrouter") p = "OpenRouter";
+      else if (p === "together") p = "Together AI";
+      else if (p === "mistral") p = "Mistral AI";
+      else if (p === "ollama") p = "Ollama (Local)";
+      else if (p === "lmstudio") p = "LM Studio (Local)";
       else if (p === "server") p = "AvA Core Server";
 
       if (!groups[p]) groups[p] = [];
@@ -216,91 +231,18 @@ export function ModelsScreen() {
     setModelId(id);
   };
 
-  // ── Antigravity OAuth Handlers ──
-  const handleOpenGoogleOAuth = async () => {
-    const url = getAntigravityAuthUrl();
-    try {
-      await Linking.openURL(url);
-      setShowAntigravityAuthBox(true);
-    } catch {
-      Alert.alert("OAuth Error", "Could not open browser for Google authentication.");
-    }
-  };
-
-  const handleConnectAntigravity = async () => {
-    const trimmed = antigravityInput.trim();
-    if (!trimmed) {
-      Alert.alert("Required", "Please paste your OAuth redirect URI or authorization code.");
-      return;
-    }
-
-    setIsExchangingAntigravity(true);
-    try {
-      const res = await exchangeAntigravityOAuthCode(trimmed);
-      if (res.success && res.accessToken) {
-        const dynamicModels = await fetchAntigravityModels(res.accessToken);
-        await loadLocalState();
-        await qc.invalidateQueries({ queryKey: keys.models });
-        setAntigravityInput("");
-        setShowAntigravityAuthBox(false);
-        Alert.alert(
-          "Antigravity Connected!",
-          `Successfully connected Google Antigravity. Discovered ${dynamicModels.length || 33} dynamic reasoning models.`
-        );
-      } else {
-        Alert.alert("Authentication Failed", res.error || "Could not exchange authorization code.");
-      }
-    } catch (err: any) {
-      Alert.alert("Error", err?.message || "Failed to authenticate with Google Antigravity.");
-    } finally {
-      setIsExchangingAntigravity(false);
-    }
-  };
-
-  const handleSyncAntigravity = async () => {
-    if (!antigravityAuth?.accessToken) {
-      Alert.alert("Not Connected", "Please sign in to Google Antigravity first.");
-      return;
-    }
-
-    setIsSyncingAntigravity(true);
-    try {
-      const dynamicModels = await fetchAntigravityModels(antigravityAuth.accessToken);
-      await qc.invalidateQueries({ queryKey: keys.models });
-      Alert.alert(
-        "Sync Complete",
-        `Refreshed ${dynamicModels.length} dynamic Antigravity models.`
-      );
-    } catch (err: any) {
-      Alert.alert("Sync Error", err?.message || "Failed to sync Antigravity models.");
-    } finally {
-      setIsSyncingAntigravity(false);
-    }
-  };
-
-  const handleDisconnectAntigravity = async () => {
-    Alert.alert("Disconnect Antigravity", "Are you sure you want to remove Google Antigravity credentials?", [
-      { text: "Cancel", style: "cancel" },
-      {
-        text: "Disconnect",
-        style: "destructive",
-        onPress: async () => {
-          await clearAntigravityAuth();
-          await loadLocalState();
-          await qc.invalidateQueries({ queryKey: keys.models });
-        },
-      },
-    ]);
-  };
-
   // ── Custom Provider Handlers ──
   const handleOpenConnector = () => {
-    const defaultPreset = BUILTIN_PROVIDER_PRESETS.find((p) => p.id === "openai") || BUILTIN_PROVIDER_PRESETS[1];
+    const defaultPreset =
+      BUILTIN_PROVIDER_PRESETS.find((p) => p.id === "antigravity") ||
+      BUILTIN_PROVIDER_PRESETS[0];
     setSelectedPresetId(defaultPreset.id);
     setProviderId(defaultPreset.id);
     setProviderName(defaultPreset.name);
     setProviderBaseUrl(defaultPreset.baseUrl);
-    setProviderApiKey("");
+    setProviderProjectId("");
+    setProviderApiKeys([]);
+    setNewKeyInput("");
     setTestedProviderModels([]);
     setShowConnectorModal(true);
   };
@@ -313,27 +255,54 @@ export function ModelsScreen() {
     setTestedProviderModels([]);
   };
 
+  const handleAddTokenToNew = () => {
+    const trimmed = newKeyInput.trim();
+    if (!trimmed) return;
+    const splitTokens = trimmed.split(/[,;\n]/).map((t) => t.trim()).filter(Boolean);
+    const updated = Array.from(new Set([...providerApiKeys, ...splitTokens]));
+    setProviderApiKeys(updated);
+    setNewKeyInput("");
+  };
+
+  const handleRemoveTokenFromNew = (idx: number) => {
+    setProviderApiKeys(providerApiKeys.filter((_, i) => i !== idx));
+  };
+
   const handleTestAndFetchProvider = async () => {
     if (!providerBaseUrl.trim()) {
       Alert.alert("Required", "Base URL is required to fetch models.");
       return;
     }
 
+    const effectiveKey =
+      providerApiKeys[0] ||
+      newKeyInput.trim() ||
+      undefined;
+
     setIsTestingProvider(true);
     try {
       const fetched = await fetchOpenAiCompatibleModels(
         providerBaseUrl.trim(),
-        providerApiKey.trim() || undefined,
+        effectiveKey,
         providerId.trim() || "custom"
       );
       setTestedProviderModels(fetched);
       if (fetched.length === 0) {
-        Alert.alert("No Models Found", "Connected to endpoint but no models were returned by /models.");
+        Alert.alert(
+          "No Models Found",
+          "Connected to endpoint but no models were returned by /models."
+        );
       } else {
-        Alert.alert("Discovery Successful", `Discovered ${fetched.length} models from ${providerBaseUrl}.`);
+        Alert.alert(
+          "Discovery Successful",
+          `Discovered ${fetched.length} model(s) for "${providerName || providerId}".`
+        );
       }
     } catch (err: any) {
-      Alert.alert("Connection Failed", err?.message || "Could not fetch models from provider endpoint.");
+      Alert.alert(
+        "Connection Failed",
+        err?.message || "Could not fetch models from provider endpoint."
+      );
     } finally {
       setIsTestingProvider(false);
     }
@@ -347,28 +316,125 @@ export function ModelsScreen() {
       return;
     }
 
+    const allKeys = Array.from(
+      new Set(
+        [
+          ...providerApiKeys,
+          ...(newKeyInput.trim() ? newKeyInput.trim().split(/[,;\n]/) : []),
+        ]
+          .map((k) => k.trim())
+          .filter(Boolean)
+      )
+    );
+
     try {
       const modelsToSave = testedProviderModels.length > 0 ? testedProviderModels : [];
-      await saveCustomProvider({
+      const preset = BUILTIN_PROVIDER_PRESETS.find((pr) => pr.id === selectedPresetId);
+      const providerToSave: CustomProvider = {
         id: pId,
         name: providerName.trim() || pId,
         baseUrl: pUrl,
-        apiKey: providerApiKey.trim() || undefined,
+        projectId: providerProjectId.trim() || undefined,
+        apiKey: allKeys[0] || "",
+        apiKeys: allKeys,
+        authType: preset?.authType,
+        wireApi: preset?.wireApi,
         enabled: true,
         models: modelsToSave,
-      });
+      };
+      await saveCustomProvider(providerToSave);
+
+      // Register with AvA Core so chat can actually route to this provider
+      // (device storage alone is invisible to the server).
+      const pushRes = rpc
+        ? await pushCustomProviderToServer(rpc, providerToSave)
+        : { ok: false, reason: "server offline" };
 
       await loadLocalState();
       await qc.invalidateQueries({ queryKey: keys.models });
       setShowConnectorModal(false);
-      Alert.alert("Provider Saved", `Provider "${pId}" configured with ${modelsToSave.length} models.`);
+      Alert.alert(
+        "Provider Saved",
+        `Provider "${pId}" configured with ${allKeys.length} token(s) and ${modelsToSave.length} models.` +
+          (pushRes.ok
+            ? "\nSynced to AvA Core -- chat can now route to it."
+            : `\nNote: not synced to server (${pushRes.reason}).`)
+      );
     } catch (err: any) {
       Alert.alert("Save Error", err?.message || "Failed to save provider.");
     }
   };
 
+  const handleOpenEditProvider = (cp: CustomProvider) => {
+    setActiveEditingProvider(cp);
+    const existing =
+      cp.apiKeys && cp.apiKeys.length > 0
+        ? cp.apiKeys
+        : cp.apiKey
+        ? [cp.apiKey]
+        : [];
+    setEditProviderApiKeys(existing);
+    setEditProviderProjectId(cp.projectId || "");
+    setEditNewKeyInput("");
+  };
+
+  const handleAddTokenToEdit = () => {
+    const trimmed = editNewKeyInput.trim();
+    if (!trimmed) return;
+    const splitTokens = trimmed.split(/[,;\n]/).map((t) => t.trim()).filter(Boolean);
+    const updated = Array.from(new Set([...editProviderApiKeys, ...splitTokens]));
+    setEditProviderApiKeys(updated);
+    setEditNewKeyInput("");
+  };
+
+  const handleRemoveTokenFromEdit = (idx: number) => {
+    setEditProviderApiKeys(editProviderApiKeys.filter((_, i) => i !== idx));
+  };
+
+  const handleSaveEditedProvider = async () => {
+    if (!activeEditingProvider) return;
+    const allKeys = Array.from(
+      new Set(
+        [
+          ...editProviderApiKeys,
+          ...(editNewKeyInput.trim() ? editNewKeyInput.trim().split(/[,;\n]/) : []),
+        ]
+          .map((k) => k.trim())
+          .filter(Boolean)
+      )
+    );
+
+    try {
+      const updatedProvider: CustomProvider = {
+        ...activeEditingProvider,
+        apiKey: allKeys[0] || "",
+        apiKeys: allKeys,
+        projectId: editProviderProjectId.trim() || undefined,
+      };
+      await saveCustomProvider(updatedProvider);
+      const pushRes = rpc
+        ? await pushCustomProviderToServer(rpc, updatedProvider)
+        : { ok: false, reason: "server offline" };
+      await loadLocalState();
+      await qc.invalidateQueries({ queryKey: keys.models });
+      setActiveEditingProvider(null);
+      Alert.alert(
+        "Tokens Updated",
+        `Provider "${activeEditingProvider.name}" saved with ${allKeys.length} token(s).` +
+          (pushRes.ok
+            ? "\nSynced to AvA Core."
+            : `\nNote: not synced to server (${pushRes.reason}).`)
+      );
+    } catch (err: any) {
+      Alert.alert("Save Error", err?.message || "Failed to update provider.");
+    }
+  };
+
   const handleDeleteProvider = async (id: string) => {
-    Alert.alert("Delete Provider", `Remove provider "${id}" and its models?`, [
+    Alert.alert(
+      "Delete Provider",
+      `Remove provider "${id}" and its models from this device?\nNote: its AvA Core server entry is kept (the config API cannot delete keys).`,
+      [
       { text: "Cancel", style: "cancel" },
       {
         text: "Delete",
@@ -389,7 +455,57 @@ export function ModelsScreen() {
     await qc.invalidateQueries({ queryKey: keys.models });
   };
 
-  // ── Save to Server Config ──
+  // ── Fallback Chain Handlers ──
+  const handleAddToChain = (mId: string) => {
+    if (!fallbackChain.includes(mId) && mId !== activeId) {
+      const nextChain = [...fallbackChain, mId];
+      setFallbackChain(nextChain);
+      saveModelFallbackChain(nextChain);
+    }
+    setShowAddChainModal(false);
+  };
+
+  const handleRemoveFromChain = (index: number) => {
+    const nextChain = fallbackChain.filter((_, i) => i !== index);
+    setFallbackChain(nextChain);
+    saveModelFallbackChain(nextChain);
+  };
+
+  const handleMoveChainItem = (index: number, direction: "up" | "down") => {
+    const targetIdx = direction === "up" ? index - 1 : index + 1;
+    if (targetIdx < 0 || targetIdx >= fallbackChain.length) return;
+    const nextChain = [...fallbackChain];
+    const temp = nextChain[index];
+    nextChain[index] = nextChain[targetIdx];
+    nextChain[targetIdx] = temp;
+    setFallbackChain(nextChain);
+    saveModelFallbackChain(nextChain);
+  };
+
+  const handleSaveFallbackChain = async () => {
+    setIsSavingChain(true);
+    try {
+      await saveModelFallbackChain(fallbackChain);
+      const res = await writeConfig.mutateAsync({
+        model_fallback_chain: fallbackChain,
+      });
+      if (res.success) {
+        Alert.alert(
+          "Fallback Chain Saved",
+          `Configured ${fallbackChain.length} failover target(s) on server.`
+        );
+        qc.invalidateQueries({ queryKey: keys.serverConfig });
+      } else {
+        Alert.alert("Save Warning", res.error || "Saved locally to device.");
+      }
+    } catch (e: any) {
+      Alert.alert("Saved Locally", "Fallback chain saved to local storage.");
+    } finally {
+      setIsSavingChain(false);
+    }
+  };
+
+  // ── Save Active Model to Server Config ──
   const handleApplyToServer = async () => {
     setApplying(true);
     try {
@@ -397,17 +513,21 @@ export function ModelsScreen() {
       if (activeId) {
         fields.model = activeId;
         const selectedModel = models.find((m) => m.id === activeId);
-        if (selectedModel?.provider === "antigravity" || activeId.startsWith("antigravity/")) {
-          fields.model_provider = "antigravity";
-        } else if (selectedModel?.provider && selectedModel.provider !== "server") {
+        if (selectedModel?.provider && selectedModel.provider !== "server") {
           fields.model_provider = selectedModel.provider;
         }
       }
       if (effort) fields.model_reasoning_effort = effort;
+      if (fallbackChain.length > 0) {
+        fields.model_fallback_chain = fallbackChain;
+      }
 
       const result = await writeConfig.mutateAsync(fields);
       if (result.success) {
-        Alert.alert("Saved to Server", `Model "${activeId}" (${effort} reasoning) saved to server configuration.`);
+        Alert.alert(
+          "Saved to Server",
+          `Model "${activeId}" (${effort.toUpperCase()} reasoning) saved to server configuration.`
+        );
         qc.invalidateQueries({ queryKey: keys.serverConfig });
         qc.invalidateQueries({ queryKey: keys.models });
       } else {
@@ -422,30 +542,35 @@ export function ModelsScreen() {
 
   const getProviderColor = (name: string) => {
     const l = name.toLowerCase();
-    if (l.includes("antigravity")) return "#38BDF8";
+    if (l.includes("antigravity")) return "#4285F4";
     if (l.includes("openai")) return "#10A37F";
     if (l.includes("anthropic")) return "#D97706";
-    if (l.includes("google") || l.includes("gemini")) return "#4285F4";
-    if (l.includes("deepseek")) return "#3B82F6";
+    if (l.includes("google") || l.includes("gemini")) return "#3B82F6";
+    if (l.includes("deepseek")) return "#0284C7";
     if (l.includes("groq")) return "#F97316";
     if (l.includes("openrouter")) return "#6366F1";
-    return "#8B5CF6";
+    if (l.includes("together")) return "#0EA5E9";
+    if (l.includes("ollama")) return "#10B981";
+    if (l.includes("lmstudio")) return "#8B5CF6";
+    return "#6366F1";
   };
 
   return (
-    <AppShell title="AI Models & Providers">
+    <AppShell title="AI Models & Routing">
       <ScrollView
-        style={styles.container}
+        style={[styles.container, { backgroundColor: colors.background }]}
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
       >
-        {/* Header Bar matching Flutter */}
+        {/* Header Bar */}
         <View style={styles.topHeaderRow}>
           <View style={{ flex: 1 }}>
-            <Text style={[styles.mainHeading, font("bold")]}>AI Models & Providers</Text>
-            <Text style={[styles.mainSubheading, font("regular")]}>
-              {models.length} models across {Object.keys(groupedModels).length} active providers
+            <Text style={[styles.mainHeading, { color: colors.foreground }, font("bold")]}>
+              AI Models & Providers
+            </Text>
+            <Text style={[styles.mainSubheading, { color: colors.mutedForeground }, font("regular")]}>
+              {models.length} active models • Multi-token pooling & failover routing
             </Text>
           </View>
 
@@ -477,100 +602,46 @@ export function ModelsScreen() {
           </View>
         </View>
 
-        {/* ── 1. AI PROVIDERS & CONNECTIONS Section matching Flutter _providersSection ── */}
-        <Surface style={styles.providersCard}>
+        {/* ── 1. AI PROVIDERS & MULTI-TOKEN CONNECTIONS ── */}
+        <Surface style={[styles.providersCard, { borderColor: colors.border }]}>
           <View style={styles.providersHeaderRow}>
             <Cpu size={15} color="#6366F1" />
-            <Text style={[styles.providersSectionTitle, font("bold")]}>
-              AI PROVIDERS & CONNECTIONS
+            <Text style={[styles.providersSectionTitle, { color: colors.mutedForeground }, font("bold")]}>
+              AI PROVIDERS & MULTI-TOKEN AUTH
             </Text>
-            <View style={styles.countBadge}>
-              <Text style={[styles.countBadgeText, font("bold")]}>
-                {(customProviders.length || 0) + 1}
+            <View style={[styles.countBadge, { backgroundColor: colors.secondary }]}>
+              <Text style={[styles.countBadgeText, { color: colors.mutedForeground }, font("bold")]}>
+                {customProviders.length || 0}
               </Text>
             </View>
           </View>
 
-          {/* Antigravity Provider Item */}
-          <View style={styles.providerRow}>
-            <View style={[styles.providerLogoBox, { backgroundColor: "rgba(56, 189, 248, 0.12)" }]}>
-              <Sparkles size={18} color="#38BDF8" />
-            </View>
-
-            <View style={styles.providerInfoCol}>
-              <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
-                <Text style={[styles.providerRowName, font("bold")]}>Google Antigravity</Text>
-                <GlassCapsule label="Inbuilt" variant="cyan" size="xs" active />
-              </View>
-              <Text style={[styles.providerRowSub, font("regular")]}>
-                {antigravityAuth?.accessToken
-                  ? "OAuth Connected · Dynamic Reasoning"
-                  : "Google Cloud Code PA OAuth Engine"}
+          {/* Empty state when no custom providers */}
+          {customProviders.length === 0 && (
+            <View style={{ paddingVertical: 20, alignItems: "center", gap: 10 }}>
+              <Server size={24} color={colors.mutedForeground} />
+              <Text
+                style={[
+                  {
+                    color: colors.mutedForeground,
+                    fontSize: 13,
+                    textAlign: "center",
+                    paddingHorizontal: 20,
+                  },
+                  font("regular"),
+                ]}
+              >
+                No external providers connected yet. Connect Google Antigravity or OpenAI-compatible endpoints with
+                multi-token rotation.
               </Text>
-            </View>
-
-            <View style={styles.providerActionCol}>
-              {antigravityAuth?.accessToken ? (
-                <View style={styles.connectedTag}>
-                  <View style={styles.greenDot} />
-                  <Text style={[styles.connectedTagText, font("medium")]}>Connected</Text>
-                </View>
-              ) : (
-                <TouchableOpacity
-                  style={styles.signInGoogleBtn}
-                  onPress={handleOpenGoogleOAuth}
-                  activeOpacity={0.8}
-                >
-                  <ExternalLink size={12} color="#FFF" />
-                  <Text style={[styles.signInGoogleText, font("semibold")]}>Sign In</Text>
-                </TouchableOpacity>
-              )}
-
-              {antigravityAuth?.accessToken && (
-                <TouchableOpacity
-                  style={styles.iconActionBtn}
-                  onPress={handleSyncAntigravity}
-                  disabled={isSyncingAntigravity}
-                  activeOpacity={0.7}
-                >
-                  <RefreshCw
-                    size={13}
-                    color={isSyncingAntigravity ? "#38BDF8" : COLORS.mutedForeground}
-                  />
-                </TouchableOpacity>
-              )}
-            </View>
-          </View>
-
-          {/* Antigravity OAuth Code Box if triggered */}
-          {showAntigravityAuthBox && (
-            <View style={styles.authBoxContainer}>
-              <Text style={[styles.authBoxLabel, font("medium")]}>
-                Paste Authorization Code or Redirect URL:
-              </Text>
-              <View style={styles.authBoxInputRow}>
-                <TextInput
-                  style={[styles.authInput, mono("regular")]}
-                  placeholder="Paste 4/0A... or ya29..."
-                  placeholderTextColor={COLORS.mutedForeground}
-                  value={antigravityInput}
-                  onChangeText={setAntigravityInput}
-                  autoCapitalize="none"
-                  autoCorrect={false}
-                />
-                <TouchableOpacity
-                  style={[styles.authSubmitBtn, isExchangingAntigravity && { opacity: 0.6 }]}
-                  onPress={handleConnectAntigravity}
-                  disabled={isExchangingAntigravity}
-                  activeOpacity={0.8}
-                >
-                  {isExchangingAntigravity ? (
-                    <ActivityIndicator size="small" color="#FFF" />
-                  ) : (
-                    <Check size={14} color="#FFF" />
-                  )}
-                </TouchableOpacity>
-              </View>
+              <TouchableOpacity
+                style={styles.connectBtn}
+                onPress={handleOpenConnector}
+                activeOpacity={0.8}
+              >
+                <Plus size={14} color="#FFF" />
+                <Text style={[styles.connectBtnText, font("bold")]}>Add Provider</Text>
+              </TouchableOpacity>
             </View>
           )}
 
@@ -578,90 +649,245 @@ export function ModelsScreen() {
           {customProviders.map((cp) => {
             const color = getProviderColor(cp.name);
             const isEnabled = cp.enabled !== false;
+            const tokenCount =
+              cp.apiKeys && cp.apiKeys.length > 0 ? cp.apiKeys.length : cp.apiKey ? 1 : 0;
+
             return (
-              <View key={cp.id} style={styles.providerRow}>
+              <View
+                key={cp.id}
+                style={[
+                  styles.providerRow,
+                  { backgroundColor: colors.secondary, borderColor: colors.border },
+                ]}
+              >
                 <View style={[styles.providerLogoBox, { backgroundColor: `${color}16` }]}>
                   <Server size={17} color={color} />
                 </View>
 
                 <View style={styles.providerInfoCol}>
-                  <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
-                    <Text style={[styles.providerRowName, font("bold")]}>{cp.name}</Text>
-                    <GlassCapsule label="Custom" variant="purple" size="xs" active />
+                  <View style={{ flexDirection: "row", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+                    <Text style={[styles.providerRowName, { color: colors.foreground }, font("bold")]}>
+                      {cp.name}
+                    </Text>
+                    {tokenCount > 1 ? (
+                      <View style={styles.tokenMultiBadge}>
+                        <ShieldCheck size={11} color="#10B981" />
+                        <Text style={[styles.tokenMultiBadgeText, font("bold")]}>
+                          {tokenCount} Tokens (Auto-Rotate)
+                        </Text>
+                      </View>
+                    ) : tokenCount === 1 ? (
+                      <View style={[styles.tokenMultiBadge, { backgroundColor: "rgba(99, 102, 241, 0.12)" }]}>
+                        <Key size={10} color="#6366F1" />
+                        <Text style={[styles.tokenMultiBadgeText, { color: "#6366F1" }, font("bold")]}>
+                          1 Token
+                        </Text>
+                      </View>
+                    ) : null}
                   </View>
-                  <Text style={[styles.providerRowSub, font("regular")]}>
+                  <Text style={[styles.providerRowSub, { color: colors.mutedForeground }, mono("regular")]} numberOfLines={1}>
                     {cp.baseUrl}
                   </Text>
+                  {cp.projectId && (
+                    <Text style={[styles.providerRowProject, mono("regular")]}>
+                      Project: {cp.projectId}
+                    </Text>
+                  )}
                 </View>
 
                 <View style={styles.providerActionCol}>
+                  <TouchableOpacity
+                    style={[styles.iconActionBtn, { backgroundColor: colors.card }]}
+                    onPress={() => handleOpenEditProvider(cp)}
+                    activeOpacity={0.7}
+                  >
+                    <Settings size={15} color={colors.mutedForeground} />
+                  </TouchableOpacity>
                   <Switch
                     value={isEnabled}
                     onValueChange={(val) => handleToggleProvider(cp.id, val)}
-                    trackColor={{ false: COLORS.border, true: "#6366F1" }}
-                    thumbColor="#FFF"
+                    trackColor={{ false: colors.border, true: "#6366F1" }}
+                    thumbColor={Platform.OS === "android" ? "#FFF" : undefined}
+                    style={{ transform: [{ scaleX: 0.8 }, { scaleY: 0.8 }] }}
                   />
-                  <TouchableOpacity
-                    style={styles.iconActionBtn}
-                    onPress={() => setActiveEditingProvider(cp)}
-                    activeOpacity={0.7}
-                  >
-                    <Settings size={14} color={COLORS.mutedForeground} />
-                  </TouchableOpacity>
                 </View>
               </View>
             );
           })}
         </Surface>
 
-        {/* ── 2. Search & Category Filter Pills matching Flutter ── */}
-        <View style={styles.searchFilterSection}>
-          <View style={styles.searchBox}>
-            <Search size={15} color={COLORS.mutedForeground} />
-            <TextInput
-              style={[styles.searchInput, font("regular")]}
-              placeholder="Search models across providers..."
-              placeholderTextColor={COLORS.mutedForeground}
-              value={searchQuery}
-              onChangeText={setSearchQuery}
-              autoCorrect={false}
-              autoCapitalize="none"
-            />
-            {searchQuery.length > 0 && (
-              <TouchableOpacity onPress={() => setSearchQuery("")}>
-                <X size={15} color={COLORS.mutedForeground} />
-              </TouchableOpacity>
-            )}
+        {/* ── 2. MODEL FALLBACK ROUTING CHAIN ── */}
+        <Surface style={[styles.fallbackChainCard, { borderColor: "rgba(139, 92, 246, 0.3)" }]}>
+          <View style={styles.fallbackChainHeader}>
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+              <Layers size={15} color="#8B5CF6" />
+              <Text style={[styles.fallbackChainTitle, font("bold")]}>
+                MODEL FALLBACK ROUTING CHAIN
+              </Text>
+            </View>
+            <View style={[styles.countBadge, { backgroundColor: colors.secondary }]}>
+              <Text style={[styles.countBadgeText, { color: colors.mutedForeground }, font("bold")]}>
+                {fallbackChain.length > 0 ? fallbackChain.length + 1 : 1} Target(s)
+              </Text>
+            </View>
           </View>
 
-          {/* Filter Pills */}
+          <Text style={[styles.fallbackChainDescription, { color: colors.mutedForeground }, font("regular")]}>
+            If the primary model hits rate limits (429) or provider outages, AvA automatically routes to the next model in this chain.
+          </Text>
+
+          {/* Primary Model (Active Selection) */}
+          <View style={[styles.chainItemPrimary, { backgroundColor: colors.secondary }]}>
+            <View style={styles.chainRankBadgePrimary}>
+              <Text style={[styles.chainRankTextPrimary, font("bold")]}>1</Text>
+            </View>
+            <View style={{ flex: 1 }}>
+              <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+                <Text style={[styles.chainItemName, { color: colors.foreground }, font("bold")]}>
+                  {models.find((m) => m.id === activeId)?.name || activeId || "No Model Selected"}
+                </Text>
+                <View style={styles.activeDotPulse} />
+              </View>
+              <Text style={[styles.chainItemSub, { color: colors.mutedForeground }, mono("regular")]}>
+                Primary Active Model ({activeId})
+              </Text>
+            </View>
+            <Zap size={15} color="#10B981" />
+          </View>
+
+          {/* Fallback Targets */}
+          {fallbackChain.map((fId, idx) => {
+            const mObj = models.find((m) => m.id === fId);
+            return (
+              <View
+                key={`${fId}-${idx}`}
+                style={[
+                  styles.chainItemSecondary,
+                  { backgroundColor: colors.secondary, borderColor: colors.border },
+                ]}
+              >
+                <View style={[styles.chainRankBadge, { backgroundColor: colors.card, borderColor: colors.border }]}>
+                  <Text style={[styles.chainRankText, { color: colors.mutedForeground }, font("bold")]}>
+                    {idx + 2}
+                  </Text>
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={[styles.chainItemName, { color: colors.foreground }, font("semibold")]}>
+                    {mObj?.name || fId}
+                  </Text>
+                  <Text style={[styles.chainItemSub, { color: colors.mutedForeground }, mono("regular")]}>
+                    Fallback #{idx + 1} ({fId})
+                  </Text>
+                </View>
+
+                <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
+                  <TouchableOpacity
+                    style={[styles.chainIconBtn, { backgroundColor: colors.card }]}
+                    onPress={() => handleMoveChainItem(idx, "up")}
+                    disabled={idx === 0}
+                    activeOpacity={0.6}
+                  >
+                    <ChevronUp size={14} color={idx === 0 ? colors.border : colors.mutedForeground} />
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[styles.chainIconBtn, { backgroundColor: colors.card }]}
+                    onPress={() => handleMoveChainItem(idx, "down")}
+                    disabled={idx === fallbackChain.length - 1}
+                    activeOpacity={0.6}
+                  >
+                    <ChevronDown size={14} color={idx === fallbackChain.length - 1 ? colors.border : colors.mutedForeground} />
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[styles.chainIconBtn, { backgroundColor: colors.card }]}
+                    onPress={() => handleRemoveFromChain(idx)}
+                    activeOpacity={0.6}
+                  >
+                    <Trash2 size={13} color="#EF4444" />
+                  </TouchableOpacity>
+                </View>
+              </View>
+            );
+          })}
+
+          <View style={styles.chainActionsRow}>
+            <TouchableOpacity
+              style={styles.addChainBtn}
+              onPress={() => setShowAddChainModal(true)}
+              activeOpacity={0.7}
+            >
+              <Plus size={13} color="#8B5CF6" />
+              <Text style={[styles.addChainBtnText, font("bold")]}>Add Fallback Model</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.saveChainBtn}
+              onPress={handleSaveFallbackChain}
+              disabled={isSavingChain}
+              activeOpacity={0.8}
+            >
+              {isSavingChain ? (
+                <ActivityIndicator size="small" color="#FFF" />
+              ) : (
+                <Check size={13} color="#FFF" />
+              )}
+              <Text style={[styles.saveChainBtnText, font("bold")]}>
+                {isSavingChain ? "Saving…" : "Save Chain"}
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </Surface>
+
+        {/* ── 3. SEARCH & CATEGORY FILTER ── */}
+        <View style={styles.searchFilterSection}>
+          <View style={[styles.searchBox, { backgroundColor: colors.secondary, borderColor: colors.border }]}>
+            <Search size={15} color={colors.mutedForeground} />
+            <TextInput
+              style={[styles.searchInput, { color: colors.foreground }, font("regular")]}
+              placeholder="Search model names or provider..."
+              placeholderTextColor={colors.mutedForeground}
+              value={searchQuery}
+              onChangeText={setSearchQuery}
+            />
+            {searchQuery ? (
+              <TouchableOpacity onPress={() => setSearchQuery("")}>
+                <X size={14} color={colors.mutedForeground} />
+              </TouchableOpacity>
+            ) : null}
+          </View>
+
           <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
             contentContainerStyle={styles.filterPillsRow}
           >
-            {[
-              { id: "all", label: "All Models" },
-              { id: "antigravity", label: "Antigravity" },
-              { id: "openai", label: "OpenAI" },
-              { id: "anthropic", label: "Anthropic" },
-              { id: "google", label: "Google" },
-              { id: "deepseek", label: "DeepSeek" },
-              { id: "custom", label: "Custom" },
-            ].map((tab) => {
+            {(
+              [
+                { id: "all", label: "All Models" },
+                { id: "antigravity", label: "Antigravity" },
+                { id: "openai", label: "OpenAI" },
+                { id: "anthropic", label: "Anthropic" },
+                { id: "google", label: "Gemini" },
+                { id: "deepseek", label: "DeepSeek" },
+                { id: "custom", label: "Custom" },
+              ] as const
+            ).map((tab) => {
               const active = activeFilter === tab.id;
               return (
                 <TouchableOpacity
                   key={tab.id}
-                  style={[styles.filterPill, active && styles.filterPillActive]}
-                  onPress={() => setActiveFilter(tab.id as CategoryFilter)}
+                  style={[
+                    styles.filterPill,
+                    { backgroundColor: colors.secondary, borderColor: colors.border },
+                    active && styles.filterPillActive,
+                  ]}
+                  onPress={() => setActiveFilter(tab.id)}
                   activeOpacity={0.7}
                 >
                   <Text
                     style={[
                       styles.filterPillText,
-                      active && styles.filterPillTextActive,
-                      font("medium"),
+                      { color: active ? "#6366F1" : colors.mutedForeground },
+                      font(active ? "bold" : "regular"),
                     ]}
                   >
                     {tab.label}
@@ -672,162 +898,160 @@ export function ModelsScreen() {
           </ScrollView>
         </View>
 
-        {/* ── 3. Models List grouped by Provider ── */}
-        {isLoading ? (
-          <Surface style={{ padding: 20 }}>
-            <SkeletonRows count={4} />
-          </Surface>
-        ) : Object.keys(groupedModels).length === 0 ? (
-          <Surface style={styles.emptyContainer}>
-            <Bot size={36} color={COLORS.mutedForeground} />
-            <Text style={[styles.emptyTitle, font("bold")]}>No matching models found</Text>
-            <Text style={[styles.emptySub, font("regular")]}>
-              Try adjusting your search query or provider filters.
+        {/* ── 4. MODEL CATALOG GROUPED BY PROVIDER ── */}
+        {isLoading && (
+          <View style={{ padding: 20, alignItems: "center", gap: 10 }}>
+            <ActivityIndicator size="small" color="#6366F1" />
+            <Text style={[{ color: colors.mutedForeground, fontSize: 12 }, font("regular")]}>
+              Loading model catalog...
             </Text>
-          </Surface>
-        ) : (
-          Object.entries(groupedModels).map(([providerName, pModels]) => {
-            const isCollapsed = !!collapsedSections[providerName];
-            const pColor = getProviderColor(providerName);
-            const hasSelectedModel = pModels.some((m) => m.id === activeId);
-
-            return (
-              <Surface key={providerName} style={styles.providerGroupCard}>
-                {/* Group Header */}
-                <TouchableOpacity
-                  style={styles.groupHeaderRow}
-                  onPress={() => toggleSectionCollapse(providerName)}
-                  activeOpacity={0.7}
-                >
-                  <View style={[styles.groupLogoBox, { backgroundColor: `${pColor}16` }]}>
-                    <Cpu size={15} color={pColor} />
-                  </View>
-                  <Text style={[styles.groupTitle, font("bold")]}>{providerName}</Text>
-                  <View style={styles.groupCountBadge}>
-                    <Text style={[styles.groupCountText, font("semibold")]}>
-                      {pModels.length}
-                    </Text>
-                  </View>
-                  {hasSelectedModel && (
-                    <GlassCapsule label="Active" variant="success" size="xs" active />
-                  )}
-                  <View style={{ marginLeft: "auto" }}>
-                    {isCollapsed ? (
-                      <ChevronDown size={16} color={COLORS.mutedForeground} />
-                    ) : (
-                      <ChevronUp size={16} color={COLORS.mutedForeground} />
-                    )}
-                  </View>
-                </TouchableOpacity>
-
-                {/* Models within this provider */}
-                {!isCollapsed && (
-                  <View style={styles.modelsList}>
-                    {pModels.map((model) => {
-                      const isSelected = model.id === activeId;
-                      const hasVision = model.supportsImages;
-                      const hasReasoning = model.reasoning;
-
-                      return (
-                        <TouchableOpacity
-                          key={model.id}
-                          style={[
-                            styles.modelItemCard,
-                            isSelected && styles.modelItemCardSelected,
-                          ]}
-                          onPress={() => handleSelectModel(model.id)}
-                          activeOpacity={0.7}
-                        >
-                          <View style={styles.modelItemTop}>
-                            <View style={{ flex: 1 }}>
-                              <View style={styles.modelNameRow}>
-                                <Text
-                                  style={[
-                                    styles.modelItemName,
-                                    isSelected && { color: "#6366F1" },
-                                    font(isSelected ? "bold" : "semibold"),
-                                  ]}
-                                >
-                                  {model.name}
-                                </Text>
-                                {model.isDefault && (
-                                  <GlassCapsule label="Default" variant="primary" size="xs" active />
-                                )}
-                              </View>
-                              <Text style={[styles.modelItemId, mono("regular")]} numberOfLines={1}>
-                                {model.id}
-                              </Text>
-                            </View>
-
-                            {/* Radio / Checkmark Selection */}
-                            <View style={styles.selectCol}>
-                              {isSelected ? (
-                                <View style={styles.selectedCircle}>
-                                  <Check size={13} color="#FFF" />
-                                </View>
-                              ) : (
-                                <View style={styles.unselectedCircle} />
-                              )}
-                            </View>
-                          </View>
-
-                          {/* Capabilities & Metadata Row */}
-                          <View style={styles.metaRow}>
-                            {model.contextWindow ? (
-                              <View style={styles.specBadge}>
-                                <Layers size={10} color={COLORS.mutedForeground} />
-                                <Text style={[styles.specBadgeText, mono("regular")]}>
-                                  {model.contextWindow >= 1000000
-                                    ? `${(model.contextWindow / 1000000).toFixed(1)}M`
-                                    : `${Math.round(model.contextWindow / 1000)}k`}
-                                </Text>
-                              </View>
-                            ) : null}
-
-                            {hasVision && (
-                              <View style={styles.specBadge}>
-                                <Eye size={10} color="#10B981" />
-                                <Text style={[styles.specBadgeText, font("medium")]}>Vision</Text>
-                              </View>
-                            )}
-
-                            {hasReasoning && (
-                              <View style={styles.specBadge}>
-                                <Brain size={10} color="#38BDF8" />
-                                <Text style={[styles.specBadgeText, font("medium")]}>Thinking</Text>
-                              </View>
-                            )}
-
-                            <View style={styles.specBadge}>
-                              <Wrench size={10} color="#F59E0B" />
-                              <Text style={[styles.specBadgeText, font("medium")]}>Tools</Text>
-                            </View>
-                          </View>
-                        </TouchableOpacity>
-                      );
-                    })}
-                  </View>
-                )}
-              </Surface>
-            );
-          })
+          </View>
         )}
 
-        <View style={{ height: 120 }} />
+        {Object.entries(groupedModels).map(([pName, pModels]) => {
+          const isCollapsed = !!collapsedSections[pName];
+          const color = getProviderColor(pName);
+
+          return (
+            <Surface key={pName} style={[styles.providerGroupCard, { borderColor: colors.border }]}>
+              <TouchableOpacity
+                style={[styles.groupHeaderRow, { backgroundColor: colors.secondary }]}
+                onPress={() => toggleSectionCollapse(pName)}
+                activeOpacity={0.8}
+              >
+                <View style={[styles.groupLogoBox, { backgroundColor: `${color}18` }]}>
+                  <Server size={14} color={color} />
+                </View>
+                <Text style={[styles.groupTitle, { color: colors.foreground }, font("bold")]}>
+                  {pName}
+                </Text>
+                <View style={[styles.groupCountBadge, { backgroundColor: colors.card }]}>
+                  <Text style={[styles.groupCountText, { color: colors.mutedForeground }, font("bold")]}>
+                    {pModels.length}
+                  </Text>
+                </View>
+                <View style={{ marginLeft: "auto" }}>
+                  {isCollapsed ? (
+                    <ChevronDown size={16} color={colors.mutedForeground} />
+                  ) : (
+                    <ChevronUp size={16} color={colors.mutedForeground} />
+                  )}
+                </View>
+              </TouchableOpacity>
+
+              {!isCollapsed && (
+                <View style={styles.modelsList}>
+                  {pModels.map((m) => {
+                    const isSelected = m.id === activeId;
+                    return (
+                      <TouchableOpacity
+                        key={m.id}
+                        style={[
+                          styles.modelItemCard,
+                          { backgroundColor: colors.card, borderColor: colors.border },
+                          isSelected && styles.modelItemCardSelected,
+                        ]}
+                        onPress={() => handleSelectModel(m.id)}
+                        activeOpacity={0.75}
+                      >
+                        <View style={styles.modelItemTop}>
+                          <View style={{ flex: 1 }}>
+                            <View style={styles.modelNameRow}>
+                              <Text style={[styles.modelItemName, { color: colors.foreground }, font("bold")]}>
+                                {m.name}
+                              </Text>
+                              {m.isDefault && (
+                                <View style={styles.defaultBadge}>
+                                  <Text style={[styles.defaultBadgeText, font("bold")]}>DEFAULT</Text>
+                                </View>
+                              )}
+                            </View>
+                            <Text style={[styles.modelItemId, { color: colors.mutedForeground }, mono("regular")]}>
+                              {m.id}
+                            </Text>
+                          </View>
+
+                          <View style={styles.selectCol}>
+                            {isSelected ? (
+                              <View style={styles.selectedCircle}>
+                                <Check size={12} color="#FFF" />
+                              </View>
+                            ) : (
+                              <View style={[styles.unselectedCircle, { borderColor: colors.mutedForeground }]} />
+                            )}
+                          </View>
+                        </View>
+
+                        {/* Badges / Specs */}
+                        <View style={styles.metaRow}>
+                          {m.supportsImages && (
+                            <View style={[styles.specBadge, { backgroundColor: colors.secondary }]}>
+                              <Text style={[styles.specBadgeText, { color: colors.mutedForeground }, font("semibold")]}>
+                                Multimodal
+                              </Text>
+                            </View>
+                          )}
+                          {m.reasoning && (
+                            <View style={[styles.specBadge, { backgroundColor: "rgba(139, 92, 246, 0.12)" }]}>
+                              <Sparkles size={10} color="#8B5CF6" />
+                              <Text style={[styles.specBadgeText, { color: "#8B5CF6" }, font("bold")]}>
+                                Reasoning
+                              </Text>
+                            </View>
+                          )}
+                          {m.contextWindow ? (
+                            <View style={[styles.specBadge, { backgroundColor: colors.secondary }]}>
+                              <Text style={[styles.specBadgeText, { color: colors.mutedForeground }, font("regular")]}>
+                                {Math.round(m.contextWindow / 1000)}k Context
+                              </Text>
+                            </View>
+                          ) : null}
+                        </View>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
+              )}
+            </Surface>
+          );
+        })}
+
+        {/* Empty Search State */}
+        {!isLoading && Object.keys(groupedModels).length === 0 && (
+          <View style={styles.emptyContainer}>
+            <AlertCircle size={28} color={colors.mutedForeground} />
+            <Text style={[styles.emptyTitle, { color: colors.foreground }, font("bold")]}>No Models Found</Text>
+            <Text style={[styles.emptySub, { color: colors.mutedForeground }, font("regular")]}>
+              No models match your search or filter criteria. Connect a provider or adjust filters.
+            </Text>
+          </View>
+        )}
+
+        <View style={{ height: 90 }} />
       </ScrollView>
 
-      {/* ── 4. Bottom Active Model & Apply Bar ── */}
-      <Surface style={styles.bottomBar}>
+      {/* ── BOTTOM STICKY BAR: ACTIVE MODEL & EFFORT SELECTOR ── */}
+      <View
+        style={[
+          styles.bottomBar,
+          {
+            backgroundColor: colors.card,
+            borderTopColor: colors.border,
+          },
+        ]}
+      >
         <View style={styles.bottomModelInfo}>
-          <Text style={[styles.bottomLabel, font("medium")]}>Active Model:</Text>
-          <Text style={[styles.bottomModelName, font("bold")]} numberOfLines={1}>
-            {activeId || "None selected"}
+          <Text style={[styles.bottomLabel, { color: colors.mutedForeground }, font("semibold")]}>
+            ACTIVE MODEL
+          </Text>
+          <Text style={[styles.bottomModelName, { color: colors.foreground }, font("bold")]} numberOfLines={1}>
+            {models.find((m) => m.id === activeId)?.name || activeId || "None"}
           </Text>
         </View>
 
-        {/* Reasoning Effort Selector */}
-        <View style={styles.effortPills}>
-          {(["low", "medium", "high"] as const).map((lvl) => {
+        {/* 4 Reasoning Effort Selector: Low, Medium, Max, Ultra */}
+        <View style={[styles.effortPills, { backgroundColor: colors.secondary }]}>
+          {REASONING_EFFORTS.map((lvl) => {
             const active = effort === lvl;
             return (
               <TouchableOpacity
@@ -839,8 +1063,8 @@ export function ModelsScreen() {
                 <Text
                   style={[
                     styles.effortPillText,
-                    active && styles.effortPillTextActive,
-                    font("medium"),
+                    { color: active ? "#FFF" : colors.mutedForeground },
+                    font(active ? "bold" : "regular"),
                   ]}
                 >
                   {lvl.toUpperCase()}
@@ -850,9 +1074,8 @@ export function ModelsScreen() {
           })}
         </View>
 
-        {/* Save to Server Button */}
         <TouchableOpacity
-          style={[styles.applyBtn, applying && { opacity: 0.6 }]}
+          style={styles.applyBtn}
           onPress={handleApplyToServer}
           disabled={applying}
           activeOpacity={0.8}
@@ -862,11 +1085,13 @@ export function ModelsScreen() {
           ) : (
             <Check size={14} color="#FFF" />
           )}
-          <Text style={[styles.applyBtnText, font("bold")]}>Save to Server</Text>
+          <Text style={[styles.applyBtnText, font("bold")]}>
+            {applying ? "Saving…" : "Save"}
+          </Text>
         </TouchableOpacity>
-      </Surface>
+      </View>
 
-      {/* ── Modal: Connect API / Add Custom Provider ── */}
+      {/* ── Modal: Connect Custom Provider with Multi-Token Pooling ── */}
       <Modal
         visible={showConnectorModal}
         transparent
@@ -876,81 +1101,177 @@ export function ModelsScreen() {
         <TouchableWithoutFeedback onPress={() => setShowConnectorModal(false)}>
           <View style={styles.modalBackdrop}>
             <TouchableWithoutFeedback onPress={() => {}}>
-              <Surface style={styles.modalCard}>
-                <View style={styles.modalHeaderRow}>
+              <Surface style={[styles.modalCard, { backgroundColor: colors.card }]}>
+                <View style={[styles.modalHeaderRow, { borderBottomColor: colors.border }]}>
                   <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
-                    <Plug size={17} color="#6366F1" />
-                    <Text style={[styles.modalTitle, font("bold")]}>Connect AI Provider</Text>
+                    <Plug size={16} color="#6366F1" />
+                    <Text style={[styles.modalTitle, { color: colors.foreground }, font("bold")]}>
+                      Connect API Provider
+                    </Text>
                   </View>
                   <TouchableOpacity onPress={() => setShowConnectorModal(false)}>
-                    <X size={17} color={COLORS.mutedForeground} />
+                    <X size={17} color={colors.mutedForeground} />
                   </TouchableOpacity>
                 </View>
 
-                <ScrollView showsVerticalScrollIndicator={false}>
-                  {/* Presets */}
-                  <Text style={[styles.inputLabel, font("semibold")]}>Provider Preset</Text>
+                <ScrollView showsVerticalScrollIndicator={false} style={{ maxHeight: 460 }}>
+                  <Text style={[styles.inputLabel, { color: colors.mutedForeground }, font("semibold")]}>
+                    Choose Preset / Engine
+                  </Text>
                   <ScrollView
                     horizontal
                     showsHorizontalScrollIndicator={false}
                     contentContainerStyle={styles.presetsScroll}
                   >
-                    {BUILTIN_PROVIDER_PRESETS.filter((p) => p.id !== "antigravity").map((p) => (
-                      <TouchableOpacity
-                        key={p.id}
-                        style={[
-                          styles.presetChip,
-                          selectedPresetId === p.id && styles.presetChipActive,
-                        ]}
-                        onPress={() => handleSelectPreset(p)}
-                        activeOpacity={0.7}
-                      >
-                        <Text
+                    {BUILTIN_PROVIDER_PRESETS.map((preset) => {
+                      const isSel = selectedPresetId === preset.id;
+                      return (
+                        <TouchableOpacity
+                          key={preset.id}
                           style={[
-                            styles.presetChipText,
-                            selectedPresetId === p.id && styles.presetChipTextActive,
-                            font("medium"),
+                            styles.presetChip,
+                            { backgroundColor: colors.secondary, borderColor: colors.border },
+                            isSel && styles.presetChipActive,
                           ]}
+                          onPress={() => handleSelectPreset(preset)}
+                          activeOpacity={0.7}
                         >
-                          {p.name}
-                        </Text>
-                      </TouchableOpacity>
-                    ))}
+                          <Text
+                            style={[
+                              styles.presetChipText,
+                              { color: isSel ? "#6366F1" : colors.mutedForeground },
+                              font(isSel ? "bold" : "regular"),
+                            ]}
+                          >
+                            {preset.name}
+                          </Text>
+                        </TouchableOpacity>
+                      );
+                    })}
                   </ScrollView>
 
-                  <Text style={[styles.inputLabel, font("semibold")]}>Provider Name</Text>
+                  {selectedPresetId === "antigravity" && (
+                    <View style={styles.infoBanner}>
+                      <Info size={13} color="#4285F4" />
+                      <Text style={[styles.infoBannerText, font("regular")]}>
+                        Google Antigravity is natively adapted in-binary. Connect OAuth tokens (ya29...) or API keys.
+                      </Text>
+                    </View>
+                  )}
+
+                  <Text style={[styles.inputLabel, { color: colors.mutedForeground }, font("semibold")]}>
+                    Provider Display Name
+                  </Text>
                   <TextInput
-                    style={[styles.modalInput, font("regular")]}
-                    placeholder="e.g. OpenAI, DeepSeek, Groq"
-                    placeholderTextColor={COLORS.mutedForeground}
+                    style={[
+                      styles.modalInput,
+                      { backgroundColor: colors.secondary, borderColor: colors.border, color: colors.foreground },
+                      font("regular"),
+                    ]}
+                    placeholder="e.g. Google Antigravity, OpenAI, DeepSeek"
+                    placeholderTextColor={colors.mutedForeground}
                     value={providerName}
                     onChangeText={setProviderName}
                   />
 
-                  <Text style={[styles.inputLabel, font("semibold")]}>Base URL (/v1)</Text>
+                  <Text style={[styles.inputLabel, { color: colors.mutedForeground }, font("semibold")]}>
+                    Base URL (OpenAI / Antigravity)
+                  </Text>
                   <TextInput
-                    style={[styles.modalInput, mono("regular")]}
+                    style={[
+                      styles.modalInput,
+                      { backgroundColor: colors.secondary, borderColor: colors.border, color: colors.foreground },
+                      mono("regular"),
+                    ]}
                     placeholder="https://api.openai.com/v1"
-                    placeholderTextColor={COLORS.mutedForeground}
+                    placeholderTextColor={colors.mutedForeground}
                     value={providerBaseUrl}
                     onChangeText={setProviderBaseUrl}
                     autoCapitalize="none"
                   />
 
-                  <Text style={[styles.inputLabel, font("semibold")]}>API Key (Optional for local)</Text>
-                  <TextInput
-                    style={[styles.modalInput, mono("regular")]}
-                    placeholder="sk-..."
-                    placeholderTextColor={COLORS.mutedForeground}
-                    value={providerApiKey}
-                    onChangeText={setProviderApiKey}
-                    secureTextEntry
-                    autoCapitalize="none"
-                  />
+                  {/* Optional GCP Project ID for Antigravity */}
+                  {selectedPresetId === "antigravity" && (
+                    <>
+                      <Text style={[styles.inputLabel, { color: colors.mutedForeground }, font("semibold")]}>
+                        GCP Project ID (Optional)
+                      </Text>
+                      <TextInput
+                        style={[
+                          styles.modalInput,
+                          { backgroundColor: colors.secondary, borderColor: colors.border, color: colors.foreground },
+                          mono("regular"),
+                        ]}
+                        placeholder="e.g. aicode-consumers (leave blank for auto-detect)"
+                        placeholderTextColor={colors.mutedForeground}
+                        value={providerProjectId}
+                        onChangeText={setProviderProjectId}
+                        autoCapitalize="none"
+                      />
+                    </>
+                  )}
 
-                  {/* Test & Fetch */}
+                  {/* Multi-Token API Key Section */}
+                  <View style={{ marginTop: 8 }}>
+                    <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
+                      <Text style={[styles.inputLabel, { color: colors.mutedForeground }, font("semibold")]}>
+                        API Keys / Tokens ({providerApiKeys.length})
+                      </Text>
+                      <Text style={[{ fontSize: 10, color: "#10B981" }, font("bold")]}>
+                        Auto-Failover on 429/401
+                      </Text>
+                    </View>
+
+                    <View style={styles.tokenInputRow}>
+                      <TextInput
+                        style={[
+                          styles.tokenInput,
+                          { backgroundColor: colors.secondary, borderColor: colors.border, color: colors.foreground },
+                          mono("regular"),
+                        ]}
+                        placeholder={
+                          selectedPresetId === "antigravity"
+                            ? "Paste ya29... token or API key"
+                            : "Paste API key (comma or newline separated)"
+                        }
+                        placeholderTextColor={colors.mutedForeground}
+                        value={newKeyInput}
+                        onChangeText={setNewKeyInput}
+                        secureTextEntry
+                        autoCapitalize="none"
+                      />
+                      <TouchableOpacity
+                        style={styles.addTokenBtn}
+                        onPress={handleAddTokenToNew}
+                        activeOpacity={0.7}
+                      >
+                        <Plus size={14} color="#FFF" />
+                        <Text style={[styles.addTokenBtnText, font("bold")]}>Add</Text>
+                      </TouchableOpacity>
+                    </View>
+
+                    {/* Chips for added tokens */}
+                    <View style={styles.tokensChipsContainer}>
+                      {providerApiKeys.map((k, idx) => (
+                        <View
+                          key={`${k.slice(0, 8)}-${idx}`}
+                          style={[styles.tokenChip, { backgroundColor: colors.secondary, borderColor: colors.border }]}
+                        >
+                          <Key size={11} color="#10B981" />
+                          <Text style={[styles.tokenChipText, { color: colors.foreground }, mono("regular")]}>
+                            Token #{idx + 1} ({k.slice(0, 4)}...{k.slice(-4)})
+                          </Text>
+                          <TouchableOpacity onPress={() => handleRemoveTokenFromNew(idx)}>
+                            <X size={12} color="#EF4444" />
+                          </TouchableOpacity>
+                        </View>
+                      ))}
+                    </View>
+                  </View>
+
+                  {/* Test & Discover Models */}
                   <TouchableOpacity
-                    style={[styles.testBtn, isTestingProvider && { opacity: 0.6 }]}
+                    style={styles.testBtn}
                     onPress={handleTestAndFetchProvider}
                     disabled={isTestingProvider}
                     activeOpacity={0.8}
@@ -958,26 +1279,26 @@ export function ModelsScreen() {
                     {isTestingProvider ? (
                       <ActivityIndicator size="small" color="#6366F1" />
                     ) : (
-                      <RotateCw size={14} color="#6366F1" />
+                      <RefreshCw size={13} color="#6366F1" />
                     )}
-                    <Text style={[styles.testBtnText, font("semibold")]}>
-                      {isTestingProvider ? "Discovering Models…" : "Test & Discover Models"}
+                    <Text style={[styles.testBtnText, font("bold")]}>
+                      {isTestingProvider ? "Discovering Models…" : "Test Connection & Discover"}
                     </Text>
                   </TouchableOpacity>
 
                   {testedProviderModels.length > 0 && (
-                    <Text style={[styles.discoveredNote, font("medium")]}>
-                      Discovered {testedProviderModels.length} models ready to import.
+                    <Text style={[styles.discoveredNote, font("bold")]}>
+                      ✓ {testedProviderModels.length} models ready to import
                     </Text>
                   )}
 
-                  {/* Save */}
+                  {/* Save Button */}
                   <TouchableOpacity
                     style={styles.saveProviderBtn}
                     onPress={handleSaveProvider}
                     activeOpacity={0.8}
                   >
-                    <Check size={15} color="#FFF" />
+                    <Check size={14} color="#FFF" />
                     <Text style={[styles.saveProviderBtnText, font("bold")]}>Save Provider</Text>
                   </TouchableOpacity>
                 </ScrollView>
@@ -987,36 +1308,116 @@ export function ModelsScreen() {
         </TouchableWithoutFeedback>
       </Modal>
 
-      {/* ── Modal: Edit / Delete Provider ── */}
+      {/* ── Modal: Edit Provider & Multi-Token Pool ── */}
       {activeEditingProvider && (
         <Modal
           visible={!!activeEditingProvider}
           transparent
-          animationType="fade"
+          animationType="slide"
           onRequestClose={() => setActiveEditingProvider(null)}
         >
           <TouchableWithoutFeedback onPress={() => setActiveEditingProvider(null)}>
             <View style={styles.modalBackdrop}>
               <TouchableWithoutFeedback onPress={() => {}}>
-                <Surface style={styles.modalCard}>
-                  <View style={styles.modalHeaderRow}>
-                    <Text style={[styles.modalTitle, font("bold")]}>
-                      {activeEditingProvider.name} Settings
-                    </Text>
+                <Surface style={[styles.modalCard, { backgroundColor: colors.card }]}>
+                  <View style={[styles.modalHeaderRow, { borderBottomColor: colors.border }]}>
+                    <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+                      <Settings size={16} color="#6366F1" />
+                      <Text style={[styles.modalTitle, { color: colors.foreground }, font("bold")]}>
+                        {activeEditingProvider.name} Settings
+                      </Text>
+                    </View>
                     <TouchableOpacity onPress={() => setActiveEditingProvider(null)}>
-                      <X size={17} color={COLORS.mutedForeground} />
+                      <X size={17} color={colors.mutedForeground} />
                     </TouchableOpacity>
                   </View>
 
-                  <Text style={[styles.inputLabel, font("semibold")]}>Base URL</Text>
-                  <Text style={[styles.readOnlyText, mono("regular")]}>
+                  <Text style={[styles.inputLabel, { color: colors.mutedForeground }, font("semibold")]}>Base URL</Text>
+                  <Text style={[styles.readOnlyText, { backgroundColor: colors.secondary, color: colors.foreground }, mono("regular")]}>
                     {activeEditingProvider.baseUrl}
                   </Text>
 
-                  <Text style={[styles.inputLabel, font("semibold")]}>Configured Models</Text>
-                  <Text style={[styles.readOnlyText, font("regular")]}>
-                    {activeEditingProvider.models?.length || 0} models imported
-                  </Text>
+                  {/* Project ID */}
+                  {activeEditingProvider.id === "antigravity" && (
+                    <>
+                      <Text style={[styles.inputLabel, { color: colors.mutedForeground }, font("semibold")]}>
+                        GCP Project ID
+                      </Text>
+                      <TextInput
+                        style={[
+                          styles.modalInput,
+                          { backgroundColor: colors.secondary, borderColor: colors.border, color: colors.foreground },
+                          mono("regular"),
+                        ]}
+                        placeholder="e.g. aicode-consumers"
+                        placeholderTextColor={colors.mutedForeground}
+                        value={editProviderProjectId}
+                        onChangeText={setEditProviderProjectId}
+                        autoCapitalize="none"
+                      />
+                    </>
+                  )}
+
+                  {/* Multi-Token Keys */}
+                  <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginTop: 6 }}>
+                    <Text style={[styles.inputLabel, { color: colors.mutedForeground }, font("semibold")]}>
+                      Configured Tokens ({editProviderApiKeys.length})
+                    </Text>
+                    <Text style={[{ fontSize: 10, color: "#10B981" }, font("bold")]}>
+                      Auto Failover on 429 & 401/403
+                    </Text>
+                  </View>
+
+                  <View style={styles.tokenInputRow}>
+                    <TextInput
+                      style={[
+                        styles.tokenInput,
+                        { backgroundColor: colors.secondary, borderColor: colors.border, color: colors.foreground },
+                        mono("regular"),
+                      ]}
+                      placeholder="Add another API key or OAuth token"
+                      placeholderTextColor={colors.mutedForeground}
+                      value={editNewKeyInput}
+                      onChangeText={setEditNewKeyInput}
+                      secureTextEntry
+                      autoCapitalize="none"
+                    />
+                    <TouchableOpacity
+                      style={styles.addTokenBtn}
+                      onPress={handleAddTokenToEdit}
+                      activeOpacity={0.7}
+                    >
+                      <Plus size={14} color="#FFF" />
+                      <Text style={[styles.addTokenBtnText, font("bold")]}>Add</Text>
+                    </TouchableOpacity>
+                  </View>
+
+                  {/* Key Chips */}
+                  <View style={styles.tokensChipsContainer}>
+                    {editProviderApiKeys.map((k, idx) => (
+                      <View
+                        key={`${k.slice(0, 8)}-${idx}`}
+                        style={[styles.tokenChip, { backgroundColor: colors.secondary, borderColor: colors.border }]}
+                      >
+                        <Key size={11} color="#10B981" />
+                        <Text style={[styles.tokenChipText, { color: colors.foreground }, mono("regular")]}>
+                          Token #{idx + 1} ({k.slice(0, 4)}...{k.slice(-4)})
+                        </Text>
+                        <TouchableOpacity onPress={() => handleRemoveTokenFromEdit(idx)}>
+                          <X size={12} color="#EF4444" />
+                        </TouchableOpacity>
+                      </View>
+                    ))}
+                  </View>
+
+                  <TouchableOpacity
+                    style={styles.saveEditedProviderBtn}
+                    onPress={handleSaveEditedProvider}
+                    activeOpacity={0.8}
+                  >
+                    <Check size={14} color="#FFF" />
+                    <Text style={[styles.saveProviderBtnText, font("bold")]}>Save Configuration</Text>
+                  </TouchableOpacity>
 
                   <TouchableOpacity
                     style={styles.deleteProviderBtn}
@@ -1034,6 +1435,74 @@ export function ModelsScreen() {
           </TouchableWithoutFeedback>
         </Modal>
       )}
+
+      {/* ── Modal: Add Fallback Model to Chain ── */}
+      <Modal
+        visible={showAddChainModal}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setShowAddChainModal(false)}
+      >
+        <TouchableWithoutFeedback onPress={() => setShowAddChainModal(false)}>
+          <View style={styles.modalBackdrop}>
+            <TouchableWithoutFeedback onPress={() => {}}>
+              <Surface style={[styles.modalCard, { backgroundColor: colors.card }]}>
+                <View style={[styles.modalHeaderRow, { borderBottomColor: colors.border }]}>
+                  <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+                    <Layers size={16} color="#8B5CF6" />
+                    <Text style={[styles.modalTitle, { color: colors.foreground }, font("bold")]}>
+                      Select Fallback Model
+                    </Text>
+                  </View>
+                  <TouchableOpacity onPress={() => setShowAddChainModal(false)}>
+                    <X size={17} color={colors.mutedForeground} />
+                  </TouchableOpacity>
+                </View>
+
+                <ScrollView style={{ maxHeight: 350 }} showsVerticalScrollIndicator={false}>
+                  {models
+                    .filter((m) => m.id !== activeId && !fallbackChain.includes(m.id))
+                    .map((m) => (
+                      <TouchableOpacity
+                        key={m.id}
+                        style={[styles.chainPickerItem, { backgroundColor: colors.secondary }]}
+                        onPress={() => handleAddToChain(m.id)}
+                        activeOpacity={0.7}
+                      >
+                        <View style={{ flex: 1 }}>
+                          <Text style={[styles.chainPickerName, { color: colors.foreground }, font("bold")]}>
+                            {m.name}
+                          </Text>
+                          <Text style={[styles.chainPickerId, { color: colors.mutedForeground }, mono("regular")]}>
+                            {m.id}
+                          </Text>
+                        </View>
+                        <Plus size={16} color="#8B5CF6" />
+                      </TouchableOpacity>
+                    ))}
+
+                  {models.filter((m) => m.id !== activeId && !fallbackChain.includes(m.id))
+                    .length === 0 && (
+                    <Text
+                      style={[
+                        {
+                          color: colors.mutedForeground,
+                          fontSize: 12,
+                          textAlign: "center",
+                          paddingVertical: 20,
+                        },
+                        font("regular"),
+                      ]}
+                    >
+                      All available models are already in the routing chain.
+                    </Text>
+                  )}
+                </ScrollView>
+              </Surface>
+            </TouchableWithoutFeedback>
+          </View>
+        </TouchableWithoutFeedback>
+      </Modal>
     </AppShell>
   );
 }
@@ -1041,7 +1510,6 @@ export function ModelsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.background,
   },
   content: {
     padding: 16,
@@ -1055,11 +1523,9 @@ const styles = StyleSheet.create({
   },
   mainHeading: {
     fontSize: 20,
-    color: COLORS.foreground,
   },
   mainSubheading: {
     fontSize: 12,
-    color: COLORS.mutedForeground,
     marginTop: 2,
   },
   headerBtnGroup: {
@@ -1099,6 +1565,7 @@ const styles = StyleSheet.create({
     padding: 14,
     borderRadius: 16,
     gap: 10,
+    borderWidth: 1,
   },
   providersHeaderRow: {
     flexDirection: "row",
@@ -1109,18 +1576,15 @@ const styles = StyleSheet.create({
   providersSectionTitle: {
     fontSize: 11,
     letterSpacing: 0.8,
-    color: COLORS.mutedForeground,
   },
   countBadge: {
     paddingHorizontal: 6,
     paddingVertical: 2,
     borderRadius: 6,
-    backgroundColor: COLORS.secondary,
     marginLeft: "auto",
   },
   countBadgeText: {
     fontSize: 10.5,
-    color: COLORS.mutedForeground,
   },
   providerRow: {
     flexDirection: "row",
@@ -1128,9 +1592,7 @@ const styles = StyleSheet.create({
     gap: 10,
     padding: 10,
     borderRadius: 12,
-    backgroundColor: COLORS.secondary,
     borderWidth: 1,
-    borderColor: COLORS.border,
   },
   providerLogoBox: {
     width: 34,
@@ -1144,90 +1606,165 @@ const styles = StyleSheet.create({
   },
   providerRowName: {
     fontSize: 13.5,
-    color: COLORS.foreground,
   },
   providerRowSub: {
     fontSize: 10.5,
-    color: COLORS.mutedForeground,
     marginTop: 2,
+  },
+  providerRowProject: {
+    fontSize: 10,
+    color: "#4285F4",
+    marginTop: 1,
+  },
+  tokenMultiBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 3,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 5,
+    backgroundColor: "rgba(16, 185, 129, 0.12)",
+  },
+  tokenMultiBadgeText: {
+    fontSize: 9.5,
+    color: "#10B981",
   },
   providerActionCol: {
     flexDirection: "row",
     alignItems: "center",
     gap: 8,
   },
-  connectedTag: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 5,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 6,
-    backgroundColor: "rgba(16, 185, 129, 0.1)",
-  },
-  greenDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: "#10B981",
-  },
-  connectedTagText: {
-    fontSize: 11,
-    color: "#10B981",
-  },
-  signInGoogleBtn: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 5,
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 7,
-    backgroundColor: "#38BDF8",
-  },
-  signInGoogleText: {
-    fontSize: 11,
-    color: "#0F172A",
-    fontWeight: "700",
-  },
   iconActionBtn: {
     padding: 6,
     borderRadius: 7,
-    backgroundColor: COLORS.card,
   },
-  authBoxContainer: {
+  fallbackChainCard: {
+    padding: 14,
+    borderRadius: 16,
+    gap: 10,
+    borderWidth: 1,
+  },
+  fallbackChainHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  fallbackChainTitle: {
+    fontSize: 11,
+    letterSpacing: 0.8,
+    color: "#8B5CF6",
+  },
+  fallbackChainDescription: {
+    fontSize: 11.5,
+    lineHeight: 16,
+  },
+  chainItemPrimary: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
     padding: 10,
     borderRadius: 10,
-    backgroundColor: COLORS.secondary,
-    gap: 6,
     borderWidth: 1,
-    borderColor: "rgba(56, 189, 248, 0.3)",
+    borderColor: "rgba(16, 185, 129, 0.35)",
   },
-  authBoxLabel: {
-    fontSize: 11,
-    color: COLORS.mutedForeground,
-  },
-  authBoxInputRow: {
-    flexDirection: "row",
-    gap: 6,
-  },
-  authInput: {
-    flex: 1,
-    height: 34,
-    borderRadius: 7,
-    backgroundColor: COLORS.card,
-    paddingHorizontal: 8,
-    fontSize: 11,
-    color: COLORS.foreground,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-  },
-  authSubmitBtn: {
-    width: 34,
-    height: 34,
-    borderRadius: 7,
-    backgroundColor: "#38BDF8",
+  chainRankBadgePrimary: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: "#10B981",
     alignItems: "center",
     justifyContent: "center",
+  },
+  chainRankTextPrimary: {
+    fontSize: 11,
+    color: "#FFF",
+  },
+  activeDotPulse: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: "#10B981",
+  },
+  chainItemSecondary: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    padding: 10,
+    borderRadius: 10,
+    borderWidth: 1,
+  },
+  chainRankBadge: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    borderWidth: 1,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  chainRankText: {
+    fontSize: 11,
+  },
+  chainItemName: {
+    fontSize: 13,
+  },
+  chainItemSub: {
+    fontSize: 10.5,
+    marginTop: 1,
+  },
+  chainIconBtn: {
+    padding: 5,
+    borderRadius: 6,
+  },
+  chainActionsRow: {
+    flexDirection: "row",
+    gap: 8,
+    marginTop: 4,
+  },
+  addChainBtn: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
+    paddingVertical: 8,
+    borderRadius: 9,
+    borderWidth: 1,
+    borderColor: "rgba(139, 92, 246, 0.35)",
+    backgroundColor: "rgba(139, 92, 246, 0.08)",
+  },
+  addChainBtnText: {
+    fontSize: 12,
+    color: "#8B5CF6",
+  },
+  saveChainBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 9,
+    backgroundColor: "#8B5CF6",
+  },
+  saveChainBtnText: {
+    fontSize: 12,
+    color: "#FFF",
+  },
+  chainPickerItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    borderRadius: 9,
+    marginBottom: 6,
+  },
+  chainPickerName: {
+    fontSize: 13,
+  },
+  chainPickerId: {
+    fontSize: 11,
+    marginTop: 1,
   },
   searchFilterSection: {
     gap: 10,
@@ -1239,14 +1776,11 @@ const styles = StyleSheet.create({
     height: 38,
     paddingHorizontal: 12,
     borderRadius: 12,
-    backgroundColor: COLORS.secondary,
     borderWidth: 1,
-    borderColor: COLORS.border,
   },
   searchInput: {
     flex: 1,
     fontSize: 12.5,
-    color: COLORS.foreground,
     paddingVertical: 0,
   },
   filterPillsRow: {
@@ -1257,9 +1791,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 16,
-    backgroundColor: COLORS.secondary,
     borderWidth: 1,
-    borderColor: COLORS.border,
   },
   filterPillActive: {
     backgroundColor: "rgba(99, 102, 241, 0.12)",
@@ -1267,24 +1799,17 @@ const styles = StyleSheet.create({
   },
   filterPillText: {
     fontSize: 11.5,
-    color: COLORS.mutedForeground,
-  },
-  filterPillTextActive: {
-    color: "#6366F1",
-    fontWeight: "700",
   },
   providerGroupCard: {
     borderRadius: 16,
     overflow: "hidden",
     borderWidth: 1,
-    borderColor: COLORS.border,
   },
   groupHeaderRow: {
     flexDirection: "row",
     alignItems: "center",
     gap: 10,
     padding: 12,
-    backgroundColor: COLORS.secondary,
   },
   groupLogoBox: {
     width: 28,
@@ -1295,17 +1820,14 @@ const styles = StyleSheet.create({
   },
   groupTitle: {
     fontSize: 14,
-    color: COLORS.foreground,
   },
   groupCountBadge: {
     paddingHorizontal: 7,
     paddingVertical: 2,
     borderRadius: 10,
-    backgroundColor: COLORS.card,
   },
   groupCountText: {
     fontSize: 10.5,
-    color: COLORS.mutedForeground,
   },
   modelsList: {
     padding: 10,
@@ -1314,9 +1836,7 @@ const styles = StyleSheet.create({
   modelItemCard: {
     padding: 12,
     borderRadius: 12,
-    backgroundColor: COLORS.card,
     borderWidth: 1,
-    borderColor: COLORS.border,
     gap: 8,
   },
   modelItemCardSelected: {
@@ -1336,12 +1856,21 @@ const styles = StyleSheet.create({
   },
   modelItemName: {
     fontSize: 13.5,
-    color: COLORS.foreground,
   },
   modelItemId: {
     fontSize: 11,
-    color: COLORS.mutedForeground,
     marginTop: 2,
+  },
+  defaultBadge: {
+    paddingHorizontal: 5,
+    paddingVertical: 1.5,
+    borderRadius: 4,
+    backgroundColor: "rgba(99, 102, 241, 0.15)",
+  },
+  defaultBadgeText: {
+    fontSize: 9,
+    color: "#6366F1",
+    letterSpacing: 0.5,
   },
   selectCol: {
     paddingTop: 2,
@@ -1359,7 +1888,6 @@ const styles = StyleSheet.create({
     height: 18,
     borderRadius: 9,
     borderWidth: 1.2,
-    borderColor: COLORS.mutedForeground,
     opacity: 0.35,
   },
   metaRow: {
@@ -1375,11 +1903,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 6,
     paddingVertical: 3,
     borderRadius: 6,
-    backgroundColor: COLORS.secondary,
   },
   specBadgeText: {
     fontSize: 10,
-    color: COLORS.mutedForeground,
   },
   emptyContainer: {
     padding: 32,
@@ -1389,11 +1915,9 @@ const styles = StyleSheet.create({
   },
   emptyTitle: {
     fontSize: 14,
-    color: COLORS.foreground,
   },
   emptySub: {
     fontSize: 11.5,
-    color: COLORS.mutedForeground,
     textAlign: "center",
   },
   bottomBar: {
@@ -1408,8 +1932,6 @@ const styles = StyleSheet.create({
     paddingTop: 10,
     paddingBottom: Platform.OS === "ios" ? 32 : 14,
     borderTopWidth: 1,
-    borderTopColor: COLORS.border,
-    backgroundColor: COLORS.card,
     gap: 8,
   },
   bottomModelInfo: {
@@ -1417,17 +1939,14 @@ const styles = StyleSheet.create({
   },
   bottomLabel: {
     fontSize: 10,
-    color: COLORS.mutedForeground,
   },
   bottomModelName: {
     fontSize: 12.5,
-    color: COLORS.foreground,
     marginTop: 1,
   },
   effortPills: {
     flexDirection: "row",
     borderRadius: 8,
-    backgroundColor: COLORS.secondary,
     padding: 2,
   },
   effortPill: {
@@ -1440,11 +1959,6 @@ const styles = StyleSheet.create({
   },
   effortPillText: {
     fontSize: 9.5,
-    color: COLORS.mutedForeground,
-  },
-  effortPillTextActive: {
-    color: "#FFF",
-    fontWeight: "700",
   },
   applyBtn: {
     flexDirection: "row",
@@ -1477,15 +1991,12 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     paddingBottom: 8,
     borderBottomWidth: 1,
-    borderBottomColor: COLORS.border,
   },
   modalTitle: {
     fontSize: 15,
-    color: COLORS.foreground,
   },
   inputLabel: {
     fontSize: 11.5,
-    color: COLORS.mutedForeground,
     marginTop: 4,
   },
   presetsScroll: {
@@ -1497,9 +2008,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     paddingVertical: 6,
     borderRadius: 8,
-    backgroundColor: COLORS.secondary,
     borderWidth: 1,
-    borderColor: COLORS.border,
   },
   presetChipActive: {
     backgroundColor: "rgba(99, 102, 241, 0.12)",
@@ -1507,21 +2016,72 @@ const styles = StyleSheet.create({
   },
   presetChipText: {
     fontSize: 11,
-    color: COLORS.mutedForeground,
   },
-  presetChipTextActive: {
-    color: "#6366F1",
-    fontWeight: "700",
+  infoBanner: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    padding: 8,
+    borderRadius: 8,
+    backgroundColor: "rgba(66, 133, 244, 0.1)",
+    marginVertical: 4,
+  },
+  infoBannerText: {
+    fontSize: 11,
+    color: "#4285F4",
+    flex: 1,
   },
   modalInput: {
     height: 38,
     borderRadius: 8,
-    backgroundColor: COLORS.secondary,
     borderWidth: 1,
-    borderColor: COLORS.border,
     paddingHorizontal: 10,
     fontSize: 12,
-    color: COLORS.foreground,
+  },
+  tokenInputRow: {
+    flexDirection: "row",
+    gap: 6,
+    alignItems: "center",
+    marginTop: 4,
+  },
+  tokenInput: {
+    flex: 1,
+    height: 38,
+    borderRadius: 8,
+    borderWidth: 1,
+    paddingHorizontal: 10,
+    fontSize: 12,
+  },
+  addTokenBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    height: 38,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    backgroundColor: "#6366F1",
+  },
+  addTokenBtnText: {
+    fontSize: 12,
+    color: "#FFF",
+  },
+  tokensChipsContainer: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 6,
+    paddingVertical: 4,
+  },
+  tokenChip: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    paddingHorizontal: 8,
+    paddingVertical: 5,
+    borderRadius: 6,
+    borderWidth: 1,
+  },
+  tokenChipText: {
+    fontSize: 11,
   },
   testBtn: {
     flexDirection: "row",
@@ -1533,7 +2093,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "rgba(99, 102, 241, 0.4)",
     backgroundColor: "rgba(99, 102, 241, 0.08)",
-    marginTop: 6,
+    marginTop: 8,
   },
   testBtnText: {
     fontSize: 12,
@@ -1552,7 +2112,17 @@ const styles = StyleSheet.create({
     height: 40,
     borderRadius: 8,
     backgroundColor: "#6366F1",
-    marginTop: 6,
+    marginTop: 8,
+  },
+  saveEditedProviderBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
+    height: 38,
+    borderRadius: 8,
+    backgroundColor: "#10B981",
+    marginTop: 8,
   },
   saveProviderBtnText: {
     fontSize: 13,
@@ -1560,9 +2130,7 @@ const styles = StyleSheet.create({
   },
   readOnlyText: {
     fontSize: 12,
-    color: COLORS.foreground,
     padding: 8,
-    backgroundColor: COLORS.secondary,
     borderRadius: 6,
   },
   deleteProviderBtn: {

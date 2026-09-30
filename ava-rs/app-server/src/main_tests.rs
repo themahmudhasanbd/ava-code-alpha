@@ -1,6 +1,6 @@
 use super::AppServerArgs;
-use clap::Parser;
 use ava_app_server::AppServerTransport;
+use clap::Parser;
 use pretty_assertions::assert_eq;
 use toml::Value as TomlValue;
 use url::Url;
@@ -73,9 +73,8 @@ fn app_server_rejects_invalid_code_mode_host() {
         "https://alice:secret@example.test",
         "http://example.test/?token=secret",
     ] {
-        let error =
-            AppServerArgs::try_parse_from(["ava-app-server", "--code-mode-host", endpoint])
-                .expect_err("invalid code-mode host endpoint should fail startup argument parsing");
+        let error = AppServerArgs::try_parse_from(["ava-app-server", "--code-mode-host", endpoint])
+            .expect_err("invalid code-mode host endpoint should fail startup argument parsing");
 
         assert_eq!(error.kind(), clap::error::ErrorKind::ValueValidation);
         let rendered_error = error.to_string();

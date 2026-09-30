@@ -400,11 +400,8 @@ impl AvaAuth {
 
         match auth_mode {
             AuthMode::Chatgpt => {
-                let storage = create_auth_storage(
-                    ava_home.to_path_buf(),
-                    storage_mode,
-                    keyring_backend_kind,
-                );
+                let storage =
+                    create_auth_storage(ava_home.to_path_buf(), storage_mode, keyring_backend_kind);
                 Ok(Self::Chatgpt(ChatgptAuth { state, storage }))
             }
             AuthMode::ChatgptAuthTokens => Ok(Self::ChatgptAuthTokens(ChatgptAuthTokens { state })),
@@ -982,25 +979,18 @@ pub async fn logout_with_revoke(
     keyring_backend_kind: AuthKeyringBackendKind,
     auth_route_config: &AuthRouteConfig,
 ) -> std::io::Result<bool> {
-    let auth_dot_json = match load_auth_dot_json(
-        ava_home,
-        auth_credentials_store_mode,
-        keyring_backend_kind,
-    ) {
-        Ok(auth_dot_json) => auth_dot_json,
-        Err(err) => {
-            tracing::warn!("failed to load stored auth during logout: {err}");
-            None
-        }
-    };
+    let auth_dot_json =
+        match load_auth_dot_json(ava_home, auth_credentials_store_mode, keyring_backend_kind) {
+            Ok(auth_dot_json) => auth_dot_json,
+            Err(err) => {
+                tracing::warn!("failed to load stored auth during logout: {err}");
+                None
+            }
+        };
     if let Err(err) = revoke_auth_tokens(auth_dot_json.as_ref(), auth_route_config).await {
         tracing::warn!("failed to revoke auth tokens during logout: {err}");
     }
-    logout_all_stores(
-        ava_home,
-        auth_credentials_store_mode,
-        keyring_backend_kind,
-    )
+    logout_all_stores(ava_home, auth_credentials_store_mode, keyring_backend_kind)
 }
 
 /// Writes an `auth.json` that contains only the API key.
@@ -1370,14 +1360,12 @@ async fn enforce_login_restrictions_with_agent_identity_authapi_base_url(
 
     if let Some(expected_account_ids) = config.forced_chatgpt_workspace_id.as_deref() {
         let chatgpt_account_id = match &auth {
-            AvaAuth::ApiKey(_)
-            | AvaAuth::BedrockApiKey(_)
-            | AvaAuth::BedrockAccessKeys(_) => {
+            AvaAuth::ApiKey(_) | AvaAuth::BedrockApiKey(_) | AvaAuth::BedrockAccessKeys(_) => {
                 return Ok(());
             }
-            AvaAuth::Headers(_)
-            | AvaAuth::AgentIdentity(_)
-            | AvaAuth::PersonalAccessToken(_) => auth.get_account_id(),
+            AvaAuth::Headers(_) | AvaAuth::AgentIdentity(_) | AvaAuth::PersonalAccessToken(_) => {
+                auth.get_account_id()
+            }
             AvaAuth::Chatgpt(_) | AvaAuth::ChatgptAuthTokens(_) => {
                 let token_data = match auth.get_token_data() {
                     Ok(data) => data,
@@ -1432,11 +1420,8 @@ fn logout_with_message(
 ) -> std::io::Result<()> {
     // External auth tokens live in the ephemeral store, but persistent auth may still exist
     // from earlier logins. Clear both so a forced logout truly removes all active auth.
-    let removal_result = logout_all_stores(
-        ava_home,
-        auth_credentials_store_mode,
-        keyring_backend_kind,
-    );
+    let removal_result =
+        logout_all_stores(ava_home, auth_credentials_store_mode, keyring_backend_kind);
     let error_message = match removal_result {
         Ok(_) => message,
         Err(err) => format!("{message}. Failed to remove auth.json: {err}"),
@@ -1461,11 +1446,7 @@ fn logout_all_stores(
         AuthCredentialsStoreMode::Ephemeral,
         AuthKeyringBackendKind::default(),
     )?;
-    let removed_managed = logout(
-        ava_home,
-        auth_credentials_store_mode,
-        keyring_backend_kind,
-    )?;
+    let removed_managed = logout(ava_home, auth_credentials_store_mode, keyring_backend_kind)?;
     Ok(removed_ephemeral || removed_managed)
 }
 
@@ -1790,10 +1771,7 @@ struct AuthScopedRefreshFailure {
 impl Debug for CachedAuth {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("CachedAuth")
-            .field(
-                "auth_mode",
-                &self.auth.as_ref().map(AvaAuth::api_auth_mode),
-            )
+            .field("auth_mode", &self.auth.as_ref().map(AvaAuth::api_auth_mode))
             .field(
                 "permanent_refresh_failure",
                 &self

@@ -1572,12 +1572,9 @@ async fn code_mode_exec_emits_correlated_production_analytics() -> Result<()> {
         })
         .await?;
 
-    let event = wait_for_analytics_event(
-        &server,
-        DEFAULT_READ_TIMEOUT,
-        "ava_dynamic_tool_call_event",
-    )
-    .await?;
+    let event =
+        wait_for_analytics_event(&server, DEFAULT_READ_TIMEOUT, "ava_dynamic_tool_call_event")
+            .await?;
     assert_eq!(
         json!({
             "turnId": event["event_params"]["turn_id"],

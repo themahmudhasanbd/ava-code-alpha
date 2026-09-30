@@ -25,6 +25,19 @@ export const DEFAULT_TOKENS: DesignTokens = {
 
 export class TokenStore {
   static getProjectTokens(directory: string): DesignTokens {
+    // 1. Primary: .ava-code/design/tokens.json
+    const primaryPath = path.join(directory, ".ava-code", "design", "tokens.json")
+    if (fs.existsSync(primaryPath)) {
+      try {
+        const raw = fs.readFileSync(primaryPath, "utf-8")
+        const parsed = JSON.parse(raw)
+        if (parsed.colors && parsed.typeScale && parsed.spacingScale) {
+          return parsed as DesignTokens
+        }
+      } catch (_) {}
+    }
+
+    // 2. Fallback: design-tokens.json
     const tokenFilePath = path.join(directory, "design-tokens.json")
     if (fs.existsSync(tokenFilePath)) {
       try {
@@ -39,7 +52,17 @@ export class TokenStore {
   }
 
   static saveProjectTokens(directory: string, tokens: DesignTokens): void {
+    const dir = path.join(directory, ".ava-code", "design")
+    if (!fs.existsSync(dir)) {
+      fs.mkdirSync(dir, { recursive: true })
+    }
+    const primaryPath = path.join(dir, "tokens.json")
+    fs.writeFileSync(primaryPath, JSON.stringify(tokens, null, 2), "utf-8")
+
+    // Legacy fallback compatibility
     const tokenFilePath = path.join(directory, "design-tokens.json")
-    fs.writeFileSync(tokenFilePath, JSON.stringify(tokens, null, 2), "utf-8")
+    try {
+      fs.writeFileSync(tokenFilePath, JSON.stringify(tokens, null, 2), "utf-8")
+    } catch (_) {}
   }
 }

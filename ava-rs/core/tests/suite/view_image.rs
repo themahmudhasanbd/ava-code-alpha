@@ -1,8 +1,6 @@
 #![cfg(not(target_os = "windows"))]
 
 use anyhow::Context;
-use base64::Engine;
-use base64::engine::general_purpose::STANDARD as BASE64_STANDARD;
 use ava_core::TurnInputRequest;
 use ava_exec_server::CreateDirectoryOptions;
 use ava_exec_server::LOCAL_ENVIRONMENT_ID;
@@ -35,6 +33,8 @@ use ava_protocol::protocol::ThreadSettingsOverrides;
 use ava_protocol::protocol::TurnEnvironmentSelection;
 use ava_protocol::user_input::UserInput;
 use ava_utils_path_uri::PathUri;
+use base64::Engine;
+use base64::engine::general_purpose::STANDARD as BASE64_STANDARD;
 use core_test_support::PathExt;
 use core_test_support::is_remote_test_environment;
 use core_test_support::responses;
@@ -261,16 +261,15 @@ async fn assert_user_turn_local_image_resizes_to(
 
     let session_model = session_configured.model.clone();
 
-    ava
-        .start_or_steer_turn(disabled_user_turn(
-            &test,
-            vec![UserInput::LocalImage {
-                path: abs_path.clone(),
-                detail: None,
-            }],
-            session_model,
-        ))
-        .await?;
+    ava.start_or_steer_turn(disabled_user_turn(
+        &test,
+        vec![UserInput::LocalImage {
+            path: abs_path.clone(),
+            detail: None,
+        }],
+        session_model,
+    ))
+    .await?;
 
     wait_for_event_with_timeout(
         ava,
@@ -461,16 +460,15 @@ async fn view_image_tool_attaches_local_image() -> anyhow::Result<()> {
 
     let session_model = session_configured.model.clone();
 
-    ava
-        .start_or_steer_turn(disabled_user_turn(
-            &test,
-            vec![UserInput::Text {
-                text: "please add the screenshot".into(),
-                text_elements: Vec::new(),
-            }],
-            session_model,
-        ))
-        .await?;
+    ava.start_or_steer_turn(disabled_user_turn(
+        &test,
+        vec![UserInput::Text {
+            text: "please add the screenshot".into(),
+            text_elements: Vec::new(),
+        }],
+        session_model,
+    ))
+    .await?;
 
     let mut item_started = None;
     let mut item_completed = None;
@@ -882,16 +880,15 @@ async fn view_image_tool_can_preserve_original_resolution_when_requested_on_gpt5
 
     let session_model = session_configured.model.clone();
 
-    ava
-        .start_or_steer_turn(disabled_user_turn(
-            &test,
-            vec![UserInput::Text {
-                text: "please add the original screenshot".into(),
-                text_elements: Vec::new(),
-            }],
-            session_model,
-        ))
-        .await?;
+    ava.start_or_steer_turn(disabled_user_turn(
+        &test,
+        vec![UserInput::Text {
+            text: "please add the original screenshot".into(),
+            text_elements: Vec::new(),
+        }],
+        session_model,
+    ))
+    .await?;
 
     wait_for_event_with_timeout(
         ava,
@@ -1047,16 +1044,15 @@ async fn view_image_tool_errors_clearly_for_unsupported_detail_values() -> anyho
 
     let session_model = session_configured.model.clone();
 
-    ava
-        .start_or_steer_turn(disabled_user_turn(
-            &test,
-            vec![UserInput::Text {
-                text: "please attach the image at low detail".into(),
-                text_elements: Vec::new(),
-            }],
-            session_model,
-        ))
-        .await?;
+    ava.start_or_steer_turn(disabled_user_turn(
+        &test,
+        vec![UserInput::Text {
+            text: "please attach the image at low detail".into(),
+            text_elements: Vec::new(),
+        }],
+        session_model,
+    ))
+    .await?;
 
     wait_for_event_with_timeout(
         ava,
@@ -1127,16 +1123,15 @@ async fn view_image_tool_treats_null_detail_as_omitted() -> anyhow::Result<()> {
 
     let session_model = session_configured.model.clone();
 
-    ava
-        .start_or_steer_turn(disabled_user_turn(
-            &test,
-            vec![UserInput::Text {
-                text: "please attach the image with a null detail".into(),
-                text_elements: Vec::new(),
-            }],
-            session_model,
-        ))
-        .await?;
+    ava.start_or_steer_turn(disabled_user_turn(
+        &test,
+        vec![UserInput::Text {
+            text: "please attach the image with a null detail".into(),
+            text_elements: Vec::new(),
+        }],
+        session_model,
+    ))
+    .await?;
 
     wait_for_event_with_timeout(
         ava,
@@ -1192,13 +1187,11 @@ async fn assert_view_image_tool_resizes_without_original_support(
     image_budget_policy: ImageBudgetPolicy,
 ) -> anyhow::Result<()> {
     let server = start_mock_server().await;
-    let mut builder = test_ava()
-        .with_model("gpt-5.2")
-        .with_config(move |config| {
-            if image_budget_policy == ImageBudgetPolicy::Unified {
-                let _ = config.features.enable(Feature::UnifiedImageBudget);
-            }
-        });
+    let mut builder = test_ava().with_model("gpt-5.2").with_config(move |config| {
+        if image_budget_policy == ImageBudgetPolicy::Unified {
+            let _ = config.features.enable(Feature::UnifiedImageBudget);
+        }
+    });
     let test = builder.build_with_auto_env(&server).await?;
     let TestAva {
         ava,
@@ -1236,16 +1229,15 @@ async fn assert_view_image_tool_resizes_without_original_support(
 
     let session_model = session_configured.model.clone();
 
-    ava
-        .start_or_steer_turn(disabled_user_turn(
-            &test,
-            vec![UserInput::Text {
-                text: "please add the screenshot".into(),
-                text_elements: Vec::new(),
-            }],
-            session_model,
-        ))
-        .await?;
+    ava.start_or_steer_turn(disabled_user_turn(
+        &test,
+        vec![UserInput::Text {
+            text: "please add the screenshot".into(),
+            text_elements: Vec::new(),
+        }],
+        session_model,
+    ))
+    .await?;
 
     wait_for_event_with_timeout(
         ava,
@@ -1330,16 +1322,15 @@ async fn view_image_tool_does_not_force_original_resolution_with_capability_only
 
     let session_model = session_configured.model.clone();
 
-    ava
-        .start_or_steer_turn(disabled_user_turn(
-            &test,
-            vec![UserInput::Text {
-                text: "please add the screenshot".into(),
-                text_elements: Vec::new(),
-            }],
-            session_model,
-        ))
-        .await?;
+    ava.start_or_steer_turn(disabled_user_turn(
+        &test,
+        vec![UserInput::Text {
+            text: "please add the screenshot".into(),
+            text_elements: Vec::new(),
+        }],
+        session_model,
+    ))
+    .await?;
 
     wait_for_event_with_timeout(
         ava,
@@ -1412,16 +1403,15 @@ async fn view_image_tool_errors_when_path_is_directory() -> anyhow::Result<()> {
 
     let session_model = session_configured.model.clone();
 
-    ava
-        .start_or_steer_turn(disabled_user_turn(
-            &test,
-            vec![UserInput::Text {
-                text: "please attach the folder".into(),
-                text_elements: Vec::new(),
-            }],
-            session_model,
-        ))
-        .await?;
+    ava.start_or_steer_turn(disabled_user_turn(
+        &test,
+        vec![UserInput::Text {
+            text: "please attach the folder".into(),
+            text_elements: Vec::new(),
+        }],
+        session_model,
+    ))
+    .await?;
 
     wait_for_event_with_timeout(
         ava,
@@ -1484,16 +1474,15 @@ async fn view_image_tool_rejects_invalid_image_before_tool_output() -> anyhow::R
     )
     .await;
 
-    ava
-        .start_or_steer_turn(disabled_user_turn(
-            &test,
-            vec![UserInput::Text {
-                text: "please inspect the image".into(),
-                text_elements: Vec::new(),
-            }],
-            session_configured.model.clone(),
-        ))
-        .await?;
+    ava.start_or_steer_turn(disabled_user_turn(
+        &test,
+        vec![UserInput::Text {
+            text: "please inspect the image".into(),
+            text_elements: Vec::new(),
+        }],
+        session_configured.model.clone(),
+    ))
+    .await?;
     wait_for_event_with_timeout(
         ava,
         |event| matches!(event, EventMsg::TurnComplete(_)),
@@ -1556,16 +1545,15 @@ async fn view_image_tool_errors_when_file_missing() -> anyhow::Result<()> {
 
     let session_model = session_configured.model.clone();
 
-    ava
-        .start_or_steer_turn(disabled_user_turn(
-            &test,
-            vec![UserInput::Text {
-                text: "please attach the missing image".into(),
-                text_elements: Vec::new(),
-            }],
-            session_model,
-        ))
-        .await?;
+    ava.start_or_steer_turn(disabled_user_turn(
+        &test,
+        vec![UserInput::Text {
+            text: "please attach the missing image".into(),
+            text_elements: Vec::new(),
+        }],
+        session_model,
+    ))
+    .await?;
 
     wait_for_event_with_timeout(
         ava,
@@ -1700,16 +1688,15 @@ async fn view_image_tool_returns_unsupported_message_for_text_only_model() -> an
     ]);
     let mock = responses::mount_sse_once(&server, second_response).await;
 
-    ava
-        .start_or_steer_turn(disabled_user_turn(
-            &test,
-            vec![UserInput::Text {
-                text: "please attach the image".into(),
-                text_elements: Vec::new(),
-            }],
-            model_slug.to_string(),
-        ))
-        .await?;
+    ava.start_or_steer_turn(disabled_user_turn(
+        &test,
+        vec![UserInput::Text {
+            text: "please attach the image".into(),
+            text_elements: Vec::new(),
+        }],
+        model_slug.to_string(),
+    ))
+    .await?;
 
     wait_for_event_with_timeout(
         ava,

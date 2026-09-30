@@ -38,9 +38,8 @@ impl RepositoryFixture {
     }
 
     fn manager(&self) -> WorktreeManager {
-        let settings =
-            WorktreeSettings::from_desktop_config(&self.ava_home, /*desktop*/ None)
-                .expect("load default worktree settings");
+        let settings = WorktreeSettings::from_desktop_config(&self.ava_home, /*desktop*/ None)
+            .expect("load default worktree settings");
         WorktreeManager::new(settings)
     }
 }
@@ -474,9 +473,19 @@ fn creation_ignores_inherited_git_environment() {
     }
     let mut child = Command::new(std::env::current_exe().expect("current test executable"));
     child
-        .args(["--exact", "creation_ignores_inherited_git_environment", "--nocapture"])
-        .env(CHILD_ROOT, fixture.repository.parent().expect("fixture parent"))
-        .env("AVA_WORKTREE_ENV_TEST_HEAD", run_git(&fixture.repository, &["rev-parse", "HEAD"]))
+        .args([
+            "--exact",
+            "creation_ignores_inherited_git_environment",
+            "--nocapture",
+        ])
+        .env(
+            CHILD_ROOT,
+            fixture.repository.parent().expect("fixture parent"),
+        )
+        .env(
+            "AVA_WORKTREE_ENV_TEST_HEAD",
+            run_git(&fixture.repository, &["rev-parse", "HEAD"]),
+        )
         .env("GIT_DIR", other.join(".git"))
         .env("GIT_COMMON_DIR", other.join(".git"))
         .env("GIT_CEILING_DIRECTORIES", &fixture.repository)
@@ -484,7 +493,10 @@ fn creation_ignores_inherited_git_environment() {
         .env("GIT_CONFIG_COUNT", "1")
         .env("GIT_CONFIG_KEY_0", "filter.review.required")
         .env("GIT_CONFIG_VALUE_0", "true")
-        .env("GIT_CONFIG_PARAMETERS", "'filter.review.process=ava-worktree-nonexistent-filter' 'filter.review.required=true'");
+        .env(
+            "GIT_CONFIG_PARAMETERS",
+            "'filter.review.process=ava-worktree-nonexistent-filter' 'filter.review.required=true'",
+        );
     let output = child.output().expect("fixture operation succeeds");
     assert!(
         output.status.success(),

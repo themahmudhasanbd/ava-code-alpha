@@ -1,10 +1,10 @@
 //! Validates local verification requests and maps native results into the app-server API.
 //! Native diagnostics stay private; clients receive bounded input errors and typed reasons.
 
-use base64::Engine as _;
-use base64::engine::general_purpose::URL_SAFE_NO_PAD;
 use ava_app_server_protocol as rpc;
 use ava_user_verification as native;
+use base64::Engine as _;
+use base64::engine::general_purpose::URL_SAFE_NO_PAD;
 
 pub(super) fn validate(
     params: rpc::UserVerificationVerifyParams,

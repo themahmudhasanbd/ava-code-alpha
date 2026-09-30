@@ -353,9 +353,9 @@ pub enum AppEvent {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use chrono::Utc;
     use ava_cloud_tasks_client::CloudBackendFuture;
     use ava_cloud_tasks_client::CloudTaskError;
+    use chrono::Utc;
 
     struct FakeBackend {
         // maps env key to titles

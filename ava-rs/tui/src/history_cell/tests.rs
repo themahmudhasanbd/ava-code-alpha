@@ -40,10 +40,8 @@ const SMALL_PNG_BASE64: &str = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAA
 fn connected_server_version_notice_snapshot() {
     let target = crate::AppServerTarget::Remote {
         endpoint: crate::RemoteAppServerEndpoint::UnixSocket {
-            socket_path: AbsolutePathBuf::from_absolute_path(
-                std::env::temp_dir().join("ava.sock"),
-            )
-            .expect("absolute socket path"),
+            socket_path: AbsolutePathBuf::from_absolute_path(std::env::temp_dir().join("ava.sock"))
+                .expect("absolute socket path"),
         },
     };
     let settings = ava_config::types::Tui {
@@ -68,10 +66,8 @@ fn local_daemon_version_notice_snapshot() {
     let target = crate::AppServerTarget::LocalDaemon {
         allow_embedded_fallback: true,
         endpoint: crate::RemoteAppServerEndpoint::UnixSocket {
-            socket_path: AbsolutePathBuf::from_absolute_path(
-                std::env::temp_dir().join("ava.sock"),
-            )
-            .expect("absolute socket path"),
+            socket_path: AbsolutePathBuf::from_absolute_path(std::env::temp_dir().join("ava.sock"))
+                .expect("absolute socket path"),
         },
     };
     let settings = ava_config::types::Tui {

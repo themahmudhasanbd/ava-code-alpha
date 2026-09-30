@@ -1,6 +1,6 @@
 use super::*;
-use chrono::TimeDelta;
 use ava_login::AuthHeaders;
+use chrono::TimeDelta;
 use pretty_assertions::assert_eq;
 
 #[test]

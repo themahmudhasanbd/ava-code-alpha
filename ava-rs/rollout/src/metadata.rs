@@ -5,10 +5,6 @@ use crate::compression;
 use crate::recorder::RolloutRecorder;
 use crate::rollout_file_name::RolloutFileName;
 use crate::state_db::normalize_cwd_for_state_db;
-use chrono::DateTime;
-use chrono::NaiveDateTime;
-use chrono::Timelike;
-use chrono::Utc;
 use ava_protocol::RolloutId;
 use ava_protocol::protocol::AskForApproval;
 use ava_protocol::protocol::SandboxPolicy;
@@ -25,6 +21,10 @@ use ava_state::DB_METRIC_BACKFILL_DURATION_MS;
 use ava_state::ExtractionOutcome;
 use ava_state::ThreadMetadataBuilder;
 use ava_state::apply_rollout_item;
+use chrono::DateTime;
+use chrono::NaiveDateTime;
+use chrono::Timelike;
+use chrono::Utc;
 use std::path::Path;
 use std::path::PathBuf;
 use tracing::info;
@@ -185,13 +185,7 @@ pub(crate) async fn backfill_sessions(
     ava_home: &Path,
     default_provider: &str,
 ) {
-    backfill_sessions_with_lease(
-        runtime,
-        ava_home,
-        default_provider,
-        BACKFILL_LEASE_SECONDS,
-    )
-    .await;
+    backfill_sessions_with_lease(runtime, ava_home, default_provider, BACKFILL_LEASE_SECONDS).await;
 }
 
 pub(crate) async fn backfill_sessions_with_lease(

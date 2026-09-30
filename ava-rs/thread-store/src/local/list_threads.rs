@@ -1,11 +1,11 @@
 use std::collections::HashMap;
 
-use chrono::DateTime;
-use chrono::Utc;
 use ava_rollout::RolloutConfig;
 use ava_rollout::RolloutRecorder;
 use ava_rollout::parse_cursor;
 use ava_state::ThreadFilterOptions;
+use chrono::DateTime;
+use chrono::Utc;
 
 use super::LocalThreadStore;
 use super::helpers::resolve_thread_names;
@@ -355,12 +355,12 @@ pub(super) async fn list_rollout_threads(
 
 #[cfg(test)]
 mod tests {
-    use chrono::Utc;
     use ava_protocol::ThreadId;
     use ava_protocol::protocol::SessionSource;
     use ava_protocol::protocol::ThreadHistoryMode;
     use ava_state::PINNED_THREAD_SECTION_ID;
     use ava_utils_absolute_path::test_support::PathExt;
+    use chrono::Utc;
     use pretty_assertions::assert_eq;
     use std::fs;
     use tempfile::TempDir;

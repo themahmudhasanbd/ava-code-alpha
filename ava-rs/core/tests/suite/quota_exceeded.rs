@@ -63,10 +63,7 @@ async fn quota_exceeded_emits_single_error_event(code: &str) -> Result<()> {
                     err.message,
                     "Quota exceeded. Check your plan and billing details."
                 );
-                assert_eq!(
-                    err.ava_error_info,
-                    Some(AvaErrorInfo::UsageLimitExceeded)
-                );
+                assert_eq!(err.ava_error_info, Some(AvaErrorInfo::UsageLimitExceeded));
             }
             EventMsg::TurnComplete(_) => break,
             _ => {}

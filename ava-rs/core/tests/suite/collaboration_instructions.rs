@@ -964,32 +964,27 @@ async fn resume_replays_collaboration_instructions() -> Result<()> {
     )
     .await?;
 
-    initial
-        .ava-code
-        .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
-            text: "hello".into(),
-            text_elements: Vec::new(),
-        }]))
-        .await?;
+    initial.ava
+        - code
+            .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
+                text: "hello".into(),
+                text_elements: Vec::new(),
+            }]))
+            .await?;
     wait_for_event(&initial.ava, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
 
     let resumed = builder.restart(&server, &initial).await?;
     assert_eq!(
-        resumed
-            .ava-code
-            .config_snapshot()
-            .await
-            .collaboration_mode
-            .mode,
+        resumed.ava - code.config_snapshot().await.collaboration_mode.mode,
         ModeKind::Plan
     );
-    resumed
-        .ava-code
-        .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
-            text: "after resume".into(),
-            text_elements: Vec::new(),
-        }]))
-        .await?;
+    resumed.ava
+        - code
+            .start_or_steer_turn(TurnInputRequest::user_input(vec![UserInput::Text {
+                text: "after resume".into(),
+                text_elements: Vec::new(),
+            }]))
+            .await?;
     wait_for_event(&resumed.ava, |ev| matches!(ev, EventMsg::TurnComplete(_))).await;
 
     let input = req2.single_request().input();

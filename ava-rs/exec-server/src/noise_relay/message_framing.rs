@@ -1,7 +1,7 @@
+use ava_exec_server_protocol::JSONRPCMessage;
 use bytes::Buf;
 use bytes::Bytes;
 use bytes::BytesMut;
-use ava_exec_server_protocol::JSONRPCMessage;
 
 use crate::ExecServerError;
 

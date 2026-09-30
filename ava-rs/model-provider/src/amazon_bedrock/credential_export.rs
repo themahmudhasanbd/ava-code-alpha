@@ -12,11 +12,11 @@ use std::sync::atomic::Ordering;
 use std::time::Duration;
 use std::time::SystemTime;
 
-use chrono::DateTime;
-use chrono::Utc;
 use ava_aws_auth::AwsAccessKeys;
 use ava_aws_auth::AwsCredentialsProvider;
 use ava_model_provider_info::AwsCredentialExportConfig;
+use chrono::DateTime;
+use chrono::Utc;
 use serde::Deserialize;
 use tokio::io::AsyncReadExt;
 use tokio::process::Command;

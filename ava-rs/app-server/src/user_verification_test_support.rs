@@ -14,8 +14,6 @@ use crate::transport::AppServerTransport;
 use anyhow::Result;
 use app_test_support::ChatGptAuthFixture;
 use app_test_support::write_chatgpt_auth;
-use base64::Engine as _;
-use base64::engine::general_purpose::URL_SAFE_NO_PAD;
 use ava_analytics::AnalyticsEventsClient;
 use ava_analytics::AppServerRpcTransport;
 use ava_arg0::Arg0DispatchPaths;
@@ -26,6 +24,8 @@ use ava_core::config::ConfigBuilder;
 use ava_exec_server::EnvironmentManager;
 use ava_feedback::AvaFeedback;
 use ava_protocol::protocol::SessionSource;
+use base64::Engine as _;
+use base64::engine::general_purpose::URL_SAFE_NO_PAD;
 use pretty_assertions::assert_eq;
 use serde_json::json;
 use std::sync::Mutex;
@@ -125,11 +125,9 @@ impl Harness {
                 .build()
                 .await?,
         );
-        let auth = AuthManager::shared_from_config(
-            config.as_ref(),
-            /*enable_ava_api_key_env*/ false,
-        )
-        .await?;
+        let auth =
+            AuthManager::shared_from_config(config.as_ref(), /*enable_ava_api_key_env*/ false)
+                .await?;
         let provider = Arc::new(BlockingProvider::default());
         let factory_provider = Arc::clone(&provider);
         let service = Arc::new(Service {

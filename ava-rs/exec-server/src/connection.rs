@@ -6,10 +6,10 @@ use std::sync::atomic::Ordering;
 use std::time::Duration;
 use std::time::Instant;
 
-use axum::extract::ws::Message as AxumWebSocketMessage;
-use axum::extract::ws::WebSocket as AxumWebSocket;
 use ava_exec_server_protocol::JSONRPCMessage;
 use ava_exec_server_protocol::JSONRPCRequest;
+use axum::extract::ws::Message as AxumWebSocketMessage;
+use axum::extract::ws::WebSocket as AxumWebSocket;
 use futures::Sink;
 use futures::SinkExt;
 use futures::Stream;

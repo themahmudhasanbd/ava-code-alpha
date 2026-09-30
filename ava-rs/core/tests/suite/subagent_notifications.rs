@@ -433,11 +433,7 @@ async fn setup_turn_one_with_custom_spawned_child(
     configure_test: impl FnOnce(
         core_test_support::test_ava::TestAvaBuilder,
     ) -> core_test_support::test_ava::TestAvaBuilder,
-) -> Result<(
-    TestAva,
-    String,
-    core_test_support::responses::ResponseMock,
-)> {
+) -> Result<(TestAva, String, core_test_support::responses::ResponseMock)> {
     let spawn_args = serde_json::to_string(&spawn_args)?;
 
     mount_sse_once_match(
@@ -520,10 +516,10 @@ async fn setup_turn_one_with_custom_spawned_child(
     .await;
     if child_response_delay.is_none() && wait_for_parent_notification {
         let _ = wait_for_requests(&child_request_log).await?;
-        let rollout_path = test
-            .ava-code
-            .rollout_path()
-            .ok_or_else(|| anyhow::anyhow!("expected parent rollout path"))?;
+        let rollout_path = test.ava
+            - code
+                .rollout_path()
+                .ok_or_else(|| anyhow::anyhow!("expected parent rollout path"))?;
         let deadline = Instant::now() + Duration::from_secs(6);
         loop {
             let has_notification = tokio::fs::read_to_string(&rollout_path)
@@ -2635,11 +2631,11 @@ async fn plaintext_multi_agent_v2_completion_sends_agent_message(
             let mut completed_activity_started = None;
             let mut completed_activity_completed = None;
             loop {
-                let event = test
-                    .ava-code
-                    .next_event()
-                    .await
-                    .expect("event stream should remain open");
+                let event = test.ava
+                    - code
+                        .next_event()
+                        .await
+                        .expect("event stream should remain open");
                 match event.msg {
                     EventMsg::TurnStarted(event) => {
                         active_turn_id = Some(event.turn_id);
@@ -2793,19 +2789,17 @@ async fn multi_agent_v2_peer_followup_completion_notifies_initiating_turn() -> R
     const FOLLOWUP_CALL_ID: &str = "request-peer-followup";
 
     let server = start_mock_server().await;
-    let mut builder = test_ava()
-        .with_model("gpt-5.6-sol")
-        .with_config(|config| {
-            for feature in [Feature::Collab, Feature::MultiAgentV2] {
-                config
-                    .features
-                    .enable(feature)
-                    .expect("test config should allow feature update");
-            }
-            config.model_provider.request_max_retries = Some(0);
-            config.model_provider.stream_max_retries = Some(0);
-            config.model_provider.supports_websockets = false;
-        });
+    let mut builder = test_ava().with_model("gpt-5.6-sol").with_config(|config| {
+        for feature in [Feature::Collab, Feature::MultiAgentV2] {
+            config
+                .features
+                .enable(feature)
+                .expect("test config should allow feature update");
+        }
+        config.model_provider.request_max_retries = Some(0);
+        config.model_provider.stream_max_retries = Some(0);
+        config.model_provider.supports_websockets = false;
+    });
     let test = builder.build_with_auto_env(&server).await?;
     let root_thread_id = test.session_configured.thread_id;
     let mut created_threads = test.thread_manager.subscribe_thread_created();

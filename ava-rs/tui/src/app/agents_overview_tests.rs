@@ -2196,21 +2196,19 @@ async fn resume_picker_round_trip_preserves_each_threads_input() -> Result<()> {
             assert_eq!(app.chat_widget.composer_text_with_pending(), "");
             assert!(app.chat_widget.queued_user_message_texts().is_empty());
             app.chat_widget.handle_server_notification(
-                ServerNotification::TurnStarted(
-                    ava_app_server_protocol::TurnStartedNotification {
-                        thread_id: target.thread_id.to_string(),
-                        turn: ava_app_server_protocol::Turn {
-                            id: "turn-with-follow-up".to_string(),
-                            items_view: ava_app_server_protocol::TurnItemsView::Full,
-                            items: Vec::new(),
-                            status: ava_app_server_protocol::TurnStatus::InProgress,
-                            error: None,
-                            started_at: None,
-                            completed_at: None,
-                            duration_ms: None,
-                        },
+                ServerNotification::TurnStarted(ava_app_server_protocol::TurnStartedNotification {
+                    thread_id: target.thread_id.to_string(),
+                    turn: ava_app_server_protocol::Turn {
+                        id: "turn-with-follow-up".to_string(),
+                        items_view: ava_app_server_protocol::TurnItemsView::Full,
+                        items: Vec::new(),
+                        status: ava_app_server_protocol::TurnStatus::InProgress,
+                        error: None,
+                        started_at: None,
+                        completed_at: None,
+                        duration_ms: None,
                     },
-                ),
+                }),
                 /*replay_kind*/ None,
             );
             let follow_up = format!("Follow-up for {}", target.thread_id);
@@ -2637,21 +2635,19 @@ async fn command_center_escape_cancels_editors_and_never_closes_list() {
         }
         if running {
             app.chat_widget.handle_server_notification(
-                ServerNotification::TurnStarted(
-                    ava_app_server_protocol::TurnStartedNotification {
-                        thread_id: ThreadId::new().to_string(),
-                        turn: ava_app_server_protocol::Turn {
-                            id: "running".into(),
-                            items_view: ava_app_server_protocol::TurnItemsView::Full,
-                            items: Vec::new(),
-                            status: ava_app_server_protocol::TurnStatus::InProgress,
-                            error: None,
-                            started_at: None,
-                            completed_at: None,
-                            duration_ms: None,
-                        },
+                ServerNotification::TurnStarted(ava_app_server_protocol::TurnStartedNotification {
+                    thread_id: ThreadId::new().to_string(),
+                    turn: ava_app_server_protocol::Turn {
+                        id: "running".into(),
+                        items_view: ava_app_server_protocol::TurnItemsView::Full,
+                        items: Vec::new(),
+                        status: ava_app_server_protocol::TurnStatus::InProgress,
+                        error: None,
+                        started_at: None,
+                        completed_at: None,
+                        duration_ms: None,
                     },
-                ),
+                }),
                 /*replay_kind*/ None,
             );
             assert!(app.chat_widget.is_task_running_for_test());

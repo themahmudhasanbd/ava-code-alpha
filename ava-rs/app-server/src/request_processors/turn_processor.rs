@@ -518,7 +518,7 @@ impl TurnRequestProcessor {
         Ok(())
     }
 
-    async fn turn_start_inner(
+    pub(crate) async fn turn_start_inner(
         &self,
         request_id: ConnectionRequestId,
         params: TurnStartParams,
@@ -828,8 +828,7 @@ impl TurnRequestProcessor {
             || collaboration_mode.is_some()
             || personality.is_some();
 
-        let approval_policy =
-            approval_policy.map(ava_app_server_protocol::AskForApproval::to_core);
+        let approval_policy = approval_policy.map(ava_app_server_protocol::AskForApproval::to_core);
         let approvals_reviewer =
             approvals_reviewer.map(ava_app_server_protocol::ApprovalsReviewer::to_core);
         let sandbox_policy = sandbox_policy.map(|policy| policy.to_core());
@@ -1238,8 +1237,7 @@ impl TurnRequestProcessor {
                 ava_responses_as_items: params.ava_responses_as_items.unwrap_or(false),
                 ava_response_item_prefix: params.ava_response_item_prefix,
                 ava_response_handoff_mode: params.ava_response_handoff_mode.unwrap_or_default(),
-                ava_response_handoff_channel_prefixes: params
-                    .ava_response_handoff_channel_prefixes,
+                ava_response_handoff_channel_prefixes: params.ava_response_handoff_channel_prefixes,
                 model: params.model,
                 output_modality: params.output_modality,
                 include_startup_context: params

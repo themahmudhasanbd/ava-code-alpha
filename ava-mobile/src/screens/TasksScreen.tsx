@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useRef, useState } from "react";
 import {
   Alert,
   Modal,
@@ -11,6 +11,7 @@ import {
 } from "react-native";
 import {
   CalendarClock,
+  FileText,
   Pencil,
   Play,
   Plus,
@@ -30,34 +31,70 @@ import {
   Input,
 } from "@/components/kit";
 import { Switch } from "@/components/ui/switch";
-import { SCHEDULE_PRESETS, type ScheduledTask } from "@/core/api/schedule";
+import { OptionPicker } from "@/components/ui/OptionPicker";
+import {
+  DEFAULT_SANDBOX,
+  DEFAULT_WORKSPACE,
+  SCHEDULE_PRESETS,
+  formatNextRun,
+  formatRunAt,
+  type ScheduledTask,
+  type ScheduleRunStatus,
+  type TaskDraft,
+} from "@/core/api/schedule";
+import { SANDBOX_MODES } from "@/config/models";
 import {
   useDeleteTask,
+  useModels,
   useRunTask,
   useSaveTask,
   useTasks,
 } from "@/state/queries";
 import { COLORS } from "@/theme/colors";
 
-type Draft = Omit<ScheduledTask, "id"> & { id?: string };
+type Draft = TaskDraft;
 const EMPTY_DRAFT: Draft = {
   name: "",
   schedule: SCHEDULE_PRESETS[1]?.value ?? "0 * * * *",
-  command: "",
+  prompt: "",
+  workspace: "",
+  model: "",
+  sandbox: DEFAULT_SANDBOX,
   enabled: true,
 };
 
-export function TasksScreen() {
+const toDraft = (t: ScheduledTask): Draft => ({
+  id: t.id,
+  name: t.name,
+  schedule: t.schedule,
+  prompt: t.prompt,
+  workspace: t.workspace,
+  model: t.model,
+  sandbox: t.sandbox,
+  enabled: t.enabled,
+});
+
+export function TasksScreen({ navigation }: { navigation: any }) {
   const { data: tasks = [], isLoading, error } = useTasks();
+  const { data: models = [] } = useModels();
   const saveTask = useSaveTask();
   const deleteTask = useDeleteTask();
   const runTask = useRunTask();
 
   const [editingDraft, setEditingDraft] = useState<Draft | null>(null);
+  const [modelPickerOpen, setModelPickerOpen] = useState(false);
+  const [statusTask, setStatusTask] = useState<ScheduledTask | null>(null);
+  const scheduleInputRef = useRef<TextInput>(null);
 
   const handleSave = async () => {
-    if (!editingDraft || !editingDraft.name.trim() || !editingDraft.command.trim())
+    if (!editingDraft || !editingDraft.name.trim()) return;
+    if (!editingDraft.prompt.trim()) {
+      Alert.alert(
+        "Instructions required",
+        "Tell the agent what to do on each run."
+      );
       return;
+    }
     try {
       await saveTask.mutateAsync(editingDraft);
       setEditingDraft(null);
@@ -66,13 +103,37 @@ export function TasksScreen() {
     }
   };
 
-  const handleDelete = async (id: string) => {
+  const handleDelete = (t: ScheduledTask) => {
+    Alert.alert("Delete task?", `"${t.name}" will stop running.`, [
+      { text: "Cancel", style: "cancel" },
+      {
+        text: "Delete",
+        style: "destructive",
+        onPress: async () => {
+          try {
+            await deleteTask.mutateAsync(t.id);
+          } catch (err: any) {
+            Alert.alert("Delete Failed", err?.message || "Could not delete the task.");
+          }
+        },
+      },
+    ]);
+  };
+
+  const handleRun = async (t: ScheduledTask) => {
     try {
-      await deleteTask.mutateAsync(id);
+      const { threadId } = await runTask.mutateAsync(t.id);
+      navigation.navigate("Session", { sessionId: threadId });
     } catch (err: any) {
-      Alert.alert("Delete Failed", err?.message || "Could not delete the task.");
+      Alert.alert("Run Failed", err?.message || "Could not start the task.");
     }
   };
+
+  const sandboxLabel = (id: string) =>
+    SANDBOX_MODES.find((s) => s.id === id)?.label ?? id;
+
+  const statusLabel = (s?: ScheduleRunStatus | null) =>
+    s === "succeeded" ? "last run ok" : s === "failed" ? "last run failed" : "never run";
 
   return (
     <AppShell
@@ -92,7 +153,7 @@ export function TasksScreen() {
       >
         <PageIntro
           title="Scheduled tasks"
-          description="Run commands on your server on a schedule."
+          description="Run AI agent tasks on your server on a schedule."
         />
 
         {isLoading && <SkeletonRows count={3} />}
@@ -109,7 +170,7 @@ export function TasksScreen() {
           <EmptyState
             icon={CalendarClock}
             title="No scheduled tasks yet"
-            description="Automate maintenance, sync or backups."
+            description="Automate check-ins, reports, syncs and maintenance — the agent does the work."
             action={
               <Button
                 variant="default"
@@ -126,35 +187,52 @@ export function TasksScreen() {
           <Surface key={t.id} style={styles.taskCard}>
             <View style={styles.taskHeader}>
               <View style={{ flex: 1 }}>
-                <Text style={styles.taskName}>{t.name}</Text>
-                <Text style={styles.taskCommand} numberOfLines={1}>
-                  {t.command}
+                <View style={styles.nameRow}>
+                  <Text style={styles.taskName}>{t.name}</Text>
+                </View>
+                <Text style={styles.taskCommand} numberOfLines={2}>
+                  {t.prompt}
+                </Text>
+                <Text style={styles.taskMeta} numberOfLines={1}>
+                  {t.workspace || "Default workspace"} · {t.model || "Default model"} ·{" "}
+                  {sandboxLabel(t.sandbox)}
                 </Text>
               </View>
               <Switch
                 checked={t.enabled}
-                onCheckedChange={(c) => saveTask.mutate({ ...t, enabled: c })}
+                onCheckedChange={(c) => saveTask.mutate({ ...toDraft(t), enabled: c })}
               />
             </View>
 
             <View style={styles.taskFooter}>
-              <Badge variant="outline">{t.schedule}</Badge>
+              <View style={styles.badgeRow}>
+                <Badge variant="outline">{t.schedule}</Badge>
+                <Badge variant="outline">{statusLabel(t.lastStatus)}</Badge>
+                {t.enabled && formatNextRun(t.nextRunAt) && (
+                  <Badge variant="outline">{formatNextRun(t.nextRunAt)}</Badge>
+                )}
+              </View>
               <View style={styles.actionIcons}>
+                <GlassIconButton
+                  icon={FileText}
+                  size={14}
+                  onPress={() => setStatusTask(t)}
+                />
                 <GlassIconButton
                   icon={Play}
                   size={14}
-                  onPress={() => runTask.mutate(t)}
+                  onPress={() => handleRun(t)}
                   disabled={runTask.isPending}
                 />
                 <GlassIconButton
                   icon={Pencil}
                   size={14}
-                  onPress={() => setEditingDraft({ ...t })}
+                  onPress={() => setEditingDraft(toDraft(t))}
                 />
                 <GlassIconButton
                   icon={Trash2}
                   size={14}
-                  onPress={() => handleDelete(t.id)}
+                  onPress={() => handleDelete(t)}
                 />
               </View>
             </View>
@@ -180,7 +258,12 @@ export function TasksScreen() {
               </View>
 
               {editingDraft && (
-                <View style={styles.form}>
+                <ScrollView
+                  style={styles.formScroll}
+                  contentContainerStyle={styles.form}
+                  showsVerticalScrollIndicator={false}
+                  keyboardShouldPersistTaps="handled"
+                >
                   <View style={styles.fieldGroup}>
                     <Label>Task name</Label>
                     <Input
@@ -194,24 +277,155 @@ export function TasksScreen() {
 
                   <View style={styles.fieldGroup}>
                     <Label>Schedule</Label>
+                    <View style={styles.presetRow}>
+                      {SCHEDULE_PRESETS.map((p) => {
+                        const isSel = editingDraft.schedule === p.value;
+                        return (
+                          <TouchableOpacity
+                            key={p.value}
+                            style={[
+                              styles.presetChip,
+                              isSel && styles.presetChipActive,
+                            ]}
+                            onPress={() =>
+                              setEditingDraft({
+                                ...editingDraft,
+                                schedule: p.value,
+                              })
+                            }
+                            activeOpacity={0.7}
+                          >
+                            <Text
+                              style={[
+                                styles.presetChipText,
+                                isSel && styles.presetChipTextActive,
+                              ]}
+                            >
+                              {p.label}
+                            </Text>
+                          </TouchableOpacity>
+                        );
+                      })}
+                      {(() => {
+                        const isCustom = !SCHEDULE_PRESETS.some(
+                          (p) => p.value === editingDraft.schedule
+                        );
+                        return (
+                          <TouchableOpacity
+                            style={[
+                              styles.presetChip,
+                              isCustom && styles.presetChipActive,
+                            ]}
+                            onPress={() => scheduleInputRef.current?.focus()}
+                            activeOpacity={0.7}
+                          >
+                            <Text
+                              style={[
+                                styles.presetChipText,
+                                isCustom && styles.presetChipTextActive,
+                              ]}
+                            >
+                              Custom
+                            </Text>
+                          </TouchableOpacity>
+                        );
+                      })()}
+                    </View>
                     <Input
+                      ref={scheduleInputRef}
                       placeholder="0 * * * *"
                       value={editingDraft.schedule}
                       onChangeText={(t) =>
                         setEditingDraft({ ...editingDraft, schedule: t })
                       }
+                      autoCapitalize="none"
+                      autoCorrect={false}
                     />
                   </View>
 
                   <View style={styles.fieldGroup}>
-                    <Label>Command</Label>
-                    <Input
-                      placeholder="e.g. bun run sync"
-                      value={editingDraft.command}
+                    <Label>Instructions for the agent</Label>
+                    <TextInput
+                      style={styles.multilineInput}
+                      placeholder="e.g. Check disk usage and summarize the largest folders"
+                      placeholderTextColor={COLORS.mutedForeground}
+                      value={editingDraft.prompt}
                       onChangeText={(t) =>
-                        setEditingDraft({ ...editingDraft, command: t })
+                        setEditingDraft({ ...editingDraft, prompt: t })
                       }
+                      multiline
+                      textAlignVertical="top"
                     />
+                  </View>
+
+                  <View style={styles.fieldGroup}>
+                    <Label>Workspace path</Label>
+                    <Input
+                      placeholder={DEFAULT_WORKSPACE}
+                      value={editingDraft.workspace}
+                      onChangeText={(t) =>
+                        setEditingDraft({ ...editingDraft, workspace: t })
+                      }
+                      autoCapitalize="none"
+                      autoCorrect={false}
+                    />
+                  </View>
+
+                  <View style={styles.fieldGroup}>
+                    <Label>Model</Label>
+                    <TouchableOpacity
+                      style={styles.pickerButton}
+                      onPress={() => setModelPickerOpen(true)}
+                      activeOpacity={0.7}
+                    >
+                      <Text style={styles.pickerButtonText}>
+                        {editingDraft.model
+                          ? models.find((m) => m.id === editingDraft.model)
+                              ?.name || editingDraft.model
+                          : "Default"}
+                      </Text>
+                    </TouchableOpacity>
+                  </View>
+
+                  <View style={styles.fieldGroup}>
+                    <Label>Execution</Label>
+                    <View style={styles.presetRow}>
+                      {SANDBOX_MODES.map((s) => {
+                        const isSel = editingDraft.sandbox === s.id;
+                        return (
+                          <TouchableOpacity
+                            key={s.id}
+                            style={[
+                              styles.presetChip,
+                              isSel && styles.presetChipActive,
+                            ]}
+                            onPress={() =>
+                              setEditingDraft({
+                                ...editingDraft,
+                                sandbox: s.id,
+                              })
+                            }
+                            activeOpacity={0.7}
+                          >
+                            <Text
+                              style={[
+                                styles.presetChipText,
+                                isSel && styles.presetChipTextActive,
+                              ]}
+                            >
+                              {s.label}
+                            </Text>
+                          </TouchableOpacity>
+                        );
+                      })}
+                    </View>
+                    <Text style={styles.hintText}>
+                      {
+                        SANDBOX_MODES.find(
+                          (s) => s.id === editingDraft.sandbox
+                        )?.description
+                      }
+                    </Text>
                   </View>
 
                   <Button
@@ -222,8 +436,82 @@ export function TasksScreen() {
                   >
                     Save task
                   </Button>
-                </View>
+                </ScrollView>
               )}
+            </Surface>
+          </View>
+        </Modal>
+
+        {/* Model picker */}
+        <OptionPicker
+          open={modelPickerOpen}
+          title="Model"
+          searchable
+          searchPlaceholder="Search models…"
+          options={[
+            {
+              id: "",
+              label: "Default",
+              description: "Server default model",
+            },
+            ...models.map((m) => ({
+              id: m.id,
+              label: m.name || m.id,
+              description: m.description || m.id,
+            })),
+          ]}
+          selectedId={editingDraft?.model || ""}
+          onSelect={(id) => {
+            setEditingDraft((d) => (d ? { ...d, model: id } : d));
+            setModelPickerOpen(false);
+          }}
+          onClose={() => setModelPickerOpen(false)}
+        />
+
+        {/* Run status modal */}
+        <Modal
+          visible={statusTask !== null}
+          animationType="slide"
+          transparent
+          onRequestClose={() => setStatusTask(null)}
+        >
+          <View style={styles.modalBackdrop}>
+            <Surface style={styles.modalSheet}>
+              <View style={styles.modalHeader}>
+                <Text style={styles.modalTitle}>
+                  {statusTask?.name} — run status
+                </Text>
+                <TouchableOpacity onPress={() => setStatusTask(null)}>
+                  <X size={18} color={COLORS.mutedForeground} />
+                </TouchableOpacity>
+              </View>
+              <View style={styles.statusRows}>
+                <View style={styles.statusRow}>
+                  <Text style={styles.statusLabel}>Status</Text>
+                  <Text style={styles.statusValue}>
+                    {statusTask?.enabled ? "enabled" : "paused"}
+                  </Text>
+                </View>
+                <View style={styles.statusRow}>
+                  <Text style={styles.statusLabel}>Last run</Text>
+                  <Text style={styles.statusValue}>
+                    {formatRunAt(statusTask?.lastRunAt)}
+                    {statusTask?.lastStatus ? ` (${statusTask.lastStatus})` : ""}
+                  </Text>
+                </View>
+                <View style={styles.statusRow}>
+                  <Text style={styles.statusLabel}>Next run</Text>
+                  <Text style={styles.statusValue}>
+                    {statusTask?.enabled
+                      ? formatRunAt(statusTask?.nextRunAt)
+                      : "—"}
+                  </Text>
+                </View>
+                <View style={styles.statusRow}>
+                  <Text style={styles.statusLabel}>Schedule</Text>
+                  <Text style={styles.statusValue}>{statusTask?.schedule}</Text>
+                </View>
+              </View>
             </Surface>
           </View>
         </Modal>
@@ -233,6 +521,71 @@ export function TasksScreen() {
 }
 
 const styles = StyleSheet.create({
+  presetRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+    marginBottom: 8,
+  },
+  presetChip: {
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    backgroundColor: COLORS.card,
+  },
+  presetChipActive: {
+    backgroundColor: COLORS.accent,
+    borderColor: COLORS.primary,
+  },
+  presetChipText: {
+    fontSize: 13,
+    color: COLORS.mutedForeground,
+  },
+  presetChipTextActive: {
+    color: COLORS.primary,
+    fontWeight: "700",
+  },
+  pickerButton: {
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    backgroundColor: COLORS.card,
+    borderRadius: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+  },
+  pickerButtonText: {
+    fontSize: 14,
+    color: COLORS.foreground,
+  },
+  multilineInput: {
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    backgroundColor: COLORS.card,
+    borderRadius: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    fontSize: 14,
+    color: COLORS.foreground,
+    minHeight: 96,
+  },
+  hintText: {
+    fontSize: 12,
+    color: COLORS.mutedForeground,
+  },
+  nameRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  badgeRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    flexWrap: "wrap",
+    flex: 1,
+  },
   container: {
     flex: 1,
   },
@@ -261,6 +614,11 @@ const styles = StyleSheet.create({
     color: COLORS.mutedForeground,
     marginTop: 2,
   },
+  taskMeta: {
+    fontSize: 11,
+    color: COLORS.mutedForeground,
+    marginTop: 4,
+  },
   taskFooter: {
     flexDirection: "row",
     alignItems: "center",
@@ -268,6 +626,7 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: COLORS.border,
     paddingTop: 10,
+    gap: 8,
   },
   actionIcons: {
     flexDirection: "row",
@@ -284,6 +643,7 @@ const styles = StyleSheet.create({
     borderTopRightRadius: 28,
     padding: 20,
     paddingBottom: 32,
+    maxHeight: "88%",
   },
   modalHeader: {
     flexDirection: "row",
@@ -296,10 +656,34 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     color: COLORS.foreground,
   },
+  formScroll: {
+    flexGrow: 0,
+  },
   form: {
     gap: 14,
   },
   fieldGroup: {
     gap: 6,
+  },
+  statusRows: {
+    gap: 12,
+    paddingBottom: 8,
+  },
+  statusRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    gap: 12,
+  },
+  statusLabel: {
+    fontSize: 13,
+    color: COLORS.mutedForeground,
+  },
+  statusValue: {
+    fontSize: 13,
+    color: COLORS.foreground,
+    fontWeight: "500",
+    textAlign: "right",
+    flex: 1,
   },
 });

@@ -162,7 +162,7 @@ export function useWriteUserProfile() {
 
 // ---- Media, schedules, desktop -------------------------------------------
 import { listMedia, readMediaUrl, removeMedia } from "@/core/api/media";
-import { deleteTask, listTasks, runTaskNow, saveTask, type ScheduledTask } from "@/core/api/schedule";
+import { deleteTask, listTasks, runTaskNow, saveTask, type ScheduledTask, type TaskDraft } from "@/core/api/schedule";
 import { captureScreen, readDesktopStatus, sendDesktopInput } from "@/core/api/desktop";
 
 export function useMedia(dir: string) {
@@ -189,7 +189,7 @@ export function useTasks() {
 export function useSaveTask() {
   const { rpc } = useAva();
   const qc = useQueryClient();
-  return useMutation({ mutationFn: (t: Omit<ScheduledTask, "id"> & { id?: string }) => saveTask(rpc!, t), onSuccess: () => qc.invalidateQueries({ queryKey: ["tasks"] }) });
+  return useMutation({ mutationFn: (t: TaskDraft) => saveTask(rpc!, t), onSuccess: () => qc.invalidateQueries({ queryKey: ["tasks"] }) });
 }
 
 export function useDeleteTask() {
@@ -200,7 +200,7 @@ export function useDeleteTask() {
 
 export function useRunTask() {
   const { rpc } = useAva();
-  return useMutation({ mutationFn: (t: ScheduledTask) => runTaskNow(rpc!, t) });
+  return useMutation({ mutationFn: (id: string) => runTaskNow(rpc!, id) });
 }
 
 export function useDesktopStatus() {

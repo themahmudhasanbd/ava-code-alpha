@@ -1,18 +1,46 @@
 import type { RpcClient } from "../rpc-client";
-import { runCommand } from "./terminal";
 
-/** Tasks live in their own system cron file, so AvA never edits other cron jobs. */
-const FILE = "/etc/cron.d/ava-tasks";
-const RUN_AS = "root";
-const TAG = "# ava-task:";
+/**
+ * Server-owned scheduled tasks.
+ *
+ * The app server persists schedules and triggers headless agent runs itself
+ * (`schedule/*` RPC). No cron daemon, CLI invocation, or shell command is
+ * involved. Threads started by the scheduler carry this thread source, which
+ * the session list uses for the clock pill.
+ */
+export const SCHEDULED_THREAD_SOURCE = "scheduled-task";
+
+export type ScheduleRunStatus = "succeeded" | "failed";
 
 export interface ScheduledTask {
   id: string;
   name: string;
+  /** Standard 5-field cron expression. */
   schedule: string;
-  command: string;
   enabled: boolean;
+  /** Agent instructions run on every trigger. */
+  prompt: string;
+  /** Working directory the agent runs in. Empty = server default. */
+  workspace: string;
+  /** Model id. Empty string = server default. */
+  model: string;
+  /** Sandbox policy id: read-only | workspace-write | danger-full-access. */
+  sandbox: string;
+  /** Unix seconds. */
+  createdAt: number;
+  /** Unix seconds. */
+  updatedAt: number;
+  /** Unix seconds of the last trigger, if any. */
+  lastRunAt?: number | null;
+  lastStatus?: ScheduleRunStatus | null;
+  /** Unix seconds of the next planned trigger, if enabled. */
+  nextRunAt?: number | null;
 }
+
+export type TaskDraft = Omit<
+  ScheduledTask,
+  "id" | "createdAt" | "updatedAt" | "lastRunAt" | "lastStatus" | "nextRunAt"
+> & { id?: string };
 
 export const SCHEDULE_PRESETS = [
   { label: "Every 5 minutes", value: "*/5 * * * *" },
@@ -21,50 +49,103 @@ export const SCHEDULE_PRESETS = [
   { label: "Weekly (Mon)", value: "0 3 * * 1" },
 ];
 
-function parse(line: string): ScheduledTask | null {
-  const idx = line.indexOf(TAG);
-  if (idx < 0) return null;
-  const [id, ...nameParts] = line.slice(idx + TAG.length).trim().split(" ");
-  let body = line.slice(0, idx).trim();
-  const enabled = !body.startsWith("#");
-  if (!enabled) body = body.replace(/^#\s*/, "");
-  const parts = body.split(/\s+/);
-  return { id: id ?? "", name: nameParts.join(" ") || id || "Task", schedule: parts.slice(0, 5).join(" "), command: parts.slice(6).join(" "), enabled };
+export const DEFAULT_WORKSPACE = "/root";
+export const DEFAULT_SANDBOX = "workspace-write";
+
+interface WireTask {
+  id: string;
+  name: string;
+  cron: string;
+  prompt: string;
+  cwd?: string | null;
+  model?: string | null;
+  sandbox?: string | null;
+  enabled: boolean;
+  createdAt: number;
+  updatedAt: number;
+  lastRunAt?: number | null;
+  lastStatus?: ScheduleRunStatus | null;
+  nextRunAt?: number | null;
 }
 
-async function readCrontab(rpc: RpcClient) {
-  const res = await runCommand(rpc, `cat ${FILE} 2>/dev/null || true`, "/");
-  return res.stdout.split("\n");
+function fromWire(w: WireTask): ScheduledTask {
+  return {
+    id: w.id,
+    name: w.name,
+    schedule: w.cron,
+    enabled: w.enabled,
+    prompt: w.prompt,
+    workspace: w.cwd || "",
+    model: w.model || "",
+    sandbox: w.sandbox || DEFAULT_SANDBOX,
+    createdAt: w.createdAt,
+    updatedAt: w.updatedAt,
+    lastRunAt: w.lastRunAt ?? null,
+    lastStatus: w.lastStatus ?? null,
+    nextRunAt: w.nextRunAt ?? null,
+  };
 }
 
-async function writeCrontab(rpc: RpcClient, lines: string[]) {
-  const content = lines.filter((l, i, a) => l.trim() || i < a.length - 1).join("\n") + "\n";
-  const b64 = btoa(unescape(encodeURIComponent(content)));
-  const res = await runCommand(rpc, `echo '${b64}' | base64 -d > ${FILE} && chmod 644 ${FILE}`, "/");
-  if (res.exitCode !== 0) throw new Error(res.stderr || "Could not save schedule");
+function toWire(draft: TaskDraft) {
+  return {
+    name: draft.name,
+    cron: draft.schedule,
+    prompt: draft.prompt,
+    cwd: draft.workspace?.trim() ? draft.workspace.trim() : null,
+    model: draft.model?.trim() ? draft.model.trim() : null,
+    sandbox: draft.sandbox || null,
+    enabled: draft.enabled,
+  };
 }
-
-const line = (t: ScheduledTask) => `${t.enabled ? "" : "# "}${t.schedule} ${RUN_AS} ${t.command} ${TAG}${t.id} ${t.name}`;
 
 export async function listTasks(rpc: RpcClient): Promise<ScheduledTask[]> {
-  return (await readCrontab(rpc)).map(parse).filter((t): t is ScheduledTask => !!t);
+  const res = await rpc.call<{ data?: WireTask[] }>("schedule/list", {});
+  return (res.data ?? []).map(fromWire);
 }
 
-export async function saveTask(rpc: RpcClient, task: Omit<ScheduledTask, "id"> & { id?: string }) {
-  if (task.schedule.trim().split(/\s+/).length !== 5) throw new Error("Schedule needs 5 parts, e.g. */5 * * * *");
-  if (/[\n\r]/.test(task.command) || !task.command.trim()) throw new Error("Command must be a single line");
-  const full: ScheduledTask = { ...task, id: task.id || Date.now().toString(36), name: task.name.replace(/\s+/g, " ").trim() };
-  const lines = await readCrontab(rpc);
-  const i = lines.findIndex((l) => parse(l)?.id === full.id);
-  if (i >= 0) lines[i] = line(full);
-  else lines.push(line(full));
-  await writeCrontab(rpc, lines);
+export async function saveTask(rpc: RpcClient, draft: TaskDraft): Promise<ScheduledTask> {
+  const name = draft.name.replace(/\s+/g, " ").trim();
+  if (!name) throw new Error("Task name is required");
+  if (draft.schedule.trim().split(/\s+/).length !== 5)
+    throw new Error("Schedule needs 5 parts, e.g. */5 * * * *");
+  if (!draft.prompt.trim()) throw new Error("Instructions are required");
+  if (/[\n\r]/.test(draft.workspace)) throw new Error("Workspace must be a single path");
+  const payload = { ...toWire(draft), name };
+  if (draft.id) {
+    const res = await rpc.call<{ schedule: WireTask }>("schedule/update", {
+      id: draft.id,
+      ...payload,
+    });
+    return fromWire(res.schedule);
+  }
+  const res = await rpc.call<{ schedule: WireTask }>("schedule/create", payload);
+  return fromWire(res.schedule);
 }
 
-export async function deleteTask(rpc: RpcClient, id: string) {
-  await writeCrontab(rpc, (await readCrontab(rpc)).filter((l) => parse(l)?.id !== id));
+export async function deleteTask(rpc: RpcClient, id: string): Promise<void> {
+  await rpc.call("schedule/delete", { id });
 }
 
-export async function runTaskNow(rpc: RpcClient, task: ScheduledTask) {
-  return runCommand(rpc, task.command, "/");
+/** Triggers a run immediately; resolves with the new thread id. */
+export async function runTaskNow(rpc: RpcClient, id: string): Promise<{ threadId: string }> {
+  return rpc.call<{ threadId: string }>("schedule/run", { id });
+}
+
+/** Human-friendly relative description of a unix-seconds timestamp. */
+export function formatNextRun(nextRunAt?: number | null): string | null {
+  if (!nextRunAt) return null;
+  const diffSec = nextRunAt - Math.floor(Date.now() / 1000);
+  if (diffSec <= 0) return "due now";
+  if (diffSec < 60) return `in ${diffSec}s`;
+  const mins = Math.floor(diffSec / 60);
+  if (mins < 60) return `in ${mins}m`;
+  const hours = Math.floor(mins / 60);
+  if (hours < 24) return `in ${hours}h`;
+  return `in ${Math.floor(hours / 24)}d`;
+}
+
+/** Absolute date-time for a unix-seconds timestamp, local timezone. */
+export function formatRunAt(ts?: number | null): string {
+  if (!ts) return "never";
+  return new Date(ts * 1000).toLocaleString();
 }

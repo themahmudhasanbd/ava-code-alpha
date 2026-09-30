@@ -975,6 +975,34 @@ client_request_definitions! {
         serialization: None,
         response: v2::AppsInstalledResponse,
     },
+    // Schedule mutations are serialized against each other through a shared
+    // global scope; the background tick loop re-checks state under the
+    // service lock, so races with in-flight triggers are benign.
+    ScheduleCreate => "schedule/create" {
+        params: v2::ScheduleCreateParams,
+        serialization: global("schedule"),
+        response: v2::ScheduleCreateResponse,
+    },
+    ScheduleList => "schedule/list" {
+        params: v2::ScheduleListParams,
+        serialization: global_shared_read("schedule"),
+        response: v2::ScheduleListResponse,
+    },
+    ScheduleUpdate => "schedule/update" {
+        params: v2::ScheduleUpdateParams,
+        serialization: global("schedule"),
+        response: v2::ScheduleUpdateResponse,
+    },
+    ScheduleDelete => "schedule/delete" {
+        params: v2::ScheduleDeleteParams,
+        serialization: global("schedule"),
+        response: v2::ScheduleDeleteResponse,
+    },
+    ScheduleRun => "schedule/run" {
+        params: v2::ScheduleRunParams,
+        serialization: global("schedule"),
+        response: v2::ScheduleRunResponse,
+    },
     // File system requests are intentionally concurrent. Desktop already treats local
     // file system operations as concurrent, and app-server remote fs mirrors that model.
     FsReadFile => "fs/readFile" {

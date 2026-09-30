@@ -128,6 +128,7 @@ mod outgoing_message;
 mod plugin_config_reload;
 mod request_processors;
 mod request_serialization;
+mod scheduler;
 mod server_request_error;
 mod skills_watcher;
 mod thread_state;

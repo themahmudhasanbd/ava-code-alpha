@@ -35,14 +35,12 @@ pub use windows_glob::windows_deny_read_glob_scan;
 
 const PROTECTED_METADATA_GIT_PATH_NAME: &str = ".git";
 const PROTECTED_METADATA_AGENTS_PATH_NAME: &str = ".agents";
-const PROTECTED_METADATA_AVA_PATH_NAME: &str = ".ava";
 const PROTECTED_METADATA_AVA_CODE_PATH_NAME: &str = ".ava-code";
 
 /// Top-level workspace metadata paths that stay protected under writable roots.
 pub const PROTECTED_METADATA_PATH_NAMES: &[&str] = &[
     PROTECTED_METADATA_GIT_PATH_NAME,
     PROTECTED_METADATA_AGENTS_PATH_NAME,
-    PROTECTED_METADATA_AVA_PATH_NAME,
     PROTECTED_METADATA_AVA_CODE_PATH_NAME,
 ];
 
@@ -3438,11 +3436,7 @@ mod tests {
                 .read_only_subpaths
                 .contains(&expected_blocked)
         );
-        assert!(
-            writable_roots[0]
-                .read_only_subpaths
-                .contains(&expected_ava)
-        );
+        assert!(writable_roots[0].read_only_subpaths.contains(&expected_ava));
     }
 
     #[cfg(unix)]
@@ -3512,11 +3506,7 @@ mod tests {
                 .read_only_subpaths
                 .contains(&expected_agents)
         );
-        assert!(
-            writable_roots[0]
-                .read_only_subpaths
-                .contains(&expected_ava)
-        );
+        assert!(writable_roots[0].read_only_subpaths.contains(&expected_ava));
     }
 
     #[cfg(unix)]
@@ -3549,10 +3539,7 @@ mod tests {
 
         let writable_roots = policy.get_writable_roots_with_cwd(cwd.path());
         assert_eq!(writable_roots.len(), 1);
-        assert_eq!(
-            writable_roots[0].read_only_subpaths,
-            vec![expected_dot_ava]
-        );
+        assert_eq!(writable_roots[0].read_only_subpaths, vec![expected_dot_ava]);
         assert!(
             !writable_roots[0]
                 .read_only_subpaths
@@ -3762,11 +3749,7 @@ mod tests {
                 .read_only_subpaths
                 .contains(&expected_blocked)
         );
-        assert!(
-            writable_roots[0]
-                .read_only_subpaths
-                .contains(&expected_ava)
-        );
+        assert!(writable_roots[0].read_only_subpaths.contains(&expected_ava));
     }
 
     #[test]

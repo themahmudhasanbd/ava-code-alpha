@@ -41,6 +41,7 @@ use crate::request_processors::PluginRequestProcessor;
 use crate::request_processors::ProcessExecRequestProcessor;
 use crate::request_processors::ProjectRequestProcessor;
 use crate::request_processors::RemoteControlRequestProcessor;
+use crate::request_processors::ScheduleRequestProcessor;
 use crate::request_processors::SearchRequestProcessor;
 use crate::request_processors::ThreadGoalRequestProcessor;
 use crate::request_processors::ThreadQueueRequestProcessor;
@@ -49,6 +50,7 @@ use crate::request_processors::ThreadResumeTarget;
 use crate::request_processors::TurnRequestProcessor;
 use crate::request_processors::WindowsSandboxRequestProcessor;
 use crate::request_processors::read_server_diagnostics;
+use crate::scheduler::SchedulerService;
 use crate::request_serialization::QueuedInitializedRequest;
 use crate::request_serialization::RequestSerializationQueueKey;
 use crate::request_serialization::RequestSerializationQueues;
@@ -161,11 +163,12 @@ pub(crate) struct MessageProcessor {
     plugin_processor: PluginRequestProcessor,
     project_processor: ProjectRequestProcessor,
     remote_control_processor: RemoteControlRequestProcessor,
+    schedule_processor: ScheduleRequestProcessor,
     search_processor: SearchRequestProcessor,
     thread_goal_processor: ThreadGoalRequestProcessor,
     thread_queue_processor: ThreadQueueRequestProcessor,
     thread_processor: ThreadRequestProcessor,
-    turn_processor: TurnRequestProcessor,
+    turn_processor: Arc<TurnRequestProcessor>,
     windows_sandbox_processor: WindowsSandboxRequestProcessor,
     request_serialization_queues: RequestSerializationQueues,
 }
@@ -515,6 +518,8 @@ impl MessageProcessor {
             turn_cost_worker.as_ref().map(TurnCostWorker::handle),
             config_warnings,
         );
+        // Wrapped in an Arc so the scheduler service can trigger headless turns
+        // through the same processor that serves turn/start RPCs.
         let turn_processor = TurnRequestProcessor::new(
             auth_manager,
             Arc::clone(&thread_manager),
@@ -528,6 +533,7 @@ impl MessageProcessor {
             Arc::clone(&skills_watcher),
             turn_cost_worker.as_ref().map(TurnCostWorker::handle),
         );
+        let turn_processor = Arc::new(turn_processor);
         if let Some(startup_config) = plugin_startup_tasks {
             // Keep plugin startup warmups aligned at app-server startup.
             let reload_config = match startup_config {
@@ -566,6 +572,14 @@ impl MessageProcessor {
             Arc::clone(&environment_manager_for_requests),
             FsWatchManager::new(outgoing.clone()),
         );
+        let scheduler = SchedulerService::new(
+            config.ava_home.join("schedules.json"),
+            Arc::clone(&thread_manager),
+            config_manager.clone(),
+            Arc::clone(&turn_processor),
+        );
+        scheduler.start();
+        let schedule_processor = ScheduleRequestProcessor::new(scheduler);
         let windows_sandbox_processor = WindowsSandboxRequestProcessor::new(
             outgoing.clone(),
             Arc::clone(&config),
@@ -596,11 +610,12 @@ impl MessageProcessor {
             plugin_processor,
             project_processor,
             remote_control_processor,
+            schedule_processor,
             search_processor,
             thread_goal_processor,
             thread_queue_processor,
             thread_processor,
-            turn_processor,
+            turn_processor: Arc::clone(&turn_processor),
             windows_sandbox_processor,
             request_serialization_queues,
         }
@@ -610,6 +625,7 @@ impl MessageProcessor {
         self.account_processor.clear_external_auth();
         self.apps_processor.shutdown();
         self.models_refresh_worker.shutdown();
+        self.schedule_processor.shutdown();
         self.skills_watcher.shutdown();
     }
 
@@ -1197,6 +1213,21 @@ impl MessageProcessor {
                 .clients_revoke(params)
                 .await
                 .map(|response| Some(response.into())),
+            ClientRequest::ScheduleCreate { params, .. } => {
+                self.schedule_processor.schedule_create(params).await
+            }
+            ClientRequest::ScheduleList { params, .. } => {
+                self.schedule_processor.schedule_list(params).await
+            }
+            ClientRequest::ScheduleUpdate { params, .. } => {
+                self.schedule_processor.schedule_update(params).await
+            }
+            ClientRequest::ScheduleDelete { params, .. } => {
+                self.schedule_processor.schedule_delete(params).await
+            }
+            ClientRequest::ScheduleRun { params, .. } => {
+                self.schedule_processor.schedule_run(params).await
+            }
             ClientRequest::UserProfileRead { params, .. } => self
                 .config_processor
                 .user_profile_read(params)

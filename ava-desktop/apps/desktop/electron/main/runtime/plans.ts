@@ -347,11 +347,6 @@ async function finishApprovedExecution(
       status,
       errorCode,
     };
-    await runtimeState.host.call("plans.finishExecution", {
-      executionId,
-      status: pending.status,
-      ...(pending.errorCode ? { errorCode: pending.errorCode } : {}),
-    });
     finishedApprovedExecutions.add(executionId);
     startedApprovedExecutions.delete(executionId);
     pendingExecutionFinishes.delete(executionId);
@@ -410,10 +405,7 @@ async function dispatchApprovedPlan(rawExecution: unknown): Promise<void> {
       retry.unref();
       return;
     }
-    const claimResponse = await runtimeState.host.call("plans.claimExecution", {
-      executionId: initial.id,
-    });
-    const claimedExecution = executionFromResponse(claimResponse);
+    const claimedExecution = undefined as unknown as PlanExecution | undefined;
     if (
       claimedExecution?.state === "interrupted" ||
       claimedExecution?.state === "completed" ||
@@ -506,13 +498,6 @@ async function drainApprovedPlanExecutions(): Promise<void> {
     for (const [executionId, finish] of pendingExecutionFinishes) {
       await finishApprovedExecution(executionId, finish.status, finish.errorCode);
     }
-    const response = await runtimeState.host.call("plans.queuedExecutions");
-    for (const execution of executionListFromResponse(response)) {
-      // Only queued rows are dispatchable. Running/interrupted rows are durable
-      // recovery outcomes and must remain untouched on startup.
-      if (execution.state !== "queued") continue;
-      await dispatchApprovedPlan(execution);
-    }
   })();
   try {
     await planState.approvedExecutionDrain;
@@ -521,21 +506,9 @@ async function drainApprovedPlanExecutions(): Promise<void> {
   }
 }
 
-async function dispatchExecutionForProposal(proposalId: string): Promise<void> {
-  if (!runtimeState.host) return;
-  try {
-    const response = await runtimeState.host.call("plans.queuedExecutions");
-    const execution = executionListFromResponse(response).find(
-      (candidate) => candidate.proposalId === proposalId,
-    );
-    if (execution?.state === "queued") {
-      await dispatchApprovedPlan(execution);
-    }
-  } catch (error) {
-    logger.app("runtime", "warn", "approved plan lookup after resolution failed", {
-      data: String(error),
-    });
-  }
+async function dispatchExecutionForProposal(_proposalId: string): Promise<void> {
+  // Dormant: ava core has no plans.* queue; plan approval UI was removed.
+  return;
 }
   return {
     finishTurn,

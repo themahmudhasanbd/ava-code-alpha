@@ -47,7 +47,6 @@ export function SessionHoverCard({
     setProject({ space: card.space, branch: card.branch });
     return observeSessionCollaboration({
       sessionId: session.id,
-      read: api.getSessionCollaboration,
       isVisible: () => target.isConnected && !document.hidden && document.hasFocus(),
       onSummary: (next) => {
         setSummary(next);

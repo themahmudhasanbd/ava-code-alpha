@@ -269,7 +269,4 @@ export function registerSessionIpc({
     return { hits: [], nextOffset: null };
   });
 
-  handle(IPC.invoke.sessionCollaboration, async () => {
-    return { collaborators: [] };
-  });
 }

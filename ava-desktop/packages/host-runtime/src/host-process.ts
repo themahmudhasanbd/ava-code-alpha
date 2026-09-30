@@ -3,7 +3,6 @@ import { randomUUID } from "node:crypto";
 import {
   ErrorCodes,
   MAX_HOST_STDIN_LINE_BYTES,
-  PROTOCOL_VERSION,
   readNdjsonLines,
   rpcTimeoutMs,
   stripProxyEnv,
@@ -357,11 +356,7 @@ export class HostProcess {
   }
 
   async handshake(): Promise<void> {
-    try {
-      await this.call("initialize", { clientInfo: { name: "ava-desktop", version: "0.15.2" } });
-    } catch {
-      await this.call("app.handshake", { protocolVersion: PROTOCOL_VERSION }).catch(() => undefined);
-    }
+    await this.call("initialize", { clientInfo: { name: "ava-desktop", version: "0.15.2" } });
   }
 
   async dispose(): Promise<void> {

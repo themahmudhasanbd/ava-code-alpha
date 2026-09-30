@@ -94,11 +94,9 @@ import {
 } from "@pi-desktop/host-runtime";
 import { readWindowState, writeWindowState } from "./window-preferences";
 import { applyDevelopmentUserData, desktopDataDir } from "./data-paths";
-import { createPlanUiProbe } from "./plan-ui-probe";
 import type { McpControlController, McpControlServer } from "./mcp-control";
 import type { AgentHostBridge } from "./agent-host-bridge";
 import { registerAppIpc } from "./ipc/app-ipc";
-import { registerNotificationIpc } from "./ipc/notification-ipc";
 import { registerSessionIpc } from "./ipc/session-ipc";
 import { registerSettingsIpc } from "./ipc/settings-ipc";
 import { registerProviderIpc } from "./ipc/provider-ipc";
@@ -110,7 +108,6 @@ import {
   registerComposerIpc,
 } from "./ipc/composer-ipc";
 import { registerWindowIpc } from "./ipc/window-ipc";
-import { registerPullsIpc } from "./ipc/pulls-ipc";
 import { registerAgentIpc } from "./ipc/agent-ipc";
 import { registerIpcHandlers } from "./ipc/register";
 import {
@@ -132,7 +129,6 @@ import { createScheduledRuntime } from "./runtime/scheduled";
 import { createDesktopServices } from "./services/desktop-services";
 import { createPluginServices } from "./services/plugin-services";
 import { wirePluginThemeRuntimeServices } from "./plugin-theme-services";
-import { createSessionCollaborationService } from "./services/session-collaboration";
 import {
   createApplicationLifecycle,
   type ApplicationAppearanceState,
@@ -150,7 +146,6 @@ import { createWorkPanelRuntime } from "./bootstrap/work-panel";
 import { createCloseBehaviorRuntime } from "./bootstrap/close-behavior";
 import { registerShutdownHandlers, type ShutdownState } from "./bootstrap/shutdown";
 import { registerDiagnosticsIpc } from "./ipc/diagnostics-ipc";
-import { registerMarketIpc } from "./ipc/market-ipc";
 import { registerMcpIpc } from "./ipc/mcp-ipc";
 import { registerPluginIpc } from "./ipc/plugin-ipc";
 import { registerPluginUiIpc } from "./ipc/plugin-ui-ipc";
@@ -1092,28 +1087,7 @@ const superviseRestart = (kind: "host" | "sidecar"): Promise<void> => {
   return runtimeLifecycle.superviseRestart(kind);
 };
 
-const planUiProbe = createPlanUiProbe({
-  getHost: () => host,
-  getSidecar: () => sidecar,
-  logger,
-});
-
 let emitAgentEvent: (envelope: AgentEventEnvelope) => void = () => undefined;
-
-const sessionCollaboration = createSessionCollaborationService({
-  getHost: () => host,
-  getSidecar: () => sidecar,
-  getBridge: () => agentHostBridge,
-  getActiveTurn: (sessionId) => activeTurns.get(sessionId),
-  flushTranscript: async () => {
-    await persistenceOutbox.flush(() => host);
-    return persistenceOutbox.size() === 0;
-  },
-  isPluginLoaded: (pluginId) => plugins.listLoaded().some((plugin) => plugin.manifest.id === pluginId),
-  isQuitting: () => quitting,
-  onChanged: () => sendToRenderer(IPC.event.sessionsChanged, { reason: "session.collaboration" }),
-  log: (message, data) => logger.app("runtime", "warn", message, { data }),
-});
 
 const planRuntime = createPlanRuntime({
   runtimeState,
@@ -1137,7 +1111,7 @@ const planRuntime = createPlanRuntime({
   acquireSessionOperation,
   resolveAgentRuntimeLaunch,
   isQuitting: () => quitting,
-  onTurnSettled: sessionCollaboration.settle,
+  onTurnSettled: async () => {},
 });
 const {
   finishTurn,
@@ -1252,7 +1226,6 @@ function registerIpc() {
     getHost: () => host,
     getSidecar: () => sidecar,
     getAgentHostBridge: () => agentHostBridge,
-    getBackendRouter: () => startupState.backendRouter,
     getNotificationViewingSessionId: () => notificationViewingSessionId,
     setNotificationViewingSessionId: (sessionId: string | null) => {
       notificationViewingSessionId = sessionId;
@@ -1368,7 +1341,6 @@ const startupState: StartupState = {
   set agentHostBridge(value) {
     agentHostBridge = value;
   },
-  backendRouter: null,
   get desktopControl() {
     return desktopControl;
   },
@@ -1403,7 +1375,6 @@ registerApplicationStartup({
   prewarmPluginLauncher,
   registerIpc,
   bootBackends,
-  planUiProbe,
   applyApplicationMenuSettings,
   applyDeveloperMode,
   applyPluginLauncherShortcut,
@@ -1411,12 +1382,7 @@ registerApplicationStartup({
   ensureWindow,
   bootHostStatus,
   flushPendingApplicationMenuCommands,
-  invokeSessionCollaboration: sessionCollaboration.invoke,
-  onSessionQueueChange: () => {
-    void sessionCollaboration.drain().catch((error: unknown) => {
-      logger.app("runtime", "warn", "session callback drain failed", { data: String(error) });
-    });
-  },
+  onSessionQueueChange: () => {},
 });
 
 const shutdownState: ShutdownState = {

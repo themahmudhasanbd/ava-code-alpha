@@ -13,7 +13,6 @@ import type { AppUpdaterController } from "../updater";
 import type { UserMcpRuntime } from "../user-mcp";
 import type { McpControlServer } from "../mcp-control";
 import type { McpOAuthManager } from "../mcp-oauth";
-import { getActiveRemoteHostsBoot, setActiveRemoteHostsBoot } from "./remote-hosts";
 
 const QUIT_TURN_SETTLE_BUDGET_MS = 2_000;
 
@@ -130,8 +129,6 @@ export function registerShutdownHandlers({
       // Close every paired remote host before the local host-core so any
       // in-flight remote turn's abort still goes over a live socket. Bounded
       // parallelism inside `closeAll`; safe to run before local disposals.
-      const remoteHostsShutdown = getActiveRemoteHostsBoot()?.closeAll();
-      setActiveRemoteHostsBoot(null);
       // Replies still streaming are stopped through the sidecar first so their
       // aborted final rows can reach the transcript while host-core is alive;
       // whatever does not make it in time is covered by the last checkpoint
@@ -170,7 +167,6 @@ export function registerShutdownHandlers({
         pluginShutdown,
         sidecarShutdown,
         mcpShutdown,
-        remoteHostsShutdown,
       ]);
     })();
 

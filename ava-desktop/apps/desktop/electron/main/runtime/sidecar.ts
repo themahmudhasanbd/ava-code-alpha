@@ -133,9 +133,6 @@ export function createSidecarRuntime({
     crashedTurnId: string,
   ): Promise<void> => {
     const executionId = approvedExecutionIdsBySession.get(sessionId);
-    if (runtimeState.host) {
-      await runtimeState.host.call("plans.abort", { sessionId }).catch(() => undefined);
-    }
     // A newer turn may own the session by now; this cleanup is the old one's.
     // It must still not leave the crashed turn's records behind.
     if (activeTurns.get(sessionId) !== crashedTurnId) {

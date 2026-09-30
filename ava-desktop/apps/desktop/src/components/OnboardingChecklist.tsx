@@ -54,7 +54,7 @@ export function OnboardingChecklist() {
         break;
       case "plugins.open":
       case "loadPlugin":
-        setPage("plugins");
+        setPage("settings");
         break;
       default:
         break;

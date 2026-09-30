@@ -26,19 +26,9 @@ const SettingsPage = lazy(() =>
     default: module.SettingsPage,
   })),
 );
-const PullRequestsPage = lazy(() =>
-  import("../../pages/PullRequestsPage").then((module) => ({
-    default: module.PullRequestsPage,
-  })),
-);
 const ScheduledPage = lazy(() =>
   import("../../pages/ScheduledPage").then((module) => ({
     default: module.ScheduledPage,
-  })),
-);
-const PluginsPage = lazy(() =>
-  import("../../pages/PluginsPage").then((module) => ({
-    default: module.PluginsPage,
   })),
 );
 
@@ -253,17 +243,9 @@ export function AppShell() {
             )}
 
             <Suspense fallback={<RoutePending />}>
-              {page === "pulls" ? (
-                <div className="route-surface route-page">
-                  <PullRequestsPage />
-                </div>
-              ) : page === "scheduled" ? (
+              {page === "scheduled" ? (
                 <div className="route-surface route-page">
                   <ScheduledPage />
-                </div>
-              ) : page === "plugins" ? (
-                <div className="route-surface route-page">
-                  <PluginsPage />
                 </div>
               ) : (
                 <ChatSurface />

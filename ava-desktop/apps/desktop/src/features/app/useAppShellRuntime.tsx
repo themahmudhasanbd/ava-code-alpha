@@ -12,7 +12,6 @@ import {
 } from "@pi-desktop/shared";
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { installRendererApi } from "../../capture/renderer-api";
 import { StartupSplash } from "../../components/StartupSplash";
 import { api } from "../../lib/api";
 import {
@@ -792,7 +791,6 @@ export function useAppShellRuntime() {
     toggleSidebar,
   ]);
 
-  useEffect(() => installRendererApi(), []);
 
   useEffect(() => {
     if (!ready) return;

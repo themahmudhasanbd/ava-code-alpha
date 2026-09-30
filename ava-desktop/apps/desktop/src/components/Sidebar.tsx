@@ -60,7 +60,6 @@ import {
   sidebarResetWidth,
 } from "../lib/sidebar-resize";
 import { BrandLogo } from "./BrandLogo";
-import { NotificationCenter } from "./NotificationCenter";
 import { ProjectEditDialog } from "./ProjectEditDialog";
 import { useArmedDelete } from "../hooks/use-armed-delete";
 import { ProjectDeleteDialog } from "./ProjectDeleteDialog";
@@ -2313,19 +2312,6 @@ export function Sidebar({
             </TooltipButton>
             <TooltipButton
               type="button"
-              className={`footer-action ${page === "plugins" ? "active" : ""}`}
-              data-nav="plugins"
-              tooltip={t("nav.plugins")}
-              ariaLabel={t("nav.plugins")}
-              onClick={() => page === "plugins"
-                ? (canNavBack() ? navBack() : setPage("chat"))
-                : setPage("plugins")}
-              aria-pressed={page === "plugins"}
-            >
-              <IconPlug size={14} aria-hidden />
-            </TooltipButton>
-            <TooltipButton
-              type="button"
               className={`footer-action ${page === "scheduled" ? "active" : ""}`}
               data-nav="scheduled"
               tooltip={t("scheduled.title")}
@@ -2335,7 +2321,6 @@ export function Sidebar({
             >
               <IconClock size={14} aria-hidden />
             </TooltipButton>
-            <NotificationCenter onBeforeOpen={() => closeMenus(false)} />
           </div>
 
           <TooltipButton

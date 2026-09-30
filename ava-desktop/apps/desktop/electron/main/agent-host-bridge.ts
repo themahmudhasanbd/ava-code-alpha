@@ -129,20 +129,7 @@ export function createAgentHostBridge(options: AgentHostBridgeOptions) {
         ])) as { accepted?: boolean; turnId: string };
         return { turnId: result.turnId };
       } catch (error) {
-        if (request.sessionMessageId) {
-          try {
-            await requireHost().call("session.collaboration.fail", {
-              messageId: request.sessionMessageId,
-              error: error instanceof Error ? error.message : String(error),
-            });
-          } catch (persistenceError) {
-            options.log("warn", "collaboration dispatch failure persistence failed", {
-              sessionId: request.sessionId,
-              messageId: request.sessionMessageId,
-              error: String(persistenceError),
-            });
-          }
-        }
+        throw error;
         throw error;
       }
     },
@@ -284,12 +271,6 @@ export function createAgentHostBridge(options: AgentHostBridgeOptions) {
     async remove(turnId: string): Promise<void> {
       const turn = agentHost.getTurn(turnId);
       const entry = agentHost.queueEntries(turn.sessionId).find((candidate) => candidate.turn.id === turnId);
-      if (entry?.sessionMessageId) {
-        await requireHost().call("session.collaboration.cancel", {
-          sessionId: turn.sessionId,
-          messageId: entry.sessionMessageId,
-        });
-      }
       await forIpc(() => agentHost.cancelTurn(DESKTOP_PRINCIPAL, turnId));
     },
     async cancelSessionMessage(sessionId: string, messageId: string): Promise<boolean> {

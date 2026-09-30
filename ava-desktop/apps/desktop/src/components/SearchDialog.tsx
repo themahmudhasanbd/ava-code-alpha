@@ -22,9 +22,7 @@ import {
 
 /** Navigable pages surfaced by the global search alongside sessions. */
 const PAGE_ENTRIES = [
-  { page: "pulls", labelKey: "pulls.title", icon: IconPullRequest },
   { page: "scheduled", labelKey: "scheduled.title", icon: IconClock },
-  { page: "plugins", labelKey: "nav.plugins", icon: IconAt },
 ] as const;
 
 type PageEntry = (typeof PAGE_ENTRIES)[number];

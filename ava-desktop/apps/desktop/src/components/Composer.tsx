@@ -36,7 +36,6 @@ import {
 } from "../hooks/use-composer-autocomplete";
 import { ComposerAutocomplete } from "./ComposerAutocomplete";
 import { AskToolCard } from "./AskToolCard";
-import { PlanApprovalBar } from "./PlanApprovalBar";
 import {
   COMPOSER_MAX_VISIBLE_ROWS,
   COMPOSER_MIN_HEIGHT_PX,
@@ -513,9 +512,6 @@ export function Composer({
       data-composer-dock={variant}
     >
       <div className="composer-stack">
-        {planCheckpoint?.status === "pending" ? (
-          <PlanApprovalBar proposal={planCheckpoint} />
-        ) : null}
         {pendingAsk ? (
           <AskToolCard request={pendingAsk} queued={queuedAsks} />
         ) : null}

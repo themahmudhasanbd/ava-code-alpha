@@ -9,9 +9,7 @@ import {
   type CloseBehavior,
   type KeybindingOverrides,
   type NativeMenuAction,
-  providerCreateInputFromDraft,
 } from "@pi-desktop/shared";
-import { scanModelConfigs } from "../importers/model-config";
 import { installApplicationMenu } from "../application-menu";
 import {
   installPluginAssetProtocol,
@@ -20,8 +18,6 @@ import {
 import { applyNetworkProxyFromAppSettings } from "../network-proxy";
 import { readCloseBehavior } from "../window-preferences";
 import { createAgentHostBridge, type AgentHostBridge } from "../agent-host-bridge";
-import { createBackendRouter, type BackendRouter } from "../remote/backend-router";
-import { createRemoteHostsBoot, setActiveRemoteHostsBoot } from "./remote-hosts";
 import {
   createMcpControlController,
   McpControlServer,
@@ -66,7 +62,6 @@ export type StartupState = {
   applicationBooted: boolean;
   closeBehavior: CloseBehavior;
   agentHostBridge: AgentHostBridge | null;
-  backendRouter: BackendRouter | null;
   desktopControl: McpControlController | null;
   mcpControl: McpControlServer | null;
 };
@@ -96,7 +91,6 @@ export type StartupDependencies = {
   prewarmPluginLauncher: () => void;
   registerIpc: () => IpcInvoker;
   bootBackends: () => Promise<void>;
-  planUiProbe: { install: () => void };
   applyApplicationMenuSettings: (settings?: {
     language?: unknown;
     theme?: unknown;
@@ -110,7 +104,6 @@ export type StartupDependencies = {
   bootHostStatus: (bootError: unknown) => unknown;
   flushPendingApplicationMenuCommands: () => void;
   getSidecar?: () => unknown;
-  invokeSessionCollaboration?: (input: McpControlInvokeInput) => Promise<unknown>;
   onSessionQueueChange?: () => void;
 };
 
@@ -160,7 +153,6 @@ export function registerApplicationStartup(deps: StartupDependencies): void {
       prewarmPluginLauncher,
       registerIpc,
       bootBackends,
-      planUiProbe,
       applyApplicationMenuSettings,
       applyDeveloperMode,
       applyPluginLauncherShortcut,
@@ -218,38 +210,6 @@ export function registerApplicationStartup(deps: StartupDependencies): void {
     // ROUTE_LOCAL and the local handler runs unchanged. Assigned before the
     // first window can issue IPC. Remote host connections register their
     // sessions here once paired (later stages).
-    state.backendRouter = createBackendRouter({
-      log: (level, message, data) =>
-        logger.app("runtime", level, message, { data: formatRemoteLogData(data) }),
-    });
-    // Every paired remote `pi-host` opens against the router this boot just
-    // created. An empty registry (default install with no user pairing) makes
-    // this a full no-op — nothing connects, no backend registers, every
-    // renderer call keeps hitting the local handler byte-for-byte.
-    const remoteHostsBoot = createRemoteHostsBoot({
-      dataDir,
-      encryption: {
-        // Electron's safeStorage exposes `isEncryptionAvailable`; the port
-        // keeps the shorter `isAvailable` name so a Node-side test can drop
-        // in a fake without pulling in the Electron type.
-        isAvailable: () => safeStorage.isEncryptionAvailable(),
-        encryptString: (plain) => safeStorage.encryptString(plain),
-        decryptString: (buffer) => safeStorage.decryptString(buffer),
-      },
-      router: state.backendRouter,
-      emit: sendToRenderer,
-      clientInfo: { name: APP_NAME, version: APP_VERSION },
-      log: (level, message, data) =>
-        logger.app("runtime", level, message, { data: formatRemoteLogData(data) }),
-    });
-    setActiveRemoteHostsBoot(remoteHostsBoot);
-    // Boot in the background: a slow or unreachable host must not delay the
-    // first window. Failures for individual hosts are logged inside `open()`.
-    void remoteHostsBoot.open().then((opened) => {
-      if (opened > 0) {
-        logger.app("runtime", "info", "remote hosts connected", { data: String(opened) });
-      }
-    });
     state.agentHostBridge = createAgentHostBridge({
       invoke: invokeIpc,
       channels: IPC.invoke,
@@ -264,7 +224,6 @@ export function registerApplicationStartup(deps: StartupDependencies): void {
     const control = createMcpControlController({
       invoke: invokeIpc,
       channels: IPC.invoke,
-      invokeSessionCollaboration: deps.invokeSessionCollaboration,
       onOperationComplete: async (operation, result, args, source) => {
         const event = mcpControlRendererEvent(operation, result, args, source);
         if (event) sendToRenderer(IPC.event.sessionsChanged, event);
@@ -287,7 +246,6 @@ export function registerApplicationStartup(deps: StartupDependencies): void {
         data: String(error),
       });
     }
-    if (!bootError) planUiProbe.install();
     const scheduledRunner = createScheduledRunner({
       getHost,
       execute: (id) => invokeIpc(IPC.invoke.scheduledExecute, [id, true]),
@@ -318,22 +276,7 @@ export function registerApplicationStartup(deps: StartupDependencies): void {
         await applyNetworkProxyFromAppSettings(stored);
 
         try {
-          const providerList = await host.call<{ providers: Array<{ id: string }> }>("providers.list", { includeDisabled: true });
-          if (!providerList?.providers || providerList.providers.length === 0) {
-            const drafts = await scanModelConfigs();
-            for (const draft of drafts) {
-              try {
-                await host.call("providers.create", providerCreateInputFromDraft(draft));
-                logger.app("provider", "info", "auto-imported model config provider on initial boot", {
-                  data: { source: draft.source, name: draft.name, id: draft.externalId },
-                });
-              } catch (e) {
-                logger.app("provider", "warn", "failed to auto-import provider draft", {
-                  data: { name: draft.name, error: e instanceof Error ? e.message : String(e) },
-                });
-              }
-            }
-          }
+          await host.call<{ providers: Array<{ id: string }> }>("providers.list", { includeDisabled: true });
         } catch (e) {
           logger.app("provider", "warn", "auto-import scan check error", {
             data: e instanceof Error ? e.message : String(e),

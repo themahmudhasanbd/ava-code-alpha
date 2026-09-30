@@ -88,18 +88,6 @@ export function registerAppIpc({
     };
   });
 
-  handle(IPC.invoke.appHealth, async () => {
-    const host = getHost();
-    if (!host) throw new Error("host unavailable");
-    return host.call("app.health");
-  });
-
-  handle(IPC.invoke.appGetOnboarding, async () => {
-    const host = getHost();
-    if (!host) throw new Error("host unavailable");
-    return host.call("app.getOnboarding");
-  });
-
   handle(IPC.invoke.appDismissOnboarding, async () => {
     const host = getHost();
     if (!host) throw new Error("host unavailable");

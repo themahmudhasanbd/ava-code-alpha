@@ -4,28 +4,22 @@ import { err, ErrorCodes, IPC, ok, type Result } from "@pi-desktop/shared";
 import type { AgentHostBridge } from "../agent-host-bridge";
 import type { AgentSidecar } from "../agent-sidecar";
 import type { HostProcess } from "../host-process";
-import { ROUTE_LOCAL, type BackendRouter } from "../remote/backend-router";
 import { registerAgentExtensionIpc } from "../agent-extensions-ipc";
 import { readNpmPath, writeNpmPath } from "../npm-preferences";
 import { registerAgentIpc } from "./agent-ipc";
 import { registerAppIpc } from "./app-ipc";
 import { registerDiagnosticsIpc } from "./diagnostics-ipc";
-import { registerMarketIpc } from "./market-ipc";
 import { registerMcpIpc } from "./mcp-ipc";
 import type { McpOAuthManager } from "../mcp-oauth";
 import { searchMcpMarket } from "../mcp-registry-catalog";
-import { registerNotificationIpc } from "./notification-ipc";
 import { registerPluginIpc } from "./plugin-ipc";
 import { registerPluginUiIpc } from "./plugin-ui-ipc";
 import { registerProviderIpc } from "./provider-ipc";
-import { registerPullsIpc } from "./pulls-ipc";
 import { registerScheduledIpc } from "./scheduled-ipc";
 import { registerSessionIpc } from "./session-ipc";
 import { registerSettingsIpc } from "./settings-ipc";
-import { registerConfigSyncIpc } from "./config-sync-ipc";
 import { registerSkillsIpc } from "./skills-ipc";
 import { registerAgentImportIpc } from "./agent-import-ipc";
-import { registerRemoteHostIpc } from "./remote-host-ipc";
 import { fetchSkillMarketDocument, searchSkillMarket } from "../skill-market-catalog";
 import { registerWindowIpc } from "./window-ipc";
 import { createComposerTemplateLoader, registerWorkspaceIpc } from "./workspace-ipc";
@@ -42,13 +36,6 @@ export type RegisterIpcDependencies = {
   traySessions: ReturnType<typeof createTraySessions>;
   getSidecar: () => AgentSidecar | null;
   getAgentHostBridge: () => AgentHostBridge | null;
-  /**
-   * Resolves the remote backend router once it exists. Renderer IPC calls whose
-   * session is owned by a paired remote host are forwarded through it; every
-   * other call — including all internal invokes — runs the local handler
-   * unchanged. Null until the router is wired (and in tests).
-   */
-  getBackendRouter?: () => BackendRouter | null;
   getNotificationViewingSessionId: () => string | null;
   setNotificationViewingSessionId: (sessionId: string | null) => void;
   activeUserSubagentDocuments: (...args: any[]) => Promise<any>;
@@ -170,11 +157,6 @@ export function registerIpcHandlers(dependencies: RegisterIpcDependencies) {
     // runs the existing local handler byte-for-byte unchanged.
     ipcMain.handle(channel, async (_event, ...args) =>
       wrap(async () => {
-        const router = getBackendRouter?.();
-        if (router) {
-          const outcome = await router.route(channel, args);
-          if (outcome !== ROUTE_LOCAL) return outcome.value;
-        }
         return handler(...args);
       }),
     );
@@ -223,14 +205,6 @@ export function registerIpcHandlers(dependencies: RegisterIpcDependencies) {
     safeOpenExternal,
     updater,
   });
-  registerNotificationIpc({
-    registrar,
-    getHost,
-    getMainWindow,
-    getViewingSessionId: getNotificationViewingSessionId,
-    setViewingSessionId: setNotificationViewingSessionId,
-    sendToRenderer,
-  });
   registerSessionIpc({
     registrar,
     getHost,
@@ -259,11 +233,6 @@ export function registerIpcHandlers(dependencies: RegisterIpcDependencies) {
     applyApplicationMenuSettings,
     applyDeveloperMode,
     resolveEffectiveCommandShell,
-  });
-  registerConfigSyncIpc({
-    registrar,
-    getHost,
-    sendToRenderer,
   });
   registerProviderIpc({
     registrar,
@@ -299,7 +268,6 @@ export function registerIpcHandlers(dependencies: RegisterIpcDependencies) {
     markMenuRendererReady,
     executeNativeMenuAction,
   });
-  registerPullsIpc({ registrar, getHost });
   registerScheduledIpc({
     registrar,
     getHost,
@@ -447,17 +415,7 @@ export function registerIpcHandlers(dependencies: RegisterIpcDependencies) {
 
   registerSpeechIpc({ registrar, speech });
 
-  registerRemoteHostIpc({ registrar });
 
-  registerMarketIpc({
-    registrar,
-    getHost,
-    plugins,
-    agentExtensions,
-    optionalWorkspaceRoot,
-    pluginActiveInProject,
-    sendToRenderer,
-  });
 
 
   registerDiagnosticsIpc({

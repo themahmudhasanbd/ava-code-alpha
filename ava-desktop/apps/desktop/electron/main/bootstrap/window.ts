@@ -1119,17 +1119,6 @@ export async function createWindow({
                 { includeDisabled: true },
               );
               if (windowState.host && (existing?.providers?.length ?? 0) === 0) {
-                await windowState.host.call("providers.create", {
-                  name: "OJ Gateway",
-                  vendorKey: "custom",
-                  type: "openai_compatible",
-                  protocol: "openai_compatible",
-                  baseUrl: "https://api.oj.ink/v1",
-                  authKind: "api_key_and_base_url",
-                  defaultModelId: "mimo-v2.5",
-                  secretValue: "sk-capture-fixture",
-                  apiStyle: "chat_completions",
-                });
                 await windowState.mainWindow!.webContents.executeJavaScript(
                   `void window.__PI_DESKTOP__?.refreshProviders?.()`,
                 );

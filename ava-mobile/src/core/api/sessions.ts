@@ -164,6 +164,28 @@ export async function readSession(rpc: RpcClient, id: string): Promise<SessionHi
         parts,
         stats: { durationMs: typeof turn.durationMs === "number" ? turn.durationMs : undefined },
       });
+    } else if (turn.status === "interrupted" || turn.status === "failed") {
+      // The turn ended without producing any agent output (e.g. interrupted
+      // while the model was still thinking). Synthesize an assistant message
+      // so the UI reports "Interrupted"/"Needs attention" instead of a
+      // misleading "Completed in ..." with empty content.
+      const turnIdStr = str(turn.id) || `${i}`;
+      const wasInterrupted = turn.status === "interrupted";
+      const errText = !wasInterrupted && turn.error ? str((turn.error as any)?.message ?? turn.error) : "";
+      out.push({
+        id: `a_${turnIdStr}`,
+        role: "assistant",
+        parts: [
+          {
+            id: `${turnIdStr}_p_notice`,
+            kind: "notice",
+            text: wasInterrupted ? "Stopped" : errText || "Turn failed",
+            status: "done",
+            meta: wasInterrupted ? { tone: "info" } : { tone: "error" },
+          },
+        ],
+        stats: { durationMs: typeof turn.durationMs === "number" ? turn.durationMs : undefined },
+      });
     }
   }
 

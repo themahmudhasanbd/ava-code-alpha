@@ -90,7 +90,6 @@ pub struct UnifiedMemoryResponse {
     pub record_id: Option<String>,
 }
 
-#[derive(Clone)]
 /// Jaccard token overlap in [0, 1] over lowercase alphanumeric tokens.
 /// Used to detect when a new memory contradicts/supersedes an existing one.
 fn token_overlap(a: &str, b: &str) -> f64 {

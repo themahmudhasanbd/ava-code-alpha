@@ -398,3 +398,38 @@ export function getToolIcon(toolName?: string, meta?: MessagePart["meta"]): Luci
   // Default fallback
   return Wrench;
 }
+
+export interface ToolDisplayInfo {
+  isMcp: boolean;
+  serverName?: string;
+  toolName: string;
+  displayTitle: string;
+  chipLabel: string;
+  subtitle: string;
+  icon: LucideIcon;
+}
+
+/**
+ * Summarizes how a tool part should be displayed (icon, labels, MCP status).
+ * TimelineScreen uses this for the per-node icon and color.
+ */
+export function getToolDisplayInfo(
+  partOrName: MessagePart | string,
+  meta?: MessagePart["meta"],
+): ToolDisplayInfo {
+  const toolName = typeof partOrName === "string" ? partOrName : partOrName.toolName ?? "";
+  const partMeta = (typeof partOrName === "string" ? meta : partOrName.meta) ?? meta;
+  const isMcp = isMcpTool(toolName, partMeta);
+  const icon = getToolIcon(toolName, partMeta);
+  const displayTitle = displayToolName(toolName) || toolName || "Tool";
+  const serverName = partMeta?.server;
+  return {
+    isMcp,
+    serverName,
+    toolName,
+    displayTitle,
+    chipLabel: isMcp && serverName ? `MCP \u00b7 ${serverName}` : displayTitle,
+    subtitle: typeof partOrName === "string" ? "" : getToolSubtitle(partOrName),
+    icon,
+  };
+}

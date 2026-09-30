@@ -183,6 +183,15 @@ export function SystemScreen() {
   const { auth } = useAva();
   const diag = useDiagnostics();
   const runCmd = useRunCommand();
+  // useMutation result identity changes on every state transition.
+  // Without this ref the callbacks below get new identities after
+  // each mutation and the load effects re-fire in an infinite loop.
+  const runCmdRef = useRef(runCmd);
+  runCmdRef.current = runCmd;
+  const execCmd = useCallback(
+    (v: { command: string; cwd: string }) => runCmdRef.current.mutateAsync(v),
+    []
+  );
 
   // Hero status derives from diagnostics freshness (single source of truth),
   // not the flapping live socket: online when diagnostics refreshed recently.
@@ -204,7 +213,7 @@ export function SystemScreen() {
   const fetchHardwareStats = useCallback(async () => {
     try {
       const pythonCmd = `python3 -c "import os,shutil,json,socket,platform; l=os.getloadavg(); c=os.cpu_count() or 1; m=dict(x.split(':') for x in open('/proc/meminfo') if ':' in x); tm=int(m['MemTotal'].split()[0])//1024; am=int(m.get('MemAvailable',m['MemFree']).split()[0])//1024; dt,du,df=shutil.disk_usage('/'); print(json.dumps({'cores':c,'load':[round(x,2) for x in l],'loadPct':round(min(100,(l[0]/c)*100),1),'ramTotal':tm,'ramUsed':tm-am,'ramFree':am,'ramPct':round(((tm-am)/tm)*100,1),'diskTotal':round(dt/(1024**3),1),'diskUsed':round(du/(1024**3),1),'diskFree':round(df/(1024**3),1),'diskPct':round((du/dt)*100,1),'uptime':int(float(open('/proc/uptime').read().split()[0])),'hostname':socket.gethostname(),'os':platform.platform()}))" 2>/dev/null`;
-      const res = await runCmd.mutateAsync({ command: pythonCmd, cwd: "/root" });
+      const res = await execCmd({ command: pythonCmd, cwd: "/root" });
       const raw = res.stdout?.trim();
       if (raw && raw.startsWith("{")) {
         const parsed = JSON.parse(raw);
@@ -215,12 +224,12 @@ export function SystemScreen() {
     } finally {
       setLoadingHw(false);
     }
-  }, [runCmd]);
+  }, [execCmd]);
 
   const loadPm2 = useCallback(async () => {
     setLoadingPm2(true);
     try {
-      const result = await runCmd.mutateAsync({
+      const result = await execCmd({
         command: "pm2 jlist 2>/dev/null || echo '[]'",
         cwd: "/root",
       });
@@ -248,13 +257,13 @@ export function SystemScreen() {
     } finally {
       setLoadingPm2(false);
     }
-  }, [runCmd]);
+  }, [execCmd]);
 
   const loadSystemd = useCallback(async () => {
     setLoadingSystemd(true);
     try {
       const services = ["ava-server", "nginx", "redis", "postgresql", "docker"];
-      const result = await runCmd.mutateAsync({
+      const result = await execCmd({
         command: `for s in ${services.join(" ")}; do systemctl is-active $s 2>/dev/null || echo "inactive"; done`,
         cwd: "/root",
       });
@@ -273,7 +282,7 @@ export function SystemScreen() {
     } finally {
       setLoadingSystemd(false);
     }
-  }, [runCmd]);
+  }, [execCmd]);
 
   const handleRefreshAll = useCallback(() => {
     void diag.refetch();
@@ -310,7 +319,7 @@ export function SystemScreen() {
     async (action: string, processName: string) => {
       setActionLoading(`${action}-${processName}`);
       try {
-        await runCmd.mutateAsync({
+        await execCmd({
           command: `pm2 ${action} ${processName}`,
           cwd: "/root",
         });
@@ -321,14 +330,14 @@ export function SystemScreen() {
         setActionLoading(null);
       }
     },
-    [runCmd, loadPm2]
+    [loadPm2]
   );
 
   const handleSystemdAction = useCallback(
     async (action: string, serviceName: string) => {
       setActionLoading(`${action}-${serviceName}`);
       try {
-        await runCmd.mutateAsync({
+        await execCmd({
           command: `systemctl ${action} ${serviceName}`,
           cwd: "/root",
         });
@@ -339,7 +348,7 @@ export function SystemScreen() {
         setActionLoading(null);
       }
     },
-    [runCmd, loadSystemd]
+    [loadSystemd]
   );
 
   // Helper values for hardware calculations

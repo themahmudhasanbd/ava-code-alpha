@@ -571,13 +571,9 @@ export const useAppStore = create<AppState>((set, get) => {
       });
       const snapshotRequest = Promise.all([
         api.getVersion(),
-        api.health(),
         api.listSessions(),
         api.listProviders(),
-        api.getProject(),
-        api.getOnboarding(),
         api.listPlugins(),
-        api.listNotifications({ limit: 200 }),
         api.pendingPlans(),
       ]);
       const bootstrapResult = await settleBootstrapRequests(
@@ -589,17 +585,8 @@ export const useAppStore = create<AppState>((set, get) => {
         throw bootstrapResult.error;
       }
       const settings = bootstrapResult.settings;
-      const [
-        version,
-        health,
-        sessions,
-        providers,
-        project,
-        onboarding,
-        plugins,
-        notifications,
-        pendingPlansResult,
-      ] = bootstrapResult.snapshot;
+      const [version, sessions, providers, plugins, pendingPlansResult] =
+        bootstrapResult.snapshot;
       if (version.protocolVersion !== PROTOCOL_VERSION) {
         set({
           error: `Protocol mismatch: UI ${PROTOCOL_VERSION} vs app ${version.protocolVersion}`,
@@ -625,22 +612,14 @@ export const useAppStore = create<AppState>((set, get) => {
           )
         ).filter((entry): entry is readonly [string, ModelInfo[]] => entry !== null),
       );
-      const currentWorkspace = project.workspace
-        ? withProjectDisplayName(project.workspace, get().projectMeta)
-        : null;
-      const persistedPaths = get().openProjectPaths;
       // Only explicitly retained tabs are restored. Historical sessions stay
       // available in Projects, but must not silently reopen a tab that was
-      // intentionally closed.
-      const openProjectPaths = currentWorkspace?.path
-        ? promoteProjectPath(persistedPaths, currentWorkspace.path)
-        : persistedPaths;
+      // intentionally closed. The host workspace concept was removed, so there
+      // is no host-provided current workspace at boot.
+      const openProjectPaths = get().openProjectPaths;
       const openProjects = openProjectPaths.map((path) =>
         withProjectDisplayName(projectWorkspaceFromPath(path), get().projectMeta),
       );
-      const hydratedProjects = currentWorkspace
-        ? upsertWorkspace(openProjects, currentWorkspace)
-        : openProjects;
       const hydratedSessions = decorateSessions(sessions.sessions, get().sessionMeta);
       const latestPlanCheckpoints = Object.fromEntries(
         hydratedSessions.flatMap((session) => {
@@ -668,23 +647,19 @@ export const useAppStore = create<AppState>((set, get) => {
       set({
         ready: true,
         version,
-        healthOk: health.ok,
         settings,
         sessions: hydratedSessions,
         providers: providers.providers,
         providerModels: cachedProviderModels,
-        workspace: currentWorkspace,
-        activeProjectPath: currentWorkspace?.path,
+        workspace: null,
+        activeProjectPath: undefined,
         openProjectPaths,
-        openProjects: hydratedProjects,
-        onboarding,
+        openProjects,
         plugins: plugins.plugins,
         planningStates,
         pendingPlans,
         planCheckpoints: latestPlanCheckpoints,
-        notifications: notifications.notifications,
-        unreadNotificationCount: notifications.unreadCount,
-        sessionOutcomes: latestSessionOutcomes(notifications.notifications),
+        sessionOutcomes: latestSessionOutcomes([]),
       });
 
       // The artifact's surface depends on which plugin views are launchable, and
@@ -700,13 +675,6 @@ export const useAppStore = create<AppState>((set, get) => {
         );
       }
       saveSidebarPreferences(preferencesFromState(get()));
-      if (currentWorkspace?.path) {
-        rememberProject({
-          path: currentWorkspace.path,
-          name: currentWorkspace.name || currentWorkspace.path,
-          branch: currentWorkspace.branch,
-        });
-      }
       // Ava opens an empty draft home ("What can I help you build?") rather than
       // restoring a prior transcript as the first paint. A live host plan is
       // the exception: its owning session must be visible so approval can be
@@ -740,7 +708,6 @@ export const useAppStore = create<AppState>((set, get) => {
       if (generation !== bootstrapGeneration) return;
       set({
         ready: true,
-        healthOk: false,
         ...(recoveredSettings ? { settings: recoveredSettings } : {}),
         error: e instanceof Error ? e.message : String(e),
       });

@@ -488,8 +488,6 @@ function normalizePlansChangedEvent(value: unknown): PlanningStateEvent {
 
 export const api = {
   getVersion: () => invoke<AppVersionInfo>(IPC.invoke.appGetVersion),
-  health: () => invoke<HostHealth>(IPC.invoke.appHealth),
-  getOnboarding: () => invoke<OnboardingState>(IPC.invoke.appGetOnboarding),
   dismissOnboarding: () => invoke(IPC.invoke.appDismissOnboarding),
   updatesGetState: () => invoke<UpdateState>(IPC.invoke.updatesGetState),
   updatesCheck: () => invoke<UpdateState>(IPC.invoke.updatesCheck),
@@ -497,14 +495,6 @@ export const api = {
   updatesInstall: () => invoke(IPC.invoke.updatesInstall),
   updatesOpenReleases: () => invoke(IPC.invoke.updatesOpenReleases),
   openFeedback: () => invoke(IPC.invoke.appOpenFeedback),
-  listNotifications: (input?: { unreadOnly?: boolean; limit?: number }) =>
-    invoke<NotificationListResult>(IPC.invoke.notificationList, input ?? {}),
-  markNotificationRead: (id: string) =>
-    invoke<{ ok: boolean }>(IPC.invoke.notificationMarkRead, { id }),
-  markAllNotificationsRead: () =>
-    invoke<{ ok: boolean }>(IPC.invoke.notificationMarkAllRead),
-  clearNotifications: () =>
-    invoke<{ ok: boolean }>(IPC.invoke.notificationClear),
   showNativeNotification: (input: {
     id: string;
     sessionId: string;
@@ -725,43 +715,22 @@ export const api = {
     invoke<{ ok: boolean }>(IPC.invoke.providersOauthCancel, loginId),
   deleteOauthAccount: (providerId: string) =>
     invoke<{ ok: boolean }>(IPC.invoke.providersOauthDelete, providerId),
-  getProject: () =>
-    invoke<{ workspace: ProjectWorkspace | null }>(IPC.invoke.projectGet),
   listProjects: () =>
     invoke<{ projects: ProjectRecord[] }>(IPC.invoke.projectList),
   listProjectGroups: () =>
     invoke<{ groups: ProjectGroupRecord[] }>(IPC.invoke.projectGroupList),
-  createProjectGroup: (name: string, folders: string[]) =>
-    invoke<{ group: ProjectGroupRecord }>(IPC.invoke.projectGroupCreate, { name, folders }),
-  renameProjectGroup: (groupId: string, name: string) =>
-    invoke<{ group: ProjectGroupRecord }>(IPC.invoke.projectGroupRename, { groupId, name }),
   updateProjectGroup: (groupId: string, name: string, folders: string[]) =>
     invoke<{ group: ProjectGroupRecord }>(IPC.invoke.projectGroupUpdate, {
       groupId,
       name,
       folders,
     }),
-  getProjectGroupMemory: (groupId: string) =>
-    invoke<{ memory: ProjectMemory }>(IPC.invoke.projectGroupMemoryGet, { groupId }),
-  saveProjectGroupMemory: (groupId: string, entries: ProjectMemory["entries"]) =>
-    invoke<{ memory: ProjectMemory }>(IPC.invoke.projectGroupMemorySave, { groupId, entries }),
-  getProjectGroupInstructions: (groupId: string) =>
-    invoke<{ content: string }>(IPC.invoke.projectGroupInstructionsGet, { groupId }),
-  saveProjectGroupInstructions: (groupId: string, content: string) =>
-    invoke<{ content: string }>(IPC.invoke.projectGroupInstructionsSave, { groupId, content }),
   openProject: () =>
     invoke<{ workspace: ProjectWorkspace | null; canceled?: boolean }>(
       IPC.invoke.projectOpen,
     ),
   pickProjectFolders: () =>
     invoke<{ folders: string[]; canceled?: boolean }>(IPC.invoke.projectPickFolders),
-  getProjectMemory: (projectPath: string) =>
-    invoke<{ memory: ProjectMemory }>(IPC.invoke.projectMemoryGet, { projectPath }),
-  saveProjectMemory: (projectPath: string, entries: ProjectMemoryEntry[]) =>
-    invoke<{ memory: ProjectMemory }>(IPC.invoke.projectMemorySave, {
-      projectPath,
-      entries,
-    }),
   cloneProject: (url: string) =>
     invoke<{ workspace: ProjectWorkspace | null; canceled?: boolean }>(
       IPC.invoke.projectClone,
@@ -790,16 +759,11 @@ export const api = {
     }),
   recordClipboardPaste: (text: string) =>
     invoke<{ ok: boolean }>(IPC.invoke.clipboardRecordPaste, { text }),
-  clearProject: () => invoke(IPC.invoke.projectClear),
   removeProject: (path: string) =>
     invoke<{ removed: boolean; sessionsRemoved: number }>(
       IPC.invoke.projectRemove,
       { path },
     ),
-  setProject: (path: string) =>
-    invoke<{ workspace: ProjectWorkspace | null }>(IPC.invoke.projectSet, path),
-  listPullRequests: () =>
-    invoke<{ pulls: PullRequestSummary[]; error?: string }>(IPC.invoke.pullsList),
   listScheduled: () =>
     invoke<{ tasks: ScheduledTask[] }>(IPC.invoke.scheduledList),
   createScheduled: (input: {

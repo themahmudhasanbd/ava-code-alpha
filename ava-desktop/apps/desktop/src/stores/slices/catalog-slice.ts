@@ -46,11 +46,10 @@ export function createCatalogSlice({
   return {
     refreshProviders: async () => {
       const generation = catalogRuntime.beginProviderRefresh();
-      const [providers, sessions, settings, onboarding] = await Promise.all([
+      const [providers, sessions, settings] = await Promise.all([
         api.listProviders(),
         api.listSessions(),
         api.getSettings(),
-        api.getOnboarding(),
       ]);
       if (generation !== catalogRuntime.providerGeneration()) return;
       set((state) => ({
@@ -58,7 +57,6 @@ export function createCatalogSlice({
         providerModels: {},
         sessions: decorateSessions(sessions.sessions, state.sessionMeta),
         settings,
-        onboarding,
       }));
     },
 
@@ -175,15 +173,7 @@ export function createCatalogSlice({
     },
 
     refreshNotifications: async () => {
-      const result = await api.listNotifications({ limit: 200 });
-      set((state) => ({
-        notifications: result.notifications,
-        unreadNotificationCount: result.unreadCount,
-        sessionOutcomes: {
-          ...state.sessionOutcomes,
-          ...latestSessionOutcomes(result.notifications),
-        },
-      }));
+      // The host notification feed was removed; notifications stay empty.
     },
 
     receiveNotification: (notification: AppNotification) => {
@@ -210,7 +200,6 @@ export function createCatalogSlice({
     markNotificationRead: async (id) => {
       const item = get().notifications.find((notification) => notification.id === id);
       if (!item || item.readAt) return;
-      await api.markNotificationRead(id);
       const readAt = new Date().toISOString();
       set((state) => ({
         notifications: state.notifications.map((notification) =>
@@ -222,7 +211,6 @@ export function createCatalogSlice({
 
     markAllNotificationsRead: async () => {
       if (get().unreadNotificationCount === 0) return;
-      await api.markAllNotificationsRead();
       const readAt = new Date().toISOString();
       set((state) => ({
         notifications: state.notifications.map((notification) =>
@@ -233,7 +221,6 @@ export function createCatalogSlice({
     },
 
     clearNotifications: async () => {
-      await api.clearNotifications();
       set({ notifications: [], unreadNotificationCount: 0 });
     },
 

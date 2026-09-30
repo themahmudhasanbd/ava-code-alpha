@@ -173,6 +173,39 @@ export function registerWorkspaceIpc({
     if (!host) throw new Error("host unavailable");
     return host.call("projects.list");
   });
+  handle(IPC.invoke.projectOpenFolder, async (path: string) => {
+    if (!host) throw new Error("host unavailable");
+    const requestedPath = String(path ?? "").trim();
+    if (!requestedPath) {
+      throw Object.assign(new Error("project path required"), {
+        errorCode: ErrorCodes.INVALID_ARGUMENT,
+      });
+    }
+    // Open only known project records so the renderer cannot probe arbitrary
+    // filesystem paths through this channel.
+    const listed = (await host.call("projects.list")) as {
+      projects?: Array<{ path?: string }>;
+    };
+    const projectPath = resolve(requestedPath);
+    const known = (listed.projects ?? []).some((project) => {
+      const candidate = String(project?.path ?? "").trim();
+      return candidate && resolve(candidate) === projectPath;
+    });
+    if (!known) {
+      throw Object.assign(new Error("project not found"), {
+        errorCode: ErrorCodes.NOT_FOUND,
+      });
+    }
+    if (!existsSync(projectPath) || !statSync(projectPath).isDirectory()) {
+      throw Object.assign(new Error("folder not found"), {
+        errorCode: ErrorCodes.NOT_FOUND,
+      });
+    }
+    const openError = await shell.openPath(stripWinLongPrefix(projectPath));
+    if (openError) throw new Error(openError);
+    return { ok: true, path: projectPath };
+  });
+
   handle(IPC.invoke.projectOpen, async () => {
     if (!host) throw new Error("host unavailable");
     const result = await openProjectPicker({
@@ -267,6 +300,100 @@ export function registerWorkspaceIpc({
     };
   });
 
+  handleWithEvent(IPC.invoke.composerPickFiles, async (event) =>
+    openComposerPicker(event, {
+      properties: ["openFile", "multiSelections"],
+    }),
+  );
+
+  handleWithEvent(IPC.invoke.composerPickPhotos, async (event) =>
+    openComposerPicker(event, {
+      properties: ["openFile", "multiSelections"],
+      filters: [
+        { name: "Images", extensions: ["png", "jpg", "jpeg", "gif", "webp", "heic", "tif", "tiff"] },
+      ],
+    }),
+  );
+
+  handleWithEvent(
+    IPC.invoke.composerImportFiles,
+    async (
+      event,
+      input: { sessionId?: unknown; token?: unknown } = {},
+    ) => {
+      if (!host) throw new Error("host unavailable");
+      const sessionId =
+        typeof input.sessionId === "string" ? input.sessionId.trim() : "";
+      if (!sessionId) {
+        throw Object.assign(new Error("session required"), {
+          errorCode: ErrorCodes.INVALID_ARGUMENT,
+        });
+      }
+      const session = (await host.call("session.get", { id: sessionId })) as {
+        session?: unknown;
+      };
+      if (!session.session) {
+        throw Object.assign(new Error("session not found"), {
+          errorCode: ErrorCodes.NOT_FOUND,
+        });
+      }
+      const paths = consumeComposerPickerSelection(input.token, event.sender.id);
+      return {
+        files: await importComposerFiles(
+          dataDir,
+          sessionId,
+          paths,
+        ),
+      };
+    },
+  );
+
+  handleWithEvent(
+    IPC.invoke.clipboardRecordPaste,
+    async (event, input: { text?: unknown } = {}) => {
+      assertMainWindowSender(event);
+      if (typeof input.text !== "string") {
+        throw Object.assign(new Error("text must be a string"), {
+          errorCode: ErrorCodes.INVALID_ARGUMENT,
+        });
+      }
+      clipboardHistory.recordText(input.text);
+      return { ok: true };
+    },
+  );
+
+  handleWithEvent(
+    IPC.invoke.composerPasteFiles,
+    async (event, input: { sessionId?: unknown; files?: unknown } = {}) => {
+      assertMainWindowSender(event);
+      if (!host) throw new Error("host unavailable");
+      const sessionId =
+        typeof input.sessionId === "string" ? input.sessionId.trim() : "";
+      if (!sessionId) {
+        throw Object.assign(new Error("session required"), {
+          errorCode: ErrorCodes.INVALID_ARGUMENT,
+        });
+      }
+      const session = (await host.call("session.get", { id: sessionId })) as {
+        session?: unknown;
+      };
+      if (!session.session) {
+        throw Object.assign(new Error("session not found"), {
+          errorCode: ErrorCodes.NOT_FOUND,
+        });
+      }
+      if (!Array.isArray(input.files)) {
+        throw Object.assign(new Error("files must be an array"), {
+          errorCode: ErrorCodes.INVALID_ARGUMENT,
+        });
+      }
+      const files = input.files as ComposerPasteFile[];
+      const saved = await saveComposerPasteFiles(dataDir, sessionId, files);
+      recordPastedClipboardFiles(files);
+      return { files: saved };
+    },
+  );
+
   handle(
     IPC.invoke.workspaceReviewRollback,
     async (input: { sessionId: string; snapshotId: string }) => {
@@ -274,6 +401,39 @@ export function registerWorkspaceIpc({
       return host.call("review.rollback", input);
     },
   );
+
+  handle(
+    IPC.invoke.browserNavigate,
+    async (input: { url?: string; sessionId?: string } = {}) => {
+      if (!plugins.getLoaded(BROWSER_PLUGIN_ID)) {
+        throw Object.assign(new Error("Browser plugin is disabled"), {
+          errorCode: "UNAVAILABLE",
+        });
+      }
+      return browserHost.navigate(
+        { url: String(input.url ?? "") },
+        input.sessionId,
+      );
+    },
+  );
+
+  handle(IPC.invoke.browserAction, async (input: { action?: string } = {}) => {
+    if (!plugins.getLoaded(BROWSER_PLUGIN_ID)) {
+      throw Object.assign(new Error("Browser plugin is disabled"), {
+        errorCode: "UNAVAILABLE",
+      });
+    }
+    const action = String(input.action ?? "");
+    if (
+      action === "back" ||
+      action === "forward" ||
+      action === "reload" ||
+      action === "stop"
+    ) {
+      browserHost.action(action);
+    }
+    return { ok: true };
+  });
 
   handle(
     IPC.invoke.browserSetBounds,

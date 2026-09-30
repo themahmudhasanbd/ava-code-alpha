@@ -24,6 +24,7 @@ import {
   projectIsArchived,
   projectIsCollapsed,
   projectIsPinned,
+  projectWorkspaceFromPath,
   sessionIsArchived,
   sessionIsPinned,
   sortProjects,
@@ -60,10 +61,11 @@ export type ProjectSliceDependencies = StoreAccess & {
 };
 
 /**
- * Create one logical project group from already-resolved folders and activate
- * its primary root. The Create project dialog reaches this through a local
- * folder pick and through a git checkout, so both sources share one project
- * semantic and one activation path.
+ * Activate the primary root of already-resolved folders. The Create project
+ * dialog reaches this through a local folder pick and through a git checkout,
+ * so both sources share one project semantic and one activation path. (The
+ * host-side project group concept was removed; the project is tracked
+ * renderer-locally now.)
  */
 async function createNamedProjectGroup(
   {
@@ -95,27 +97,15 @@ async function createNamedProjectGroup(
   const primary =
     uniqueFolders.find((path) => normalizeProjectPath(path) === normalizedPrimary) ??
     uniqueFolders[0];
-  const orderedFolders = [
-    primary,
-    ...uniqueFolders.filter(
-      (path) => normalizeProjectPath(path) !== normalizeProjectPath(primary),
-    ),
-  ];
   const intent = runtime.beginNavigationIntent();
-  const created = await api.createProjectGroup(normalizedName, orderedFolders);
-  if (!runtime.navigationIntentIsCurrent(intent)) return;
-  const groupPrimary = created.group.primaryPath || primary;
-  const workspace = await get().activateProject(groupPrimary, {
+  const workspace = await get().activateProject(primary, {
     navigationIntent: intent,
   });
   if (!workspace || !runtime.navigationIntentIsCurrent(intent)) return;
   // Keep the existing renderer-local metadata in sync so the sidebar can
-  // render the group name immediately; the host group is authoritative on
-  // the next archive refresh and for agent context.
-  get().renameProject(groupPrimary, normalizedName);
-  const onboarding = await api.getOnboarding();
-  if (!runtime.navigationIntentIsCurrent(intent)) return;
-  set({ createProjectDialogOpen: false, onboarding, page: "chat" });
+  // render the name immediately.
+  get().renameProject(primary, normalizedName);
+  set({ createProjectDialogOpen: false, page: "chat" });
 }
 
 /**
@@ -255,11 +245,13 @@ export function createProjectSlice({
       const preserveConversation = runtime.isSessionSelectionForIntent(intent);
       const requestedPath = path.trim();
       if (!requestedPath) return null;
-      const result = await api.setProject(requestedPath);
+      // The host-side workspace concept was removed; the active project is
+      // tracked renderer-locally now.
       if (!runtime.navigationIntentIsCurrent(intent)) return null;
-      const workspace = result.workspace
-        ? withProjectDisplayName(result.workspace, get().projectMeta)
-        : null;
+      const workspace = withProjectDisplayName(
+        projectWorkspaceFromPath(requestedPath),
+        get().projectMeta,
+      );
       if (!workspace?.path) return null;
       if (
         normalizeProjectPath(get().activeProjectPath) !==
@@ -306,30 +298,13 @@ export function createProjectSlice({
     refreshProject: async (path) => {
       const requestedKey = normalizeProjectPath(path);
       if (!requestedKey) return null;
-
-      const result = await api.getProject();
-      const workspace = result.workspace
-        ? withProjectDisplayName(result.workspace, get().projectMeta)
-        : null;
-      if (
-        !workspace?.path ||
-        normalizeProjectPath(workspace.path) !== requestedKey
-      ) {
-        return null;
-      }
-
-      let applied = false;
-      set((state) => {
-        if (normalizeProjectPath(state.activeProjectPath) !== requestedKey) {
-          return state;
-        }
-        applied = true;
-        return {
-          workspace,
-          openProjects: upsertWorkspace(state.openProjects, workspace),
-        };
-      });
-      return applied ? workspace : null;
+      // The host workspace read was removed; serve the cached open-project
+      // entry so hover cards keep their label without a host round-trip.
+      return (
+        get().openProjects.find(
+          (project) => normalizeProjectPath(project.path) === requestedKey,
+        ) ?? null
+      );
     },
 
     openProjectPath: async (path) => get().activateProject(path),
@@ -395,7 +370,8 @@ export function createProjectSlice({
     clearProject: async (opts) => {
       const intent = opts?.navigationIntent ?? runtime.beginNavigationIntent();
       const preserveConversation = runtime.isSessionSelectionForIntent(intent);
-      await api.clearProject();
+      // The host-side project clear channel was removed; clearing is
+      // renderer-local now.
       if (!runtime.navigationIntentIsCurrent(intent)) return;
       if (!preserveConversation) get().resetWorkPanelContext();
       set({
@@ -411,9 +387,6 @@ export function createProjectSlice({
             }),
       });
       persistCurrentSidebar(get);
-      const onboarding = await api.getOnboarding();
-      if (!runtime.navigationIntentIsCurrent(intent)) return;
-      set({ onboarding });
     },
 
     deleteProject: async (path) => {

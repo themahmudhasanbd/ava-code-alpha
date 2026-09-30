@@ -105,7 +105,6 @@ export type DraftSessionConfiguration = {
 export type AppState = {
   ready: boolean;
   version?: AppVersionInfo;
-  healthOk: boolean;
   settings?: AppSettings;
   sessions: SessionSummary[];
   /** Renderer-owned conversation presentation metadata. */

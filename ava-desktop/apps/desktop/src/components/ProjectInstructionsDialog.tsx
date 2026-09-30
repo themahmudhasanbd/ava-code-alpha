@@ -24,16 +24,7 @@ export function ProjectInstructionsDialog({
 
   useEffect(() => {
     let cancelled = false;
-    const load = project.groupId && !project.legacy
-      ? api.getProjectGroupInstructions(project.groupId).then((result) => ({
-          project: {
-            scope: "project" as const,
-            path: "ChatGPT Project instructions",
-            content: result.content,
-            exists: true,
-          },
-        }))
-      : api.getAgentInstructions(project.path);
+    const load = api.getAgentInstructions(project.path);
     void load.then((result) => {
       if (cancelled || !result.project) return;
       setFile(result.project);
@@ -57,13 +48,8 @@ export function ProjectInstructionsDialog({
   const save = async () => {
     setSaving(true);
     try {
-      if (project.groupId && !project.legacy) {
-        const result = await api.saveProjectGroupInstructions(project.groupId, draft);
-        setFile((current) => current ? { ...current, content: result.content, exists: true } : current);
-      } else {
-        const result = await api.saveAgentInstructions("project", draft, project.path);
-        setFile(result.file);
-      }
+      const result = await api.saveAgentInstructions("project", draft, project.path);
+      setFile(result.file);
       onSaved();
     } catch (error) {
       onError(error);

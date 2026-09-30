@@ -18,7 +18,6 @@ function withProjectDisplayName(
 export function createInitialState(): AppStateData {
   return {
     ready: false,
-    healthOk: false,
     sessions: [],
     sessionMeta: initialSidebarPreferences.sessionMeta,
     sessionView: {

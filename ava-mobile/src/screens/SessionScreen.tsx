@@ -25,7 +25,36 @@ import { COLORS, useTheme } from "@/theme/colors";
 import { font } from "@/theme/fonts";
 import { ChatSessionSkeleton } from "@/components/ui/skeleton";
 
-const processedPromptNonces = new Set<string>();
+const MAX_NONCES_PER_SESSION = 20;
+const MAX_NONCE_SESSIONS = 50;
+
+/**
+ * Audit A3 — bounded per-session nonce storage for the single-dispatch
+ * initialPrompt guard. The old unbounded global Set also deduped on raw
+ * prompt text; now dedup only happens on an explicit promptNonce.
+ */
+const processedPromptNonces = new Map<string, Set<string>>();
+
+function isNonceProcessed(sessionId: string, nonce: string): boolean {
+  return processedPromptNonces.get(sessionId)?.has(nonce) ?? false;
+}
+
+function markNonceProcessed(sessionId: string, nonce: string): void {
+  let set = processedPromptNonces.get(sessionId);
+  if (!set) {
+    set = new Set();
+    processedPromptNonces.set(sessionId, set);
+  }
+  set.add(nonce);
+  if (set.size > MAX_NONCES_PER_SESSION) {
+    const oldest = set.values().next().value;
+    if (oldest !== undefined) set.delete(oldest);
+  }
+  if (processedPromptNonces.size > MAX_NONCE_SESSIONS) {
+    const oldestKey = processedPromptNonces.keys().next().value;
+    if (oldestKey !== undefined) processedPromptNonces.delete(oldestKey);
+  }
+}
 
 export function SessionScreen({
   route,
@@ -157,12 +186,15 @@ export function SessionScreen({
     }
   }, [sessionId, activeSessionId, setActiveSessionId]);
 
-  // Single-dispatch initialPrompt guard
+  // Single-dispatch initialPrompt guard. Only dedups when an explicit
+  // promptNonce is provided — never uses raw prompt text as a dedup key.
   useEffect(() => {
     if (!initialPrompt) return;
-    const nonceKey = promptNonce || initialPrompt;
-    if (processedPromptNonces.has(nonceKey)) return;
-    processedPromptNonces.add(nonceKey);
+    if (promptNonce) {
+      const sessionKey = sessionId || "__new__";
+      if (isNonceProcessed(sessionKey, promptNonce)) return;
+      markNonceProcessed(sessionKey, promptNonce);
+    }
 
     if (navigation?.setParams) {
       navigation.setParams({ initialPrompt: undefined, promptNonce: undefined });
@@ -171,9 +203,11 @@ export function SessionScreen({
     void send(initialPrompt).then((newThreadId) => {
       if (newThreadId && navigation?.setParams) {
         navigation.setParams({ sessionId: newThreadId, initialPrompt: undefined, promptNonce: undefined });
+      } else if (!newThreadId) {
+        setDraft(initialPrompt);
       }
     });
-  }, [initialPrompt, promptNonce, send, navigation]);
+  }, [initialPrompt, promptNonce, send, navigation, sessionId]);
 
   const isNearBottomRef = useRef(true);
   const [showScrollBottomBtn, setShowScrollBottomBtn] = useState(false);
@@ -236,7 +270,11 @@ export function SessionScreen({
       fullPrompt = fullPrompt ? `${fullPrompt}\n\n${attText}` : attText;
     }
     void send(fullPrompt).then((newThreadId) => {
-      if (newThreadId && newThreadId !== sessionId && navigation?.setParams) {
+      if (!newThreadId) {
+        setDraft(fullPrompt);
+        return;
+      }
+      if (newThreadId !== sessionId && navigation?.setParams) {
         navigation.setParams({ sessionId: newThreadId });
       }
     });

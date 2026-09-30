@@ -109,20 +109,46 @@ export function PermissionsSettingsScreen() {
   }, []);
 
   const handleSelectApproval = async (val: string) => {
+    const previous = activeApproval;
     setActiveApproval(val);
     try {
-      await writeConfigMutation.mutateAsync({ approval_policy: val });
+      const result = await writeConfigMutation.mutateAsync({ approval_policy: val });
+      if (!result.success) {
+        // Server rejected the write: roll back to the previous value.
+        setActiveApproval(previous);
+        Alert.alert(
+          "Sync Error",
+          `${result.error || "Failed to update approval policy"}. Previous value restored.`
+        );
+      }
     } catch (e: any) {
-      Alert.alert("Sync Error", e?.message || "Failed to update approval policy");
+      setActiveApproval(previous);
+      Alert.alert(
+        "Sync Error",
+        `${e?.message || "Failed to update approval policy"}. Previous value restored.`
+      );
     }
   };
 
   const handleSelectSandbox = async (val: string) => {
+    const previous = activeSandbox;
     setActiveSandbox(val);
     try {
-      await writeConfigMutation.mutateAsync({ sandbox_mode: val });
+      const result = await writeConfigMutation.mutateAsync({ sandbox_mode: val });
+      if (!result.success) {
+        // Server rejected the write: roll back to the previous value.
+        setActiveSandbox(previous);
+        Alert.alert(
+          "Sync Error",
+          `${result.error || "Failed to update sandbox mode"}. Previous value restored.`
+        );
+      }
     } catch (e: any) {
-      Alert.alert("Sync Error", e?.message || "Failed to update sandbox mode");
+      setActiveSandbox(previous);
+      Alert.alert(
+        "Sync Error",
+        `${e?.message || "Failed to update sandbox mode"}. Previous value restored.`
+      );
     }
   };
 

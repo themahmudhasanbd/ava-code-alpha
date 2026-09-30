@@ -34,24 +34,29 @@ export function makeUniqueId(prefix = "id"): string {
   return `${prefix}_${Date.now()}_${idCounter}_${Math.random().toString(36).slice(2, 7)}`;
 }
 
+const isOptimisticId = (id: string) => /^u_\d+_/.test(id);
+const userText = (m: ChatMessage) =>
+  (m.parts ?? []).map((p) => p.text ?? "").join("\n").trim();
+
+/** Optimistic user messages the server has not confirmed yet (matched by text against the server tail). */
 function getPendingLocalUserMessages(
   localMsgs: ChatMessage[],
   serverMsgs: ChatMessage[],
   _isTurnRunning = false
 ): ChatMessage[] {
-  if (!localMsgs || localMsgs.length === 0) return [];
-  const localUserMsgs = localMsgs.filter((m) => m.role === "user");
-  if (localUserMsgs.length === 0) return [];
-  if (!serverMsgs || serverMsgs.length === 0) return localUserMsgs;
-
-  const serverUserMsgs = serverMsgs.filter((m) => m.role === "user");
-
-  // If local user messages count exceeds server user messages count, return only the pending tail
-  if (localUserMsgs.length > serverUserMsgs.length) {
-    return localUserMsgs.slice(serverUserMsgs.length);
+  const optimistic = (localMsgs ?? []).filter((m) => m.role === "user" && isOptimisticId(m.id));
+  if (optimistic.length === 0) return [];
+  const serverTail = (serverMsgs ?? [])
+    .filter((m) => m.role === "user")
+    .slice(-Math.max(optimistic.length * 2, 6))
+    .map(userText);
+  const pending: ChatMessage[] = [];
+  for (const m of optimistic) {
+    const i = serverTail.indexOf(userText(m));
+    if (i === -1) pending.push(m);
+    else serverTail.splice(i, 1);
   }
-
-  return [];
+  return pending;
 }
 
 function mergeWithLocalMessages(
@@ -104,7 +109,8 @@ function mergeWithLocalMessages(
 }
 
 /** Owns the transcript for the active session: history + live streaming turn synced through chatStore. */
-export function useChat(explicitSessionId?: string | null) {
+export function useChat(explicitSessionId?: string | null, opts: { passive?: boolean } = {}) {
+  const passive = !!opts.passive;
   const {
     rpc,
     status: rpcStatus,
@@ -148,6 +154,20 @@ export function useChat(explicitSessionId?: string | null) {
     threadId: null,
   });
   const safetyTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Audit A10 — track the queue-drain timeout in a ref so a newer drain
+  // replaces a pending one; cleared on unmount so a stale drain can't fire
+  // after the hook is gone.
+  const queueDrainTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (queueDrainTimeoutRef.current) {
+        clearTimeout(queueDrainTimeoutRef.current);
+        queueDrainTimeoutRef.current = null;
+      }
+    };
+  }, []);
 
   // Helper to fetch server queue items
   const refreshQueue = useCallback(
@@ -385,7 +405,9 @@ export function useChat(explicitSessionId?: string | null) {
         isStreamingRef.current = false;
         statusRef.current = err ? "error" : "ready";
         activeAidRef.current = null;
+        setError(err ?? null);
         runningThreadIdRef.current = null;
+        offRef.current = null;
         setSessionRunning(threadId, false);
 
         void stopAgentForeground({ sessionId: threadId, isSuccess: !err });
@@ -411,6 +433,10 @@ export function useChat(explicitSessionId?: string | null) {
           ];
         });
 
+        // Audit D15 — capture the notification text/title during the pure
+        // updater, then fire the side effect outside setState.
+        let turnTitle = err ? "Turn Failed" : "Turn Complete";
+        let turnText = "Task finished.";
         chatStore.setState(threadId, (prev) => {
           const updatedMessages = prev.messages.map((msg) => {
             const parts = msg.parts.map((p) =>
@@ -432,11 +458,12 @@ export function useChat(explicitSessionId?: string | null) {
           const lastMsg = updatedMessages.find((m) => m.id === aid);
           const firstText =
             lastMsg?.parts?.find((p) => p.kind === "text")?.text || info || "Task finished.";
-          backgroundSync.onTurnDone(threadId, err ? "Turn Failed" : "Turn Complete", firstText);
+          turnText = firstText;
 
           return {
             ...prev,
             status: err ? "error" : "ready",
+            error: err ?? null,
             isStreaming: false,
             isStopping: false,
             activeAid: null,
@@ -444,15 +471,23 @@ export function useChat(explicitSessionId?: string | null) {
             messages: updatedMessages,
           };
         });
+        backgroundSync.onTurnDone(threadId, turnTitle, turnText);
 
         qc.invalidateQueries({ queryKey: keys.sessions });
         if (threadId) {
           qc.invalidateQueries({ queryKey: keys.session(threadId) });
         }
 
-        // Auto-drain queue: If server has queued items, start next prompt
+        // Auto-drain queue: If server has queued items, start next prompt.
+        // Tracked in a ref so a newer drain replaces a pending one and the
+        // timer is cleared on unmount.
         if (rpc && !err && info !== "Stopped") {
-          setTimeout(async () => {
+          if (queueDrainTimeoutRef.current) {
+            clearTimeout(queueDrainTimeoutRef.current);
+            queueDrainTimeoutRef.current = null;
+          }
+          queueDrainTimeoutRef.current = setTimeout(async () => {
+            queueDrainTimeoutRef.current = null;
             const currentQ = await refreshQueue(threadId);
             if (currentQ.length > 0 && !isStreamingRef.current) {
               const nextTurnId = await startQueuedPrompt(rpc, threadId);
@@ -469,7 +504,8 @@ export function useChat(explicitSessionId?: string | null) {
                   activeAid: nextAid,
                   activeTurnId: nextTurnId,
                 }));
-                offRef.current = attachToRunningTurn(
+                try { (offRef.current as (() => void) | null)?.(); } catch {}
+          offRef.current = attachToRunningTurn(
                   rpc,
                   threadId,
                   createHandlers(nextAid, threadId)
@@ -485,6 +521,8 @@ export function useChat(explicitSessionId?: string | null) {
 
   // Handle session change, background history synchronization, and attaching to running turns
   useEffect(() => {
+    // Passive readers (Timeline) only mirror chatStore; the owning screen attaches/merges.
+    if (passive) return;
     const sessionChanged = currentSessionRef.current !== currentSessionId;
     const historyData = history.data;
     const historyMessages = historyData?.messages ?? [];
@@ -529,6 +567,7 @@ export function useChat(explicitSessionId?: string | null) {
             activeTurnId: serverActiveTurnId || null,
             messages: mergeWithLocalMessages(prev.messages, historyMessages, true, 30, aid),
           }));
+          try { (offRef.current as (() => void) | null)?.(); } catch {}
           offRef.current = attachToRunningTurn(
             rpc,
             currentSessionId,
@@ -565,7 +604,9 @@ export function useChat(explicitSessionId?: string | null) {
       const isRecentlySubmitted = Date.now() - turnStartedAtRef.current < 5000;
 
       // STUCK-STATE RECOVERY: If server says turn is NOT running, and not recently started locally
-      if (!isTurnRunning && currentStore.isStreaming && !isRecentlySubmitted && offRef.current == null) {
+      if (!isTurnRunning && currentStore.isStreaming && !isRecentlySubmitted && (offRef.current == null || Date.now() - currentStore.lastUpdated > 8000)) {
+        try { (offRef.current as (() => void) | null)?.(); } catch {}
+        offRef.current = null;
         isStreamingRef.current = false;
         statusRef.current = "ready";
         activeAidRef.current = null;
@@ -606,6 +647,7 @@ export function useChat(explicitSessionId?: string | null) {
           activeTurnId: serverActiveTurnId || null,
         }));
 
+        try { (offRef.current as (() => void) | null)?.(); } catch {}
         offRef.current = attachToRunningTurn(
           rpc,
           currentSessionId,
@@ -626,11 +668,11 @@ export function useChat(explicitSessionId?: string | null) {
         });
       }
     }
-  }, [history.data, currentSessionId, visibleCount, rpc, createHandlers, setSessionRunning]);
+  }, [history.data, currentSessionId, visibleCount, rpc, createHandlers, setSessionRunning, passive]);
 
   // Fast Stream Synchronizer: Reconciles server turns and transcript state
   useEffect(() => {
-    if (!currentSessionId || (status !== "streaming" && status !== "submitted")) return;
+    if (passive || !currentSessionId || (status !== "streaming" && status !== "submitted")) return;
     const interval = setInterval(() => {
       const store = chatStore.getState(currentSessionId);
       if (AppState.currentState !== "active") return;
@@ -640,20 +682,20 @@ export function useChat(explicitSessionId?: string | null) {
       }
     }, 6000);
     return () => clearInterval(interval);
-  }, [currentSessionId, refetchHistory, status, refreshQueue]);
+  }, [currentSessionId, refetchHistory, status, refreshQueue, passive]);
 
   const loadOlder = useCallback(() => {
     if (!currentSessionId) return;
-    setVisibleCount((current) => {
-      const next = Math.min(allHistoryRef.current.length, current + 30);
-      chatStore.setState(currentSessionId, (prev) => ({
-        ...prev,
-        visibleCount: next,
-        messages: allHistoryRef.current.slice(-next),
-      }));
-      return next;
-    });
-  }, [currentSessionId]);
+    // Audit A11 — compute the next count outside the updater; never call
+    // chatStore.setState from inside a React state updater.
+    const next = Math.min(allHistoryRef.current.length, visibleCount + 30);
+    setVisibleCount(next);
+    chatStore.setState(currentSessionId, (prev) => ({
+      ...prev,
+      visibleCount: next,
+      messages: mergeWithLocalMessages(prev.messages, allHistoryRef.current, !!prev.isStreaming, next, prev.activeAid),
+    }));
+  }, [currentSessionId, visibleCount]);
 
   const send = useCallback(
     async (text: string, cwd?: string, overrideThreadId?: string) => {
@@ -688,84 +730,37 @@ export function useChat(explicitSessionId?: string | null) {
         statusRef.current = "error";
         isSendingRef.current = false;
 
-        const userMsgId = makeUniqueId("u");
-        const optimisticUserMsg: ChatMessage = {
-          id: userMsgId,
-          role: "user",
-          parts: [{ id: makeUniqueId("u_part"), kind: "text", text: trimmed, status: "done" }],
-        };
-        const optimisticAssMsg: ChatMessage = {
-          id: makeUniqueId("live"),
-          role: "assistant",
-          parts: [
-            {
-              id: makeUniqueId("err"),
-              kind: "notice" as const,
-              text: offlineErr,
-              status: "error" as const,
-              meta: { tone: "error" as const },
-            },
-          ],
-        };
-
-        setMessages((prev) => [...prev, optimisticUserMsg, optimisticAssMsg]);
+        // Audit C25 — error state only, no optimistic ghost messages.
         if (threadId) {
           chatStore.setState(threadId, (prev) => ({
             ...prev,
             status: "error",
             error: offlineErr,
-            messages: [...prev.messages, optimisticUserMsg, optimisticAssMsg],
           }));
         }
         return null;
       }
 
       try {
-        const targetCwd = cwd || workingCwd || defaultCwd || APP.defaultCwd;
-        let targetThreadId = threadId;
-
-        // Start new session if none exists yet
-        if (!targetThreadId) {
+        // Audit C23 — if a turn is already streaming on this thread, queue the
+        // prompt directly. The live turn's onDone auto-drain will start it.
+        // Do NOT detach offRef and do NOT call runTurn here.
+        if (isStreamingRef.current && threadId) {
           try {
-            targetThreadId = await startSession(rpc, {
-              cwd: targetCwd,
-              model: modelId || undefined,
-              sandbox,
-            });
-            if (targetThreadId !== activeSessionId) {
-              setActiveSessionId(targetThreadId);
+            const qp = await addPromptToQueue(rpc, threadId, trimmed);
+            if (qp) {
+              await refreshQueue(threadId);
+            } else {
+              setError("Failed to queue prompt.");
             }
           } catch (e) {
-            isStreamingRef.current = false;
-            statusRef.current = "error";
-            const errStr = formatCoreError(e);
-            setError(errStr);
-            const userMsgId = makeUniqueId("u");
-            const optimisticUserMsg: ChatMessage = {
-              id: userMsgId,
-              role: "user",
-              parts: [{ id: makeUniqueId("u_part"), kind: "text", text: trimmed, status: "done" }],
-            };
-            setMessages((prev) => [
-              ...prev,
-              optimisticUserMsg,
-              {
-                id: makeUniqueId("live"),
-                role: "assistant",
-                parts: [
-                  {
-                    id: makeUniqueId("err"),
-                    kind: "notice" as const,
-                    text: `Failed to create session: ${errStr}`,
-                    status: "error" as const,
-                    meta: { tone: "error" as const },
-                  },
-                ],
-              },
-            ]);
-            return null;
+            setError(formatCoreError(e, "Failed to queue prompt"));
           }
+          return threadId;
         }
+
+        const targetCwd = cwd || workingCwd || defaultCwd || APP.defaultCwd;
+        let targetThreadId = threadId;
 
         const userMsgId = makeUniqueId("u");
         const optimisticUserMsg: ChatMessage = {
@@ -775,13 +770,6 @@ export function useChat(explicitSessionId?: string | null) {
         };
 
         const aid = makeUniqueId("live");
-        activeAidRef.current = aid;
-        setError(null);
-        isStreamingRef.current = true;
-        statusRef.current = "submitted";
-        turnStartedAtRef.current = Date.now();
-        runningThreadIdRef.current = targetThreadId;
-
         const optimisticAssMsg: ChatMessage = {
           id: aid,
           role: "assistant",
@@ -789,24 +777,71 @@ export function useChat(explicitSessionId?: string | null) {
           stats: { startedAt: Date.now() },
         };
 
-        chatStore.setState(targetThreadId, (prev) => {
-          const hasUser = prev.messages.some((m) => m.id === userMsgId);
-          return {
+        // FIX: show the prompt immediately, before any network round-trip.
+        activeAidRef.current = aid;
+        setError(null);
+        isStreamingRef.current = true;
+        statusRef.current = "submitted";
+        turnStartedAtRef.current = Date.now();
+        setMessages((prev) =>
+          prev.some((m) => m.id === userMsgId) ? prev : [...prev, optimisticUserMsg, optimisticAssMsg]
+        );
+
+        const pushToStore = (tid: string) => {
+          chatStore.setState(tid, (prev) => ({
             ...prev,
             status: "submitted",
             isStreaming: true,
             isStopping: false,
             activeAid: aid,
             error: null,
-            messages: hasUser
+            messages: prev.messages.some((m) => m.id === userMsgId)
               ? prev.messages
               : [...prev.messages, optimisticUserMsg, optimisticAssMsg],
-          };
-        });
+          }));
+          setSessionRunning(tid, true);
+        };
 
-        setSessionRunning(targetThreadId, true);
-        if (targetThreadId !== activeSessionId) {
-          setActiveSessionId(targetThreadId);
+        if (targetThreadId) {
+          runningThreadIdRef.current = targetThreadId;
+          pushToStore(targetThreadId);
+        }
+
+        // Start new session if none exists yet
+        if (!targetThreadId) {
+          try {
+            targetThreadId = await startSession(rpc, {
+              cwd: targetCwd,
+              model: modelId || undefined,
+              sandbox,
+            });
+            // FIX: mark streaming flags BEFORE switching sessions so the
+            // session-change effect does not wipe the optimistic transcript.
+            runningThreadIdRef.current = targetThreadId;
+            pushToStore(targetThreadId);
+            if (targetThreadId !== activeSessionId) {
+              setActiveSessionId(targetThreadId);
+            }
+          } catch (e) {
+            isStreamingRef.current = false;
+            statusRef.current = "error";
+            runningThreadIdRef.current = null;
+            activeAidRef.current = null;
+            const errStr = formatCoreError(e);
+            setError(errStr);
+            setStatus("error");
+            const failNotice: MessagePart = {
+              id: makeUniqueId("err"),
+              kind: "notice",
+              text: `Failed to create session: ${errStr}`,
+              status: "error",
+              meta: { tone: "error" },
+            };
+            setMessages((prev) =>
+              prev.map((m) => (m.id === aid ? { ...m, parts: [failNotice] } : m))
+            );
+            return null;
+          }
         }
 
         if (offRef.current) {
@@ -832,17 +867,10 @@ export function useChat(explicitSessionId?: string | null) {
           runningThreadIdRef.current = null;
           setSessionRunning(targetThreadId, false);
 
-          chatStore.patchAssistant(targetThreadId, aid, (parts) => [
-            ...parts,
-            {
-              id: makeUniqueId("err"),
-              kind: "notice",
-              text: `Failed to send prompt: ${formattedErr}`,
-              status: "error",
-              meta: { tone: "error" },
-            },
-          ]);
-
+          // Audit C28 — runTurn's catch already invoked onDone(errText), which
+          // appended the error notice; do NOT append another one here.
+          // Audit C25 — remove the optimistic user/assistant pair instead of
+          // leaving permanent ghosts; the error banner carries the failure.
           chatStore.setState(targetThreadId, (prev) => ({
             ...prev,
             status: "error",
@@ -851,6 +879,7 @@ export function useChat(explicitSessionId?: string | null) {
             isStopping: false,
             activeAid: null,
             activeTurnId: null,
+            messages: prev.messages.filter((m) => m.id !== userMsgId && m.id !== aid),
           }));
         }
 
@@ -871,6 +900,7 @@ export function useChat(explicitSessionId?: string | null) {
       setActiveSessionId,
       setSessionRunning,
       createHandlers,
+      refreshQueue,
     ]
   );
 
@@ -911,9 +941,26 @@ export function useChat(explicitSessionId?: string | null) {
         createHandlers(aid, currentSessionId)
       );
     } catch (e) {
+      // Audit C31 — reset streaming state on resume failure instead of only
+      // logging; otherwise the UI stays stuck in "streaming".
+      const errStr = formatCoreError(e, "Failed to resume turn");
       console.warn("[useChat.resume] resume failed:", e);
+      isStreamingRef.current = false;
+      statusRef.current = "error";
+      setStatus("error");
+      setError(errStr);
+      setSessionRunning(currentSessionId, false);
+      chatStore.setState(currentSessionId, (prev) => ({
+        ...prev,
+        status: "error",
+        error: errStr,
+        isStreaming: false,
+        isStopping: false,
+        activeAid: null,
+        activeTurnId: null,
+      }));
     }
-  }, [rpc, currentSessionId, createHandlers]);
+  }, [rpc, currentSessionId, createHandlers, setSessionRunning]);
 
   const removeQueued = useCallback(
     async (item: QueuedPromptItem | string) => {

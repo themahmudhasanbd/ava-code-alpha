@@ -35,18 +35,31 @@ export async function listSessions(rpc: RpcClient, limit = 50): Promise<Session[
         title: str(t.name) || str(t.preview) || "New session",
         directory: str(t.cwd, "/"),
         model: t.model ? str(t.model) : undefined,
-        updatedAt: typeof t.updatedAt === "number" ? t.updatedAt : undefined,
+        updatedAt: typeof t.updatedAt === "number" ? t.updatedAt * 1000 : undefined,
         status: statusType,
         active: isStatusActive,
       };
     });
 }
 
+/** SandboxMode serializes kebab-case ("read-only" | "workspace-write" | "danger-full-access"). */
+function normalizeSandboxMode(v: string | undefined): string | undefined {
+  if (!v) return undefined;
+  const kebab = v
+    .replace(/([a-z0-9])([A-Z])/g, "$1-$2")
+    .replace(/[\s_]+/g, "-")
+    .toLowerCase();
+  return kebab === "read-only" || kebab === "workspace-write" || kebab === "danger-full-access"
+    ? kebab
+    : undefined;
+}
+
 export async function startSession(rpc: RpcClient, opts: { cwd: string; model?: string; sandbox?: string }) {
+  const sandbox = normalizeSandboxMode(opts.sandbox);
   const res = await rpc.call<{ thread?: Raw }>("thread/start", {
     cwd: opts.cwd,
     ...(opts.model ? { model: opts.model } : {}),
-    ...(opts.sandbox ? { sandbox: opts.sandbox } : {}),
+    ...(sandbox ? { sandbox } : {}),
   });
   return str(res?.thread?.id);
 }
@@ -107,7 +120,8 @@ export async function readSession(rpc: RpcClient, id: string): Promise<SessionHi
 
     const items = (turn.items as Raw[]) ?? [];
     const parts: MessagePart[] = [];
-    for (const it of items) {
+    for (let j = 0; j < items.length; j++) {
+      const it = items[j]!;
       if (it.type === "userMessage") {
         let text = "";
         if (Array.isArray(it.content)) {
@@ -121,7 +135,22 @@ export async function readSession(rpc: RpcClient, id: string): Promise<SessionHi
         const uPartId = str(it.id ? `${it.id}_p` : makeId("u_p"));
         if (text) out.push({ id: uId, role: "user", parts: [{ id: uPartId, kind: "text", text, status: "done" }] });
       } else {
-        const itemStatus = isTurnInProgress && (!it.status || it.status === "inProgress" || it.status === "running") ? "running" : "done";
+        const hasCompletedEvidence =
+          typeof it.exitCode === "number" ||
+          it.status === "completed" ||
+          it.status === "done" ||
+          it.status === "success" ||
+          !!it.aggregatedOutput ||
+          !!it.output;
+        const isLastItem = j === items.length - 1;
+        const itemStatus =
+          isTurnInProgress && isLastItem && !hasCompletedEvidence
+            ? "running"
+            : hasCompletedEvidence
+            ? "done"
+            : it.status === "failed" || it.status === "error"
+            ? "error"
+            : "done";
         const p = itemToPart(it, itemStatus);
         if (p) parts.push(p);
       }

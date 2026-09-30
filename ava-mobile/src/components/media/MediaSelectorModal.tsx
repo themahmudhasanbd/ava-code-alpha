@@ -68,22 +68,34 @@ export function MediaSelectorModal({
     localUri: string,
     fileName: string,
     kind: SelectedMedia["kind"]
-  ): Promise<SelectedMedia> => {
+  ): Promise<SelectedMedia | null> => {
     const cleanFileName = fileName.replace(/[^a-zA-Z0-9._-]/g, "_");
     const remotePath = `${serverDirectory.replace(/\/$/, "")}/${cleanFileName}`;
 
-    if (rpc && rpc.status === "online") {
-      try {
-        setUploadStatus(`Uploading ${cleanFileName}…`);
-        const localFile = new File(localUri);
-        const base64 = await localFile.base64();
-        await rpc.call("fs/writeFile", {
-          path: remotePath,
-          dataBase64: base64,
-        });
-      } catch (err: any) {
-        console.warn("Upload to VPS error:", err);
-      }
+    // C1: never return a media entry for a file that was not uploaded.
+    if (!rpc || rpc.status !== "online") {
+      Alert.alert(
+        "Upload failed",
+        "You're offline — connect to the server to attach files."
+      );
+      return null;
+    }
+
+    try {
+      setUploadStatus(`Uploading ${cleanFileName}…`);
+      const localFile = new File(localUri);
+      const base64 = await localFile.base64();
+      await rpc.call("fs/writeFile", {
+        path: remotePath,
+        dataBase64: base64,
+      });
+    } catch (err: any) {
+      console.warn("Upload to VPS error:", err);
+      Alert.alert(
+        "Upload failed",
+        err?.message || `Could not upload "${cleanFileName}" to the server.`
+      );
+      return null;
     }
 
     return {
@@ -117,6 +129,7 @@ export function MediaSelectorModal({
           const media = await uploadFileToServer(doc.uri, doc.name, kind);
           setUploading(false);
           setUploadStatus(null);
+          if (!media) return;
           onSelect(media);
           onClose();
         }
@@ -144,6 +157,7 @@ export function MediaSelectorModal({
           const media = await uploadFileToServer(asset.uri, rawName, kind);
           setUploading(false);
           setUploadStatus(null);
+          if (!media) return;
           onSelect(media);
           onClose();
         }
@@ -177,6 +191,7 @@ export function MediaSelectorModal({
           const media = await uploadFileToServer(asset.uri, name, kind);
           setUploading(false);
           setUploadStatus(null);
+          if (!media) return;
           onSelect(media);
           onClose();
         }

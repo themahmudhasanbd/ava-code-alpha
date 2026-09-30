@@ -15,8 +15,13 @@ export function prettyCommand(cmd: unknown) {
 function itemStatus(item: Raw, fallback: MessagePart["status"]): MessagePart["status"] {
   const s = str(item.status);
   if (s === "failed" || s === "declined" || s === "error") return "error";
-  if (s === "inProgress" || s === "in_progress") return fallback === "done" ? "done" : "running";
-  if (s === "completed") return "done";
+  if (typeof item.exitCode === "number") {
+    return item.exitCode === 0 ? "done" : "error";
+  }
+  if (s === "completed" || s === "done" || s === "success") return "done";
+  if (s === "inProgress" || s === "in_progress") {
+    return fallback === "done" ? "done" : "running";
+  }
   return fallback;
 }
 
@@ -241,7 +246,11 @@ export function itemToPart(item: Raw, fallback: MessagePart["status"] = "done"):
       };
     }
     case "reasoning": {
-      const s = Array.isArray(item.summary) ? item.summary.join("\n\n") : str(item.summary ?? item.text ?? "");
+      // Protocol: summary: Vec<String> (always an array), content: Vec<String> fallback.
+      const summaryParts = Array.isArray(item.summary) ? item.summary : [];
+      const contentParts = Array.isArray(item.content) ? item.content : [];
+      const parts = summaryParts.length ? summaryParts : contentParts;
+      const s = parts.map((p: Raw) => str(p)).join("\n\n");
       return { id, kind: "reasoning", text: s, status };
     }
     case "commandExecution": {

@@ -34,7 +34,7 @@ import { AppShell } from "@/components/layout/AppShell";
 import { GlassIconButton, StatusDot, Surface } from "@/components/kit";
 import { APP } from "@/config/app";
 import { useAva } from "@/state/ava-provider";
-import { useRunCommand } from "@/state/queries";
+import { cancelCommand, runCommand } from "@/core/api/terminal";
 import {
   getTerminalTabs,
   makeTerminalTab,
@@ -49,11 +49,11 @@ import { font, mono } from "@/theme/fonts";
 
 const CONTROL_KEYS = [
   { label: "ESC", key: "\x1b" },
-  { label: "TAB", key: "\t" },
+  { label: "⌴ 2sp", key: "\t" },
   { label: "▲", key: "HIST_UP" },
   { label: "▼", key: "HIST_DOWN" },
   { label: "C", key: "CTRL_C", color: COLORS.destructive },
-  { label: "D", key: "CTRL_D" },
+  { label: "CLR", key: "CTRL_D" },
   { label: "L", key: "CLEAR" },
 ];
 
@@ -63,28 +63,51 @@ const SYMBOL_ROWS = [
   ["+", "(", ")", "[", "]", "{", "}", '"', "'", "`"],
 ];
 
+// A7: counter+timestamp entry ids so rapid-fire entries can't share an id.
+let entrySeq = 0;
+function nextEntryId(): number {
+  entrySeq += 1;
+  return Date.now() * 1000 + (entrySeq % 1000);
+}
+
 // ── Main Component ────────────────────────────────────────────────────────
 
 export function TerminalScreen({ route }: { route?: { params?: { initialCwd?: string } } } = {}) {
   const navigation = useNavigation<any>();
-  const { status } = useAva();
-  const run = useRunCommand();
+  const { status, rpc } = useAva();
 
   const initialCwd = route?.params?.initialCwd || APP.defaultCwd;
 
-  // Restore saved tabs or initialize
-  const [tabs, setTabs] = useState<TerminalTab[]>(() => getTerminalTabs(initialCwd).tabs);
-  const [activeTabId, setActiveTabId] = useState<string>(() => getTerminalTabs(initialCwd).activeTabId);
+  // Restore saved tabs with a single getTerminalTabs() call, and seed the tab
+  // counter above the highest bash-N suffix so tab names are never reused.
+  const [initialTerminal] = useState(() => {
+    const restored = getTerminalTabs(initialCwd);
+    let maxNum = 0;
+    for (const t of restored.tabs) {
+      const m = /^bash-(\d+)$/.exec(t.name);
+      if (m) maxNum = Math.max(maxNum, Number(m[1]));
+    }
+    return { tabs: restored.tabs, activeTabId: restored.activeTabId, maxNum };
+  });
+  const [tabs, setTabs] = useState<TerminalTab[]>(initialTerminal.tabs);
+  const [activeTabId, setActiveTabId] = useState<string>(initialTerminal.activeTabId);
   const [inputText, setInputText] = useState("");
   const [showCtrl, setShowCtrl] = useState(true);
   const [showSym, setShowSym] = useState(true);
   const [copiedId, setCopiedId] = useState<number | null>(null);
   const [expandedOutputIds, setExpandedOutputIds] = useState<Record<number, boolean>>({});
+  // Per-tab pending state: a busy tab blocks only itself, other tabs can run.
+  const [pendingTabs, setPendingTabs] = useState<Record<string, boolean>>({});
 
   const inputRef = useRef<TextInput>(null);
   const flatRef = useRef<FlatList>(null);
-  const tabNum = useRef(tabs.length);
+  const tabNum = useRef(initialTerminal.maxNum);
   const isNearBottomRef = useRef(true);
+  // tabId -> processId of the command currently running on that tab (for Ctrl-C).
+  const runningProcessRef = useRef<Record<string, string>>({});
+  const processSeqRef = useRef(0);
+
+  const isTabBusy = !!pendingTabs[activeTabId];
 
   const tab = tabs.find((t) => t.id === activeTabId) || tabs[0]!;
 
@@ -105,8 +128,29 @@ export function TerminalScreen({ route }: { route?: { params?: { initialCwd?: st
   const exec = useCallback(
     async (cmd: string) => {
       const trimmed = cmd.trim();
-      if (!trimmed || run.isPending) return;
+      if (!trimmed) return;
       setInputText("");
+
+      if (!rpc || status !== "online") {
+        patchTab(activeTabId, (t) => ({
+          ...t,
+          history: [
+            ...t.history,
+            {
+              id: nextEntryId(),
+              command: trimmed,
+              output: "Terminal disconnected: AvA Core is offline or reconnecting.",
+              exitCode: 1,
+              timestamp: Date.now(),
+            },
+          ].slice(-200),
+        }));
+        return;
+      }
+
+      // Per-tab pending: a busy tab blocks only itself, so tab B can run
+      // while tab A is still executing.
+      if (runningProcessRef.current[activeTabId]) return;
 
       patchTab(activeTabId, (t) => ({
         ...t,
@@ -122,8 +166,14 @@ export function TerminalScreen({ route }: { route?: { params?: { initialCwd?: st
       const isCd = trimmed === "cd" || trimmed.startsWith("cd ");
       const serverCommand = isCd ? `${trimmed} && pwd` : trimmed;
 
+      // Track this tab's process id so Ctrl-C can terminate the real command.
+      processSeqRef.current += 1;
+      const processId = `term-${activeTabId}-${Date.now()}-${processSeqRef.current}`;
+      runningProcessRef.current[activeTabId] = processId;
+      setPendingTabs((p) => ({ ...p, [activeTabId]: true }));
+
       try {
-        const res = await run.mutateAsync({ command: serverCommand, cwd: tab.cwd });
+        const res = await runCommand(rpc, serverCommand, tab.cwd, { processId });
         const stdout = (res.stdout || "").trim();
         const stderr = (res.stderr || "").trim();
 
@@ -147,13 +197,13 @@ export function TerminalScreen({ route }: { route?: { params?: { initialCwd?: st
           history: [
             ...t.history,
             {
-              id: Date.now(),
+              id: nextEntryId(),
               command: trimmed,
               output: displayOutput,
               exitCode: res.exitCode,
               timestamp: Date.now(),
             },
-          ],
+          ].slice(-200),
         }));
 
         setTimeout(() => flatRef.current?.scrollToEnd({ animated: true }), 80);
@@ -163,18 +213,21 @@ export function TerminalScreen({ route }: { route?: { params?: { initialCwd?: st
           history: [
             ...t.history,
             {
-              id: Date.now(),
+              id: nextEntryId(),
               command: trimmed,
               output: (err as Error).message,
               exitCode: 1,
               timestamp: Date.now(),
             },
-          ],
+          ].slice(-200),
         }));
         setTimeout(() => flatRef.current?.scrollToEnd({ animated: true }), 80);
+      } finally {
+        delete runningProcessRef.current[activeTabId];
+        setPendingTabs((p) => ({ ...p, [activeTabId]: false }));
       }
     },
-    [activeTabId, tab?.cwd, run, patchTab]
+    [activeTabId, tab?.cwd, rpc, status, patchTab]
   );
 
   // ── Tab Management ──────────────────────────────────────────────────
@@ -234,17 +287,25 @@ export function TerminalScreen({ route }: { route?: { params?: { initialCwd?: st
         return;
       }
       if (key === "CTRL_C") {
+        const processId = runningProcessRef.current[activeTabId];
+        if (processId && rpc && status === "online") {
+          // A command is running on this tab: terminate the real server process.
+          cancelCommand(rpc, processId).catch((e) =>
+            console.warn("cancelCommand failed:", e)
+          );
+        }
+        // Echo ^C locally in both cases (cancel requested, or nothing running).
         patchTab(activeTabId, (t) => ({
           ...t,
           history: [
             ...t.history,
-            { id: Date.now(), command: "^C", output: "", exitCode: 130, timestamp: Date.now() },
-          ],
+            { id: nextEntryId(), command: "^C", output: "", exitCode: 130, timestamp: Date.now() },
+          ].slice(-200),
         }));
         return;
       }
     },
-    [activeTabId, tab?.historyIndex, tab?.commandHistory, patchTab]
+    [activeTabId, tab?.historyIndex, tab?.commandHistory, patchTab, rpc, status]
   );
 
   // ── Copy Helper ─────────────────────────────────────────────────────
@@ -528,10 +589,10 @@ export function TerminalScreen({ route }: { route?: { params?: { initialCwd?: st
             <TouchableOpacity
               style={styles.sendBtn}
               onPress={() => exec(inputText)}
-              disabled={run.isPending}
+              disabled={isTabBusy}
               activeOpacity={0.7}
             >
-              {run.isPending ? (
+              {isTabBusy ? (
                 <ActivityIndicator size={14} color="#FFF" />
               ) : (
                 <CornerDownLeft size={14} color="#FFF" />

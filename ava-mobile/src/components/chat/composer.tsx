@@ -2,6 +2,7 @@ import React, { forwardRef, useEffect, useMemo, useRef, useState } from "react";
 import { BlurView } from "expo-blur";
 import {
   ActivityIndicator,
+  Alert,
   Animated,
   Dimensions,
   Easing,
@@ -41,6 +42,7 @@ import {
   X,
   type LucideIcon,
 } from "lucide-react-native";
+import { APP } from "@/config/app";
 import { REASONING_EFFORTS, SANDBOX_MODES } from "@/config/models";
 import { useAva } from "@/state/ava-provider";
 import { useDirectory, useMcpServers, useModels } from "@/state/queries";
@@ -424,7 +426,7 @@ export const Composer = forwardRef<TextInput, Props>(
 
     // Resolve target directory for file mentions
     const mentionTargetDir = useMemo(() => {
-      const baseRoot = workingCwd || "/var/www/ava-code";
+      const baseRoot = workingCwd || APP.defaultCwd;
       if (!parsedMention.subDir) return baseRoot;
       return joinPath(baseRoot, parsedMention.subDir);
     }, [workingCwd, parsedMention.subDir]);
@@ -484,8 +486,14 @@ export const Composer = forwardRef<TextInput, Props>(
           }
         }
         setIsRecording(true);
-      } catch {
-        setIsRecording(true);
+      } catch (e: any) {
+        // A1: never show the recording UI when recording failed to start.
+        setIsRecording(false);
+        recordingRef.current = null;
+        Alert.alert(
+          "Recording failed",
+          e?.message || "Could not start audio recording."
+        );
       }
     };
 
@@ -547,20 +555,15 @@ export const Composer = forwardRef<TextInput, Props>(
           setUploading(false);
         }
       } else {
-        setAttachments((prev) => [
-          ...prev,
-          {
-            id: `${Date.now()}_voice`,
-            name: `Voice Note (${durationStr})`,
-            remotePath: `/root/shared-media/voice_${Date.now()}.m4a`,
-            kind: "audio",
-          },
-        ]);
+        // A1: never fabricate an attachment for audio that was never recorded.
+        Alert.alert(
+          "Recording failed",
+          "No audio was recorded — nothing to attach."
+        );
       }
     };
 
     const handleSend = () => {
-      console.log("[DEBUG COMPOSER handleSend]", { value, effectiveStatus, connectionStatus, hasRpc: !!rpc });
       if (!value.trim() && attachments.length === 0) return;
       setShowSlashPopup(false);
       setShowMentionPopup(false);

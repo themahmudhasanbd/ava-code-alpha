@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
+  Platform,
   ScrollView,
   StyleSheet,
   Switch,
@@ -26,7 +27,12 @@ import { AppShell } from "@/components/layout/AppShell";
 import { PageIntro, Surface } from "@/components/kit";
 import { COLORS } from "@/theme/colors";
 import { font, mono } from "@/theme/fonts";
+import { storage } from "@/core/storage";
+import { getSavedPushToken } from "@/core/notifications";
 import * as NativeAgent from "@/core/native-agent";
+
+const ONGOING_PREF_KEY = "ava.notifications.ongoing";
+const isAndroid = Platform.OS === "android";
 
 interface PermissionStatus {
   notifications: boolean;
@@ -43,6 +49,27 @@ function StatusBadge({ ok, label }: { ok: boolean; label: string }) {
         <XCircle size={12} color={COLORS.destructive} />
       )}
       <Text style={[styles.badgeText, { color: ok ? COLORS.success : COLORS.destructive }]}>
+        {label}
+      </Text>
+    </View>
+  );
+}
+
+function FeatureBadge({ label, active }: { label: string; active?: boolean }) {
+  return (
+    <View
+      style={[
+        styles.featureBadge,
+        !active && { backgroundColor: "rgba(234,179,43,0.12)" },
+      ]}
+    >
+      <Text
+        style={[
+          styles.featureText,
+          mono("bold"),
+          !active && { color: COLORS.warning },
+        ]}
+      >
         {label}
       </Text>
     </View>
@@ -92,7 +119,10 @@ function SettingRow({
 export function NotificationSettingsScreen() {
   const navigation = useNavigation<any>();
   const [permissions, setPermissions] = useState<PermissionStatus | null>(null);
-  const [ongoingEnabled, setOngoingEnabled] = useState(true);
+  const [ongoingEnabled, setOngoingEnabled] = useState(
+    () => storage.get(ONGOING_PREF_KEY) !== "0"
+  );
+  const [fcmToken, setFcmToken] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -103,7 +133,15 @@ export function NotificationSettingsScreen() {
     setLoading(true);
     const perm = await NativeAgent.checkPermissions();
     setPermissions(perm);
+    setFcmToken(getSavedPushToken());
     setLoading(false);
+  };
+
+  const handleToggleOngoing = (value: boolean) => {
+    setOngoingEnabled(value);
+    storage.set(ONGOING_PREF_KEY, value ? "1" : "0");
+    // TODO: gate foreground-service startup in the chat/agent flow on this
+    // preference. The native module currently starts the service unconditionally.
   };
 
   const handleRequestBattery = async () => {
@@ -148,6 +186,15 @@ export function NotificationSettingsScreen() {
                 </View>
               </View>
               <View style={styles.statusRow}>
+                <Text style={[styles.statusLabel, font("medium")]}>Microphone</Text>
+                <View style={styles.statusBadges}>
+                  <StatusBadge
+                    ok={permissions?.microphone ?? false}
+                    label={permissions?.microphone ? "Granted" : "Not granted"}
+                  />
+                </View>
+              </View>
+              <View style={styles.statusRow}>
                 <Text style={[styles.statusLabel, font("medium")]}>Battery Optimization</Text>
                 <View style={styles.statusBadges}>
                   <StatusBadge
@@ -176,7 +223,7 @@ export function NotificationSettingsScreen() {
               trailing={
                 <Switch
                   value={ongoingEnabled}
-                  onValueChange={setOngoingEnabled}
+                  onValueChange={handleToggleOngoing}
                   trackColor={{ false: COLORS.muted, true: COLORS.primary }}
                   thumbColor="#FFFFFF"
                 />
@@ -189,9 +236,10 @@ export function NotificationSettingsScreen() {
               title="Live Timer"
               subtitle="Native Android chronometer counting elapsed time"
               trailing={
-                <View style={styles.featureBadge}>
-                  <Text style={[styles.featureText, mono("bold")]}>AUTO</Text>
-                </View>
+                <FeatureBadge
+                  label={isAndroid ? "AUTO" : "N/A"}
+                  active={isAndroid}
+                />
               }
             />
 
@@ -201,9 +249,10 @@ export function NotificationSettingsScreen() {
               title="Foreground Service"
               subtitle="Prevents Android from killing the app during long tasks"
               trailing={
-                <View style={styles.featureBadge}>
-                  <Text style={[styles.featureText, mono("bold")]}>ACTIVE</Text>
-                </View>
+                <FeatureBadge
+                  label={isAndroid ? "SUPPORTED" : "N/A"}
+                  active={isAndroid}
+                />
               }
             />
           </Surface>
@@ -223,9 +272,10 @@ export function NotificationSettingsScreen() {
               title="Firebase Cloud Messaging"
               subtitle="google-services.json configured for project ava-code"
               trailing={
-                <View style={styles.featureBadge}>
-                  <Text style={[styles.featureText, mono("bold")]}>READY</Text>
-                </View>
+                <FeatureBadge
+                  label={isAndroid ? "READY" : "N/A"}
+                  active={isAndroid}
+                />
               }
             />
 
@@ -233,11 +283,12 @@ export function NotificationSettingsScreen() {
               icon={Shield}
               iconColor="#D97706"
               title="FCM Token Registration"
-              subtitle="Device token synced with server for push delivery"
+              subtitle={fcmToken ? "Device token saved locally" : "No device token registered yet"}
               trailing={
-                <View style={styles.featureBadge}>
-                  <Text style={[styles.featureText, mono("bold")]}>PENDING</Text>
-                </View>
+                <FeatureBadge
+                  label={fcmToken ? "SYNCED" : "PENDING"}
+                  active={!!fcmToken}
+                />
               }
             />
 
@@ -246,11 +297,7 @@ export function NotificationSettingsScreen() {
               iconColor={COLORS.mutedForeground}
               title="Server-Side Integration"
               subtitle="FCM token registration endpoint needs to be enabled on server"
-              trailing={
-                <View style={[styles.featureBadge, { backgroundColor: "rgba(234,179,43,0.12)" }]}>
-                  <Text style={[styles.featureText, mono("bold"), { color: COLORS.warning }]}>PENDING</Text>
-                </View>
-              }
+              trailing={<FeatureBadge label="PENDING" active={false} />}
             />
           </Surface>
         </View>

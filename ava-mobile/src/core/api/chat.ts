@@ -27,6 +27,69 @@ export interface RunTurnOptions {
   cwd?: string;
 }
 
+/** base64 → UTF-8 text (mirrors the helper in ./files.ts). */
+function decodeBase64ToText(data: string): string {
+  try {
+    const binary = atob(data);
+    const bytes = Uint8Array.from(binary, (c) => c.charCodeAt(0));
+    return new TextDecoder().decode(bytes);
+  } catch {
+    return "";
+  }
+}
+
+/** Maps the app's sandbox ids to the protocol's SandboxPolicy union. */
+function toSandboxPolicy(sandbox?: string): { type: string } | undefined {
+  switch (sandbox) {
+    case "read-only":
+      return { type: "readOnly" };
+    case "workspace-write":
+      return { type: "workspaceWrite" };
+    case "danger-full-access":
+      return { type: "dangerFullAccess" };
+    default:
+      return undefined;
+  }
+}
+
+/** Dedupes the "output truncated" notice per process. */
+const cappedProcessNotices = new Set<string>();
+
+/**
+ * Routes a server-initiated request (approval / elicitation / user-input) into the
+ * existing onQuestion UI flow. The answer path (rpc.respond + steer fallback) lives
+ * in answerQuestion — unchanged.
+ */
+function handleServerRequest(
+  h: TurnHandlers,
+  method: string,
+  params: Raw,
+  reqId: number | string | undefined,
+) {
+  const fallbackTitle: Record<string, string> = {
+    "mcpServer/elicitation/request": "Server request",
+    "item/tool/requestUserInput": "Agent question",
+    "item/commandExecution/requestApproval": "Approval requested",
+    "item/fileChange/requestApproval": "Approval requested",
+    "item/permissions/requestApproval": "Permission requested",
+  };
+  const q: AgentQuestion = {
+    id: String(reqId ?? params?.id ?? Date.now()),
+    title: String(
+      params?.title ??
+        params?.question ??
+        params?.message ??
+        params?.prompt ??
+        params?.text ??
+        fallbackTitle[method] ??
+        "Agent question",
+    ),
+    options: Array.isArray(params?.options) ? params.options.map((o: Raw) => String(o)) : undefined,
+    requestId: reqId,
+  };
+  if (h.onQuestion) h.onQuestion(q, reqId);
+}
+
 /** Sends a prompt and streams every live event for that thread until the turn completes. */
 export async function runTurn(
   rpc: RpcClient,
@@ -80,18 +143,46 @@ export async function runTurn(
         h.onDelta(String(params?.itemId ?? params?.id ?? ""), "\n\n", "reasoning");
         break;
       case "item/commandExecution/outputDelta":
-      case "command/exec/outputDelta":
       case "item/fileChange/outputDelta":
-      case "item/mcpToolCall/progress":
         h.onDelta(String(params?.itemId ?? params?.processId ?? params?.id ?? ""), String(params?.delta ?? params?.chunk ?? params?.output ?? ""), "output");
         break;
+      case "command/exec/outputDelta": {
+        // Protocol: { processId, stream, deltaBase64, capReached } — payload is base64.
+        const processId = String(params?.processId ?? "");
+        const text = params?.deltaBase64 ? decodeBase64ToText(String(params.deltaBase64)) : "";
+        if (processId && text) h.onDelta(processId, text, "output");
+        if (params?.capReached && processId && !cappedProcessNotices.has(processId)) {
+          cappedProcessNotices.add(processId);
+          h.onNotice("Command output truncated (server cap reached)", "warning");
+        }
+        break;
+      }
+      case "item/mcpToolCall/progress":
+        // Protocol: { threadId, turnId, itemId, message } — text is in `message`.
+        h.onDelta(String(params?.itemId ?? params?.id ?? ""), String(params?.message ?? ""), "output");
+        break;
+      case "item/fileChange/patchUpdated": {
+        // Live replacement for the deprecated item/fileChange/outputDelta.
+        // Protocol: { threadId, turnId, itemId, changes: [{ path, kind: { type }, diff }] }.
+        const patchItemId = String(params?.itemId ?? params?.id ?? "");
+        const changes = Array.isArray(params?.changes) ? params.changes : [];
+        if (patchItemId && changes.length > 0) {
+          const lines = changes.map((c: Raw) => {
+            const header = `${str(c?.kind?.type ?? c?.kind ?? "update")}: ${str(c?.path ?? "")}`.trim();
+            const diff = str(c?.diff ?? "");
+            return diff ? `${header}\n${diff}` : header;
+          });
+          h.onDelta(patchItemId, lines.join("\n\n"), "output");
+        }
+        break;
+      }
       case "turn/plan/updated":
         h.onPlan(toPlanSteps((params?.plan as Raw[]) ?? []), params?.explanation ? String(params.explanation) : undefined);
         break;
       case "thread/goal/updated": {
         const g = (params?.goal ?? params) as Raw;
         const objective = String(g?.objective ?? g?.text ?? g?.title ?? "");
-        if (objective) h.onPlan([{ text: objective, status: g?.status === "completed" || g?.completed ? "done" : "active" }], "Goal");
+        if (objective) h.onPlan([{ text: objective, status: g?.status === "complete" || g?.completed ? "done" : "active" }], "Goal");
         break;
       }
       case "thread/tokenUsage/updated": {
@@ -99,18 +190,13 @@ export async function runTurn(
         if (t) h.onStats({ totalTokens: t.totalTokens, outputTokens: t.outputTokens });
         break;
       }
-      case "elicitation":
-      case "elicitationRequest":
-      case "question": {
-        const q: AgentQuestion = {
-          id: String(params?.id || reqId || Date.now()),
-          title: String(params?.title || params?.question || params?.message || "Agent question"),
-          options: Array.isArray(params?.options) ? params.options.map(String) : undefined,
-          requestId: reqId,
-        };
-        if (h.onQuestion) h.onQuestion(q, reqId);
+      case "mcpServer/elicitation/request":
+      case "item/tool/requestUserInput":
+      case "item/commandExecution/requestApproval":
+      case "item/fileChange/requestApproval":
+      case "item/permissions/requestApproval":
+        handleServerRequest(h, method, params, reqId);
         break;
-      }
       case "warning": {
         const msg = formatCoreError(params, "Warning");
         // Known harmless server noise for custom model combos.
@@ -134,8 +220,8 @@ export async function runTurn(
         break;
       }
       case "item/commandExecution/terminalInteraction": {
-        const interactionData = params?.interaction ?? params;
-        const stdinText = str(interactionData?.input ?? interactionData?.data ?? "");
+        // Protocol: flat { threadId, turnId, itemId, processId, stdin } — text is in `stdin`.
+        const stdinText = str(params?.stdin ?? "");
         if (stdinText) {
           h.onDelta(String(params?.itemId ?? params?.id ?? ""), stdinText, "output");
         }
@@ -164,17 +250,25 @@ export async function runTurn(
     }
   });
 
+  // One client message id per send — lets the server dedupe retries (C27).
+  const clientUserMessageId = `turn_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+  const sandboxPolicy = toSandboxPolicy(opts.sandbox);
+  const turnStartPayload = {
+    threadId,
+    input: [{ type: "text", text, text_elements: [] }],
+    clientUserMessageId,
+    ...(selectedModel ? { model: selectedModel } : {}),
+    ...(selectedEffort ? { effort: selectedEffort } : {}),
+    ...(opts.cwd ? { cwd: opts.cwd } : {}),
+    ...(sandboxPolicy ? { sandboxPolicy } : {}),
+  };
+
   try {
     try {
       await rpc.call("thread/resume", { threadId });
     } catch {}
 
-    const res = await rpc.call<Raw>("turn/start", {
-      threadId,
-      input: [{ type: "text", text, text_elements: [] }],
-      ...(selectedModel ? { model: selectedModel } : {}),
-      ...(selectedEffort ? { effort: selectedEffort } : {}),
-    });
+    const res = await rpc.call<Raw>("turn/start", turnStartPayload);
     if (res?.turn?.id && h.onTurnStarted) {
       h.onTurnStarted(String(res.turn.id));
     }
@@ -183,12 +277,7 @@ export async function runTurn(
     if (/thread not found/i.test(errText)) {
       try {
         await rpc.call("thread/resume", { threadId });
-        const retryRes = await rpc.call<Raw>("turn/start", {
-          threadId,
-          input: [{ type: "text", text, text_elements: [] }],
-          ...(selectedModel ? { model: selectedModel } : {}),
-          ...(selectedEffort ? { effort: selectedEffort } : {}),
-        });
+        const retryRes = await rpc.call<Raw>("turn/start", turnStartPayload);
         if (retryRes?.turn?.id && h.onTurnStarted) {
           h.onTurnStarted(String(retryRes.turn.id));
         }
@@ -198,18 +287,6 @@ export async function runTurn(
         h.onDone(formatCoreError(retryErr));
         return off;
       }
-    }
-
-    // If turn is already active on this thread, gracefully queue it
-    if (/already active|busy|in progress/i.test(errText)) {
-      try {
-        await addPromptToQueue(rpc, threadId, text);
-        h.onNotice("A task is already running. Your prompt was added to the queue.", "info");
-        if (h.onQueueChanged) h.onQueueChanged();
-      } catch {}
-      off();
-      h.onDone(undefined, "Queued");
-      return off;
     }
 
     off();
@@ -267,18 +344,46 @@ export function attachToRunningTurn(
         h.onDelta(String(params?.itemId ?? params?.id ?? ""), "\n\n", "reasoning");
         break;
       case "item/commandExecution/outputDelta":
-      case "command/exec/outputDelta":
       case "item/fileChange/outputDelta":
-      case "item/mcpToolCall/progress":
         h.onDelta(String(params?.itemId ?? params?.processId ?? params?.id ?? ""), String(params?.delta ?? params?.chunk ?? params?.output ?? ""), "output");
         break;
+      case "command/exec/outputDelta": {
+        // Protocol: { processId, stream, deltaBase64, capReached } — payload is base64.
+        const processId = String(params?.processId ?? "");
+        const text = params?.deltaBase64 ? decodeBase64ToText(String(params.deltaBase64)) : "";
+        if (processId && text) h.onDelta(processId, text, "output");
+        if (params?.capReached && processId && !cappedProcessNotices.has(processId)) {
+          cappedProcessNotices.add(processId);
+          h.onNotice("Command output truncated (server cap reached)", "warning");
+        }
+        break;
+      }
+      case "item/mcpToolCall/progress":
+        // Protocol: { threadId, turnId, itemId, message } — text is in `message`.
+        h.onDelta(String(params?.itemId ?? params?.id ?? ""), String(params?.message ?? ""), "output");
+        break;
+      case "item/fileChange/patchUpdated": {
+        // Live replacement for the deprecated item/fileChange/outputDelta.
+        // Protocol: { threadId, turnId, itemId, changes: [{ path, kind: { type }, diff }] }.
+        const patchItemId = String(params?.itemId ?? params?.id ?? "");
+        const changes = Array.isArray(params?.changes) ? params.changes : [];
+        if (patchItemId && changes.length > 0) {
+          const lines = changes.map((c: Raw) => {
+            const header = `${str(c?.kind?.type ?? c?.kind ?? "update")}: ${str(c?.path ?? "")}`.trim();
+            const diff = str(c?.diff ?? "");
+            return diff ? `${header}\n${diff}` : header;
+          });
+          h.onDelta(patchItemId, lines.join("\n\n"), "output");
+        }
+        break;
+      }
       case "turn/plan/updated":
         h.onPlan(toPlanSteps((params?.plan as Raw[]) ?? []), params?.explanation ? String(params.explanation) : undefined);
         break;
       case "thread/goal/updated": {
         const g = (params?.goal ?? params) as Raw;
         const objective = String(g?.objective ?? g?.text ?? g?.title ?? "");
-        if (objective) h.onPlan([{ text: objective, status: g?.status === "completed" || g?.completed ? "done" : "active" }], "Goal");
+        if (objective) h.onPlan([{ text: objective, status: g?.status === "complete" || g?.completed ? "done" : "active" }], "Goal");
         break;
       }
       case "thread/tokenUsage/updated": {
@@ -286,18 +391,13 @@ export function attachToRunningTurn(
         if (t) h.onStats({ totalTokens: t.totalTokens, outputTokens: t.outputTokens });
         break;
       }
-      case "elicitation":
-      case "elicitationRequest":
-      case "question": {
-        const q: AgentQuestion = {
-          id: String(params?.id || reqId || Date.now()),
-          title: String(params?.title || params?.question || params?.message || "Agent question"),
-          options: Array.isArray(params?.options) ? params.options.map(String) : undefined,
-          requestId: reqId,
-        };
-        if (h.onQuestion) h.onQuestion(q, reqId);
+      case "mcpServer/elicitation/request":
+      case "item/tool/requestUserInput":
+      case "item/commandExecution/requestApproval":
+      case "item/fileChange/requestApproval":
+      case "item/permissions/requestApproval":
+        handleServerRequest(h, method, params, reqId);
         break;
-      }
       case "warning": {
         const msg = formatCoreError(params, "Warning");
         if (!/^Model metadata for .* not found/.test(msg)) h.onNotice(msg, "warning");
@@ -320,8 +420,8 @@ export function attachToRunningTurn(
         break;
       }
       case "item/commandExecution/terminalInteraction": {
-        const interactionData = params?.interaction ?? params;
-        const stdinText = str(interactionData?.input ?? interactionData?.data ?? "");
+        // Protocol: flat { threadId, turnId, itemId, processId, stdin } — text is in `stdin`.
+        const stdinText = str(params?.stdin ?? "");
         if (stdinText) {
           h.onDelta(String(params?.itemId ?? params?.id ?? ""), stdinText, "output");
         }
@@ -503,14 +603,17 @@ export async function answerQuestion(
   threadId: string,
   answer: string,
   requestId?: number | string,
+  turnId?: string | null,
 ) {
   if (requestId != null) {
     rpc.respond(requestId, { answer });
   }
-  // Also steer turn or start next turn with the answer
+  // Also steer turn or start next turn with the answer.
+  // Protocol requires expectedTurnId on turn/steer — without it the call always fails.
   try {
     await rpc.call("turn/steer", {
       threadId,
+      ...(turnId ? { expectedTurnId: turnId } : {}),
       input: [{ type: "text", text: answer, text_elements: [] }],
     });
   } catch {

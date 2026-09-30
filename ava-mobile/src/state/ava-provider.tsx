@@ -1,10 +1,12 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 
 import { clearAuth, loadAuth, saveAuth, type AuthState } from "@/core/auth";
 import { RpcClient } from "@/core/rpc-client";
 import { storage } from "@/core/storage";
 import { APP } from "@/config/app";
-import type { ConnectionStatus } from "@/core/types";
+import type { ConnectionStatus, Session } from "@/core/types";
+import { keys } from "./queries";
 
 interface AvaContextValue {
   ready: boolean;
@@ -90,19 +92,62 @@ export function AvaProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const rpc = useMemo(() => (auth ? new RpcClient(auth.serverUrl, auth.token) : null), [auth?.serverUrl, auth?.token]);
+  const qc = useQueryClient();
+
+  // Audit C24 — tracks the previous connection status so we can detect
+  // offline → online transitions and drop stale running flags from the dead connection.
+  const statusRef = useRef<ConnectionStatus>("offline");
+  const handleStatus = useCallback((s: ConnectionStatus) => {
+    const prev = statusRef.current;
+    statusRef.current = s;
+    setStatus(s);
+    if (prev === "offline" && s === "online") {
+      setRunningSessions({});
+      setWorkingSessionId(null);
+    }
+  }, []);
 
   useEffect(() => {
     if (!rpc) return;
-    const offStatus = rpc.onStatus(setStatus);
-    
+    const offStatus = rpc.onStatus(handleStatus);
+
     // Global notification listener to accurately track running turns across any session/thread
     const offEvents = rpc.on(({ method, params }) => {
+      // Audit P11 — MCP OAuth completion carries no threadId; handle before the thread gate.
+      if (method === "mcpServer/oauthLogin/completed") {
+        qc.invalidateQueries({ queryKey: keys.mcp });
+        return;
+      }
+
       const threadId = params?.threadId ?? params?.thread_id ?? params?.thread?.id;
       if (!threadId) return;
 
-      if (
+      // Audit P9/P10 — keep the session list in sync with server-side thread events.
+      if (method === "thread/name/updated") {
+        const name = params?.name ?? params?.thread?.name;
+        if (typeof name === "string" && name) {
+          qc.setQueryData<Session[]>(keys.sessions, (old) =>
+            Array.isArray(old) ? old.map((s) => (s.id === threadId ? { ...s, title: name } : s)) : old
+          );
+        } else {
+          qc.invalidateQueries({ queryKey: keys.sessions });
+        }
+      } else if (method === "thread/status/changed") {
+        qc.invalidateQueries({ queryKey: keys.sessions });
+      } else if (method === "thread/deleted" || method === "thread/archived") {
+        qc.setQueryData<Session[]>(keys.sessions, (old) =>
+          Array.isArray(old) ? old.filter((s) => s.id !== threadId) : old
+        );
+        setRunningSessions((prev) => {
+          if (!prev[threadId]) return prev;
+          const next = { ...prev };
+          delete next[threadId];
+          return next;
+        });
+        setWorkingSessionId((prev) => (prev === threadId ? null : prev));
+      } else if (
+        // Audit P12 — the dead `turn/start` branch is gone; only real server events.
         method === "turn/started" ||
-        method === "turn/start" ||
         method === "item/started" ||
         method === "item/agentMessage/delta" ||
         method === "item/reasoning/textDelta" ||
@@ -127,7 +172,7 @@ export function AvaProvider({ children }: { children: ReactNode }) {
       offEvents();
       rpc.close();
     };
-  }, [rpc]);
+  }, [rpc, qc, handleStatus]);
 
   const setModelId = useCallback((id: string) => {
     setModelIdState(id);

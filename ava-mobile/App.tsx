@@ -2,7 +2,7 @@ import "@/polyfills";
 import "react-native-gesture-handler";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import React, { useEffect, useMemo, useState } from "react";
-import { ActivityIndicator, LogBox, Platform, StyleSheet, View } from "react-native";
+import { ActivityIndicator, Alert, LogBox, Platform, StyleSheet, View } from "react-native";
 import {
   NavigationContainer,
   DefaultTheme,
@@ -34,6 +34,7 @@ import {
 import { AvaProvider } from "@/state/ava-provider";
 import { RootNavigator } from "@/navigation/RootNavigator";
 import { initStorage } from "@/core/storage";
+import { checkBootRecovery, initPushNotifications } from "@/core/notifications";
 import { COLORS, ThemeProvider, useTheme } from "@/theme/colors";
 
 LogBox.ignoreLogs([
@@ -120,11 +121,25 @@ function AppContent() {
 
 export default function App() {
   const [ready, setReady] = useState(false);
+  const [bootNotice, setBootNotice] = useState<string | null>(null);
 
   useEffect(() => {
     async function prepare() {
       try {
         await initStorage();
+        // Audit A13 — fire-and-forget: register the ava-turns channel and FCM
+        // token once at startup without blocking. Permission denial is handled
+        // inside initPushNotifications.
+        void initPushNotifications();
+        // Audit D16 — fire-and-forget: detect an agent session interrupted by reboot.
+        void checkBootRecovery().then((recovery) => {
+          if (recovery?.wasActive) {
+            setBootNotice(
+              "An agent session was still active when the device restarted. " +
+                "Its foreground service was stopped; open the session to review its state."
+            );
+          }
+        });
         const fontPromise = Font.loadAsync({
           PlusJakartaSans_400Regular,
           PlusJakartaSans_500Medium,
@@ -154,6 +169,14 @@ export default function App() {
     }
     prepare();
   }, []);
+
+  // Audit D16 — surface the boot-recovery notice once the UI is mounted.
+  useEffect(() => {
+    if (ready && bootNotice) {
+      Alert.alert("Session Interrupted", bootNotice, [{ text: "OK" }]);
+      setBootNotice(null);
+    }
+  }, [ready, bootNotice]);
 
   if (!ready) {
     return (

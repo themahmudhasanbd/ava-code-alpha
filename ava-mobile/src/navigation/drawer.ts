@@ -16,12 +16,12 @@ export function openAppDrawer(navigation: any) {
     }
     nav = nav.getParent?.();
   }
-  // Not inside the drawer: go to Main, then open the drawer.
+  // Not inside the drawer: go to Main once, then open the drawer.
+  // (Audit A9: previously navigated twice — once here and again inside the timeout.)
   try {
     navigation.navigate("Main");
     setTimeout(() => {
       try {
-        navigation.navigate("Main");
         navigation.dispatch(DrawerActions.openDrawer());
       } catch {}
     }, 60);

@@ -12,7 +12,7 @@ import { Appearance, type ColorSchemeName } from "react-native";
 import { storage } from "@/core/storage";
 import { THEME, type ColorTokens } from "./palette";
 import { COLORS } from "./colors";
-import { updateRegisteredStyles } from "./style-registry";
+import { createPlainStyles, updateRegisteredStyles } from "./style-registry";
 
 export type ThemeMode = "system" | "light" | "dark";
 
@@ -113,4 +113,23 @@ export function useTheme(): ThemeContextValue {
     };
   }
   return ctx;
+}
+
+/**
+ * Preferred pattern for theme-dependent styles (audit A8).
+ *
+ * Rebuilds the stylesheet from the active palette whenever the theme changes —
+ * no reliance on the fragile post-registration mutation in style-registry.ts.
+ * The factory is read through a ref so inline arrow functions don't defeat
+ * the memo; styles are created without token registration (see
+ * `createPlainStyles`) so theme switches can't leak registry entries.
+ *
+ * Usage:
+ *   const styles = useStyles((c) => ({ container: { backgroundColor: c.card } }));
+ */
+export function useStyles<T extends object>(factory: (colors: ColorTokens) => T): T {
+  const { colors } = useTheme();
+  const factoryRef = useRef(factory);
+  factoryRef.current = factory;
+  return useMemo(() => createPlainStyles(factoryRef.current(colors)) as T, [colors]);
 }

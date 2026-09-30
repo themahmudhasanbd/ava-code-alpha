@@ -1,4 +1,4 @@
-import React, { useCallback, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import {
   Alert,
   Linking,
@@ -25,6 +25,7 @@ import {
   XCircle,
   type LucideIcon,
 } from "lucide-react-native";
+import { useQueryClient } from "@tanstack/react-query";
 import { AppShell } from "@/components/layout/AppShell";
 import {
   EmptyState,
@@ -36,7 +37,8 @@ import {
   GlassCapsule,
 } from "@/components/kit";
 import type { McpServer } from "@/core/types";
-import { useMcpServers, useReloadMcp, useMcpOAuth, useServerConfig, useWriteConfig } from "@/state/queries";
+import { useAva } from "@/state/ava-provider";
+import { keys, useMcpServers, useReloadMcp, useMcpOAuth, useServerConfig, useWriteConfig } from "@/state/queries";
 import { COLORS } from "@/theme/colors";
 import { font, mono } from "@/theme/fonts";
 
@@ -50,12 +52,13 @@ const APPROVAL_POLICIES = [
 ] as const;
 
 // ── Status icon helper ────────────────────────────────────────────────────
+// Auth statuses per protocol: unknown | unsupported | notLoggedIn | bearerToken | oauth
 
 function StatusIcon({ status }: { status: string }) {
-  if (status === "loggedIn" || status === "bearerToken" || status === "oauth") {
+  if (status === "bearerToken" || status === "oauth") {
     return <CheckCircle2 size={14} color={COLORS.success} />;
   }
-  if (status === "notLoggedIn" || status === "authenticationRequired") {
+  if (status === "notLoggedIn") {
     return <AlertTriangle size={14} color={COLORS.warning} />;
   }
   return <XCircle size={14} color={COLORS.mutedForeground} />;
@@ -73,7 +76,7 @@ function ServerCard({
   onOAuth: (name: string) => void;
 }) {
   const [open, setOpen] = useState(false);
-  const needsAuth = server.authStatus === "notLoggedIn" || server.authStatus === "authenticationRequired";
+  const needsAuth = server.authStatus === "notLoggedIn";
   const isOnline = server.status === "ready" || server.status === "connected";
   const statusColor = isOnline
     ? COLORS.success
@@ -166,11 +169,23 @@ function ServerCard({
 // ── Main Component ────────────────────────────────────────────────────────
 
 export function McpScreen() {
+  const { rpc } = useAva();
+  const queryClient = useQueryClient();
   const { data: servers = [], isLoading, error } = useMcpServers();
   const reload = useReloadMcp();
   const oauth = useMcpOAuth();
   const config = useServerConfig();
   const writeConfig = useWriteConfig();
+
+  // Refresh the server list when the server reports MCP startup status changes.
+  useEffect(() => {
+    if (!rpc) return;
+    return rpc.on(({ method }) => {
+      if (method === "mcpServer/startupStatus/updated") {
+        void queryClient.invalidateQueries({ queryKey: keys.mcp });
+      }
+    });
+  }, [rpc, queryClient]);
 
   const [applyingPolicy, setApplyingPolicy] = useState(false);
 
@@ -189,7 +204,7 @@ export function McpScreen() {
           { text: "Cancel", style: "cancel" },
           {
             text: "Open Browser",
-            onPress: () => Linking.openURL(result.authorizationUrl),
+            onPress: () => result.authorizationUrl && Linking.openURL(result.authorizationUrl),
           },
         ]);
       } else {
@@ -201,16 +216,20 @@ export function McpScreen() {
 
   const handleRestartServer = useCallback(
     async (name: string) => {
-      Alert.alert("Reload MCP Server", `Reload the "${name}" MCP server?`, [
-        { text: "Cancel", style: "cancel" },
-        {
-          text: "Reload",
-          onPress: async () => {
-            await reload.mutateAsync();
-            Alert.alert("Done", `"${name}" has been reloaded.`);
+      Alert.alert(
+        "Reload all MCP servers",
+        `Reloading affects every configured MCP server, not just "${name}". Continue?`,
+        [
+          { text: "Cancel", style: "cancel" },
+          {
+            text: "Reload all",
+            onPress: async () => {
+              await reload.mutateAsync();
+              Alert.alert("Done", "All MCP servers have been reloaded.");
+            },
           },
-        },
-      ]);
+        ]
+      );
     },
     [reload]
   );
@@ -235,7 +254,7 @@ export function McpScreen() {
   );
 
   const activeCount = servers.filter((s) => s.status === "ready" || s.status === "connected").length;
-  const authRequiredCount = servers.filter((s) => s.authStatus === "notLoggedIn" || s.authStatus === "authenticationRequired").length;
+  const authRequiredCount = servers.filter((s) => s.authStatus === "notLoggedIn").length;
   const totalTools = servers.reduce((sum, s) => sum + s.tools.length, 0);
 
   return (
@@ -335,7 +354,6 @@ function formatAuthStatus(status: string): string {
     notLoggedIn: "Not Logged In",
     bearerToken: "Bearer Token",
     oauth: "OAuth",
-    authenticationRequired: "Auth Required",
   };
   return map[status] || status;
 }

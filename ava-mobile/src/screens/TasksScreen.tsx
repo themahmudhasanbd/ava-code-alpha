@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import {
+  Alert,
   Modal,
   ScrollView,
   StyleSheet,
@@ -60,8 +61,16 @@ export function TasksScreen() {
     try {
       await saveTask.mutateAsync(editingDraft);
       setEditingDraft(null);
-    } catch (err) {
-      console.warn("Save task error:", err);
+    } catch (err: any) {
+      Alert.alert("Save Failed", err?.message || "Could not save the task.");
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    try {
+      await deleteTask.mutateAsync(id);
+    } catch (err: any) {
+      Alert.alert("Delete Failed", err?.message || "Could not delete the task.");
     }
   };
 
@@ -145,7 +154,7 @@ export function TasksScreen() {
                 <GlassIconButton
                   icon={Trash2}
                   size={14}
-                  onPress={() => deleteTask.mutate(t.id)}
+                  onPress={() => handleDelete(t.id)}
                 />
               </View>
             </View>

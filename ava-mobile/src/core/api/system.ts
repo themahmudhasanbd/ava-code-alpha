@@ -32,42 +32,38 @@ export async function readServerConfig(rpc: RpcClient): Promise<ServerConfig> {
   };
 }
 
-/** Write config fields to the server. Supports ava-rs batchWrite, value/write, and fallback config/write. */
+/** Write config fields to the server. Supports ava-rs batchWrite and value/write. */
 export async function writeServerConfig(
   rpc: RpcClient,
   fields: Record<string, unknown>
 ): Promise<{ success: boolean; error?: string }> {
   try {
-    // 1. Try ava-rs protocol v2 standard config/batchWrite
-    const edits = Object.entries(fields).map(([key_path, value]) => ({
-      key_path,
+    // 1. Try ava-rs protocol v2 standard config/batchWrite.
+    // NOTE: param FIELD names are camelCase (keyPath/mergeStrategy/reloadUserConfig);
+    // the key VALUES stay snake_case (e.g. "approval_policy") — the server matches those.
+    const edits = Object.entries(fields).map(([keyPath, value]) => ({
+      keyPath,
       value,
-      merge_strategy: "replace",
+      mergeStrategy: "replace",
     }));
-    await rpc.call("config/batchWrite", { edits, reload_user_config: true });
+    await rpc.call("config/batchWrite", { edits, reloadUserConfig: true });
     return { success: true };
   } catch (e1: any) {
     // 2. Try single config/value/write per key
     try {
-      for (const [key_path, value] of Object.entries(fields)) {
+      for (const [keyPath, value] of Object.entries(fields)) {
         await rpc.call("config/value/write", {
-          key_path,
+          keyPath,
           value,
-          merge_strategy: "replace",
+          mergeStrategy: "replace",
         });
       }
       return { success: true };
     } catch (e2: any) {
-      // 3. Fallback to config/write
-      try {
-        await rpc.call("config/write", { config: fields });
-        return { success: true };
-      } catch (e3: any) {
-        return {
-          success: false,
-          error: e1?.message || e2?.message || e3?.message || "Failed to write server config",
-        };
-      }
+      return {
+        success: false,
+        error: e1?.message || e2?.message || "Failed to write server config",
+      };
     }
   }
 }

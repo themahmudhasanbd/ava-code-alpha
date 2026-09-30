@@ -376,18 +376,24 @@ export function ServerMediaModal({
 
       if (!result.canceled && result.assets && result.assets[0]) {
         const doc = result.assets[0];
+        // C2: never claim success when offline — bail out before touching state.
+        if (!rpc || rpc.status !== "online") {
+          Alert.alert(
+            "Upload Error",
+            "You're offline — connect to the server to upload files."
+          );
+          return;
+        }
         setIsUploading(true);
         const cleanName = doc.name.replace(/[^a-zA-Z0-9._-]/g, "_");
         const targetPath = `${currentDir.replace(/\/$/, "")}/${cleanName}`;
 
-        if (rpc && rpc.status === "online") {
-          const localFile = new File(doc.uri);
-          const base64 = await localFile.base64();
-          await rpc.call("fs/writeFile", {
-            path: targetPath,
-            dataBase64: base64,
-          });
-        }
+        const localFile = new File(doc.uri);
+        const base64 = await localFile.base64();
+        await rpc.call("fs/writeFile", {
+          path: targetPath,
+          dataBase64: base64,
+        });
 
         setIsUploading(false);
         const kind = getFileKind(cleanName);

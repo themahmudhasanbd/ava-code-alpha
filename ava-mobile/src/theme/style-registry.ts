@@ -116,6 +116,16 @@ export function patchStyleSheet(): void {
   };
 }
 
+/**
+ * Create styles WITHOUT token registration. Used by `useStyles` in
+ * theme-context: the theme is applied through context colors, so
+ * post-registration mutation is unnecessary — and registering per-render
+ * styles here would leak `registeredEntries` on every theme change.
+ */
+export function createPlainStyles<T extends StyleMap>(styles: T): T {
+  return originalCreate ? (originalCreate(styles) as T) : styles;
+}
+
 export function updateRegisteredStyles(
   fromTheme: "light" | "dark",
   toTheme: "light" | "dark"

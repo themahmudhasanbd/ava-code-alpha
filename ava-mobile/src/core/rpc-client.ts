@@ -114,7 +114,10 @@ export class RpcClient {
     } catch {
       return;
     }
-    if (typeof msg.id === "number" && this.pending.has(msg.id)) {
+    // Only treat as a response when there is no `method`: server-initiated requests
+    // carry {id, method, params} and must be dispatched to listeners, never resolve
+    // a pending client call (their numeric ids can collide with ours).
+    if (typeof msg.id === "number" && msg.method === undefined && this.pending.has(msg.id)) {
       const p = this.pending.get(msg.id)!;
       this.pending.delete(msg.id);
       clearTimeout(p.timer);
@@ -137,22 +140,22 @@ export class RpcClient {
     this.ws.send(JSON.stringify({ jsonrpc: "2.0", id, result }));
   }
 
-  private send(method: string, params: Record<string, unknown>): Promise<unknown> {
+  private send(method: string, params: Record<string, unknown>, timeoutMs = 45000): Promise<unknown> {
     return new Promise((resolve, reject) => {
       if (!this.ws || this.ws.readyState !== WebSocket.OPEN) return reject(new Error("Not connected"));
       const id = this.id++;
       const timer = setTimeout(() => {
         this.pending.delete(id);
         reject(new Error(`${method} timed out`));
-      }, 45000);
+      }, timeoutMs);
       this.pending.set(id, { resolve, reject, timer });
       this.ws.send(JSON.stringify({ jsonrpc: "2.0", id, method, params }));
     });
   }
 
-  async call<T = unknown>(method: string, params: Record<string, unknown> = {}): Promise<T> {
+  async call<T = unknown>(method: string, params: Record<string, unknown> = {}, opts?: { timeoutMs?: number }): Promise<T> {
     await this.connect();
-    return (await this.send(method, params)) as T;
+    return (await this.send(method, params, opts?.timeoutMs)) as T;
   }
 
   on(l: Listener) {

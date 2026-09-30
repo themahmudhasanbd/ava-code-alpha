@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -284,15 +284,22 @@ export function SystemScreen() {
     void loadSystemd();
   }, [fetchHardwareStats, loadPm2, loadSystemd]);
 
-  // Auto-refresh interval (every 4s)
+  // Auto-refresh hardware stats (every 4s). Guarded by an in-flight flag so a
+  // slow command/exec can't pile up overlapping requests. The diagnostics
+  // query already refetches on its own refetchInterval, so it needs no manual
+  // refetch here.
+  const hwInFlightRef = useRef(false);
   useEffect(() => {
     if (!autoRefresh) return;
     const interval = setInterval(() => {
-      void diag.refetch();
-      void fetchHardwareStats();
+      if (hwInFlightRef.current) return;
+      hwInFlightRef.current = true;
+      void fetchHardwareStats().finally(() => {
+        hwInFlightRef.current = false;
+      });
     }, 4000);
     return () => clearInterval(interval);
-  }, [autoRefresh, diag, fetchHardwareStats]);
+  }, [autoRefresh, fetchHardwareStats]);
 
   const handlePm2Action = useCallback(
     async (action: string, processName: string) => {
@@ -989,10 +996,10 @@ export function SystemScreen() {
               </View>
               <View style={styles.ecoInfo}>
                 <Text style={[styles.ecoTitle, font("semibold")]}>
-                  AI Gateway Router
+                  AvA Core Server
                 </Text>
                 <Text style={[styles.ecoSub, mono("regular")]}>
-                  Multi-Provider Gateway
+                  Port 4096 RPC Daemon
                 </Text>
               </View>
               <GlassCapsule label="RUNNING" variant="success" size="xs" />

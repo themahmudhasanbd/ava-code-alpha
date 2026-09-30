@@ -76,7 +76,8 @@ export async function notifyTurnComplete(
           data: { sessionId },
           sound: true,
         },
-        trigger: null,
+        // Route through the ava-turns Android channel created in initPushNotifications.
+        trigger: { channelId: "ava-turns" } as any,
       });
     }
   } catch (err) {

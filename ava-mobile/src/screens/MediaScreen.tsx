@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -111,6 +111,14 @@ export function MediaScreen() {
   const [isLoadingPreview, setIsLoadingPreview] = useState(false);
   const [copied, setCopied] = useState(false);
   const [zoomScale, setZoomScale] = useState(1);
+  // Path of the file whose preview is currently requested; stale fs/readFile
+  // results are ignored when the selection changed mid-flight.
+  const previewPathRef = useRef<string | null>(null);
+
+  const closePreview = () => {
+    previewPathRef.current = null;
+    setPreviewItem(null);
+  };
 
   const {
     data: mediaItems = [],
@@ -134,6 +142,7 @@ export function MediaScreen() {
   }, [mediaItems, filter, searchQuery]);
 
   const handleOpenItem = async (item: MediaItem) => {
+    previewPathRef.current = item.path;
     setPreviewItem(item);
     setPreviewBase64(null);
     setPreviewTextContent(null);
@@ -152,6 +161,8 @@ export function MediaScreen() {
         const res = await rpc.call<{ dataBase64?: string }>("fs/readFile", {
           path: item.path,
         });
+        // Ignore stale results: the user may have opened another file meanwhile.
+        if (previewPathRef.current !== item.path) return;
         if (res.dataBase64) {
           if (isImg) {
             const mime = ext === "svg" ? "image/svg+xml" : `image/${ext === "jpg" ? "jpeg" : ext}`;
@@ -168,9 +179,10 @@ export function MediaScreen() {
           }
         }
       } catch (err) {
+        if (previewPathRef.current !== item.path) return;
         console.warn("Could not read file preview:", err);
       } finally {
-        setIsLoadingPreview(false);
+        if (previewPathRef.current === item.path) setIsLoadingPreview(false);
       }
     }
   };
@@ -222,7 +234,7 @@ export function MediaScreen() {
           onPress: async () => {
             try {
               await removeMedia.mutateAsync(item.path);
-              setPreviewItem(null);
+              closePreview();
               refetch();
             } catch (err: any) {
               Alert.alert("Delete Error", err?.message || "Failed to delete file.");
@@ -431,9 +443,9 @@ export function MediaScreen() {
           visible={previewItem !== null}
           transparent
           animationType="slide"
-          onRequestClose={() => setPreviewItem(null)}
+          onRequestClose={() => closePreview()}
         >
-          <TouchableWithoutFeedback onPress={() => setPreviewItem(null)}>
+          <TouchableWithoutFeedback onPress={() => closePreview()}>
             <View style={styles.modalBackdrop}>
               <TouchableWithoutFeedback onPress={() => {}}>
                 <View style={styles.viewerSheet}>
@@ -451,7 +463,7 @@ export function MediaScreen() {
                     </View>
                     <TouchableOpacity
                       style={styles.viewerCloseBtn}
-                      onPress={() => setPreviewItem(null)}
+                      onPress={() => closePreview()}
                     >
                       <X size={16} color={COLORS.mutedForeground} />
                     </TouchableOpacity>

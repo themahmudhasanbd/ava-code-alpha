@@ -21,7 +21,10 @@ import { AppShell } from "@/components/layout/AppShell";
 import { PageIntro, Surface } from "@/components/kit";
 import { useTheme } from "@/theme/colors";
 import { font, mono } from "@/theme/fonts";
+import { APP } from "@/config/app";
 import { storage } from "@/core/storage";
+import * as NativeAgent from "@/core/native-agent";
+import { chatStore } from "@/state/chat-store";
 import { useAva } from "@/state/ava-provider";
 
 export function StorageSettingsScreen() {
@@ -48,9 +51,9 @@ export function StorageSettingsScreen() {
   const handleResetCwd = () => {
     storage.remove("ava.working.cwd");
     storage.remove("ava.workingCwd");
-    setWorkingCwd("/var/www/ava-code");
+    setWorkingCwd(APP.defaultCwd);
     setRefreshKey((k) => k + 1);
-    Alert.alert("Reset", "Default workspace directory restored to /var/www/ava-code");
+    Alert.alert("Reset", `Default workspace directory restored to ${APP.defaultCwd}`);
   };
 
   const handleResetPreferences = () => {
@@ -71,6 +74,18 @@ export function StorageSettingsScreen() {
           style: "destructive",
           onPress: async () => {
             queryClient.clear();
+            // Stop any live agent state before wiping: clear chat transcripts
+            // and stop the foreground service, then sign out.
+            chatStore.clearAll();
+            try {
+              const sessionId =
+                activeSessionId || (await NativeAgent.getSessionState())?.lastSessionId;
+              if (sessionId) {
+                await NativeAgent.stopForegroundService({ sessionId, isSuccess: true });
+              }
+            } catch {
+              // Best-effort: the wipe proceeds regardless.
+            }
             await storage.clear();
             await signOut();
           },
@@ -166,7 +181,7 @@ export function StorageSettingsScreen() {
                 ava.working.cwd
               </Text>
               <Text style={[styles.keyValue, { color: colors.mutedForeground }, mono("regular")]} numberOfLines={1}>
-                {savedCwd || workingCwd || "/var/www/ava-code"}
+                {savedCwd || workingCwd || APP.defaultCwd}
               </Text>
             </View>
 

@@ -113,6 +113,26 @@ class ChatStore {
   }
 
   /**
+   * Audit C29 — wipe all cached chat state (sign-out / nuclear wipe).
+   * Calls all live off-handles, clears sessions, and notifies mounted
+   * listeners with fresh empty state so nothing renders stale data.
+   */
+  clearAll() {
+    for (const off of this.offHandles.values()) {
+      try {
+        off();
+      } catch {}
+    }
+    this.offHandles.clear();
+
+    const sessionIds = [...this.sessions.keys()];
+    this.sessions.clear();
+    for (const sessionId of sessionIds) {
+      this.notify(sessionId, this.getState(sessionId));
+    }
+  }
+
+  /**
    * Directly updates or appends parts to the assistant message with id `aid`.
    */
   patchAssistant(

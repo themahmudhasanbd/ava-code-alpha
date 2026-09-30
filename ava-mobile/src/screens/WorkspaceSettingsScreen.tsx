@@ -12,7 +12,6 @@ import { useNavigation } from "@react-navigation/native";
 import {
   Check,
   FileCode2,
-  FolderGit2,
   FolderOpen,
   Save,
 } from "lucide-react-native";
@@ -20,15 +19,10 @@ import { AppShell } from "@/components/layout/AppShell";
 import { PageIntro, Surface } from "@/components/kit";
 import { useTheme } from "@/theme/colors";
 import { font, mono } from "@/theme/fonts";
+import { APP } from "@/config/app";
+import { getMetadata } from "@/core/api/files";
 import { useAva } from "@/state/ava-provider";
 import { useServerConfig, useWriteConfig } from "@/state/queries";
-
-const CWD_PRESETS = [
-  "/var/www/ava-code",
-  "/var/www/thundernexus",
-  "/var/www/thundernexus-dev",
-  "/root",
-];
 
 const DOC_LIMIT_OPTIONS = [
   { label: "16 KB", value: 16 * 1024 },
@@ -40,33 +34,61 @@ const DOC_LIMIT_OPTIONS = [
 export function WorkspaceSettingsScreen() {
   const navigation = useNavigation<any>();
   const { colors } = useTheme();
-  const { workingCwd, setWorkingCwd } = useAva();
+  const { workingCwd, setWorkingCwd, rpc, status } = useAva();
   const { data: serverConfig } = useServerConfig();
   const writeConfigMutation = useWriteConfig();
 
-  const [cwdInput, setCwdInput] = useState(workingCwd || "/var/www/ava-code");
+  const [cwdInput, setCwdInput] = useState(workingCwd || APP.defaultCwd);
   const [docLimit, setDocLimit] = useState<number>(
     serverConfig?.projectDocMaxBytes ?? 32 * 1024
   );
   const [isSaving, setIsSaving] = useState(false);
 
-  const handleApplyCwd = (newPath: string) => {
-    setCwdInput(newPath);
-    setWorkingCwd(newPath);
-    Alert.alert("Workspace CWD Updated", `Active path set to:\n${newPath}`);
+  const handleApplyCwd = async (newPath: string) => {
+    const trimmed = newPath.trim();
+    if (!trimmed) {
+      Alert.alert("Invalid Path", "Please enter a directory path.");
+      return;
+    }
+    // Validate the path on the server before making it the working directory.
+    if (rpc && status === "online") {
+      try {
+        const meta = await getMetadata(rpc, trimmed);
+        if (!meta.isDirectory) {
+          Alert.alert("Invalid Path", `"${trimmed}" exists on the server but is not a directory.`);
+          return;
+        }
+      } catch {
+        Alert.alert("Invalid Path", `The path "${trimmed}" does not exist on the server.`);
+        return;
+      }
+    }
+    setCwdInput(trimmed);
+    setWorkingCwd(trimmed);
+    Alert.alert("Workspace CWD Updated", `Active path set to:\n${trimmed}`);
   };
 
   const handleSaveDocLimit = async (limitBytes: number) => {
+    const previous = docLimit;
     setDocLimit(limitBytes);
     setIsSaving(true);
     try {
-      await writeConfigMutation.mutateAsync({
+      const result = await writeConfigMutation.mutateAsync({
         project_doc_max_bytes: limitBytes,
       });
+      if (!result.success) {
+        // Server rejected the write: roll back to the previous value.
+        setDocLimit(previous);
+        Alert.alert(
+          "Save Failed",
+          `${result.error || "Could not persist project_doc_max_bytes to the server."} Previous value restored.`
+        );
+      }
     } catch (e: any) {
+      setDocLimit(previous);
       Alert.alert(
         "Save Failed",
-        e?.message || "Could not persist project_doc_max_bytes to ava-rs daemon"
+        `${e?.message || "Could not persist project_doc_max_bytes to the server."} Previous value restored.`
       );
     } finally {
       setIsSaving(false);
@@ -110,7 +132,7 @@ export function WorkspaceSettingsScreen() {
                 onChangeText={setCwdInput}
                 autoCapitalize="none"
                 autoCorrect={false}
-                placeholder="/var/www/ava-code"
+                placeholder={APP.defaultCwd}
                 placeholderTextColor={colors.mutedForeground}
               />
               <TouchableOpacity
@@ -120,46 +142,6 @@ export function WorkspaceSettingsScreen() {
               >
                 <Save size={14} color="#FFFFFF" />
               </TouchableOpacity>
-            </View>
-
-            {/* Presets */}
-            <View style={styles.presetsCol}>
-              <Text style={[styles.presetLabel, { color: colors.mutedForeground }, font("medium")]}>
-                Quick Presets:
-              </Text>
-              {CWD_PRESETS.map((preset) => {
-                const isActive = workingCwd === preset;
-                return (
-                  <TouchableOpacity
-                    key={preset}
-                    style={[
-                      styles.presetItem,
-                      {
-                        backgroundColor: isActive ? `${colors.primary}15` : colors.glassBg,
-                        borderColor: isActive ? colors.primary : colors.glassBorder,
-                      },
-                    ]}
-                    onPress={() => handleApplyCwd(preset)}
-                    activeOpacity={0.7}
-                  >
-                    <FolderGit2
-                      size={14}
-                      color={isActive ? colors.primary : colors.mutedForeground}
-                    />
-                    <Text
-                      style={[
-                        styles.presetText,
-                        { color: isActive ? colors.primary : colors.foreground },
-                        mono("regular"),
-                      ]}
-                      numberOfLines={1}
-                    >
-                      {preset}
-                    </Text>
-                    {isActive && <Check size={14} color={colors.primary} />}
-                  </TouchableOpacity>
-                );
-              })}
             </View>
           </Surface>
         </View>
@@ -254,18 +236,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  presetsCol: { gap: 6, marginTop: 4 },
-  presetLabel: { fontSize: 11 },
-  presetItem: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 9,
-    borderRadius: 10,
-    borderWidth: 1,
-  },
-  presetText: { flex: 1, fontSize: 11.5 },
   docGrid: { gap: 8 },
   docOption: {
     flexDirection: "row",

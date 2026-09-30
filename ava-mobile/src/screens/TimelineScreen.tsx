@@ -29,9 +29,12 @@ import {
   Copy,
   FileCode,
   FileDiff,
+  CornerDownRight,
   Layers,
   ListChecks,
   MessageSquare,
+  Plug,
+  Quote,
   User,
   X,
   type LucideIcon,
@@ -45,12 +48,29 @@ import { Shimmer } from "@/components/ai-elements/shimmer";
 import { formatDuration } from "@/components/chat/message-parts";
 import type { ChatMessage, MessagePart, PlanStep } from "@/core/types";
 import { font, mono } from "@/theme/fonts";
-import { displayToolName, getToolIcon, getToolSubtitle } from "@/components/chat/tool-icons";
+import {
+  displayToolName,
+  getToolDisplayInfo,
+  getToolIcon,
+  getToolSubtitle,
+  type ToolDisplayInfo,
+} from "@/components/chat/tool-icons";
 import { MediaPreviewGallery } from "@/components/chat/media-preview-gallery";
 import { useTheme } from "@/theme/colors";
 
 if (Platform.OS === "android" && UIManager.setLayoutAnimationEnabledExperimental) {
   UIManager.setLayoutAnimationEnabledExperimental(true);
+}
+
+
+function AnimatedChevron({ isExpanded, color }: { isExpanded: boolean; color: string }) {
+  return (
+    <ChevronRight
+      size={13}
+      color={color}
+      style={isExpanded ? { transform: [{ rotate: "90deg" }] } : undefined}
+    />
+  );
 }
 
 interface Props {
@@ -69,7 +89,7 @@ export function TimelineScreen({ route, navigation }: Props) {
   const sessionId = route?.params?.sessionId || activeSessionId || "";
   const targetMessageId = route?.params?.messageId;
 
-  const { messages, status, loadingHistory } = useChat(sessionId);
+  const { messages, status, loadingHistory } = useChat(sessionId, { passive: true });
   const [activeTab, setActiveTab] = useState<"trace" | "files">("trace");
   const [expandedNodes, setExpandedNodes] = useState<Record<string, boolean>>({});
   const [copiedId, setCopiedId] = useState<string | null>(null);
@@ -109,13 +129,6 @@ export function TimelineScreen({ route, navigation }: Props) {
       const altId = candidateId.startsWith("a_") ? candidateId.slice(2) : `a_${candidateId}`;
       const altMatch = messages.find((m) => m.id === altId);
       if (altMatch?.role === "assistant") return altMatch;
-
-      const prefixMatch = messages.find(
-        (m) =>
-          m.role === "assistant" &&
-          (m.id.includes(candidateId) || candidateId.includes(m.id.replace(/^a_/, "")))
-      );
-      if (prefixMatch) return prefixMatch;
     }
 
     if (assistantMsgs.length > 0) {
@@ -474,11 +487,25 @@ export function TimelineScreen({ route, navigation }: Props) {
           </TouchableOpacity>
         </View>
 
-        <View style={{ width: 36 }} />
+        <View style={{ flexDirection: "row", alignItems: "center" }}>
+          {errorCount > 0 && (
+            <View
+              style={[
+                styles.pillBadge,
+                { backgroundColor: colors.destructive + "1A", marginRight: 8 },
+              ]}
+            >
+              <Text style={[styles.pillBadgeText, font("medium"), { color: colors.destructive }]}>
+                {errorCount} {errorCount === 1 ? "error" : "errors"}
+              </Text>
+            </View>
+          )}
+          <View style={{ width: 36 }} />
+        </View>
       </View>
 
       {/* ── Body Wrapped with Gesture Handler for Smooth Left-to-Right Swipe Back ── */}
-      <PanGestureHandler onHandlerStateChange={onHandlerStateChange} activeOffsetX={[0, 45]} failOffsetY={[-20, 20]}>
+      <PanGestureHandler onHandlerStateChange={onHandlerStateChange} activeOffsetX={[0, 45]} failOffsetY={[-20, 20]} hitSlop={{ left: 0, width: 24 }}>
         <Animated.View style={{ flex: 1 }}>
           {/* ── Multi-Turn Switcher (Minimal horizontal pills) ── */}
           {assistantMsgs.length > 1 && (
@@ -672,17 +699,52 @@ export function TimelineScreen({ route, navigation }: Props) {
                         {/* Continuous spine line */}
                         <View style={[styles.timelineSpine, { backgroundColor: colors.border }]} />
 
-                        {(isReversed ? [...allParts].reverse() : allParts).map((part, pIdx) => {
-                          const isExpanded = !!expandedNodes[part.id];
-                          const isErr = part.status === "error";
-                          const isRunning = isTargetTurnActive && part.status === "running";
+                        {(() => {
+                          const lastToolIndexInAll = (() => {
+                            for (let i = allParts.length - 1; i >= 0; i--) {
+                              if (allParts[i]?.nodeType === "tool") return i;
+                            }
+                            return -1;
+                          })();
+
+                          const activeStepIndexInAll = (() => {
+                            if (!isTargetTurnActive) return -1;
+                            for (let i = allParts.length - 1; i >= 0; i--) {
+                              const p = allParts[i]!;
+                              const hasEvidence =
+                                p.status === "done" ||
+                                typeof p.meta?.exitCode === "number" ||
+                                !!p.output;
+                              if (p.status === "running" && !hasEvidence) {
+                                return i;
+                              }
+                            }
+                            return -1;
+                          })();
+
+                          return (isReversed ? [...allParts].reverse() : allParts).map((part, pIdx) => {
+                            const origIdx = allParts.findIndex((x) => x.id === part.id);
+                            const isExpanded = !!expandedNodes[part.id];
+                            const isErr = part.status === "error";
+                            const hasCompletedEvidence =
+                              part.status === "done" ||
+                              typeof part.meta?.exitCode === "number" ||
+                              !!part.output;
+                            const isRunning =
+                              isTargetTurnActive &&
+                              !hasCompletedEvidence &&
+                              origIdx === activeStepIndexInAll;
+                            const isPrematureText =
+                              part.nodeType === "text" &&
+                              lastToolIndexInAll !== -1 &&
+                              origIdx < lastToolIndexInAll;
 
                           // Direct text response node in timeline sequence
                           if (part.nodeType === "text") {
                             if (!part.text && !isRunning) return null;
 
                             return (
-                              <View key={`node_${part.id}_${pIdx}`} style={styles.nodeRow}>
+                              <View key={`node_${part.id}`} style={styles.nodeRow}>
                                 {/* Left Spine Bullet */}
                                 <View style={styles.nodeSpineCol}>
                                   <View
@@ -691,11 +753,14 @@ export function TimelineScreen({ route, navigation }: Props) {
                                       {
                                         backgroundColor: colors.background,
                                         borderColor: isRunning ? colors.primary : colors.border,
+                                        opacity: isPrematureText ? 0.8 : 1,
                                       },
                                     ]}
                                   >
                                     {isRunning ? (
                                       <ActivityIndicator size={10} color={colors.primary} />
+                                    ) : isPrematureText ? (
+                                      <CornerDownRight size={10} color={colors.mutedForeground} />
                                     ) : (
                                       <MessageSquare size={11} color={colors.primary} />
                                     )}
@@ -779,14 +844,17 @@ export function TimelineScreen({ route, navigation }: Props) {
                             );
                           }
 
+                          const toolInfo = part.nodeType === "tool" ? getToolDisplayInfo(part) : null;
                           let Icon: LucideIcon = Brain;
                           let iconColor = colors.mutedForeground;
 
-                          if (part.nodeType === "tool") {
-                            Icon = getToolIcon(part.toolName, part.meta);
+                          if (part.nodeType === "tool" && toolInfo) {
+                            Icon = toolInfo.icon;
                             iconColor = isErr
                               ? colors.destructive
                               : isRunning
+                              ? colors.primary
+                              : toolInfo.isMcp
                               ? colors.primary
                               : colors.foreground;
                           } else if (part.nodeType === "plan") {
@@ -800,18 +868,15 @@ export function TimelineScreen({ route, navigation }: Props) {
                             iconColor = colors.warning;
                           }
 
-                          const toolNamePretty =
-                            part.nodeType === "tool"
-                              ? displayToolName(part.toolName || "Tool")
-                              : "";
-
-                          const subtitle =
-                            part.nodeType === "tool"
-                              ? getToolSubtitle(part)
-                              : part.text || "";
+                          const displayTitle = toolInfo
+                            ? toolInfo.displayTitle
+                            : part.text || "";
+                          const displaySubtitle = toolInfo
+                            ? toolInfo.subtitle
+                            : "";
 
                           return (
-                            <View key={`node_${part.id}_${pIdx}`} style={styles.nodeRow}>
+                            <View key={`node_${part.id}`} style={styles.nodeRow}>
                               {/* Left Spine Bullet */}
                               <View style={styles.nodeSpineCol}>
                                 <View
@@ -856,33 +921,55 @@ export function TimelineScreen({ route, navigation }: Props) {
                                   activeOpacity={part.hasExpandableContent ? 0.7 : 1}
                                 >
                                   <View style={styles.nodeHeaderMain}>
-                                    {toolNamePretty ? (
-                                      <View style={[styles.toolChip, { backgroundColor: colors.secondary }]}>
+                                    {toolInfo ? (
+                                      <View
+                                        style={[
+                                          styles.toolChip,
+                                          { backgroundColor: colors.secondary },
+                                          toolInfo.isMcp && {
+                                            backgroundColor: "rgba(99, 102, 241, 0.12)",
+                                            borderColor: "rgba(99, 102, 241, 0.25)",
+                                            borderWidth: 1,
+                                          },
+                                        ]}
+                                      >
                                         <Text
-                                          style={[styles.toolChipText, mono("medium"), { color: colors.foreground }]}
+                                          style={[
+                                            styles.toolChipText,
+                                            mono("medium"),
+                                            { color: toolInfo.isMcp ? colors.primary : colors.foreground },
+                                          ]}
                                           numberOfLines={1}
                                         >
-                                          {toolNamePretty}
+                                          {toolInfo.isMcp ? "MCP" : toolInfo.chipLabel}
                                         </Text>
                                       </View>
                                     ) : null}
 
-                                    {subtitle ? (
-                                      <View style={{ flex: 1 }}>
-                                        <InlineText
-                                          text={subtitle}
-                                          numberOfLines={isExpanded ? undefined : 1}
+                                    <View style={{ flex: 1, flexDirection: "row", alignItems: "center", gap: 6 }}>
+                                      <Text
+                                        style={[
+                                          styles.nodeTitle,
+                                          mono("medium"),
+                                          { color: colors.foreground, fontSize: 13 },
+                                          isRunning && { color: colors.primary },
+                                        ]}
+                                        numberOfLines={1}
+                                      >
+                                        {displayTitle}
+                                      </Text>
+                                      {displaySubtitle && displaySubtitle !== displayTitle ? (
+                                        <Text
                                           style={[
-                                            styles.nodeTitle,
-                                            font("regular"),
-                                            { color: colors.foreground, fontSize: 13 },
-                                            isRunning && { color: colors.primary },
+                                            mono("regular"),
+                                            { color: colors.mutedForeground, fontSize: 11 },
                                           ]}
-                                        />
-                                      </View>
-                                    ) : (
-                                      <View style={{ flex: 1 }} />
-                                    )}
+                                          numberOfLines={1}
+                                        >
+                                          {displaySubtitle}
+                                        </Text>
+                                      ) : null}
+                                    </View>
                                   </View>
 
                                   <View style={styles.nodeHeaderMeta}>
@@ -1050,7 +1137,8 @@ export function TimelineScreen({ route, navigation }: Props) {
                               </View>
                             </View>
                           );
-                        })}
+                          });
+                        })()}
                       </View>
                     )}
                   </>
@@ -1114,7 +1202,7 @@ export function TimelineScreen({ route, navigation }: Props) {
                       onPress={() => {
                         navigation?.navigate("Main", {
                           screen: "Files",
-                          params: { path: file.path },
+                          params: { openFile: file.path },
                         });
                       }}
                       activeOpacity={0.7}
@@ -1122,7 +1210,7 @@ export function TimelineScreen({ route, navigation }: Props) {
                       <View
                         style={[
                           styles.fileTag,
-                          file.kind === "create"
+                          file.kind === "add"
                             ? styles.fileTagCreate
                             : file.kind === "delete"
                             ? styles.fileTagDelete
@@ -1135,7 +1223,7 @@ export function TimelineScreen({ route, navigation }: Props) {
                             mono("bold"),
                             {
                               color:
-                                file.kind === "create"
+                                file.kind === "add"
                                   ? colors.success
                                   : file.kind === "delete"
                                   ? colors.destructive
@@ -1143,7 +1231,7 @@ export function TimelineScreen({ route, navigation }: Props) {
                             },
                           ]}
                         >
-                          {file.kind === "create" ? "NEW" : file.kind === "delete" ? "DEL" : "MOD"}
+                          {file.kind === "add" ? "NEW" : file.kind === "delete" ? "DEL" : "MOD"}
                         </Text>
                       </View>
 

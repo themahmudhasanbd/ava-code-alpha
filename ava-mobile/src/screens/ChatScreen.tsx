@@ -36,7 +36,7 @@ export function ChatScreen({ navigation }: { navigation: any }) {
     setActiveSessionId(null);
     const promptNonce = `${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
     navigation.navigate("Session", {
-      sessionId: undefined,
+      sessionId: "",
       initialPrompt: fullPrompt,
       promptNonce,
     });

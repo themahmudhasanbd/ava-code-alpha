@@ -151,8 +151,8 @@ fn parse_critical_facts(summary: &str) -> CriticalFacts {
 
 /// Collect every file path touched via `apply_patch` in the pre-compaction
 /// history, using the apply_patch argument grammar (`*** Add File:` etc.).
-fn collect_expected_compaction_facts(
-    history: impl Iterator<Item = &ResponseItem>,
+fn collect_expected_compaction_facts<'a>(
+    history: impl Iterator<Item = &'a ResponseItem>,
 ) -> ExpectedCompactionFacts {
     let mut touched_files = Vec::new();
     for item in history {

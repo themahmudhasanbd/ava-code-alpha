@@ -651,21 +651,6 @@ impl ModelClient {
         }
     }
 
-    /// Rebinds this turn's session to a different model provider.
-    ///
-    /// Used by cross-provider model fallback. Transport state (the websocket session
-    /// and the sticky-routing token) is reset because neither may cross provider
-    /// boundaries; the next request establishes fresh routing state.
-    pub fn rebind_provider(
-        &mut self,
-        provider: SharedModelProvider,
-        workspace_routing: WorkspaceRoutingContext,
-    ) {
-        self.client = self.client.with_provider(provider, workspace_routing);
-        self.websocket_session.reset(Some("provider-fallback"));
-        self.turn_state = Arc::new(OnceLock::new());
-    }
-
     pub(crate) fn auth_manager(&self) -> Option<Arc<AuthManager>> {
         self.state.provider.auth_manager()
     }
@@ -1404,6 +1389,21 @@ impl Drop for ModelClientSession {
 }
 
 impl ModelClientSession {
+    /// Rebinds this turn's session to a different model provider.
+    ///
+    /// Used by cross-provider model fallback. Transport state (the websocket session
+    /// and the sticky-routing token) is reset because neither may cross provider
+    /// boundaries; the next request establishes fresh routing state.
+    pub fn rebind_provider(
+        &mut self,
+        provider: SharedModelProvider,
+        workspace_routing: WorkspaceRoutingContext,
+    ) {
+        self.client = self.client.with_provider(provider, workspace_routing);
+        self.websocket_session.reset(Some("provider-fallback"));
+        self.turn_state = Arc::new(OnceLock::new());
+    }
+
     #[allow(clippy::too_many_arguments)]
     /// Builds shared Responses API transport options and request-body options.
     ///

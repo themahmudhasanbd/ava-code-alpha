@@ -89,6 +89,154 @@ pub(crate) struct CompactedHistoryMetadata {
     pub(crate) reviewer_compaction_hash: Option<String>,
 }
 
+/// Machine-readable critical facts the compaction prompt requires at the end
+/// of every summary. Parsed tolerantly: a missing section yields empty lists.
+struct CriticalFacts {
+    files: Vec<String>,
+    #[allow(dead_code)]
+    decisions: Vec<String>,
+    #[allow(dead_code)]
+    pending: Vec<String>,
+    #[allow(dead_code)]
+    references: Vec<String>,
+}
+
+/// Facts extracted from the pre-compaction history that the summary must retain.
+struct ExpectedCompactionFacts {
+    touched_files: Vec<String>,
+}
+
+fn parse_critical_facts(summary: &str) -> CriticalFacts {
+    let mut facts = CriticalFacts {
+        files: Vec::new(),
+        decisions: Vec::new(),
+        pending: Vec::new(),
+        references: Vec::new(),
+    };
+    let mut in_section = false;
+    for line in summary.lines() {
+        let trimmed = line.trim();
+        if !in_section {
+            if trimmed.eq_ignore_ascii_case("## critical facts") {
+                in_section = true;
+            }
+            continue;
+        }
+        if trimmed.starts_with("## ") {
+            break;
+        }
+        let Some(rest) = trimmed.strip_prefix("- ") else {
+            continue;
+        };
+        let Some((key, value)) = rest.split_once(':') else {
+            continue;
+        };
+        let value = value.trim();
+        match key.trim().to_ascii_lowercase().as_str() {
+            "files" => {
+                facts.files = value
+                    .split(',')
+                    .map(|part| part.trim().trim_matches('"').to_string())
+                    .filter(|part| !part.is_empty())
+                    .collect();
+            }
+            "decisions" => facts.decisions.push(value.to_string()),
+            "pending" => facts.pending.push(value.to_string()),
+            "references" => facts.references.push(value.to_string()),
+            _ => {}
+        }
+    }
+    facts
+}
+
+/// Collect every file path touched via `apply_patch` in the pre-compaction
+/// history, using the apply_patch argument grammar (`*** Add File:` etc.).
+fn collect_expected_compaction_facts(
+    history: impl Iterator<Item = &ResponseItem>,
+) -> ExpectedCompactionFacts {
+    let mut touched_files = Vec::new();
+    for item in history {
+        let ResponseItem::FunctionCall { name, arguments, .. } = item else {
+            continue;
+        };
+        if name != "apply_patch" {
+            continue;
+        }
+        for line in arguments.lines() {
+            let line = line.trim();
+            for marker in [
+                "*** Add File: ",
+                "*** Update File: ",
+                "*** Delete File: ",
+                "*** Move to: ",
+            ] {
+                if let Some(path) = line.strip_prefix(marker) {
+                    let path = path.trim().trim_matches('"').to_string();
+                    if !path.is_empty() && !touched_files.contains(&path) {
+                        touched_files.push(path);
+                    }
+                }
+            }
+        }
+    }
+    ExpectedCompactionFacts { touched_files }
+}
+
+/// Check that the summary retained the critical facts. Returns the list of
+/// gaps; an empty list means the summary passed verification.
+fn verify_compaction_coverage(
+    summary: &str,
+    expected: &ExpectedCompactionFacts,
+) -> Vec<String> {
+    let mut missing = Vec::new();
+    if summary.trim().len() < 200 {
+        missing.push("summary is suspiciously short (<200 chars)".to_string());
+    }
+    let facts = parse_critical_facts(summary);
+    let summary_lower = summary.to_lowercase();
+    for file in &expected.touched_files {
+        let basename = file.rsplit('/').next().unwrap_or(file).to_lowercase();
+        let mentioned_in_facts = facts
+            .files
+            .iter()
+            .any(|f| f.to_lowercase().contains(&basename));
+        if !mentioned_in_facts && !summary_lower.contains(&basename) {
+            missing.push(format!("touched file not mentioned in summary: {file}"));
+        }
+    }
+    missing
+}
+
+/// Apply `[model_routing].compaction` when configured: run the compaction turn
+/// on a dedicated model. Falls back to the current model when the target is
+/// unset, identical, or has a smaller context window than the current model.
+async fn maybe_route_compaction_model(
+    sess: &Session,
+    turn_context: Arc<TurnContext>,
+) -> Arc<TurnContext> {
+    let target = turn_context.config.model_routing.compaction.clone();
+    let Some(target) = target.filter(|model| !model.trim().is_empty()) else {
+        return turn_context;
+    };
+    if target == turn_context.model_info().slug {
+        return turn_context;
+    }
+    let routed = turn_context
+        .with_model(target.clone(), &sess.services.models_manager)
+        .await;
+    let current_window = turn_context.model_info().resolved_context_window();
+    let target_window = routed.model_info().resolved_context_window();
+    match (current_window, target_window) {
+        (Some(current), Some(target_w)) if target_w < current => {
+            tracing::warn!(
+                "compaction model routing skipped: target model '{target}' has a smaller context window ({target_w}) than the current model ({current})"
+            );
+            turn_context
+        }
+        _ => Arc::new(routed),
+    }
+}
+
 pub(crate) async fn build_compaction_initial_context(
     sess: &Session,
     initial_context_injection: &InitialContextInjection,
@@ -222,13 +370,15 @@ async fn run_compact_task_inner(
             return Err(AvaErr::TurnAborted);
         }
     }
+    let details = CompactionAnalyticsDetails {
+        compaction_verification_missing: result
+            .as_ref()
+            .ok()
+            .and_then(|(_, missing)| missing.clone()),
+        ..CompactionAnalyticsDetails::default()
+    };
     attempt
-        .track(
-            sess.as_ref(),
-            status,
-            ava_error,
-            CompactionAnalyticsDetails::default(),
-        )
+        .track(sess.as_ref(), status, ava_error, details)
         .await;
     if let Err(err) = &result
         && !matches!(phase, CompactionPhase::PostTurn)
@@ -253,10 +403,13 @@ async fn run_compact_task_inner_impl(
     input: Vec<UserInput>,
     initial_context_injection: InitialContextInjection,
     compaction_metadata: CompactionTurnMetadata,
-) -> AvaResult<String> {
+) -> AvaResult<(String, Option<Vec<String>>)> {
     let compaction_item = TurnItem::ContextCompaction(ContextCompactionItem::new());
     sess.emit_turn_item_started(&turn_context, &compaction_item)
         .await;
+    // Route the compaction turn onto a dedicated model when configured via
+    // `[model_routing].compaction`.
+    let turn_context = maybe_route_compaction_model(sess.as_ref(), turn_context).await;
     let initial_input_for_turn: ResponseInputItem = ResponseInputItem::from(input);
 
     let mut history = sess.clone_history().await;
@@ -348,7 +501,7 @@ async fn run_compact_task_inner_impl(
 
     let history_snapshot = sess.clone_history().await;
     let history_items = history_snapshot.annotated_items();
-    let summary_suffix = if matches!(compaction_metadata.phase(), CompactionPhase::PostTurn) {
+    let mut summary_suffix = if matches!(compaction_metadata.phase(), CompactionPhase::PostTurn) {
         get_last_assistant_message_from_turn(compaction_response.output.iter())
             .filter(|summary| !summary.trim().is_empty())
             .ok_or_else(|| {
@@ -359,7 +512,60 @@ async fn run_compact_task_inner_impl(
     } else {
         get_last_assistant_message_from_turn(history_snapshot.raw_items()).unwrap_or_default()
     };
-    let summary_text = format!("{SUMMARY_PREFIX}\n{summary_suffix}");
+    let mut summary_text = format!("{SUMMARY_PREFIX}\n{summary_suffix}");
+    // Verify the summary retained the critical facts from the compacted
+    // history. On failure, request one targeted correction pass; if that also
+    // fails, keep the summary but record what was missing.
+    let mut verification_missing: Option<Vec<String>> = None;
+    let expected_facts = collect_expected_compaction_facts(history_snapshot.raw_items());
+    let mut missing = verify_compaction_coverage(&summary_text, &expected_facts);
+    if !missing.is_empty() {
+        tracing::warn!(
+            "compaction summary failed verification, requesting one correction pass: {missing:?}"
+        );
+        let correction_text = format!(
+            "Your previous compaction summary omitted these critical facts, which MUST appear verbatim in the `## Critical facts` section of your corrected summary:\n{}\n\nPrevious summary:\n{}",
+            missing.join("\n"),
+            summary_text
+        );
+        let correction_input = vec![UserInput::Text {
+            text: correction_text,
+            text_elements: Vec::new(),
+        }];
+        let correction_item: ResponseInputItem = ResponseInputItem::from(correction_input);
+        let correction_prompt = Prompt {
+            input: vec![correction_item.into()],
+            base_instructions: sess.get_prompt_base_instructions().await,
+            ..Default::default()
+        };
+        match drain_to_completed(
+            &sess,
+            turn_context.as_ref(),
+            &mut client_session,
+            &responses_metadata,
+            &correction_prompt,
+            compaction_metadata.phase(),
+        )
+        .await
+        {
+            Ok(retry_response) => {
+                if let Some(corrected) =
+                    get_last_assistant_message_from_turn(retry_response.output.iter())
+                        .filter(|text| !text.trim().is_empty())
+                {
+                    summary_suffix = corrected;
+                    summary_text = format!("{SUMMARY_PREFIX}\n{summary_suffix}");
+                    missing = verify_compaction_coverage(&summary_text, &expected_facts);
+                }
+            }
+            Err(err) => {
+                tracing::warn!("compaction verification correction pass failed: {err}");
+            }
+        }
+    }
+    if !missing.is_empty() {
+        verification_missing = Some(missing);
+    }
     let identity = if sess.guardian_context_mode == GuardianContextMode::ThreadOwned {
         CompactedMessageIdentity::Preserve
     } else {
@@ -409,7 +615,7 @@ async fn run_compact_task_inner_impl(
         message: "Heads up: Long threads and multiple compactions can cause the model to be less accurate. Start a new thread when possible to keep threads small and targeted.".to_string(),
     });
     sess.send_event(&turn_context, warning).await;
-    Ok(summary_suffix)
+    Ok((summary_suffix, verification_missing))
 }
 
 pub(crate) struct CompactionAnalyticsAttempt {
@@ -424,13 +630,17 @@ pub(crate) struct CompactionAnalyticsAttempt {
     start_instant: Instant,
 }
 
-#[derive(Clone, Copy, Default)]
+#[derive(Clone, Default)]
 pub(crate) struct CompactionAnalyticsDetails {
     pub(crate) active_context_tokens_before: Option<i64>,
     pub(crate) retained_image_count: Option<usize>,
     pub(crate) compaction_summary_tokens: Option<i64>,
     pub(crate) cached_input_tokens: Option<i64>,
     pub(crate) cache_write_input_tokens: Option<i64>,
+    /// Gaps found by post-compaction summary verification (`None` = passed or
+    /// not applicable). Kept out of the analytics event (schema lives in
+    /// another crate); surfaced via warn log in `track()`.
+    pub(crate) compaction_verification_missing: Option<Vec<String>>,
 }
 
 impl CompactionAnalyticsAttempt {
@@ -469,7 +679,13 @@ impl CompactionAnalyticsAttempt {
             compaction_summary_tokens,
             cached_input_tokens,
             cache_write_input_tokens,
+            compaction_verification_missing,
         } = details;
+        if let Some(missing) = &compaction_verification_missing
+            && !missing.is_empty()
+        {
+            tracing::warn!("compaction summary verification failed: {missing:?}");
+        }
         let active_context_tokens_before =
             active_context_tokens_before.unwrap_or(self.active_context_tokens_before);
         let active_context_tokens_after = sess.get_total_token_usage().await;

@@ -24,6 +24,11 @@ use tokio::sync::Mutex;
 #[derive(Debug, Default)]
 struct ImplicitSkillInvocations(Mutex<HashSet<String>>);
 
+/// (skill name, invoke kind) pairs actually injected this turn, for post-turn
+/// skill-effectiveness feedback. Stashed by the emit fns below.
+#[derive(Debug, Default)]
+pub(crate) struct TurnInjectedSkills(pub Mutex<Vec<(String, String)>>);
+
 pub(crate) fn skills_load_input_from_config(
     config: &Config,
     effective_skill_roots: Vec<PluginSkillRoot>,
@@ -86,6 +91,13 @@ pub(crate) async fn emit_explicit_skill_invocations(
         {
             continue;
         }
+        turn_context
+            .extension_data
+            .get_or_init(TurnInjectedSkills::default)
+            .0
+            .lock()
+            .await
+            .push((skill.name.clone(), "explicit".to_string()));
         for contributor in sess.services.extensions.skill_invocation_contributors() {
             contributor
                 .on_skill_invocation(SkillInvocationInput {
@@ -160,6 +172,13 @@ pub(crate) async fn maybe_emit_implicit_skill_invocation(
     if !inserted {
         return;
     }
+    turn_context
+        .extension_data
+        .get_or_init(TurnInjectedSkills::default)
+        .0
+        .lock()
+        .await
+        .push((skill_name.clone(), "implicit".to_string()));
     let skill_name_tag = sanitize_metric_tag_value(skill_name.as_str());
     let plugin_id_tag =
         sanitize_metric_tag_value(invocation.plugin_id.as_deref().unwrap_or("unattributed"));

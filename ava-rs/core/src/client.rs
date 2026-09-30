@@ -534,6 +534,57 @@ impl ModelClient {
         }
     }
 
+    /// Returns a copy of this client bound to a different model provider.
+    ///
+    /// Used by cross-provider model fallback: the new client keeps all session-scoped
+    /// configuration but routes requests through the given provider. Transport state
+    /// (websocket session cache, sticky-routing token) is intentionally fresh because
+    /// neither may cross provider boundaries. The caller supplies a fresh
+    /// workspace_routing context for the same reason.
+    pub fn with_provider(
+        &self,
+        provider: SharedModelProvider,
+        workspace_routing: WorkspaceRoutingContext,
+    ) -> ModelClient {
+        let include_attestation = provider.supports_attestation();
+        let ava_api_key_env_enabled = match provider.auth_manager() {
+            Some(manager) => manager.ava_api_key_env_enabled(),
+            None => false,
+        };
+        let auth_env_telemetry =
+            collect_auth_env_telemetry(provider.info(), ava_api_key_env_enabled);
+        ModelClient {
+            state: Arc::new(ModelClientState {
+                thread_id: self.state.thread_id.clone(),
+                provider,
+                workspace_routing,
+                auth_env_telemetry,
+                session_source: self.state.session_source.clone(),
+                originator: self.state.originator.clone(),
+                model_verbosity: self.state.model_verbosity.clone(),
+                content_item_kinds_enabled: self.state.content_item_kinds_enabled,
+                reasoning_effort_override_enabled: self.state.reasoning_effort_override_enabled,
+                enable_request_compression: self.state.enable_request_compression,
+                include_timing_metrics: self.state.include_timing_metrics,
+                beta_features_header: self.state.beta_features_header.clone(),
+                concurrent_reasoning_summaries_enabled: self
+                    .state
+                    .concurrent_reasoning_summaries_enabled,
+                include_attestation,
+                attestation_provider: self.state.attestation_provider.clone(),
+                disable_websockets: AtomicBool::new(false),
+                agent_identity_session_fallback: AgentIdentitySessionFallback::default(),
+                cached_websocket_session: StdMutex::new(WebsocketSession::default()),
+            }),
+            agent_identity_policy: self.agent_identity_policy,
+            prompt_cache_key_override: self.prompt_cache_key_override.clone(),
+            ava_responses_headers: self.ava_responses_headers.clone(),
+            event_sender: self.event_sender.clone(),
+            http_client_factory: self.http_client_factory.clone(),
+            restored_history: self.restored_history,
+        }
+    }
+
     pub(crate) fn reasoning_effort_override_enabled(&self, model_info: &ModelInfo) -> bool {
         self.state.reasoning_effort_override_enabled
             && self.state.provider.info().is_openai()
@@ -598,6 +649,21 @@ impl ModelClient {
             websocket_session,
             turn_state: Arc::new(OnceLock::new()),
         }
+    }
+
+    /// Rebinds this turn's session to a different model provider.
+    ///
+    /// Used by cross-provider model fallback. Transport state (the websocket session
+    /// and the sticky-routing token) is reset because neither may cross provider
+    /// boundaries; the next request establishes fresh routing state.
+    pub fn rebind_provider(
+        &mut self,
+        provider: SharedModelProvider,
+        workspace_routing: WorkspaceRoutingContext,
+    ) {
+        self.client = self.client.with_provider(provider, workspace_routing);
+        self.websocket_session.reset(Some("provider-fallback"));
+        self.turn_state = Arc::new(OnceLock::new());
     }
 
     pub(crate) fn auth_manager(&self) -> Option<Arc<AuthManager>> {

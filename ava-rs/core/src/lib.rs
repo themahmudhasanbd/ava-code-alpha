@@ -245,6 +245,7 @@ pub use exec_policy::load_exec_policy;
 pub use installation_id::resolve_installation_id;
 pub mod compact;
 mod memory_usage;
+pub use memory_usage::TurnFeedbackSink;
 pub mod otel_init;
 
 // Captured environment bindings can be passed back to ThreadManager by internal reviewers.

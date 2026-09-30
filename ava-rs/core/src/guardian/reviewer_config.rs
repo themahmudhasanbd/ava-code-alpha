@@ -77,12 +77,20 @@ pub(crate) async fn resolve_review_model(
         )
         .await;
     let default_review_model_id = turn.provider.approval_review_preferred_model();
-    let review_model = ava_guardian_reviewer::select_review_model(
+    let mut review_model = ava_guardian_reviewer::select_review_model(
         &context.model_info,
         context.reasoning_effort.as_ref(),
         default_review_model_id,
         &available_models,
     );
+    // Per-task model routing: an explicit review model overrides the catalog default.
+    // Marking it overridden forces catalog re-resolution for the new slug below.
+    if let Some(routed) = turn.config.model_routing.review.as_deref() {
+        if !routed.is_empty() {
+            review_model.model = routed.to_string();
+            review_model.model_overridden = true;
+        }
+    }
     // Resolve a separate reviewer against the current catalog on every attempt.
     // Parent fallback must retain the action's metadata even after a catalog refresh.
     let guardian_model_info =

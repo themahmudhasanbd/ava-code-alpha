@@ -153,6 +153,26 @@ pub struct OrchestratorFeatureToml {
     pub enabled: Option<bool>,
 }
 
+/// Per-task model routing, deserialized from the model_routing table in config.toml.
+///
+/// Every entry is a model slug. Unset entries preserve the existing per-task
+/// model resolution.
+#[derive(Serialize, Deserialize, Debug, Clone, Default, PartialEq, JsonSchema)]
+pub struct ModelRoutingConfig {
+    /// Model used for conversation-history compaction. Unset keeps the turn model.
+    pub compaction: Option<String>,
+    /// Model used for guardian/approval review. Unset keeps the default resolution.
+    pub review: Option<String>,
+    /// Model used for memory extraction (phase 1). Unset falls back to
+    /// memories.extract_model or the provider preferred extraction model.
+    pub memory_extraction: Option<String>,
+    /// Model used for memory consolidation (phase 2). Unset keeps the parent model.
+    pub consolidation: Option<String>,
+    /// Default model for spawned subagents when the spawn call omits model.
+    /// Unset keeps inheriting the parent model.
+    pub subagent_default: Option<String>,
+}
+
 /// Base config deserialized from ~/.ava-code/config.toml.
 #[derive(Serialize, Deserialize, Debug, Clone, Default, PartialEq, JsonSchema)]
 #[schemars(deny_unknown_fields)]
@@ -166,7 +186,15 @@ pub struct ConfigToml {
     pub model_provider: Option<String>,
 
     /// Ordered fallback chain of models to try if the primary model fails.
+    ///
+    /// Each entry is either a bare model slug (retried on the current provider) or
+    /// provider-id::model-slug to fail over to a model on a different provider
+    /// from the model_providers map.
     pub model_fallback_chain: Option<Vec<String>>,
+
+    /// Per-task model routing. Each value is a model slug; unset entries keep the
+    /// current behavior for that task.
+    pub model_routing: Option<ModelRoutingConfig>,
 
     /// Size of the context window for the model, in tokens.
     pub model_context_window: Option<i64>,

@@ -213,6 +213,10 @@ impl MemoryStartupContext {
         self.thread_id
     }
 
+    pub(crate) fn thread(&self) -> &Arc<AvaThread> {
+        &self.thread
+    }
+
     pub(crate) async fn record_storage_size(&self, root: &Path) {
         let bytes = match memory_storage_bytes(root).await {
             Ok(bytes) => bytes,

@@ -97,7 +97,11 @@ impl Session {
             model_instructions,
         ));
         let active_plan = self.get_active_plan().await;
-        world_state.add_section(PlanState::new(active_plan.as_ref()));
+        let last_turn_had_tool_failure = self.take_last_turn_had_tool_failure().await;
+        world_state.add_section(PlanState::new(
+            active_plan.as_ref(),
+            last_turn_had_tool_failure,
+        ));
         let last_quality = self.get_last_quality_gate().await;
         world_state.add_section(QualityState::new(last_quality.as_ref()));
         let token_budget_enabled = turn_context.config.features.enabled(Feature::TokenBudget)

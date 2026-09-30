@@ -141,7 +141,18 @@ async fn handle_spawn_agent(
             version: SpawnConfigVersion::V2,
             full_history_fork: matches!(fork_mode, Some(SpawnAgentForkMode::FullHistory)),
             role_name,
-            model: args.model.as_deref(),
+            // Per-task model routing: fall back to the configured subagent default
+            // when the spawn call omits a model. Empty strings do not count.
+            model: args
+                .model
+                .as_deref()
+                .filter(|m| !m.trim().is_empty())
+                .or(turn
+                    .config
+                    .model_routing
+                    .subagent_default
+                    .as_deref()
+                    .filter(|m| !m.trim().is_empty())),
             reasoning_effort: args.reasoning_effort.clone(),
         },
     )

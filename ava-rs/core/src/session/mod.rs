@@ -1537,6 +1537,21 @@ impl Session {
         state.active_plan = Some(plan);
     }
 
+    /// Restore the durable active plan (if any) from the state store after a
+    /// thread resume or server restart. Best-effort: failures are logged and
+    /// never fatal, since the rollout transcript still carries the raw
+    /// `update_plan` calls.
+    pub(crate) async fn restore_active_plan_from_store(&self) {
+        let Some(db) = self.state_db() else {
+            return;
+        };
+        match db.thread_plans().get_thread_plan(self.thread_id).await {
+            Ok(Some(plan)) => self.set_active_plan(plan).await,
+            Ok(None) => {}
+            Err(err) => tracing::warn!("failed to restore active plan from store: {err}"),
+        }
+    }
+
     pub(crate) async fn get_active_plan(&self) -> Option<ava_protocol::plan_tool::UpdatePlanArgs> {
         let state = self.state.lock().await;
         state.active_plan.clone()
@@ -1585,6 +1600,21 @@ impl Session {
     ) -> Option<crate::quality_gate::types::QualityGateResult> {
         let state = self.state.lock().await;
         state.last_quality_gate.clone()
+    }
+
+    /// Record whether the just-finished turn had tool failures. Consumed
+    /// one-shot by the plan world-state fragment (see
+    /// `take_last_turn_had_tool_failure`).
+    pub(crate) async fn set_last_turn_had_tool_failure(&self, failed: bool) {
+        let mut state = self.state.lock().await;
+        state.last_turn_had_tool_failure = failed;
+    }
+
+    /// Take the tool-failure flag, resetting it to false. Used when assembling
+    /// world state so the re-plan nudge renders at most once per failure.
+    pub(crate) async fn take_last_turn_had_tool_failure(&self) -> bool {
+        let mut state = self.state.lock().await;
+        std::mem::replace(&mut state.last_turn_had_tool_failure, false)
     }
 
     async fn record_initial_history(&self, conversation_history: InitialHistory) {
@@ -3966,6 +3996,8 @@ impl Session {
                 from_model: requested_model.clone(),
                 to_model: server_model.clone(),
                 reason: ModelRerouteReason::HighRiskCyberActivity,
+                from_provider: None,
+                to_provider: None,
             }),
         )
         .await;

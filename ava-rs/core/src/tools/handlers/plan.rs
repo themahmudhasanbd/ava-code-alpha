@@ -160,6 +160,27 @@ impl PlanHandler {
         // Retain plan on session state for context injection across turns
         session.set_active_plan(args.clone()).await;
 
+        // Persist the plan durably so it survives server restarts and thread
+        // reloads. Best-effort: a storage failure must never fail the tool call.
+        // Fully-resolved plans are cleared from the store.
+        {
+            let has_open_steps = args.plan.iter().any(|p| {
+                matches!(p.status, StepStatus::InProgress | StepStatus::Pending)
+            });
+            if let Some(db) = session.state_db() {
+                let persist_result = if has_open_steps {
+                    db.thread_plans()
+                        .replace_thread_plan(session.thread_id, &args)
+                        .await
+                } else {
+                    db.thread_plans().clear_thread_plan(session.thread_id).await
+                };
+                if let Err(err) = persist_result {
+                    tracing::warn!("failed to persist active plan for thread: {err}");
+                }
+            }
+        }
+
         // Emit plan event to client UI
         session
             .send_event(turn.as_ref(), EventMsg::PlanUpdate(args))

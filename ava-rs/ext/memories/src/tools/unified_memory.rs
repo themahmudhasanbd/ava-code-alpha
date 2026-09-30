@@ -91,6 +91,26 @@ pub struct UnifiedMemoryResponse {
 }
 
 #[derive(Clone)]
+/// Jaccard token overlap in [0, 1] over lowercase alphanumeric tokens.
+/// Used to detect when a new memory contradicts/supersedes an existing one.
+fn token_overlap(a: &str, b: &str) -> f64 {
+    fn tokenize(text: &str) -> std::collections::HashSet<String> {
+        text.to_lowercase()
+            .split(|c: char| !c.is_alphanumeric())
+            .filter(|token| token.len() > 2)
+            .map(str::to_string)
+            .collect()
+    }
+    let a_tokens = tokenize(a);
+    let b_tokens = tokenize(b);
+    if a_tokens.is_empty() || b_tokens.is_empty() {
+        return 0.0;
+    }
+    let intersection = a_tokens.intersection(&b_tokens).count() as f64;
+    let union = a_tokens.union(&b_tokens).count() as f64;
+    intersection / union
+}
+
 pub struct UnifiedMemoryTool {
     pub workspace_dir: PathBuf,
     pub config: MemoriesConfig,
@@ -171,13 +191,14 @@ impl UnifiedMemoryTool {
         call: ToolCall<'_>,
     ) -> Result<Box<dyn ava_extension_api::ToolOutput>, FunctionCallError> {
         let args: UnifiedMemoryArgs = super::parse_args(&call)?;
-        let response = self.execute_action(args).await?;
+        let response = self.execute_action(args, call.turn_id).await?;
         Ok(Box::new(JsonToolOutput::new(json!(response))))
     }
 
     pub async fn execute_action(
         &self,
         args: UnifiedMemoryArgs,
+        turn_id: String,
     ) -> Result<UnifiedMemoryResponse, FunctionCallError> {
         let action = args.action.trim().to_lowercase();
         let default_scope_str = self.config.default_scope.as_str();
@@ -210,7 +231,7 @@ impl UnifiedMemoryTool {
                 .await;
         }
 
-        self.handle_persistent_action(&action, args, &requested_scope)
+        self.handle_persistent_action(&action, args, &requested_scope, &turn_id)
             .await
     }
 
@@ -219,6 +240,7 @@ impl UnifiedMemoryTool {
         action: &str,
         args: UnifiedMemoryArgs,
         requested_scope: &str,
+        turn_id: &str,
     ) -> Result<UnifiedMemoryResponse, FunctionCallError> {
         let project_db = resolve_project_memory_db(&self.workspace_dir);
         let global_db = resolve_global_memory_db();
@@ -334,8 +356,10 @@ impl UnifiedMemoryTool {
                     let ids: Vec<String> = results.iter().map(|r| r.id.clone()).collect();
                     if effective_scope.contains("global") {
                         let _ = global_store.mark_used_batch(&ids).await;
+                        let _ = global_store.record_memory_turn_usage(turn_id, &ids).await;
                     } else {
                         let _ = project_store.mark_used_batch(&ids).await;
+                        let _ = project_store.record_memory_turn_usage(turn_id, &ids).await;
                     }
                 }
 
@@ -426,6 +450,29 @@ impl UnifiedMemoryTool {
                 );
                 let now = Utc::now().to_rfc3339();
 
+                // Contradiction check (best-effort, never fails the save): if an
+                // existing active memory in the same domain/scope overlaps
+                // heavily with the new content, the new record supersedes it.
+                let mut supersedes: Option<String> = None;
+                if let Ok(existing) = store
+                    .search(&content, Some(&domain), None, None, Some(&scope_val), 3)
+                    .await
+                {
+                    for candidate in existing.iter().filter(|r| r.status == "active") {
+                        if token_overlap(&content, &candidate.content) >= 0.6 {
+                            let old_id = candidate.id.clone();
+                            let _ = store
+                                .update(
+                                    &old_id, None, None, None, None, None, None, None,
+                                    None, None, Some("superseded"),
+                                )
+                                .await;
+                            supersedes = Some(old_id);
+                            break;
+                        }
+                    }
+                }
+
                 let record = MemoryRecord {
                     id: record_id.clone(),
                     scope: scope_val.to_string(),
@@ -446,7 +493,7 @@ impl UnifiedMemoryTool {
                     use_count: 0,
                     status: "active".to_string(),
                     superseded_by: None,
-                    supersedes: None,
+                    supersedes,
                 };
 
                 store.insert(&record).await.map_err(|e| {

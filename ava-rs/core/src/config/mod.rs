@@ -26,6 +26,7 @@ use ava_config::SandboxModeRequirement;
 use ava_config::Sourced;
 use ava_config::ThreadConfigLoader;
 use ava_config::config_toml::ConfigToml;
+use ava_config::config_toml::ModelRoutingConfig;
 use ava_config::config_toml::DEFAULT_PROJECT_DOC_MAX_BYTES;
 use ava_config::config_toml::ProjectConfig;
 use ava_config::config_toml::RealtimeAudioConfig;
@@ -680,6 +681,10 @@ pub struct Config {
 
     /// Ordered fallback chain of models to try if the primary model fails.
     pub model_fallback_chain: Vec<String>,
+
+    /// Per-task model routing. Each value is a model slug; empty entries keep
+    /// the existing per-task model resolution.
+    pub model_routing: ModelRoutingConfig,
 
     /// Deprecated: `friendly` and `pragmatic` no longer select a style.
     pub personality: Option<Personality>,
@@ -4235,6 +4240,7 @@ impl Config {
             model_provider_id,
             model_provider,
             model_fallback_chain: cfg.model_fallback_chain.unwrap_or_default(),
+            model_routing: cfg.model_routing.unwrap_or_default(),
             cwd: resolved_cwd,
             workspace_roots: workspace_roots.clone(),
             workspace_roots_explicit,

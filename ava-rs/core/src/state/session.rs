@@ -84,6 +84,9 @@ pub(crate) struct SessionState {
     pub(crate) active_plan: Option<ava_protocol::plan_tool::UpdatePlanArgs>,
     pub(crate) attached_media: Vec<(String, AttachedMedia)>,
     pub(crate) last_quality_gate: Option<crate::quality_gate::types::QualityGateResult>,
+    /// Set when the previous turn had tool failures; consumed one-shot by the
+    /// plan world-state fragment to nudge the model to re-plan.
+    pub(crate) last_turn_had_tool_failure: bool,
     /// Settings used by the latest regular user turn, used for turn-to-turn
     /// model/realtime handling on subsequent regular turns (including full-context
     /// reinjection after resume or `/compact`).
@@ -136,6 +139,7 @@ impl SessionState {
             active_plan: None,
             attached_media: Vec::new(),
             last_quality_gate: None,
+            last_turn_had_tool_failure: false,
             previous_turn_settings: None,
             last_started_turn_id: None,
             auto_compact_window: AutoCompactWindow::new_with_ids(auto_compact_window_ids),

@@ -3,6 +3,7 @@ use std::sync::Arc;
 
 use ava_config::types::MemoriesConfig;
 use ava_core::config::Config;
+use ava_core::TurnFeedbackSink;
 use ava_core::context::ContextualUserFragment;
 use ava_core::context::MemoryContextFragment;
 use ava_extension_api::ConfigContributor;
@@ -120,6 +121,47 @@ impl ThreadLifecycleContributor<Config> for MemoriesExtension {
             input
                 .thread_store
                 .insert(MemoriesExtensionConfig::from_config(input.config));
+            // GAP6: register the turn-effectiveness feedback sink. Core's
+            // post-turn quality gate calls it with (turn_id, outcome,
+            // risk_score); the sink joins that with the per-turn memory usage
+            // rows recorded by the memory tool.
+            let cwd = input.config.cwd.to_path_buf();
+            input.session_store.insert(TurnFeedbackSink::new(
+                move |turn_id: String, outcome: String, risk_score: Option<i64>| {
+                    let cwd = cwd.clone();
+                    async move {
+                        let dbs = [
+                            crate::store::resolve_project_memory_db(cwd.as_path()),
+                            crate::store::resolve_global_memory_db(),
+                        ];
+                        for db_path in dbs {
+                            // Never create a memories DB just to record feedback.
+                            if !db_path.exists() {
+                                continue;
+                            }
+                            let Ok(store) =
+                                crate::store::persistent_store::PersistentMemoryStore::open(
+                                    &db_path,
+                                )
+                                .await
+                            else {
+                                continue;
+                            };
+                            let Ok(ids) = store.get_turn_memory_ids(&turn_id).await else {
+                                continue;
+                            };
+                            if ids.is_empty() {
+                                continue;
+                            }
+                            let rows: Vec<(String, String, String, Option<i64>)> = ids
+                                .into_iter()
+                                .map(|id| (id, turn_id.clone(), outcome.clone(), risk_score))
+                                .collect();
+                            let _ = store.record_turn_feedback(&rows).await;
+                        }
+                    }
+                },
+            ));
         })
     }
 }

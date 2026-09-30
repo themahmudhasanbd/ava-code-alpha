@@ -42,6 +42,7 @@ use tracing::warn;
 mod backfill;
 mod external_agent_config_imports;
 mod goals;
+mod plans;
 mod logs;
 mod memories;
 mod memory_versions;
@@ -64,6 +65,7 @@ pub use external_agent_config_imports::ExternalAgentConfigImportSuccessRecord;
 pub use goals::GoalAccountingMode;
 pub use goals::GoalAccountingOutcome;
 pub use goals::GoalStore;
+pub use plans::PlanStore;
 pub use goals::GoalUpdate;
 pub use memories::MemoryStore;
 pub use queued_items::SqliteQueueStore;
@@ -93,6 +95,7 @@ pub struct StateRuntime {
     pool: Arc<sqlx::SqlitePool>,
     logs_pool: Arc<sqlx::SqlitePool>,
     thread_goals: GoalStore,
+    thread_plans: PlanStore,
     memories: MemoryStore,
     memories_v2: Arc<tokio::sync::OnceCell<MemoryStore>>,
     thread_queue: SqliteQueueStore,
@@ -254,6 +257,7 @@ impl StateRuntime {
         let thread_recency_at_millis = thread_recency_at_millis.unwrap_or(0);
         let runtime = Arc::new(Self {
             thread_goals: GoalStore::new(Arc::clone(&goals_pool)),
+            thread_plans: PlanStore::new(Arc::clone(&goals_pool)),
             memories: MemoryStore::new(Arc::clone(&memories_pool), Arc::clone(&pool)),
             memories_v2: Arc::new(tokio::sync::OnceCell::new()),
             thread_queue: SqliteQueueStore::new(queue_pool),
@@ -292,6 +296,10 @@ impl StateRuntime {
         &self.thread_goals
     }
 
+    pub fn thread_plans(&self) -> &PlanStore {
+        &self.thread_plans
+    }
+
     pub fn memories(&self) -> &MemoryStore {
         &self.memories
     }
@@ -309,6 +317,7 @@ impl StateRuntime {
             memories.close().await;
         }
         self.thread_goals.close().await;
+        self.thread_plans.close().await;
         self.logs_pool.close().await;
         self.pool.close().await;
     }

@@ -79,6 +79,8 @@ use ava_file_system::FindUpErrorPolicy;
 use ava_file_system::find_nearest_ancestor_with_markers;
 use ava_login::AvaAuth;
 use ava_model_provider::RemoteCompactionSupport;
+use ava_model_provider::SharedModelProvider;
+use ava_model_provider::create_model_provider;
 use ava_protocol::ResponseItemId;
 use ava_protocol::config_types::AutoCompactTokenLimitScope;
 use ava_protocol::config_types::ModeKind;
@@ -851,7 +853,63 @@ async fn evaluate_auto_quality_gate(
         result.warnings.len()
     );
 
+    let outcome = match result.status {
+        crate::quality_gate::types::QualityGateStatus::Verified => "verified",
+        crate::quality_gate::types::QualityGateStatus::PartiallyVerified => "partial",
+        crate::quality_gate::types::QualityGateStatus::Blocked => "blocked",
+        crate::quality_gate::types::QualityGateStatus::Unverified => "unverified",
+    };
+    let risk_score = Some(result.risk_score.composite_score as i64);
+
     sess.set_last_quality_gate(result).await;
+
+    record_turn_effectiveness_feedback(&sess, &turn_context, outcome, risk_score).await;
+}
+
+/// Join per-turn memory/skill usage with the quality-gate outcome (GAP6).
+/// Best-effort: failures are logged, never fail the turn.
+async fn record_turn_effectiveness_feedback(
+    sess: &Arc<Session>,
+    turn_context: &Arc<TurnContext>,
+    outcome: &'static str,
+    risk_score: Option<i64>,
+) {
+    // Memory feedback: the memories extension registers a TurnFeedbackSink in
+    // session extension data at thread start (core must not depend on the
+    // memories crate directly -- that would be circular).
+    if let Some(sink) = sess
+        .services
+        .session_extension_data
+        .get::<crate::memory_usage::TurnFeedbackSink>()
+    {
+        sink.record(
+            turn_context.sub_id.clone(),
+            outcome.to_string(),
+            risk_score,
+        )
+        .await;
+    }
+
+    // Skill feedback: outcome dimension on the existing skill counter family.
+    let injected: Vec<(String, String)> = turn_context
+        .extension_data
+        .get_or_init(crate::skills::TurnInjectedSkills::default)
+        .0
+        .lock()
+        .await
+        .drain(..)
+        .collect();
+    for (skill_name, invoke_type) in injected {
+        turn_context.session_telemetry.counter(
+            "ava.skill.turn_outcome",
+            /*inc*/ 1,
+            &[
+                ("skill", skill_name.as_str()),
+                ("outcome", outcome),
+                ("invoke_type", invoke_type.as_str()),
+            ],
+        );
+    }
 }
 
 #[instrument(level = "trace", skip_all)]
@@ -1646,14 +1704,26 @@ async fn run_sampling_request(
         Arc::clone(&current_step_context),
         Arc::clone(&turn_diff_tracker),
     );
-    let max_retries = turn_context.provider.info().stream_max_retries();
+    // Cross-provider fallback: the provider (and its stream retry budget) can change
+    // when the fallback chain names a model on a different provider.
+    let mut current_provider: SharedModelProvider = turn_context.provider.clone();
+    let mut max_retries = current_provider.info().stream_max_retries();
     let mut retry_state = ResponsesStreamRetryState::default();
     let mut initial_input = Some(input);
     let mut original_input = None;
     let mut executed_tool_calls_by_output = HashMap::new();
+    // Keyed by provider id + model slug so the same slug on two providers is tried twice.
     let mut tried_models = HashSet::new();
-    tried_models.insert(current_step_context.settings.model_info.slug.clone());
-    tried_models.insert(current_step_context.settings.selected().collaboration_mode.model().to_string());
+    let mut current_provider_id = turn_context.config.model_provider_id.clone();
+    tried_models.insert(format!(
+        "{}::{}",
+        current_provider_id, current_step_context.settings.model_info.slug
+    ));
+    tried_models.insert(format!(
+        "{}::{}",
+        current_provider_id,
+        current_step_context.settings.selected().collaboration_mode.model()
+    ));
 
     loop {
         // Running code-mode cells can request review while this response is in flight.
@@ -1693,6 +1763,7 @@ async fn run_sampling_request(
             Arc::clone(&turn_diff_tracker),
             &prompt,
             cancellation_token.child_token(),
+            &current_provider,
         )
         .await
         {
@@ -1727,20 +1798,64 @@ async fn run_sampling_request(
             &sess,
             &turn_context,
             ResponsesStreamRequest::Sampling,
+            &current_provider,
         )
         .await
         {
-            // Check fallback chain
-            let fallback_target = turn_context.config.model_fallback_chain.iter().find(|m| {
-                let m_str = m.trim();
-                !m_str.is_empty()
-                    && !tried_models.contains(m_str)
-                    && m_str != current_step_context.settings.model_info.slug.as_str()
-            }).cloned();
+            // Check fallback chain. Entries are bare model slugs (retried on the current
+            // provider) or provider-id::model-slug to fail over across providers.
+            let mut fallback_target: Option<(String, String)> = None;
+            for entry in &turn_context.config.model_fallback_chain {
+                let entry = entry.trim();
+                if entry.is_empty() {
+                    continue;
+                }
+                let (target_provider_id, target_slug) = match entry.split_once("::") {
+                    Some((provider_id, slug)) => (provider_id, slug),
+                    None => (current_provider_id.as_str(), entry),
+                };
+                if !turn_context.config.model_providers.contains_key(target_provider_id) {
+                    continue;
+                }
+                if tried_models.contains(&format!("{target_provider_id}::{target_slug}")) {
+                    continue;
+                }
+                if target_provider_id == current_provider_id
+                    && target_slug == current_step_context.settings.model_info.slug.as_str()
+                {
+                    continue;
+                }
+                fallback_target = Some((target_provider_id.to_string(), target_slug.to_string()));
+                break;
+            }
 
-            if let Some(next_model) = fallback_target {
+            if let Some((target_provider_id, next_model)) = fallback_target {
                 let from_model = current_step_context.settings.model_info.slug.clone();
+                let from_provider_id = current_provider_id.clone();
                 let to_model = next_model.clone();
+                let cross_provider = target_provider_id != current_provider_id;
+
+                if cross_provider {
+                    match turn_context.config.model_providers.get(&target_provider_id).cloned() {
+                        Some(provider_info) => {
+                            let new_provider = create_model_provider(
+                                provider_info,
+                                turn_context.auth_manager.clone(),
+                            );
+                            client_session.rebind_provider(
+                                new_provider.clone(),
+                                turn_context.config.workspace_routing_context(),
+                            );
+                            current_provider = new_provider;
+                            max_retries = current_provider.info().stream_max_retries();
+                            current_provider_id = target_provider_id.clone();
+                        }
+                        None => {
+                            tried_models.insert(format!("{target_provider_id}::{to_model}"));
+                            continue;
+                        }
+                    }
+                }
 
                 let reason = match stream_err.details() {
                     AvaErrorDetails::RateLimitExceeded(_) | AvaErrorDetails::UsageLimitReached(_) => {
@@ -1772,6 +1887,8 @@ async fn run_sampling_request(
                         from_model: from_model.clone(),
                         to_model: to_model.clone(),
                         reason,
+                        from_provider: if cross_provider { Some(from_provider_id.clone()) } else { None },
+                        to_provider: if cross_provider { Some(target_provider_id.clone()) } else { None },
                     }),
                 )
                 .await;
@@ -1834,7 +1951,7 @@ async fn run_sampling_request(
                     Arc::clone(&turn_diff_tracker),
                 );
 
-                tried_models.insert(to_model);
+                tried_models.insert(format!("{target_provider_id}::{to_model}"));
                 retry_state = ResponsesStreamRetryState::default();
                 initial_input = original_input.take();
                 continue;
@@ -2560,6 +2677,14 @@ async fn drain_in_flight(
     while let Some(res) = in_flight.next().await {
         match res {
             Ok(envelope) => {
+                // A tool call that reported failure means the turn plan may need
+                // revision; record it so the planner can nudge a re-plan.
+                if matches!(
+                    &envelope.item,
+                    ResponseItem::FunctionCallOutput { output, .. } if output.success == Some(false)
+                ) {
+                    sess.set_last_turn_had_tool_failure(true).await;
+                }
                 mark_thread_memory_mode_polluted_if_external_context(
                     sess.as_ref(),
                     turn_context.as_ref(),
@@ -2614,6 +2739,7 @@ async fn try_run_sampling_request(
     turn_diff_tracker: SharedTurnDiffTracker,
     prompt: &Prompt,
     cancellation_token: CancellationToken,
+    current_provider: &SharedModelProvider,
 ) -> AvaResult<SamplingRequestResult> {
     let turn_context = Arc::clone(&step_context.turn);
     feedback_tags!(
@@ -2632,14 +2758,14 @@ async fn try_run_sampling_request(
     let inference_trace = sess.services.rollout_thread_trace.inference_trace_context(
         turn_context.sub_id.as_str(),
         step_context.settings.model_info.slug.as_str(),
-        turn_context.provider.info().name.as_str(),
+        current_provider.info().name.as_str(),
     );
     let sampling_timing_guard = turn_context.turn_timing_state.begin_sampling();
     let uses_sequential_cutoff_reasoning_summaries = turn_context
         .config
         .features
         .enabled(Feature::ConcurrentReasoningSummaries)
-        && turn_context.provider.info().is_openai();
+        && current_provider.info().is_openai();
     let mut stream = client_session
         .stream(
             prompt,

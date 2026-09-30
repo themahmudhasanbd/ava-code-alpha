@@ -281,6 +281,9 @@ impl AvaThread {
     }
 
     pub(crate) async fn emit_thread_resume_lifecycle(&self) {
+        // Restore the durable plan (if any) before lifecycle contributors run,
+        // so the world-state plan fragment renders after a restart/reload.
+        self.session.restore_active_plan_from_store().await;
         for contributor in self
             .session
             .services

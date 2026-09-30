@@ -7,6 +7,7 @@ use crate::session::session::Session;
 use crate::session::turn_context::TurnContext;
 use ava_client::RetryOperation;
 use ava_features::Feature;
+use ava_model_provider::SharedModelProvider;
 use ava_protocol::error::AvaErr;
 use ava_protocol::error::AvaErrorDetails;
 use ava_protocol::protocol::EventMsg;
@@ -55,6 +56,7 @@ pub(crate) async fn handle_response_stream_error(
     sess: &Session,
     turn_context: &TurnContext,
     request: ResponsesStreamRequest,
+    current_provider: &SharedModelProvider,
 ) -> Result<(), AvaErr> {
     let operation = match request {
         ResponsesStreamRequest::Sampling => RetryOperation::Sampling,
@@ -72,7 +74,7 @@ pub(crate) async fn handle_response_stream_error(
         && matches!(request, ResponsesStreamRequest::Sampling)
         && matches!(err.details(), AvaErrorDetails::ConnectionFailed(_))
         && !turn_context.session_source.is_internal()
-        && !turn_context.provider.info().is_amazon_bedrock()
+        && !current_provider.info().is_amazon_bedrock()
     {
         let retry_delay = retry_state.connection_retry_delay;
         warn!(

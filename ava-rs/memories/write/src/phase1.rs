@@ -115,7 +115,49 @@ pub async fn prune(context: &MemoryStartupContext, config: &Config) {
             }
         }
     }
+
+    // Prune expired persistent memories from the project and global stores.
+    // Best-effort: a missing or locked DB must not fail startup.
+    let max_unused_days = config.memories.max_unused_days;
+    let project_db = ava_memories_extension::store::resolve_project_memory_db(
+        context.thread().cwd().as_path(),
+    );
+    let global_db = ava_memories_extension::store::resolve_global_memory_db();
+    for db_path in [project_db, global_db] {
+        match ava_memories_extension::store::PersistentMemoryStore::open(&db_path).await {
+            Ok(store) => {
+                match store
+                    .prune_expired_memories(max_unused_days, PERSISTENT_PRUNE_BATCH_SIZE)
+                    .await
+                {
+                    Ok(pruned) => {
+                        if pruned > 0 {
+                            info!(
+                                "memory startup pruned {pruned} expired persistent memories from {}",
+                                db_path.display()
+                            );
+                        }
+                    }
+                    Err(err) => {
+                        warn!(
+                            "persistent memory prune failed for {}: {err}",
+                            db_path.display()
+                        );
+                    }
+                }
+            }
+            Err(err) => {
+                warn!(
+                    "failed to open persistent memory db {} for pruning: {err}",
+                    db_path.display()
+                );
+            }
+        }
+    }
 }
+
+/// Batch size for persistent-memory pruning.
+const PERSISTENT_PRUNE_BATCH_SIZE: usize = 500;
 
 async fn claim_startup_jobs(
     context: &MemoryStartupContext,
@@ -160,12 +202,20 @@ async fn build_request_context(
     context: &MemoryStartupContext,
     config: &Config,
 ) -> StageOneRequestContext {
-    let model_name = config.memories.extract_model.clone().unwrap_or_else(|| {
-        context
-            .provider()
-            .memory_extraction_preferred_model()
-            .to_string()
-    });
+    // Per-task model routing takes precedence over the memories config and the
+    // provider preferred extraction model.
+    let model_name = config
+        .model_routing
+        .memory_extraction
+        .clone()
+        .filter(|m| !m.is_empty())
+        .or_else(|| config.memories.extract_model.clone())
+        .unwrap_or_else(|| {
+            context
+                .provider()
+                .memory_extraction_preferred_model()
+                .to_string()
+        });
     context
         .stage_one_request_context(config, &model_name, crate::stage_one::REASONING_EFFORT)
         .await

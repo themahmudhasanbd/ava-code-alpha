@@ -2116,6 +2116,10 @@ pub struct ModelRerouteEvent {
     pub from_model: String,
     pub to_model: String,
     pub reason: ModelRerouteReason,
+    /// Provider id the turn is rerouting from. `None` when the provider is unchanged.
+    pub from_provider: Option<String>,
+    /// Provider id the turn is rerouting to. `None` when the provider is unchanged.
+    pub to_provider: Option<String>,
 }
 
 #[derive(Debug, Clone, Copy, Deserialize, Serialize, PartialEq, Eq, JsonSchema, TS)]

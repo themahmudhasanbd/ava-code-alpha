@@ -302,6 +302,12 @@ mod agent {
         let mut agent_config = config.clone();
 
         agent_config.cwd = root.clone();
+        // Per-task model routing: an explicit consolidation model overrides the parent model.
+        if let Some(routed) = config.model_routing.consolidation.as_deref() {
+            if !routed.is_empty() {
+                agent_config.model = Some(routed.to_string());
+            }
+        }
         // Consolidation threads must never feed back into phase-1 memory generation.
         agent_config.ephemeral = true;
         agent_config.memories.generate_memories = false;

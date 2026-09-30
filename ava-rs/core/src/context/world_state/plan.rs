@@ -14,22 +14,24 @@ const PLAN_CLOSE_TAG: &str = "</active_plan>";
 #[derive(Clone, Debug, Default)]
 pub(crate) struct PlanState {
     plan: Option<UpdatePlanArgs>,
+    last_turn_had_tool_failure: bool,
 }
 
 impl PlanState {
-    pub(crate) fn new(plan: Option<&UpdatePlanArgs>) -> Self {
+    pub(crate) fn new(plan: Option<&UpdatePlanArgs>, last_turn_had_tool_failure: bool) -> Self {
         Self {
             plan: plan.cloned(),
+            last_turn_had_tool_failure,
         }
     }
 }
 
 impl WorldStateSection for PlanState {
     const ID: &'static str = "active_plan";
-    type Snapshot = Option<UpdatePlanArgs>;
+    type Snapshot = (Option<UpdatePlanArgs>, bool);
 
     fn snapshot(&self) -> Self::Snapshot {
-        self.plan.clone()
+        (self.plan.clone(), self.last_turn_had_tool_failure)
     }
 
     fn should_persist(&self) -> bool {
@@ -100,6 +102,12 @@ impl WorldStateSection for PlanState {
             lines.push(format!("→ Current Active Step: {}", active.step));
         } else if let Some(next) = pending.first() {
             lines.push(format!("○ Next Upcoming Step: {}", next.step));
+        }
+        if self.last_turn_had_tool_failure && in_progress.is_some() {
+            lines.push(
+                "NOTE: the previous turn had tool failures against the in-progress step \u{2014} reconsider whether the plan still holds and call update_plan to revise it."
+                    .to_string(),
+            );
         }
 
         let body = lines.join("\n");

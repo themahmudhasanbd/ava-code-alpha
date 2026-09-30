@@ -21,6 +21,7 @@ ava-config = { workspace = true }
 ava-features = { workspace = true }
 ava-git-utils = { workspace = true }
 ava-login = { workspace = true }
+ava-memories-extension = { workspace = true }
 ava-model-provider = { workspace = true }
 ava-otel = { workspace = true }
 ava-protocol = { workspace = true }

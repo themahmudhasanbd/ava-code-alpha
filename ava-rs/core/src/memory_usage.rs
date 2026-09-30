@@ -49,3 +49,42 @@ pub(crate) fn shell_script_for_invocation(invocation: &ToolInvocation) -> Option
         _ => None,
     }
 }
+
+use std::future::Future;
+use std::pin::Pin;
+use std::sync::Arc;
+
+/// Sink for per-turn memory/skill effectiveness feedback (GAP6).
+///
+/// Implemented by the memories extension (which owns the SQLite stores) and
+/// registered into session extension data at thread start. Core must not
+/// depend on the memories crate directly -- that would be a circular
+/// dependency -- so the sink is a plain callback.
+#[derive(Clone)]
+pub struct TurnFeedbackSink {
+    sink: Arc<
+        dyn Fn(String, String, Option<i64>) -> Pin<Box<dyn Future<Output = ()> + Send>>
+            + Send
+            + Sync,
+    >,
+}
+
+impl TurnFeedbackSink {
+    pub fn new<F, Fut>(f: F) -> Self
+    where
+        F: Fn(String, String, Option<i64>) -> Fut + Send + Sync + 'static,
+        Fut: Future<Output = ()> + Send + 'static,
+    {
+        Self {
+            sink: Arc::new(move |turn_id, outcome, risk_score| {
+                Box::pin(f(turn_id, outcome, risk_score))
+                    as Pin<Box<dyn Future<Output = ()> + Send>>
+            }),
+        }
+    }
+
+    /// Record (turn_id, outcome, risk_score) for this turn. Best-effort.
+    pub async fn record(&self, turn_id: String, outcome: String, risk_score: Option<i64>) {
+        (self.sink)(turn_id, outcome, risk_score).await;
+    }
+}

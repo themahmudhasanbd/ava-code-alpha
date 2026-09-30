@@ -134,6 +134,36 @@ impl PersistentMemoryStore {
         .execute(&*self.pool)
         .await?;
 
+        // Per-turn effectiveness feedback: which memories were surfaced to the
+        // model during a turn, and the recorded outcome of that turn.
+        sqlx::query(
+            r#"
+            CREATE TABLE IF NOT EXISTS memory_turn_usage (
+                turn_id   TEXT NOT NULL,
+                memory_id TEXT NOT NULL,
+                used_at   TEXT NOT NULL,
+                PRIMARY KEY (turn_id, memory_id)
+            );
+            "#,
+        )
+        .execute(&*self.pool)
+        .await?;
+
+        sqlx::query(
+            r#"
+            CREATE TABLE IF NOT EXISTS memory_turn_feedback (
+                memory_id   TEXT NOT NULL,
+                turn_id     TEXT NOT NULL,
+                outcome     TEXT NOT NULL,
+                risk_score  INTEGER,
+                recorded_at TEXT NOT NULL,
+                PRIMARY KEY (memory_id, turn_id)
+            );
+            "#,
+        )
+        .execute(&*self.pool)
+        .await?;
+
         Ok(())
     }
 
@@ -503,6 +533,97 @@ impl PersistentMemoryStore {
             separated.push_bind(id);
         }
         separated.push_unseparated(")");
+        builder.build().execute(&*self.pool).await?;
+        Ok(())
+    }
+
+    /// Delete up to `batch` active memories whose last activity (last use, or
+    /// creation when never used) is older than `max_unused_days` days.
+    /// Returns the number of memories pruned. The FTS delete trigger keeps
+    /// the search index consistent.
+    pub async fn prune_expired_memories(
+        &self,
+        max_unused_days: i64,
+        batch: usize,
+    ) -> Result<usize, sqlx::Error> {
+        let cutoff = Utc::now()
+            .checked_sub_signed(chrono::Duration::days(max_unused_days.max(0)))
+            .unwrap_or_else(Utc::now)
+            .to_rfc3339();
+        // Timestamps are RFC3339 in UTC, so lexicographic comparison is
+        // chronological.
+        let result = sqlx::query(
+            r#"
+            UPDATE memories
+            SET status = 'expired'
+            WHERE id IN (
+                SELECT id FROM memories
+                WHERE status = 'active'
+                  AND COALESCE(last_used_at, created_at) < ?
+                ORDER BY COALESCE(last_used_at, created_at) ASC
+                LIMIT ?
+            )
+            "#,
+        )
+        .bind(&cutoff)
+        .bind(batch as i64)
+        .execute(&*self.pool)
+        .await?;
+        Ok(result.rows_affected() as usize)
+    }
+
+    /// Record that the given memories were surfaced to the model during a turn.
+    pub async fn record_memory_turn_usage(
+        &self,
+        turn_id: &str,
+        ids: &[String],
+    ) -> Result<(), sqlx::Error> {
+        if ids.is_empty() {
+            return Ok(());
+        }
+        let now = Utc::now().to_rfc3339();
+        let mut builder = QueryBuilder::<Sqlite>::new(
+            "INSERT OR IGNORE INTO memory_turn_usage (turn_id, memory_id, used_at) ",
+        );
+        builder.push_values(ids, |mut b, id| {
+            b.push_bind(turn_id).push_bind(id).push_bind(&now);
+        });
+        builder.build().execute(&*self.pool).await?;
+        Ok(())
+    }
+
+    /// Memory ids surfaced during a turn, for post-turn effectiveness feedback.
+    pub async fn get_turn_memory_ids(&self, turn_id: &str) -> Result<Vec<String>, sqlx::Error> {
+        let rows = sqlx::query("SELECT memory_id FROM memory_turn_usage WHERE turn_id = ?")
+            .bind(turn_id)
+            .fetch_all(&*self.pool)
+            .await?;
+        Ok(rows
+            .iter()
+            .filter_map(|row| row.try_get("memory_id").ok())
+            .collect())
+    }
+
+    /// Record per-memory turn outcomes. Each row is
+    /// `(memory_id, turn_id, outcome, risk_score)`.
+    pub async fn record_turn_feedback(
+        &self,
+        rows: &[(String, String, String, Option<i64>)],
+    ) -> Result<(), sqlx::Error> {
+        if rows.is_empty() {
+            return Ok(());
+        }
+        let now = Utc::now().to_rfc3339();
+        let mut builder = QueryBuilder::<Sqlite>::new(
+            "INSERT OR REPLACE INTO memory_turn_feedback (memory_id, turn_id, outcome, risk_score, recorded_at) ",
+        );
+        builder.push_values(rows, |mut b, (memory_id, turn_id, outcome, risk_score)| {
+            b.push_bind(memory_id)
+                .push_bind(turn_id)
+                .push_bind(outcome)
+                .push_bind(risk_score)
+                .push_bind(&now);
+        });
         builder.build().execute(&*self.pool).await?;
         Ok(())
     }

@@ -573,7 +573,7 @@ impl MessageProcessor {
             FsWatchManager::new(outgoing.clone()),
         );
         let scheduler = SchedulerService::new(
-            config.ava_home.join("schedules.json"),
+            config.ava_home.join("schedules.json").to_path_buf(),
             Arc::clone(&thread_manager),
             config_manager.clone(),
             Arc::clone(&turn_processor),

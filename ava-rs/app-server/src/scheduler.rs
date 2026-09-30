@@ -40,7 +40,7 @@ use tokio::sync::RwLock;
 use tokio_util::sync::CancellationToken;
 
 use crate::config_manager::ConfigManager;
-use crate::error_code::JSONRPCErrorError;
+use ava_app_server_protocol::JSONRPCErrorError;
 use crate::error_code::internal_error;
 use crate::error_code::invalid_request;
 use crate::outgoing_message::ConnectionRequestId;
@@ -367,7 +367,8 @@ impl SchedulerService {
             .thread_manager
             .start_thread(start_options)
             .await
-            .map_err(|err| format!("failed to start thread for scheduled task {id}: {err}"))?;
+            .map_err(|err| format!("failed to start thread for scheduled task {id}: {err}"))?
+            .thread_id;
 
         let request_id = ConnectionRequestId {
             connection_id: ConnectionId(SCHEDULER_CONNECTION_ID),

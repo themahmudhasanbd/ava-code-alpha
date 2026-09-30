@@ -119,9 +119,8 @@ pub async fn prune(context: &MemoryStartupContext, config: &Config) {
     // Prune expired persistent memories from the project and global stores.
     // Best-effort: a missing or locked DB must not fail startup.
     let max_unused_days = config.memories.max_unused_days;
-    let project_db = ava_memories_extension::store::resolve_project_memory_db(
-        context.thread().cwd().as_path(),
-    );
+    let project_db =
+        ava_memories_extension::store::resolve_project_memory_db(config.cwd.as_path());
     let global_db = ava_memories_extension::store::resolve_global_memory_db();
     for db_path in [project_db, global_db] {
         match ava_memories_extension::store::PersistentMemoryStore::open(&db_path).await {

@@ -1,5 +1,4 @@
 import type {
-  ScheduledTaskRun,
   ActivationScope,
   AgentCapabilityMove,
   AgentCapabilityQuery,
@@ -776,13 +775,10 @@ export const api = {
   updateScheduled: (input: Partial<ScheduledTask> & { id: string }) =>
     invoke<{ task: ScheduledTask }>(IPC.invoke.scheduledUpdate, input),
   deleteScheduled: (id: string) => invoke(IPC.invoke.scheduledDelete, id),
-  executeScheduled: (id: string) => invoke<{ sessionId: string }>(IPC.invoke.scheduledExecute, id),
-  listScheduledRuns: () => invoke<{ runs: ScheduledTaskRun[] }>(IPC.invoke.scheduledListRuns),
+  executeScheduled: (id: string) =>
+    invoke<{ threadId: string }>(IPC.invoke.scheduledExecute, id),
   runScheduled: (id: string) =>
-    invoke<{ sessionId: string; prompt: string; task: ScheduledTask }>(
-      IPC.invoke.scheduledRun,
-      id,
-    ),
+    invoke<{ threadId: string }>(IPC.invoke.scheduledRun, id),
   replaceSessionMessages: (sessionId: string, messages: UiMessage[]) =>
     invoke(IPC.invoke.sessionReplaceMessages, { sessionId, messages }),
   saveSessionRevision: (input: {

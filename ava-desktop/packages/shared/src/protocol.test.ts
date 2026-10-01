@@ -44,7 +44,6 @@ describe("Plan protocol contracts", () => {
     expect(IPC_WHITELIST.has(IPC.invoke.scheduledDelete)).toBe(true);
     expect(IPC_WHITELIST.has(IPC.invoke.scheduledRun)).toBe(true);
     expect(IPC_WHITELIST.has(IPC.invoke.scheduledExecute)).toBe(true);
-    expect(IPC_WHITELIST.has(IPC.invoke.scheduledListRuns)).toBe(true);
     expect(IPC.invoke.providersRefreshModelCatalog).toBe(
       "pi-desktop/providers/refreshModelCatalog",
     );

@@ -34,7 +34,6 @@ import {
   PlusCircle,
   Search,
   Pause,
-  Play,
   ShieldCheck,
   Square,
   Terminal as TerminalSquare,
@@ -85,7 +84,6 @@ interface Props {
   onChange: (val: string) => void;
   onSubmit: (text: string, attachments?: AttachedItem[]) => void;
   onStop: () => void;
-  onResume?: () => void;
   onClear: () => void;
   status?: ChatStatus | string;
   chatStatus?: ChatStatus | string;
@@ -333,7 +331,6 @@ export const Composer = forwardRef<TextInput, Props>(
       onChange,
       onSubmit,
       onStop,
-      onResume,
       onClear,
       status,
       chatStatus,
@@ -1147,16 +1144,6 @@ export const Composer = forwardRef<TextInput, Props>(
                     <Pause size={14} color={COLORS.destructiveForeground} fill={COLORS.destructiveForeground} />
                   </TouchableOpacity>
                 </View>
-              ) : effectiveStatus === "paused" && !value.trim() && attachments.length === 0 ? (
-                <TouchableOpacity
-                  style={[styles.sendBtn, styles.sendBtnActive, { backgroundColor: COLORS.primary }]}
-                  onPress={onResume || onStop}
-                  activeOpacity={0.7}
-                  accessibilityRole="button"
-                  accessibilityLabel="Resume agent"
-                >
-                  <Play size={13} color={COLORS.primaryForeground} fill={COLORS.primaryForeground} />
-                </TouchableOpacity>
               ) : (
                 <TouchableOpacity
                   style={[

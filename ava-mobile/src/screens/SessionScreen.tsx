@@ -586,7 +586,6 @@ export function SessionScreen({
             onChange={setDraft}
             onSubmit={handleSubmit}
             onStop={stop}
-            onResume={resume}
             onClear={clear}
             status={status}
           />

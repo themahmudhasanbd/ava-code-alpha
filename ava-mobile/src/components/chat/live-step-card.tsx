@@ -13,6 +13,7 @@ import {
   CheckCircle2,
   ChevronRight,
   ClipboardList,
+  Info,
   OctagonX,
   PauseCircle,
   type LucideIcon,
@@ -248,6 +249,25 @@ export function LiveStepOverviewCard({
         />
       </View>
 
+      {/* Interruption contract: describe the consistent state a stop leaves —
+          progress stays in this thread's history; a new message continues it.
+          Core has no turn-retry RPC, so resume is deliberately not offered. */}
+      {turnStatus === "stopped" && (
+        <View style={[styles.stoppedHint, { borderTopColor: colors.border }]}>
+          <Info size={12} color={colors.mutedForeground} />
+          <Text
+            style={[
+              styles.stoppedHintText,
+              font("regular"),
+              { color: colors.mutedForeground },
+            ]}
+          >
+            Turn stopped — your progress is saved above. Send a new message to
+            continue.
+          </Text>
+        </View>
+      )}
+
       {/* Expanded: recent steps (collapsed by default when done) */}
       {isExpanded && (
         <View style={[styles.expandedSection, { borderTopColor: colors.border }]}>
@@ -400,6 +420,19 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 8,
     gap: 6,
+  },
+  stoppedHint: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    borderTopWidth: 1,
+    paddingHorizontal: 12,
+    paddingVertical: 9,
+  },
+  stoppedHintText: {
+    fontSize: 12,
+    lineHeight: 17,
+    flex: 1,
   },
   stepsList: {
     gap: 6,

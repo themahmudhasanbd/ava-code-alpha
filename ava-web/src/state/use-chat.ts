@@ -258,6 +258,9 @@ export function useChat() {
         try {
           threadId = await startSession(rpc, { cwd, sandbox, ...(modelId ? { model: modelId } : {}) });
           setActiveSessionId(threadId);
+          // Freshly created thread: refresh the sidebar list right away instead of
+          // waiting for the first turn's onDone to invalidate it.
+          qc.invalidateQueries({ queryKey: keys.sessions });
         } catch (e) {
           setStatus("error");
           setError(formatCoreError(e));

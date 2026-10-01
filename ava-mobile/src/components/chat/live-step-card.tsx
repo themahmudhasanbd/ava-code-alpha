@@ -12,6 +12,7 @@ import { useNavigation } from "@react-navigation/native";
 import {
   CheckCircle2,
   ChevronRight,
+  ClipboardList,
   OctagonX,
   PauseCircle,
   type LucideIcon,
@@ -36,10 +37,30 @@ interface Props {
 type TurnStatus = "running" | "completed" | "stopped" | "failed";
 
 /**
+ * Progress summary for a plan part. Core (src/core/api/items.ts) maps the
+ * agent's todoList/plan items to { kind: "plan", text: "", meta: { steps } }
+ * where each step is { text, status: "pending"|"active"|"done"|"cancelled" }.
+ */
+function planProgress(part: MessagePart): {
+  total: number;
+  done: number;
+  active?: string;
+} {
+  const steps = part.meta?.steps ?? [];
+  return {
+    total: steps.length,
+    done: steps.filter((s) => s.status === "done").length,
+    active: steps.find((s) => s.status === "active")?.text,
+  };
+}
+
+/**
  * Simplified agent step overview card.
  *
  * Single-line summary: status pill + intent title + step count.
  * Details (last steps) live behind an expand toggle; full detail in Timeline.
+ * Plan parts render as first-class rows ("Plan · 2/5 steps", planning indicator)
+ * instead of the old generic "Step" label.
  * - running: blue pulsing pill, intent as title, auto-expanded
  * - completed: green pill, dynamic "{intent} completed" / core summary, auto-collapsed
  * - stopped: amber pill, "{intent} — stopped (n/m steps)", auto-collapsed
@@ -232,8 +253,16 @@ export function LiveStepOverviewCard({
         <View style={[styles.expandedSection, { borderTopColor: colors.border }]}>
           {turnStatus === "running" && latestPart && latestPart.status === "running" && (
             <RuntimeDottedIndicator
-              label={displayToolName(latestPart.toolName || "tool", latestPart.meta)}
-              subLabel={getToolSubtitle(latestPart) || latestPart.text || "Processing step…"}
+              label={
+                latestPart.kind === "plan"
+                  ? "Planning"
+                  : displayToolName(latestPart.toolName || "tool", latestPart.meta)
+              }
+              subLabel={
+                latestPart.kind === "plan"
+                  ? planProgress(latestPart).active || "Drafting a plan…"
+                  : getToolSubtitle(latestPart) || latestPart.text || "Processing step…"
+              }
               size="sm"
             />
           )}
@@ -242,17 +271,30 @@ export function LiveStepOverviewCard({
               const partRunning = live && part.status === "running";
               const partDone = part.status === "done";
               const partErr = part.status === "error";
+              const isPlan = part.kind === "plan";
+              const plan = isPlan ? planProgress(part) : null;
+              const stepColor = partRunning
+                ? colors.primary
+                : partDone
+                ? colors.success
+                : partErr
+                ? colors.destructive
+                : colors.mutedForeground;
               return (
                 <View key={`step_${part.id || pIdx}_${pIdx}`} style={styles.stepRow}>
-                  <View
-                    style={[
-                      styles.stepDot,
-                      { backgroundColor: colors.mutedForeground },
-                      partRunning && { backgroundColor: colors.primary },
-                      partDone && { backgroundColor: colors.success },
-                      partErr && { backgroundColor: colors.destructive },
-                    ]}
-                  />
+                  {isPlan ? (
+                    <ClipboardList size={13} color={stepColor} strokeWidth={2} />
+                  ) : (
+                    <View
+                      style={[
+                        styles.stepDot,
+                        { backgroundColor: colors.mutedForeground },
+                        partRunning && { backgroundColor: colors.primary },
+                        partDone && { backgroundColor: colors.success },
+                        partErr && { backgroundColor: colors.destructive },
+                      ]}
+                    />
+                  )}
                   <Text
                     style={[
                       styles.stepRowText,
@@ -266,6 +308,10 @@ export function LiveStepOverviewCard({
                       ? displayToolName(part.toolName || "tool", part.meta)
                       : part.kind === "reasoning"
                       ? "Reasoning"
+                      : plan
+                      ? plan.total > 0
+                        ? `Plan · ${plan.done}/${plan.total} steps`
+                        : "Plan"
                       : part.text || "Step"}
                   </Text>
                   {partRunning && <RuntimeDottedIndicator variant="inline" />}

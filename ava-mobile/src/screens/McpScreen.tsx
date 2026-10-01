@@ -333,7 +333,7 @@ export function McpScreen() {
                   disabled={applyingPolicy}
                   activeOpacity={0.7}
                 >
-                  <View style={[styles.policyIcon, { backgroundColor: isActive ? `${COLORS.primary}12` : COLORS.secondary }]}>
+                  <View style={[styles.policyIcon, { backgroundColor: isActive ? COLORS.primary + "14" : COLORS.secondary }]}>
                     <Icon size={16} color={isActive ? COLORS.primary : COLORS.mutedForeground} />
                   </View>
                   <View style={styles.policyInfo}>
@@ -380,7 +380,7 @@ export function McpScreen() {
         <View style={styles.modalBackdrop}>
           <Surface style={styles.modalSheet}>
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Add MCP Server</Text>
+              <Text style={[styles.modalTitle, { color: COLORS.foreground }, font("semibold")]}>Add MCP Server</Text>
               <TouchableOpacity onPress={() => setShowAddModal(false)}>
                 <X size={18} color={COLORS.mutedForeground} />
               </TouchableOpacity>
@@ -397,9 +397,18 @@ export function McpScreen() {
                     <TouchableOpacity
                       key={t}
                       onPress={() => setAddTransport(t)}
-                      style={[styles.transportPill, addTransport === t && styles.transportPillActive]}
+                      style={[
+                        styles.transportPill,
+                        { borderColor: COLORS.border },
+                        addTransport === t && { backgroundColor: COLORS.primary + "14", borderColor: COLORS.primary },
+                      ]}
                     >
-                      <Text style={[styles.transportPillText, addTransport === t && styles.transportPillTextActive]}>
+                      <Text
+                        style={[
+                          styles.transportPillText,
+                          { color: addTransport === t ? COLORS.primary : COLORS.mutedForeground },
+                        ]}
+                      >
                         {t === "http" ? "HTTP" : "Stdio"}
                       </Text>
                     </TouchableOpacity>
@@ -457,58 +466,58 @@ function formatAuthStatus(status: string): string {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  content: { padding: 16, paddingBottom: 40, gap: 16 },
-  section: { gap: 10 },
-  card: { borderRadius: 16, borderWidth: 1, borderColor: COLORS.glassBorder, overflow: "hidden" },
+  content: { padding: 16, paddingBottom: 40, gap: 20 },
+  section: { gap: 12 },
+  card: { borderRadius: 20, borderWidth: StyleSheet.hairlineWidth, borderColor: COLORS.glassBorder, overflow: "hidden" },
 
   // Stats Capsules
   capsuleRow: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
 
   // Policy
-  policyRow: { flexDirection: "row", alignItems: "center", gap: 12, paddingHorizontal: 14, paddingVertical: 12, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: COLORS.border },
-  policyRowActive: { backgroundColor: "rgba(66,64,225,0.06)" },
-  policyIcon: { width: 32, height: 32, borderRadius: 8, alignItems: "center", justifyContent: "center" },
+  policyRow: { flexDirection: "row", alignItems: "center", gap: 14, paddingHorizontal: 16, paddingVertical: 13, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: COLORS.border },
+  policyRowActive: { backgroundColor: COLORS.primary + "0F" },
+  policyIcon: { width: 36, height: 36, borderRadius: 10, alignItems: "center", justifyContent: "center" },
   policyInfo: { flex: 1, gap: 2 },
-  policyLabel: { fontSize: 13, color: COLORS.foreground },
-  policyDesc: { fontSize: 11, color: COLORS.mutedForeground, lineHeight: 15 },
+  policyLabel: { fontSize: 13.5, lineHeight: 20, color: COLORS.foreground },
+  policyDesc: { fontSize: 11.5, letterSpacing: 0.2, color: COLORS.mutedForeground, lineHeight: 16 },
 
   // Server card
-  serverCard: { borderRadius: 16, borderWidth: 1, borderColor: COLORS.glassBorder, overflow: "hidden" },
-  serverHeader: { flexDirection: "row", alignItems: "center", gap: 10, paddingHorizontal: 14, paddingVertical: 12 },
-  serverIcon: { width: 32, height: 32, borderRadius: 8, alignItems: "center", justifyContent: "center" },
+  serverCard: { borderRadius: 20, borderWidth: StyleSheet.hairlineWidth, borderColor: COLORS.glassBorder, overflow: "hidden" },
+  serverHeader: { flexDirection: "row", alignItems: "center", gap: 12, paddingHorizontal: 16, paddingVertical: 14 },
+  serverIcon: { width: 36, height: 36, borderRadius: 10, alignItems: "center", justifyContent: "center" },
   serverMeta: { flex: 1, gap: 2 },
-  serverName: { fontSize: 13.5, color: COLORS.foreground },
-  serverTools: { fontSize: 11, color: COLORS.mutedForeground },
-  serverBody: { borderTopWidth: 1, borderTopColor: COLORS.border },
-  serverActions: { flexDirection: "row", flexWrap: "wrap", gap: 8, paddingHorizontal: 14, paddingVertical: 10, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: COLORS.border },
-  actionBtn: { flexDirection: "row", alignItems: "center", gap: 5, paddingHorizontal: 10, paddingVertical: 6, borderRadius: 8, backgroundColor: COLORS.secondary, borderWidth: 1, borderColor: COLORS.border },
-  actionBtnWarning: { backgroundColor: "rgba(234,179,43,0.1)", borderColor: "rgba(234,179,43,0.3)" },
-  actionText: { fontSize: 11.5, color: COLORS.primary },
+  serverName: { fontSize: 14, lineHeight: 20, color: COLORS.foreground },
+  serverTools: { fontSize: 11.5, letterSpacing: 0.2, color: COLORS.mutedForeground },
+  serverBody: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: COLORS.border },
+  serverActions: { flexDirection: "row", flexWrap: "wrap", gap: 8, paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: COLORS.border },
+  actionBtn: { flexDirection: "row", alignItems: "center", gap: 6, paddingHorizontal: 12, paddingVertical: 8, borderRadius: 999, backgroundColor: "transparent", borderWidth: StyleSheet.hairlineWidth, borderColor: COLORS.border },
+  actionBtnWarning: { backgroundColor: COLORS.warning + "1A", borderColor: COLORS.warning + "40" },
+  actionText: { fontSize: 12, letterSpacing: 0.2, color: COLORS.primary },
 
   // Auth
-  authRow: { flexDirection: "row", alignItems: "center", gap: 8, paddingHorizontal: 14, paddingVertical: 8, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: COLORS.border },
-  authText: { fontSize: 12, color: COLORS.mutedForeground },
+  authRow: { flexDirection: "row", alignItems: "center", gap: 10, paddingHorizontal: 16, paddingVertical: 10, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: COLORS.border },
+  authText: { fontSize: 12, lineHeight: 18, color: COLORS.mutedForeground },
 
   // Tools
-  toolsList: { paddingHorizontal: 14, paddingVertical: 10, gap: 8 },
-  toolsHeader: { fontSize: 11, color: COLORS.mutedForeground, textTransform: "uppercase", letterSpacing: 0.5 },
+  toolsList: { paddingHorizontal: 16, paddingVertical: 12, gap: 10 },
+  toolsHeader: { fontSize: 12, color: COLORS.mutedForeground },
   noTools: { fontSize: 12, color: COLORS.mutedForeground, fontStyle: "italic" },
   toolItem: { flexDirection: "row", alignItems: "flex-start", gap: 8, paddingVertical: 4 },
-  toolName: { fontSize: 12, color: COLORS.foreground },
-  toolDesc: { fontSize: 11, color: COLORS.mutedForeground, marginTop: 1, lineHeight: 15 },
+  toolName: { fontSize: 12.5, lineHeight: 18, color: COLORS.foreground },
+  toolDesc: { fontSize: 11.5, color: COLORS.mutedForeground, marginTop: 2, lineHeight: 16 },
 
   // Info
-  infoBox: { flexDirection: "row", gap: 8, padding: 12, backgroundColor: COLORS.secondary, borderRadius: 12, borderWidth: 1, borderColor: COLORS.border },
-  infoText: { flex: 1, fontSize: 11, color: COLORS.mutedForeground, lineHeight: 16 },
+  infoBox: { flexDirection: "row", gap: 10, padding: 14, backgroundColor: "transparent", borderRadius: 16, borderWidth: StyleSheet.hairlineWidth, borderColor: COLORS.border },
+  infoText: { flex: 1, fontSize: 12, color: COLORS.mutedForeground, lineHeight: 18 },
   modalBackdrop: {
     flex: 1,
     backgroundColor: "rgba(0,0,0,0.5)",
     justifyContent: "flex-end",
   },
   modalSheet: {
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    padding: 20,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    padding: 24,
     maxHeight: "85%",
   },
   modalHeader: {
@@ -519,27 +528,22 @@ const styles = StyleSheet.create({
   },
   modalTitle: {
     fontSize: 18,
-    fontWeight: "600",
   },
   form: {
-    gap: 4,
+    gap: 8,
   },
   fieldGroup: {
-    marginBottom: 12,
+    marginBottom: 14,
   },
   transportPill: {
     flex: 1,
     paddingVertical: 10,
-    borderRadius: 10,
+    borderRadius: 999,
+    borderWidth: StyleSheet.hairlineWidth,
     alignItems: "center",
   },
-  transportPillActive: {
-    opacity: 1,
-  },
   transportPillText: {
+    fontSize: 13,
     fontWeight: "600",
-  },
-  transportPillTextActive: {
-    fontWeight: "700",
   },
 });

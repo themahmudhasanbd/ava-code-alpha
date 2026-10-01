@@ -115,30 +115,78 @@ function Panel({ open, title, onClose, children }: { open: boolean; title: strin
 
 function useVoice(onText: (t: string) => void) {
   const [on, setOn] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const rec = useRef<any>(null);
   const [supported, setSupported] = useState(false);
+  // Always call the latest callback: results can arrive long after the
+  // recognizer was created, so a stale closure would clobber text typed
+  // while dictating.
+  const cbRef = useRef(onText);
+  cbRef.current = onText;
   useEffect(() => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const w = window as any;
     setSupported(Boolean(w.SpeechRecognition || w.webkitSpeechRecognition));
+    return () => {
+      try {
+        rec.current?.abort?.();
+      } catch {
+        /* already stopped */
+      }
+    };
   }, []);
   const toggle = () => {
-    if (on) return rec.current?.stop();
+    if (on) {
+      try {
+        rec.current?.stop();
+      } catch {
+        setOn(false);
+      }
+      return;
+    }
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const w = window as any;
     const R = w.SpeechRecognition || w.webkitSpeechRecognition;
     if (!R) return;
     const r = new R();
+    r.continuous = true;
     r.interimResults = false;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    r.onresult = (e: any) => onText(Array.from(e.results).map((x: any) => x[0].transcript).join(" "));
+    r.onresult = (e: any) => {
+      // In continuous mode e.results accumulates every utterance; only
+      // take the results that arrived with this event.
+      let text = "";
+      for (let i = e.resultIndex; i < e.results.length; i += 1) {
+        const res = e.results[i];
+        if (res.isFinal) text += (text ? " " : "") + String(res[0].transcript);
+      }
+      if (text) cbRef.current(text);
+    };
     r.onend = () => setOn(false);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    r.onerror = (e: any) => {
+      setOn(false);
+      const kind = String(e?.error ?? "");
+      if (kind === "aborted") return;
+      setError(
+        kind === "not-allowed" || kind === "service-not-allowed"
+          ? "Microphone blocked — allow mic access in the browser to dictate."
+          : "Dictation stopped unexpectedly. Try again.",
+      );
+      window.setTimeout(() => setError(null), 5000);
+    };
     rec.current = r;
-    r.start();
-    setOn(true);
+    try {
+      r.start();
+      setError(null);
+      setOn(true);
+    } catch {
+      rec.current = null;
+      setOn(false);
+    }
   };
-  return { on, supported, toggle };
+  return { on, supported, toggle, error };
 }
 
 /* ---------- attachments ---------- */
@@ -292,6 +340,11 @@ export const Composer = forwardRef<HTMLTextAreaElement, Props>(({ value, onChang
               )}
             </div>
           )}
+          {voice.error && (
+            <p role="status" className="px-4 pt-2 text-xs text-destructive">
+              {voice.error}
+            </p>
+          )}
           <PromptInputTextarea
             ref={ref}
             value={value}
@@ -333,10 +386,12 @@ export const Composer = forwardRef<HTMLTextAreaElement, Props>(({ value, onChang
               {voice.supported && (
                 <PromptInputButton
                   aria-label={voice.on ? "Stop dictation" : "Dictate"}
+                  aria-pressed={voice.on}
+                  tooltip={voice.on ? "Listening — tap to stop" : "Dictate with your voice"}
                   onClick={voice.toggle}
                   className={cn("size-8 rounded-full", voice.on && "bg-destructive/15 text-destructive")}
                 >
-                  <Mic />
+                  <Mic className={cn(voice.on && "animate-pulse")} />
                 </PromptInputButton>
               )}
               <PromptInputSubmit

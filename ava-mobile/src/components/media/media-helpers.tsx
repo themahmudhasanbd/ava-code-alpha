@@ -11,6 +11,8 @@ import {
   type LucideIcon,
 } from "lucide-react-native";
 import { useAva } from "@/state/ava-provider";
+import { useTheme } from "@/theme/colors";
+import type { ColorTokens } from "@/theme/palette";
 
 export interface ServerSelectedMedia {
   id: string;
@@ -87,20 +89,26 @@ export function getFileExtension(fileName: string): string {
   return fileName.split(".").pop()?.toLowerCase() || "";
 }
 
-export function getKindColor(kind: ServerSelectedMedia["kind"]): string {
+export function getKindColor(
+  kind: ServerSelectedMedia["kind"],
+  colors: ColorTokens,
+): string {
+  // Matches the kindColor mapping established in MediaPreviewOverlay (run #19):
+  // image -> primary, video -> mascot, audio -> warning,
+  // document -> destructive, code + generic files -> accentForeground.
   switch (kind) {
     case "image":
-      return "#10B981"; // emerald
+      return colors.primary;
     case "video":
-      return "#F59E0B"; // amber
+      return colors.mascot;
     case "audio":
-      return "#EC4899"; // pink
+      return colors.warning;
     case "code":
-      return "#6366F1"; // indigo
+      return colors.accentForeground;
     case "document":
-      return "#EF4444"; // red
+      return colors.destructive;
     default:
-      return "#8B5CF6"; // violet
+      return colors.accentForeground;
   }
 }
 
@@ -208,6 +216,7 @@ export function LazyImageThumbnail({
   size?: number;
 }) {
   const { rpc } = useAva();
+  const { colors } = useTheme();
   const [base64Uri, setBase64Uri] = useState<string | null>(() => getCachedThumbnail(filePath));
 
   useEffect(() => {
@@ -248,5 +257,5 @@ export function LazyImageThumbnail({
     );
   }
 
-  return <ImageIcon size={size * 0.55} color="#10B981" />;
+  return <ImageIcon size={size * 0.55} color={colors.success} />;
 }

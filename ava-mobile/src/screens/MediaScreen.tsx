@@ -96,6 +96,21 @@ function categorizeFile(path: string): CategoryFilter {
   return "all";
 }
 
+function CategoryIcon({ cat, size }: { cat: CategoryFilter; size: number }) {
+  switch (cat) {
+    case "image":
+      return <ImageIcon size={size} color={COLORS.primary} />;
+    case "video":
+      return <FileVideo size={size} color={COLORS.mascot} />;
+    case "audio":
+      return <FileAudio size={size} color={COLORS.warning} />;
+    case "archive":
+      return <Archive size={size} color={COLORS.success} />;
+    default:
+      return <FileCode size={size} color={COLORS.accentForeground} />;
+  }
+}
+
 export function MediaScreen() {
   const navigation = useNavigation<any>();
   const { rpc } = useAva();
@@ -283,7 +298,7 @@ export function MediaScreen() {
           onPress={() => setActiveModal("selector")}
           activeOpacity={0.8}
         >
-          <Plus size={15} color="#FFF" />
+          <Plus size={15} color={COLORS.primaryForeground} />
           <Text style={styles.uploadBtnText}>Add</Text>
         </TouchableOpacity>
       </View>
@@ -377,7 +392,7 @@ export function MediaScreen() {
               onPress={() => setActiveModal("selector")}
               activeOpacity={0.8}
             >
-              <UploadCloud size={16} color="#FFF" />
+              <UploadCloud size={15} color={COLORS.primaryForeground} />
               <Text style={styles.emptyAddBtnText}>Upload / Select Media</Text>
             </TouchableOpacity>
           </View>
@@ -401,17 +416,7 @@ export function MediaScreen() {
                 >
                   <Surface style={styles.gridCardSurface}>
                     <View style={styles.gridThumbnailBox}>
-                      {cat === "image" ? (
-                        <ImageIcon size={30} color={COLORS.primary} />
-                      ) : cat === "video" ? (
-                        <FileVideo size={30} color="#a855f7" />
-                      ) : cat === "audio" ? (
-                        <FileAudio size={30} color="#f97316" />
-                      ) : cat === "archive" ? (
-                        <Archive size={30} color="#10b981" />
-                      ) : (
-                        <FileCode size={30} color="#3b82f6" />
-                      )}
+                      <CategoryIcon cat={cat} size={30} />
                       <View style={styles.extBadge}>
                         <Text style={styles.extBadgeText}>{ext || "FILE"}</Text>
                       </View>
@@ -483,19 +488,19 @@ export function MediaScreen() {
                             style={styles.zoomBtn}
                             onPress={() => setZoomScale((z) => Math.max(0.5, z - 0.25))}
                           >
-                            <ZoomOut size={14} color={COLORS.foreground} />
+                            <ZoomOut size={14} color="#FFF" />
                           </TouchableOpacity>
                           <TouchableOpacity
                             style={styles.zoomBtn}
                             onPress={() => setZoomScale(1)}
                           >
-                            <RotateCcw size={13} color={COLORS.foreground} />
+                            <RotateCcw size={13} color="#FFF" />
                           </TouchableOpacity>
                           <TouchableOpacity
                             style={styles.zoomBtn}
                             onPress={() => setZoomScale((z) => Math.min(3, z + 0.25))}
                           >
-                            <ZoomIn size={14} color={COLORS.foreground} />
+                            <ZoomIn size={14} color="#FFF" />
                           </TouchableOpacity>
                         </View>
                         <ScrollView
@@ -532,13 +537,13 @@ export function MediaScreen() {
                       <View style={styles.genericFileBox}>
                         <View style={styles.genericIconCircle}>
                           {previewItem && categorizeFile(previewItem.path) === "video" ? (
-                            <FileVideo size={42} color="#a855f7" />
+                            <FileVideo size={36} color={COLORS.mascot} />
                           ) : previewItem && categorizeFile(previewItem.path) === "audio" ? (
-                            <Music size={42} color="#f97316" />
+                            <Music size={36} color={COLORS.warning} />
                           ) : previewItem && categorizeFile(previewItem.path) === "archive" ? (
-                            <Archive size={42} color="#10b981" />
+                            <Archive size={36} color={COLORS.success} />
                           ) : (
-                            <FileQuestion size={42} color={COLORS.primary} />
+                            <FileQuestion size={36} color={COLORS.primary} />
                           )}
                         </View>
                         <Text style={styles.genericFileName}>
@@ -625,14 +630,15 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   headerTitleText: {
-    fontSize: 14.5,
+    fontSize: 15,
     fontWeight: "700",
     color: COLORS.foreground,
   },
   headerSubtitleText: {
-    fontSize: 11,
+    fontSize: 10.5,
+    letterSpacing: 0.3,
     color: COLORS.mutedForeground,
-    marginTop: 1,
+    marginTop: 2,
   },
   headerRight: {
     flexDirection: "row",
@@ -649,9 +655,9 @@ const styles = StyleSheet.create({
     borderRadius: 12,
   },
   uploadBtnText: {
-    fontSize: 12,
+    fontSize: 12.5,
     fontWeight: "600",
-    color: "#FFF",
+    color: COLORS.primaryForeground,
   },
   searchBarWrapper: {
     paddingHorizontal: 12,
@@ -661,32 +667,37 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     backgroundColor: COLORS.secondary,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: COLORS.border,
     borderRadius: 12,
-    paddingHorizontal: 10,
-    height: 38,
-    gap: 8,
+    paddingHorizontal: 12,
+    height: 40,
+    gap: 10,
   },
   searchInput: {
     flex: 1,
-    fontSize: 13,
+    fontSize: 13.5,
+    lineHeight: 20,
     color: COLORS.foreground,
     paddingVertical: 0,
   },
   categoryFilterContainer: {
-    paddingBottom: 8,
+    paddingBottom: 10,
   },
   categoryFilterScroll: {
     paddingHorizontal: 12,
-    gap: 6,
+    gap: 8,
   },
   categoryPill: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 6,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
+    gap: 7,
+    paddingHorizontal: 13,
+    paddingVertical: 7,
     borderRadius: 999,
-    backgroundColor: COLORS.secondary,
+    backgroundColor: "transparent",
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: COLORS.border,
   },
   categoryPillActive: {
     backgroundColor: COLORS.primary,
@@ -694,6 +705,7 @@ const styles = StyleSheet.create({
   categoryText: {
     fontSize: 12,
     fontWeight: "500",
+    letterSpacing: 0.2,
     color: COLORS.mutedForeground,
   },
   categoryTextActive: {
@@ -701,11 +713,11 @@ const styles = StyleSheet.create({
     fontWeight: "600",
   },
   gridContent: {
-    padding: 12,
-    gap: 10,
+    padding: 16,
+    gap: 12,
   },
   gridRow: {
-    gap: 10,
+    gap: 12,
   },
   gridCard: {
     flex: 1,
@@ -730,18 +742,20 @@ const styles = StyleSheet.create({
     position: "absolute",
     top: 6,
     right: 6,
-    paddingHorizontal: 5,
-    paddingVertical: 2,
-    borderRadius: 4,
-    backgroundColor: "rgba(0, 0, 0, 0.5)",
+    paddingHorizontal: 6,
+    paddingVertical: 3,
+    borderRadius: 6,
+    backgroundColor: "rgba(0, 0, 0, 0.55)",
   },
   extBadgeText: {
     fontSize: 9,
     fontWeight: "700",
+    letterSpacing: 0.6,
     color: "#FFF",
   },
   gridTitle: {
-    fontSize: 12.5,
+    fontSize: 13,
+    lineHeight: 19,
     fontWeight: "600",
     color: COLORS.foreground,
     marginTop: 8,
@@ -749,29 +763,31 @@ const styles = StyleSheet.create({
   },
   gridPath: {
     fontSize: 10.5,
+    letterSpacing: 0.3,
     color: COLORS.mutedForeground,
     paddingHorizontal: 2,
+    marginTop: 1,
   },
   emptyContainer: {
     flex: 1,
     alignItems: "center",
     justifyContent: "center",
-    padding: 20,
-    gap: 12,
+    padding: 24,
+    gap: 16,
   },
   emptyAddBtn: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 6,
+    gap: 8,
     backgroundColor: COLORS.primary,
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderRadius: 14,
+    paddingHorizontal: 18,
+    paddingVertical: 12,
+    borderRadius: 12,
   },
   emptyAddBtnText: {
-    fontSize: 13,
+    fontSize: 13.5,
     fontWeight: "600",
-    color: "#FFF",
+    color: COLORS.primaryForeground,
   },
   modalBackdrop: {
     flex: 1,
@@ -802,7 +818,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-between",
     paddingBottom: 10,
-    borderBottomWidth: 1,
+    borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: COLORS.border,
   },
   viewerTitleGroup: {
@@ -815,14 +831,17 @@ const styles = StyleSheet.create({
     color: COLORS.foreground,
   },
   viewerSubtitle: {
-    fontSize: 11,
+    fontSize: 10.5,
+    letterSpacing: 0.3,
     color: COLORS.mutedForeground,
     marginTop: 2,
   },
   viewerCloseBtn: {
-    padding: 6,
-    borderRadius: 8,
-    backgroundColor: COLORS.secondary,
+    padding: 7,
+    borderRadius: 10,
+    backgroundColor: "transparent",
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: COLORS.border,
   },
   viewerBody: {
     minHeight: 240,
@@ -882,10 +901,12 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   genericIconCircle: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    backgroundColor: COLORS.secondary,
+    width: 72,
+    height: 72,
+    borderRadius: 36,
+    backgroundColor: "transparent",
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: COLORS.border,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -905,7 +926,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 8,
     paddingTop: 10,
-    borderTopWidth: 1,
+    borderTopWidth: StyleSheet.hairlineWidth,
     borderTopColor: COLORS.border,
   },
   viewerActionBtn: {
@@ -924,7 +945,7 @@ const styles = StyleSheet.create({
     color: COLORS.foreground,
   },
   viewerDeleteBtn: {
-    backgroundColor: "rgba(239, 68, 68, 0.1)",
+    backgroundColor: COLORS.destructive + "1A",
     maxWidth: 90,
   },
   viewerDeleteText: {

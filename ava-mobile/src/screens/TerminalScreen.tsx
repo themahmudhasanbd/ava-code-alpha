@@ -31,7 +31,7 @@ import {
 } from "lucide-react-native";
 import * as Clipboard from "expo-clipboard";
 import { AppShell } from "@/components/layout/AppShell";
-import { GlassIconButton, StatusDot, Surface } from "@/components/kit";
+import { EmptyState, GlassIconButton, StatusDot, Surface } from "@/components/kit";
 import { APP } from "@/config/app";
 import { useAva } from "@/state/ava-provider";
 import { cancelCommand, runCommand } from "@/core/api/terminal";
@@ -427,11 +427,11 @@ export function TerminalScreen({ route }: { route?: { params?: { initialCwd?: st
             }
           }}
           ListEmptyComponent={
-            <View style={styles.empty}>
-              <TerminalSquare size={36} color={COLORS.mutedForeground} />
-              <Text style={[styles.emptyTitle, font("semibold")]}>Terminal Ready</Text>
-              <Text style={[styles.emptySub, font("regular")]}>Execute commands on the server</Text>
-            </View>
+            <EmptyState
+              icon={TerminalSquare}
+              title="Terminal Ready"
+              description="Execute commands on the server"
+            />
           }
           renderItem={({ item }) => {
             const lines = item.output ? item.output.split("\n") : [];
@@ -664,9 +664,6 @@ const styles = StyleSheet.create({
   tabTextOn: { color: COLORS.primary, fontWeight: "600" },
 
   log: { paddingHorizontal: 14, paddingVertical: 10, gap: 10, flexGrow: 1 },
-  empty: { flex: 1, alignItems: "center", justifyContent: "center", marginTop: 60, gap: 8 },
-  emptyTitle: { fontSize: 16, color: COLORS.foreground },
-  emptySub: { fontSize: 13, color: COLORS.mutedForeground },
   entry: { gap: 4 },
   prompt: { flexDirection: "row", alignItems: "center", gap: 6 },
   dollar: { fontSize: 13, color: COLORS.primary },

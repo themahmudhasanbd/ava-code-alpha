@@ -109,7 +109,7 @@ export function Toaster({ style }: { style?: StyleProp<ViewStyle> }) {
       {toasts.map((t) => (
         <View key={t.id} style={styles.toastCard}>
           <View style={styles.iconBox}>
-            {t.type === "success" && <CheckCircle2 size={18} color="#22C55E" />}
+            {t.type === "success" && <CheckCircle2 size={18} color={COLORS.success} />}
             {t.type === "error" && <AlertCircle size={18} color={COLORS.destructive} />}
             {t.type === "info" && <Info size={18} color={COLORS.primary} />}
           </View>
@@ -143,7 +143,7 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     paddingHorizontal: 14,
     paddingVertical: 12,
-    shadowColor: "#000",
+    shadowColor: COLORS.glassShadow,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.12,
     shadowRadius: 8,

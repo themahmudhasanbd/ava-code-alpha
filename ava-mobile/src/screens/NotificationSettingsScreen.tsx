@@ -14,6 +14,7 @@ import {
   ArrowLeft,
   Bell,
   BellOff,
+  BellRing,
   CheckCircle2,
   Clock,
   Info,
@@ -24,8 +25,9 @@ import {
 } from "lucide-react-native";
 import { useNavigation } from "@react-navigation/native";
 import { AppShell } from "@/components/layout/AppShell";
-import { PageIntro, Surface } from "@/components/kit";
-import { COLORS } from "@/theme/colors";
+import { PageIntro, SectionHeader, Surface } from "@/components/kit";
+import { type ColorTokens } from "@/theme/colors";
+import { useStyles, useTheme } from "@/theme/theme-context";
 import { font, mono } from "@/theme/fonts";
 import { storage } from "@/core/storage";
 import { getSavedPushToken } from "@/core/notifications";
@@ -41,14 +43,16 @@ interface PermissionStatus {
 }
 
 function StatusBadge({ ok, label }: { ok: boolean; label: string }) {
+  const { colors } = useTheme();
+  const styles = useStyles(createStyles);
   return (
     <View style={[styles.badge, ok ? styles.badgeOk : styles.badgeFail]}>
       {ok ? (
-        <CheckCircle2 size={12} color={COLORS.success} />
+        <CheckCircle2 size={12} color={colors.success} />
       ) : (
-        <XCircle size={12} color={COLORS.destructive} />
+        <XCircle size={12} color={colors.destructive} />
       )}
-      <Text style={[styles.badgeText, { color: ok ? COLORS.success : COLORS.destructive }]}>
+      <Text style={[styles.badgeText, { color: ok ? colors.success : colors.destructive }]}>
         {label}
       </Text>
     </View>
@@ -56,18 +60,20 @@ function StatusBadge({ ok, label }: { ok: boolean; label: string }) {
 }
 
 function FeatureBadge({ label, active }: { label: string; active?: boolean }) {
+  const { colors } = useTheme();
+  const styles = useStyles(createStyles);
   return (
     <View
       style={[
         styles.featureBadge,
-        !active && { backgroundColor: "rgba(234,179,43,0.12)" },
+        !active && { backgroundColor: colors.warning + "1F" },
       ]}
     >
       <Text
         style={[
           styles.featureText,
           mono("bold"),
-          !active && { color: COLORS.warning },
+          !active && { color: colors.warning },
         ]}
       >
         {label}
@@ -91,10 +97,13 @@ function SettingRow({
   trailing?: React.ReactNode;
   onPress?: () => void;
 }) {
+  const { colors } = useTheme();
+  const styles = useStyles(createStyles);
+  const tint = iconColor || colors.primary;
   const content = (
     <View style={styles.row}>
-      <View style={[styles.rowIcon, { backgroundColor: `${iconColor || COLORS.primary}12` }]}>
-        <Icon size={16} color={iconColor || COLORS.primary} />
+      <View style={[styles.rowIcon, { backgroundColor: tint + "12" }]}>
+        <Icon size={16} color={tint} />
       </View>
       <View style={styles.rowContent}>
         <Text style={[styles.rowTitle, font("medium")]}>{title}</Text>
@@ -118,6 +127,8 @@ function SettingRow({
 
 export function NotificationSettingsScreen() {
   const navigation = useNavigation<any>();
+  const { colors } = useTheme();
+  const styles = useStyles(createStyles);
   const [permissions, setPermissions] = useState<PermissionStatus | null>(null);
   const [ongoingEnabled, setOngoingEnabled] = useState(
     () => storage.get(ONGOING_PREF_KEY) !== "0"
@@ -171,8 +182,8 @@ export function NotificationSettingsScreen() {
         <Surface style={styles.statusCard}>
           {loading ? (
             <View style={{ paddingVertical: 12, alignItems: "center" }}>
-              <ActivityIndicator size="small" color={COLORS.primary} />
-              <Text style={[{ fontSize: 12, color: COLORS.mutedForeground, marginTop: 6 }, font("regular")]}>Checking permissions…</Text>
+              <ActivityIndicator size="small" color={colors.primary} />
+              <Text style={[{ fontSize: 12, color: colors.mutedForeground, marginTop: 6 }, font("regular")]}>Checking permissions…</Text>
             </View>
           ) : (
             <>
@@ -209,30 +220,31 @@ export function NotificationSettingsScreen() {
 
         {/* ── Ongoing Notification ── */}
         <View style={styles.section}>
-          <Text style={[styles.sectionTitle, font("semibold")]}>Ongoing Agent Notification</Text>
-          <Text style={[styles.sectionDesc, font("regular")]}>
-            Shows a pinned notification with live timer while the agent is executing. Keeps the app alive in background.
-          </Text>
+          <SectionHeader
+            icon={Bell}
+            title="Ongoing Agent Notification"
+            description="Shows a pinned notification with live timer while the agent is executing. Keeps the app alive in background."
+          />
 
           <Surface style={styles.card}>
             <SettingRow
               icon={Bell}
-              iconColor={COLORS.primary}
+              iconColor={colors.primary}
               title="Show Ongoing Notification"
               subtitle="Pinned notification with live chronometer during agent turns"
               trailing={
                 <Switch
                   value={ongoingEnabled}
                   onValueChange={handleToggleOngoing}
-                  trackColor={{ false: COLORS.muted, true: COLORS.primary }}
-                  thumbColor="#FFFFFF"
+                  trackColor={{ false: colors.muted, true: colors.primary }}
+                  thumbColor={colors.primaryForeground}
                 />
               }
             />
 
             <SettingRow
               icon={Clock}
-              iconColor="#0284C7"
+              iconColor={colors.accentForeground}
               title="Live Timer"
               subtitle="Native Android chronometer counting elapsed time"
               trailing={
@@ -245,7 +257,7 @@ export function NotificationSettingsScreen() {
 
             <SettingRow
               icon={Zap}
-              iconColor="#059669"
+              iconColor={colors.success}
               title="Foreground Service"
               subtitle="Prevents Android from killing the app during long tasks"
               trailing={
@@ -260,15 +272,16 @@ export function NotificationSettingsScreen() {
 
         {/* ── Push Notifications (Firebase) ── */}
         <View style={styles.section}>
-          <Text style={[styles.sectionTitle, font("semibold")]}>Push Notifications (Firebase)</Text>
-          <Text style={[styles.sectionDesc, font("regular")]}>
-            Receive notifications when agent tasks complete, even if the app is closed.
-          </Text>
+          <SectionHeader
+            icon={BellRing}
+            title="Push Notifications (Firebase)"
+            description="Receive notifications when agent tasks complete, even if the app is closed."
+          />
 
           <Surface style={styles.card}>
             <SettingRow
               icon={Smartphone}
-              iconColor="#7C3AED"
+              iconColor={colors.mascot}
               title="Firebase Cloud Messaging"
               subtitle="google-services.json configured for project ava-code"
               trailing={
@@ -281,7 +294,7 @@ export function NotificationSettingsScreen() {
 
             <SettingRow
               icon={Shield}
-              iconColor="#D97706"
+              iconColor={colors.warning}
               title="FCM Token Registration"
               subtitle={fcmToken ? "Device token saved locally" : "No device token registered yet"}
               trailing={
@@ -294,7 +307,7 @@ export function NotificationSettingsScreen() {
 
             <SettingRow
               icon={Info}
-              iconColor={COLORS.mutedForeground}
+              iconColor={colors.mutedForeground}
               title="Server-Side Integration"
               subtitle="FCM token registration endpoint needs to be enabled on server"
               trailing={<FeatureBadge label="PENDING" active={false} />}
@@ -304,12 +317,12 @@ export function NotificationSettingsScreen() {
 
         {/* ── Actions ── */}
         <View style={styles.section}>
-          <Text style={[styles.sectionTitle, font("semibold")]}>Actions</Text>
+          <SectionHeader icon={Zap} title="Actions" />
 
           <Surface style={styles.card}>
             <SettingRow
               icon={Shield}
-              iconColor="#D97706"
+              iconColor={colors.warning}
               title="Request Battery Exemption"
               subtitle="Ask Android to stop killing AvA Code in background"
               trailing={
@@ -321,7 +334,7 @@ export function NotificationSettingsScreen() {
 
             <SettingRow
               icon={BellOff}
-              iconColor={COLORS.destructive}
+              iconColor={colors.destructive}
               title="Open System Settings"
               subtitle="Manually configure notification and battery permissions"
               trailing={
@@ -335,7 +348,7 @@ export function NotificationSettingsScreen() {
 
         {/* ── Info ── */}
         <View style={styles.infoBox}>
-          <Info size={14} color={COLORS.mutedForeground} />
+          <Info size={14} color={colors.mutedForeground} />
           <Text style={[styles.infoText, font("regular")]}>
             For push notifications to work when the app is completely killed, the server needs an FCM token registration endpoint. Currently, local notifications and the foreground service handle all in-app and background scenarios.
           </Text>
@@ -345,21 +358,20 @@ export function NotificationSettingsScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (c: ColorTokens) =>
+  StyleSheet.create({
   container: { flex: 1 },
-  content: { padding: 16, paddingBottom: 40, gap: 16 },
-  section: { gap: 8 },
-  sectionTitle: { fontSize: 14, color: COLORS.foreground, paddingHorizontal: 4 },
-  sectionDesc: { fontSize: 12, color: COLORS.mutedForeground, paddingHorizontal: 4, lineHeight: 17 },
-  card: { borderRadius: 16, borderWidth: 1, borderColor: COLORS.glassBorder, overflow: "hidden" },
+  content: { padding: 16, paddingBottom: 40, gap: 20 },
+  section: { gap: 10 },
+  card: { borderRadius: 16, borderWidth: 1, borderColor: c.glassBorder, overflow: "hidden" },
   row: {
     flexDirection: "row",
     alignItems: "center",
     gap: 12,
     paddingHorizontal: 12,
     paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: "rgba(255,255,255,0.05)",
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: c.border
   },
   rowIcon: {
     width: 32,
@@ -369,11 +381,11 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   rowContent: { flex: 1, gap: 2 },
-  rowTitle: { fontSize: 13, color: COLORS.foreground },
-  rowSubtitle: { fontSize: 11, color: COLORS.mutedForeground, lineHeight: 15 },
-  statusCard: { borderRadius: 16, padding: 14, gap: 10, borderWidth: 1, borderColor: COLORS.glassBorder },
+  rowTitle: { fontSize: 13, color: c.foreground },
+  rowSubtitle: { fontSize: 11, color: c.mutedForeground, lineHeight: 15 },
+  statusCard: { borderRadius: 16, padding: 14, gap: 10, borderWidth: 1, borderColor: c.glassBorder },
   statusRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
-  statusLabel: { fontSize: 13, color: COLORS.foreground },
+  statusLabel: { fontSize: 13, color: c.foreground },
   statusBadges: { flexDirection: "row", gap: 6 },
   badge: {
     flexDirection: "row",
@@ -383,35 +395,35 @@ const styles = StyleSheet.create({
     paddingVertical: 3,
     borderRadius: 6,
   },
-  badgeOk: { backgroundColor: "rgba(59,179,96,0.1)" },
-  badgeFail: { backgroundColor: "rgba(231,0,11,0.1)" },
+  badgeOk: { backgroundColor: c.success + "1A" },
+  badgeFail: { backgroundColor: c.destructive + "1A" },
   badgeText: { fontSize: 11, fontWeight: "600" },
   featureBadge: {
     paddingHorizontal: 8,
     paddingVertical: 3,
     borderRadius: 6,
-    backgroundColor: COLORS.secondary,
+    backgroundColor: c.secondary,
     borderWidth: 1,
-    borderColor: COLORS.border,
+    borderColor: c.border,
   },
-  featureText: { fontSize: 10, color: COLORS.mutedForeground },
+  featureText: { fontSize: 10, color: c.mutedForeground },
   actionBtn: {
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 8,
-    backgroundColor: COLORS.secondary,
+    backgroundColor: c.secondary,
     borderWidth: 1,
-    borderColor: COLORS.border,
+    borderColor: c.border,
   },
-  actionText: { fontSize: 12, color: COLORS.foreground },
+  actionText: { fontSize: 12, color: c.foreground },
   infoBox: {
     flexDirection: "row",
     gap: 8,
     padding: 12,
-    backgroundColor: COLORS.secondary,
+    backgroundColor: c.secondary,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: COLORS.border,
+    borderColor: c.border,
   },
-  infoText: { flex: 1, fontSize: 11, color: COLORS.mutedForeground, lineHeight: 16 },
-});
+  infoText: { flex: 1, fontSize: 11, color: c.mutedForeground, lineHeight: 16 },
+  });

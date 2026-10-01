@@ -857,14 +857,14 @@ export const Composer = forwardRef<TextInput, Props>(
                     </View>
                   ) : att.kind === "video" ? (
                     <View style={styles.fileChipBox}>
-                      <FileVideo size={13} color="#a855f7" />
+                      <FileVideo size={13} color={colors.mascot} />
                       <Text style={[styles.fileChipText, font("medium")]} numberOfLines={1}>
                         {att.name}
                       </Text>
                     </View>
                   ) : att.kind === "code" ? (
                     <View style={styles.fileChipBox}>
-                      <FileCode size={13} color="#3b82f6" />
+                      <FileCode size={13} color={colors.accentForeground} />
                       <Text style={[styles.fileChipText, font("medium")]} numberOfLines={1}>
                         {att.name}
                       </Text>
@@ -918,24 +918,16 @@ export const Composer = forwardRef<TextInput, Props>(
                         ? [
                             styles.tokenChipSlash,
                             {
-                              backgroundColor: isDark
-                                ? "rgba(99, 102, 241, 0.16)"
-                                : "rgba(79, 70, 229, 0.10)",
-                              borderColor: isDark
-                                ? "rgba(99, 102, 241, 0.35)"
-                                : "rgba(79, 70, 229, 0.25)",
+                              backgroundColor: colors.primary + (isDark ? "29" : "1A"),
+                              borderColor: colors.primary + (isDark ? "59" : "40"),
                             },
                           ]
                         : isMcp
                         ? [
                             styles.tokenChipMcp,
                             {
-                              backgroundColor: isDark
-                                ? "rgba(168, 85, 247, 0.16)"
-                                : "rgba(147, 51, 234, 0.10)",
-                              borderColor: isDark
-                                ? "rgba(168, 85, 247, 0.35)"
-                                : "rgba(147, 51, 234, 0.25)",
+                              backgroundColor: colors.mascot + (isDark ? "29" : "1A"),
+                              borderColor: colors.mascot + (isDark ? "59" : "40"),
                             },
                           ]
                         : [
@@ -953,7 +945,7 @@ export const Composer = forwardRef<TextInput, Props>(
                         isSlash
                           ? colors.primary
                           : isMcp
-                          ? (isDark ? "#c084fc" : "#9333ea")
+                          ? colors.mascot
                           : colors.foreground
                       }
                     />
@@ -965,7 +957,7 @@ export const Composer = forwardRef<TextInput, Props>(
                           color: isSlash
                             ? colors.primary
                             : isMcp
-                            ? (isDark ? "#c084fc" : "#9333ea")
+                            ? colors.mascot
                             : colors.foreground,
                         },
                       ]}
@@ -978,13 +970,9 @@ export const Composer = forwardRef<TextInput, Props>(
                           styles.tokenCatBadge,
                           {
                             backgroundColor: isSlash
-                              ? isDark
-                                ? "rgba(99, 102, 241, 0.25)"
-                                : "rgba(79, 70, 229, 0.15)"
+                              ? colors.primary + (isDark ? "40" : "26")
                               : isMcp
-                              ? isDark
-                                ? "rgba(168, 85, 247, 0.25)"
-                                : "rgba(147, 51, 234, 0.15)"
+                              ? colors.mascot + (isDark ? "40" : "26")
                               : isDark
                               ? "rgba(255, 255, 255, 0.12)"
                               : "rgba(0, 0, 0, 0.06)",
@@ -999,7 +987,7 @@ export const Composer = forwardRef<TextInput, Props>(
                               color: isSlash
                                 ? colors.primary
                                 : isMcp
-                                ? (isDark ? "#c084fc" : "#9333ea")
+                                ? colors.mascot
                                 : colors.mutedForeground,
                             },
                           ]}
@@ -1095,7 +1083,7 @@ export const Composer = forwardRef<TextInput, Props>(
                 onPress={() => setMediaModalOpen(true)}
                 activeOpacity={0.7}
               >
-                <Plus size={16} color={COLORS.foreground} />
+                <Plus size={16} color={COLORS.mutedForeground} />
               </TouchableOpacity>
 
               {/* Tools Pill Button */}
@@ -1104,7 +1092,7 @@ export const Composer = forwardRef<TextInput, Props>(
                 onPress={() => setPanel("tools")}
                 activeOpacity={0.7}
               >
-                <Cpu size={13} color={COLORS.foreground} />
+                <Cpu size={13} color={COLORS.mutedForeground} />
                 <Text style={[styles.toolPillText, font("medium")]}>Tools</Text>
                 <ChevronDown size={11} color={COLORS.mutedForeground} />
               </TouchableOpacity>
@@ -1115,7 +1103,7 @@ export const Composer = forwardRef<TextInput, Props>(
                 onPress={() => setPanel("sandbox")}
                 activeOpacity={0.7}
               >
-                <ShieldCheck size={13} color={COLORS.foreground} />
+                <ShieldCheck size={13} color={COLORS.mutedForeground} />
                 <Text style={[styles.toolPillText, font("medium")]}>{sandboxOpt.label}</Text>
                 <ChevronDown size={11} color={COLORS.mutedForeground} />
               </TouchableOpacity>
@@ -1134,7 +1122,7 @@ export const Composer = forwardRef<TextInput, Props>(
               >
                 <Mic
                   size={16}
-                  color={isRecording ? COLORS.primaryForeground : COLORS.foreground}
+                  color={isRecording ? COLORS.primaryForeground : COLORS.mutedForeground}
                 />
               </TouchableOpacity>
 
@@ -1524,7 +1512,6 @@ const styles = StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: COLORS.secondary,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -1537,8 +1524,8 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   input: {
-    fontSize: 14.5,
-    lineHeight: 21,
+    fontSize: 15,
+    lineHeight: 23,
     color: COLORS.foreground,
     minHeight: 38,
     maxHeight: 120,
@@ -1550,9 +1537,9 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    paddingTop: 4,
-    borderTopWidth: 1,
-    borderTopColor: "rgba(255, 255, 255, 0.04)",
+    paddingTop: 6,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: COLORS.border,
   },
   bottomLeftScroll: {
     flexDirection: "row",
@@ -1561,27 +1548,25 @@ const styles = StyleSheet.create({
     paddingRight: 8,
   },
   plusBtn: {
-    width: 30,
-    height: 30,
-    borderRadius: 15,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: COLORS.secondary,
   },
   toolPill: {
     flexDirection: "row",
     alignItems: "center",
     gap: 5,
     height: 30,
-    paddingHorizontal: 9,
+    paddingHorizontal: 10,
     borderRadius: 15,
-    backgroundColor: COLORS.secondary,
     borderWidth: 1,
     borderColor: COLORS.border,
   },
   toolPillText: {
     fontSize: 12,
-    color: COLORS.foreground,
+    color: COLORS.mutedForeground,
   },
   bottomRightActions: {
     flexDirection: "row",
@@ -1594,9 +1579,6 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: COLORS.secondary,
-    borderWidth: 1,
-    borderColor: COLORS.border,
   },
   micBtn: {
     width: 32,
@@ -1604,7 +1586,6 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: COLORS.secondary,
   },
   micBtnActive: {
     backgroundColor: COLORS.destructive,
@@ -1633,7 +1614,6 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: COLORS.secondary,
   },
   sendBtnActive: {
     backgroundColor: COLORS.primary,

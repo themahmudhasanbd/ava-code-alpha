@@ -508,17 +508,17 @@ function AttachmentChip({ item }: { item: ParsedUserAttachment }) {
   const getIconAndColor = () => {
     switch (item.kind) {
       case "code":
-        return { Icon: FileCode, color: colors.primary, bg: "rgba(99, 102, 241, 0.14)" };
+        return { Icon: FileCode, color: colors.primary, bg: colors.primary + "24" };
       case "audio":
-        return { Icon: Mic, color: colors.success, bg: "rgba(34, 197, 94, 0.14)" };
+        return { Icon: Mic, color: colors.success, bg: colors.success + "24" };
       case "video":
-        return { Icon: FileVideo, color: colors.warning, bg: "rgba(234, 179, 8, 0.14)" };
+        return { Icon: FileVideo, color: colors.warning, bg: colors.warning + "24" };
       case "archive":
-        return { Icon: FileArchive, color: colors.primary, bg: "rgba(99, 102, 241, 0.14)" };
+        return { Icon: FileArchive, color: colors.primary, bg: colors.primary + "24" };
       case "text":
-        return { Icon: FileText, color: colors.foreground, bg: "rgba(255, 255, 255, 0.08)" };
+        return { Icon: FileText, color: colors.foreground, bg: colors.border };
       default:
-        return { Icon: FileText, color: colors.mutedForeground, bg: "rgba(255, 255, 255, 0.06)" };
+        return { Icon: FileText, color: colors.mutedForeground, bg: colors.border };
     }
   };
 
@@ -782,7 +782,7 @@ export const ChatMessageView = React.memo(
 
 const styles = StyleSheet.create({
   assistantContainer: {
-    marginVertical: 8,
+    marginVertical: 10,
     paddingLeft: 0,
     width: "100%",
   },
@@ -790,7 +790,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 10,
-    marginBottom: 6,
+    marginBottom: 8,
     paddingLeft: 0,
   },
   mascotWrapper: {
@@ -806,7 +806,7 @@ const styles = StyleSheet.create({
     height: 40,
     borderRadius: 20,
     borderWidth: 1.5,
-    borderColor: "rgba(106, 101, 255, 0.4)",
+    borderColor: COLORS.primary + "66",
   },
   turnHeaderTextGroup: {
     justifyContent: "center",
@@ -818,8 +818,9 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   turnLabelText: {
-    fontSize: 14,
+    fontSize: 13.5,
     fontWeight: "600",
+    letterSpacing: 0.15,
     color: COLORS.foreground,
   },
   pulseDot: {
@@ -829,9 +830,10 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.success,
   },
   turnSubText: {
-    fontSize: 11,
+    fontSize: 10.5,
+    letterSpacing: 0.25,
     color: COLORS.mutedForeground,
-    marginTop: 1,
+    marginTop: 2,
   },
   intentCard: {
     flexDirection: "row",
@@ -871,7 +873,7 @@ const styles = StyleSheet.create({
     lineHeight: 17,
   },
   finalOutputContainer: {
-    marginTop: 4,
+    marginTop: 6,
     width: "100%",
   },
   questionCard: {
@@ -930,7 +932,7 @@ const styles = StyleSheet.create({
   noticeBoxError: {
     backgroundColor: "transparent",
     borderWidth: 1,
-    borderColor: "rgba(239, 68, 68, 0.25)",
+    borderColor: COLORS.destructive + "40",
   },
   noticeText: {
     fontSize: 12,
@@ -962,14 +964,15 @@ const styles = StyleSheet.create({
     borderColor: COLORS.border,
   },
   footerStatsText: {
-    fontSize: 11,
+    fontSize: 10.5,
+    letterSpacing: 0.2,
     color: COLORS.mutedForeground,
   },
   userContainer: {
     alignSelf: "flex-end",
     maxWidth: "92%",
-    marginVertical: 6,
-    gap: 4,
+    marginVertical: 8,
+    gap: 6,
   },
   userAttachmentsRow: {
     flexDirection: "row",
@@ -1017,9 +1020,8 @@ const styles = StyleSheet.create({
   userBubble: {
     backgroundColor: "transparent",
     borderRadius: 16,
-    borderBottomRightRadius: 4,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
+    paddingHorizontal: 13,
+    paddingVertical: 11,
     borderWidth: 1,
     borderColor: COLORS.border,
     flexDirection: "column",
@@ -1047,7 +1049,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     alignSelf: "flex-end",
     gap: 8,
-    marginTop: 2,
+    marginTop: 4,
   },
   copyUserPromptBtn: {
     flexDirection: "row",
@@ -1084,6 +1086,6 @@ const styles = StyleSheet.create({
   },
   userAvatarInitials: {
     fontSize: 10,
-    color: "#FFFFFF",
+    color: COLORS.primaryForeground,
   },
 });

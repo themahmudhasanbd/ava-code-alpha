@@ -121,13 +121,9 @@ export function MentionPopup({
                     styles.iconBox,
                     {
                       backgroundColor: isFolder
-                        ? isDark
-                          ? "rgba(99, 102, 241, 0.16)"
-                          : "rgba(79, 70, 229, 0.10)"
+                        ? colors.primary + "29"
                         : isMcp
-                        ? isDark
-                          ? "rgba(168, 85, 247, 0.16)"
-                          : "rgba(147, 51, 234, 0.10)"
+                        ? colors.mascot + "29"
                         : colors.secondary,
                     },
                   ]}
@@ -138,9 +134,7 @@ export function MentionPopup({
                       isFolder
                         ? colors.primary
                         : isMcp
-                        ? isDark
-                          ? "#c084fc"
-                          : "#9333ea"
+                        ? colors.mascot
                         : colors.foreground
                     }
                   />
@@ -155,9 +149,7 @@ export function MentionPopup({
                           color: isFolder
                             ? colors.primary
                             : isMcp
-                            ? isDark
-                              ? "#c084fc"
-                              : "#9333ea"
+                            ? colors.mascot
                             : colors.foreground,
                         },
                       ]}
@@ -169,13 +161,9 @@ export function MentionPopup({
                         styles.catBadge,
                         {
                           backgroundColor: isFolder
-                            ? isDark
-                              ? "rgba(99, 102, 241, 0.15)"
-                              : "rgba(79, 70, 229, 0.10)"
+                            ? colors.primary + "26"
                             : isMcp
-                            ? isDark
-                              ? "rgba(168, 85, 247, 0.15)"
-                              : "rgba(147, 51, 234, 0.10)"
+                            ? colors.mascot + "26"
                             : colors.secondary,
                           borderColor: colors.border,
                         },
@@ -189,9 +177,7 @@ export function MentionPopup({
                             color: isFolder
                               ? colors.primary
                               : isMcp
-                              ? isDark
-                                ? "#c084fc"
-                                : "#9333ea"
+                              ? colors.mascot
                               : colors.mutedForeground,
                           },
                         ]}

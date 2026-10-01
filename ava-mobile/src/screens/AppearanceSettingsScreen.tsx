@@ -19,7 +19,7 @@ import {
   Type,
 } from "lucide-react-native";
 import { AppShell } from "@/components/layout/AppShell";
-import { PageIntro, Surface } from "@/components/kit";
+import { PageIntro, SectionHeader, Surface } from "@/components/kit";
 import { useTheme, type ThemeMode } from "@/theme/colors";
 import { font, mono } from "@/theme/fonts";
 
@@ -73,12 +73,7 @@ export function AppearanceSettingsScreen() {
 
         {/* ── Theme Mode Selection ── */}
         <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <Paintbrush size={15} color={colors.primary} />
-            <Text style={[styles.sectionTitle, { color: colors.foreground }, font("semibold")]}>
-              Color Theme
-            </Text>
-          </View>
+          <SectionHeader icon={Paintbrush} title="Color Theme" />
 
           <View style={styles.cardsRow}>
             {THEME_OPTIONS.map((opt) => {
@@ -116,7 +111,7 @@ export function AppearanceSettingsScreen() {
                     </View>
                     {isSelected && (
                       <View style={[styles.checkBadge, { backgroundColor: colors.primary }]}>
-                        <Check size={12} color="#FFFFFF" />
+                        <Check size={12} color={colors.primaryForeground} />
                       </View>
                     )}
                   </View>
@@ -135,12 +130,7 @@ export function AppearanceSettingsScreen() {
 
         {/* ── Active Palette Preview ── */}
         <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <Sparkles size={15} color={colors.primary} />
-            <Text style={[styles.sectionTitle, { color: colors.foreground }, font("semibold")]}>
-              Live Palette Preview ({resolvedTheme.toUpperCase()})
-            </Text>
-          </View>
+          <SectionHeader icon={Sparkles} title={`Live Palette Preview (${resolvedTheme.toUpperCase()})`} />
 
           <Surface style={[styles.previewCard, { borderColor: colors.glassBorder }]}>
             <View style={styles.paletteRow}>
@@ -187,12 +177,7 @@ export function AppearanceSettingsScreen() {
 
         {/* ── Typography & Monospace ── */}
         <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <Type size={15} color={colors.primary} />
-            <Text style={[styles.sectionTitle, { color: colors.foreground }, font("semibold")]}>
-              Typography
-            </Text>
-          </View>
+          <SectionHeader icon={Type} title="Typography" />
 
           <Surface style={[styles.typoCard, { borderColor: colors.glassBorder }]}>
             <View style={styles.typoRow}>
@@ -231,13 +216,6 @@ const styles = StyleSheet.create({
   container: { flex: 1 },
   content: { padding: 16, paddingBottom: 40, gap: 20 },
   section: { gap: 10 },
-  sectionHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-    paddingHorizontal: 2,
-  },
-  sectionTitle: { fontSize: 13.5 },
   cardsRow: { gap: 10 },
   themeCard: {
     borderRadius: 16,

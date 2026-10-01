@@ -57,6 +57,7 @@ import {
 } from "@/components/chat/tool-icons";
 import { MediaPreviewGallery } from "@/components/chat/media-preview-gallery";
 import { useTheme } from "@/theme/colors";
+import { EmptyState } from "@/components/kit";
 
 if (Platform.OS === "android" && UIManager.setLayoutAnimationEnabledExperimental) {
   UIManager.setLayoutAnimationEnabledExperimental(true);
@@ -541,7 +542,7 @@ export function TimelineScreen({ route, navigation }: Props) {
                           borderColor: isSelected ? colors.primary : colors.border,
                         },
                         isSelected && {
-                          backgroundColor: isDark ? "rgba(99, 102, 241, 0.12)" : "rgba(79, 70, 229, 0.08)",
+                          backgroundColor: isDark ? colors.primary + "1F" : colors.primary + "14",
                         },
                       ]}
                       onPress={() => setSelectedTurnId(assMsg.id)}
@@ -623,7 +624,7 @@ export function TimelineScreen({ route, navigation }: Props) {
                   {
                     borderColor: isReversed ? colors.primary : colors.border,
                     backgroundColor: isReversed
-                      ? (isDark ? "rgba(99, 102, 241, 0.12)" : "rgba(79, 70, 229, 0.08)")
+                      ? (isDark ? colors.primary + "1F" : colors.primary + "14")
                       : "transparent",
                   },
                 ]}
@@ -691,17 +692,15 @@ export function TimelineScreen({ route, navigation }: Props) {
 
                 {/* Main Events List */}
                 {allParts.length === 0 ? (
-                  <View style={styles.emptyState}>
-                    <Layers size={28} color={colors.mutedForeground} />
-                    <Text style={[styles.emptyTitle, font("medium"), { color: colors.foreground }]}>
-                      {loadingHistory ? "Loading timeline…" : "No execution events"}
-                    </Text>
-                    <Text style={[styles.emptySub, font("regular"), { color: colors.mutedForeground }]}>
-                      {isLive
+                  <EmptyState
+                    icon={Layers}
+                    title={loadingHistory ? "Loading timeline…" : "No execution events"}
+                    description={
+                      isLive
                         ? "Waiting for agent to begin execution steps…"
-                        : "Tool calls, thoughts, and outputs for this turn will appear here."}
-                    </Text>
-                  </View>
+                        : "Tool calls, thoughts, and outputs for this turn will appear here."
+                    }
+                  />
                 ) : (
                   <>
                     {/* Execution Timeline Tree */}
@@ -899,7 +898,7 @@ export function TimelineScreen({ route, navigation }: Props) {
                                     {
                                       backgroundColor: colors.background,
                                       borderColor: isErr
-                                        ? "rgba(239, 68, 68, 0.4)"
+                                        ? colors.destructive + "66"
                                         : isRunning
                                         ? colors.primary
                                         : colors.border,
@@ -941,8 +940,8 @@ export function TimelineScreen({ route, navigation }: Props) {
                                           styles.toolChip,
                                           { backgroundColor: colors.secondary },
                                           toolInfo.isMcp && {
-                                            backgroundColor: "rgba(99, 102, 241, 0.12)",
-                                            borderColor: "rgba(99, 102, 241, 0.25)",
+                                            backgroundColor: colors.primary + "1F",
+                                            borderColor: colors.primary + "40",
                                             borderWidth: 1,
                                           },
                                         ]}
@@ -1188,15 +1187,11 @@ export function TimelineScreen({ route, navigation }: Props) {
               showsVerticalScrollIndicator={false}
             >
               {changedFiles.length === 0 ? (
-                <View style={styles.emptyState}>
-                  <FileCode size={26} color={colors.mutedForeground} />
-                  <Text style={[styles.emptyTitle, font("medium"), { color: colors.foreground }]}>
-                    No modified files
-                  </Text>
-                  <Text style={[styles.emptySub, font("regular"), { color: colors.mutedForeground }]}>
-                    Files created or modified during this turn will appear here.
-                  </Text>
-                </View>
+                <EmptyState
+                  icon={FileCode}
+                  title="No modified files"
+                  description="Files created or modified during this turn will appear here."
+                />
               ) : (
                 <View style={styles.filesList}>
                   <Text style={[styles.filesCountLabel, mono("medium"), { color: colors.mutedForeground }]}>
@@ -1224,11 +1219,14 @@ export function TimelineScreen({ route, navigation }: Props) {
                       <View
                         style={[
                           styles.fileTag,
-                          file.kind === "add"
-                            ? styles.fileTagCreate
-                            : file.kind === "delete"
-                            ? styles.fileTagDelete
-                            : styles.fileTagEdit,
+                          {
+                            backgroundColor:
+                              (file.kind === "add"
+                                ? colors.success
+                                : file.kind === "delete"
+                                ? colors.destructive
+                                : colors.primary) + "1A",
+                          },
                         ]}
                       >
                         <Text
@@ -1334,11 +1332,11 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 6,
     paddingHorizontal: 14,
-    paddingVertical: 6,
+    paddingVertical: 7,
     borderRadius: 18,
   },
   segmentText: {
-    fontSize: 12.5,
+    fontSize: 13,
   },
   pillBadge: {
     paddingHorizontal: 5,
@@ -1360,13 +1358,13 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 6,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 10,
     borderWidth: 1,
   },
   turnCapsuleText: {
-    fontSize: 11.5,
+    fontSize: 12,
   },
   turnCapsuleMeta: {
     fontSize: 10,
@@ -1375,9 +1373,9 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     paddingHorizontal: 14,
-    paddingVertical: 7,
+    paddingVertical: 8,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    gap: 12,
+    gap: 14,
   },
   statItem: {
     flexDirection: "row",
@@ -1385,7 +1383,7 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   statValue: {
-    fontSize: 11,
+    fontSize: 11.5,
   },
   sortToggleBtn: {
     flexDirection: "row",
@@ -1404,12 +1402,12 @@ const styles = StyleSheet.create({
   },
   mainScrollContent: {
     paddingHorizontal: 14,
-    paddingVertical: 12,
-    gap: 12,
+    paddingVertical: 16,
+    gap: 14,
   },
   promptCard: {
-    padding: 10,
-    borderRadius: 10,
+    padding: 12,
+    borderRadius: 12,
     borderWidth: 1,
     marginBottom: 4,
   },
@@ -1420,26 +1418,12 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   promptLabel: {
-    fontSize: 9.5,
+    fontSize: 10,
     letterSpacing: 0.5,
   },
   promptBody: {
-    fontSize: 12.5,
-    lineHeight: 18,
-  },
-  emptyState: {
-    alignItems: "center",
-    justifyContent: "center",
-    paddingVertical: 60,
-    gap: 8,
-  },
-  emptyTitle: {
-    fontSize: 14,
-  },
-  emptySub: {
-    fontSize: 12,
-    textAlign: "center",
-    paddingHorizontal: 30,
+    fontSize: 13,
+    lineHeight: 20,
   },
   timelineWrapper: {
     position: "relative",
@@ -1447,15 +1431,15 @@ const styles = StyleSheet.create({
   },
   timelineSpine: {
     position: "absolute",
-    left: 22,
+    left: 22.5,
     top: 10,
     bottom: 10,
-    width: 1.5,
+    width: StyleSheet.hairlineWidth,
   },
   nodeRow: {
     flexDirection: "row",
     alignItems: "flex-start",
-    marginBottom: 10,
+    marginBottom: 12,
   },
   nodeSpineCol: {
     width: 22,
@@ -1478,9 +1462,9 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    paddingVertical: 6,
-    paddingHorizontal: 10,
-    borderRadius: 8,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 10,
     borderWidth: 1,
   },
   nodeHeaderExpanded: {
@@ -1495,9 +1479,9 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   toolChip: {
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 6,
   },
   toolChipText: {
     fontSize: 11,
@@ -1512,21 +1496,22 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   nodeDurText: {
-    fontSize: 10,
+    fontSize: 10.5,
+    letterSpacing: 0.3,
   },
   nodeContent: {
-    padding: 10,
+    padding: 12,
     borderWidth: 1,
     borderTopWidth: 0,
-    borderBottomLeftRadius: 8,
-    borderBottomRightRadius: 8,
-    gap: 8,
+    borderBottomLeftRadius: 10,
+    borderBottomRightRadius: 10,
+    gap: 10,
   },
   textWrapper: {
     paddingVertical: 4,
   },
   blockContainer: {
-    borderRadius: 6,
+    borderRadius: 8,
     overflow: "hidden",
     borderWidth: 1,
   },
@@ -1564,11 +1549,11 @@ const styles = StyleSheet.create({
     textDecorationLine: "line-through",
   },
   outputCard: {
-    padding: 10,
-    borderRadius: 8,
+    padding: 12,
+    borderRadius: 10,
     borderWidth: 1,
     position: "relative",
-    gap: 6,
+    gap: 8,
   },
   streamingIndicator: {
     flexDirection: "row",
@@ -1633,29 +1618,20 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 10,
-    padding: 10,
-    borderRadius: 8,
+    padding: 12,
+    borderRadius: 10,
     borderWidth: 1,
   },
   fileTag: {
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 4,
-  },
-  fileTagCreate: {
-    backgroundColor: "rgba(16, 185, 129, 0.12)",
-  },
-  fileTagEdit: {
-    backgroundColor: "rgba(79, 70, 229, 0.12)",
-  },
-  fileTagDelete: {
-    backgroundColor: "rgba(239, 68, 68, 0.12)",
+    paddingHorizontal: 7,
+    paddingVertical: 3,
+    borderRadius: 6,
   },
   fileTagText: {
     fontSize: 9.5,
   },
   filePathLabel: {
-    fontSize: 12,
+    fontSize: 12.5,
     flex: 1,
   },
   liveFooter: {

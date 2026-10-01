@@ -9,6 +9,7 @@ import {
 } from "react-native";
 import type { LucideIcon } from "lucide-react-native";
 import { COLORS, useTheme } from "@/theme/colors";
+import { font } from "@/theme/fonts";
 import type { ConnectionStatus } from "@/core/types";
 import { Skeleton, SkeletonCapsule, SkeletonText, SkeletonCard } from "@/components/ui/skeleton";
 
@@ -194,15 +195,53 @@ export function PageIntro({
 }
 
 /**
- * EmptyState - Web-matched empty state card.
+ * SectionHeader - Unified settings section header: 15px primary icon,
+ * 13.5 semibold title, optional muted description underneath.
+ */
+export function SectionHeader({
+  icon: Icon,
+  title,
+  description,
+  badge,
+}: {
+  icon?: LucideIcon;
+  title: string;
+  description?: string;
+  badge?: ReactNode;
+}) {
+  const { colors } = useTheme();
+  return (
+    <View style={styles.sectionHeaderRow}>
+      {Icon ? <Icon size={15} color={colors.primary} /> : null}
+      <View style={styles.sectionHeaderTextCol}>
+        <Text style={[styles.sectionHeaderTitle, { color: colors.foreground }, font("semibold")]}>
+          {title}
+        </Text>
+        {description ? (
+          <Text style={[styles.sectionHeaderDesc, { color: colors.mutedForeground }, font("regular")]}>
+            {description}
+          </Text>
+        ) : null}
+      </View>
+      {badge ? <View style={{ marginLeft: "auto" }}>{badge}</View> : null}
+    </View>
+  );
+}
+
+/**
+ * EmptyState - Unified empty state: 56px bordered icon circle,
+ * 15px semibold title with 0.3 tracking, 12.5/19 muted description,
+ * optional action below. Pass iconNode for a custom icon (e.g. mascot).
  */
 export function EmptyState({
   icon: Icon,
+  iconNode,
   title,
   description,
   action,
 }: {
-  icon: LucideIcon;
+  icon?: LucideIcon;
+  iconNode?: ReactNode;
   title: string;
   description?: string;
   action?: ReactNode;
@@ -210,14 +249,18 @@ export function EmptyState({
   const { colors } = useTheme();
   return (
     <Surface style={styles.emptyStateContainer}>
-      <View style={[styles.emptyStateIconWrapper, { backgroundColor: colors.secondary }]}>
-        <Icon size={20} color={colors.secondaryForeground} />
+      <View style={[styles.emptyStateIconCircle, { borderColor: colors.border }]}>
+        {iconNode ?? (Icon ? <Icon size={22} color={colors.mutedForeground} /> : null)}
       </View>
-      <Text style={[styles.emptyStateTitle, { color: colors.foreground }]}>{title}</Text>
+      <Text style={[styles.emptyStateTitle, { color: colors.foreground }, font("semibold")]}>
+        {title}
+      </Text>
       {description ? (
-        <Text style={[styles.emptyStateDesc, { color: colors.mutedForeground }]}>{description}</Text>
+        <Text style={[styles.emptyStateDesc, { color: colors.mutedForeground }, font("regular")]}>
+          {description}
+        </Text>
       ) : null}
-      {action ? <View style={{ marginTop: 12 }}>{action}</View> : null}
+      {action ? <View style={styles.emptyStateAction}>{action}</View> : null}
     </Surface>
   );
 }
@@ -357,24 +400,39 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     marginVertical: 12,
   },
-  emptyStateIconWrapper: {
-    width: 44,
-    height: 44,
-    borderRadius: 12,
+  emptyStateIconCircle: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    borderWidth: StyleSheet.hairlineWidth,
     alignItems: "center",
     justifyContent: "center",
     marginBottom: 12,
   },
   emptyStateTitle: {
     fontSize: 15,
-    fontWeight: "600",
+    letterSpacing: 0.3,
+    textAlign: "center",
   },
   emptyStateDesc: {
-    fontSize: 13,
+    fontSize: 12.5,
+    lineHeight: 19,
     textAlign: "center",
     marginTop: 4,
-    maxWidth: 260,
+    maxWidth: 280,
   },
+  emptyStateAction: {
+    marginTop: 12,
+  },
+  sectionHeaderRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    paddingHorizontal: 2,
+  },
+  sectionHeaderTextCol: { flex: 1 },
+  sectionHeaderTitle: { fontSize: 13.5 },
+  sectionHeaderDesc: { fontSize: 12.5, lineHeight: 18, marginTop: 2 },
   listRow: {
     flexDirection: "row",
     alignItems: "center",

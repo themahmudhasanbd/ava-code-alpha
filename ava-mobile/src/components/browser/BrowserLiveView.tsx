@@ -40,7 +40,7 @@ export function BrowserLiveView({
     <View style={styles.container}>
       <View style={styles.header}>
         <View style={styles.liveBadge}>
-          <Radio size={12} color={isLive ? "#22C55E" : COLORS.mutedForeground} />
+          <Radio size={12} color={isLive ? COLORS.success : COLORS.mutedForeground} />
           <Text style={[styles.liveText, font("medium"), isLive && styles.liveActive]}>
             {isLive ? "LIVE" : "PAUSED"}
           </Text>
@@ -75,7 +75,7 @@ export function BrowserLiveView({
         )}
         {isLoading && frameData && (
           <View style={styles.loadingOverlay}>
-            <ActivityIndicator size="small" color="#FFFFFF" />
+            <ActivityIndicator size="small" color={COLORS.primaryForeground} />
           </View>
         )}
       </View>
@@ -87,7 +87,7 @@ export function BrowserLiveView({
           disabled={isLoading}
           activeOpacity={0.8}
         >
-          <RefreshCw size={15} color="#FFFFFF" />
+          <RefreshCw size={15} color={COLORS.primaryForeground} />
           <Text style={[styles.btnText, font("medium")]}>
             {frameData ? "Refresh" : "Start Live View"}
           </Text>
@@ -139,7 +139,7 @@ const styles = StyleSheet.create({
     color: COLORS.mutedForeground,
   },
   liveActive: {
-    color: "#22C55E",
+    color: COLORS.success,
   },
   timestamp: {
     fontSize: 11,
@@ -166,7 +166,7 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     fontSize: 13,
-    color: "#94A3B8",
+    color: COLORS.mutedForeground,
     textAlign: "center",
     lineHeight: 20,
   },
@@ -203,7 +203,7 @@ const styles = StyleSheet.create({
   },
   btnText: {
     fontSize: 14,
-    color: "#FFFFFF",
+    color: COLORS.primaryForeground,
   },
   btnTextSecondary: {
     fontSize: 14,

@@ -14,6 +14,7 @@ import {
 import { ChevronDown, Clock, Play, X } from "lucide-react-native";
 import { AppShell } from "@/components/layout/AppShell";
 import { AvaMascot } from "@/components/ui/ava-mascot";
+import { EmptyState } from "@/components/kit";
 import { Shimmer } from "@/components/ai-elements/shimmer";
 import { ChatMessageView } from "@/components/chat/message-parts";
 import { Composer } from "@/components/chat/composer";
@@ -328,33 +329,21 @@ export function SessionScreen({
             loadingHistory ? (
               <ChatSessionSkeleton />
             ) : (
-              <View style={styles.emptyContainer}>
-                <View
-                  style={[
-                    styles.emptyMascotWrapper,
-                    {
-                      backgroundColor: "transparent",
-                      borderColor: colors.border,
-                    },
-                  ]}
-                >
-                  <AvaMascot state={isStreaming ? "working" : "idle"} size="lg" />
-                </View>
-
-                <Text style={[styles.emptyTitle, font("bold"), { color: colors.foreground }]}>
-                  {status === "submitted" || status === "streaming"
+              <EmptyState
+                iconNode={<AvaMascot state={isStreaming ? "working" : "idle"} size="md" />}
+                title={
+                  status === "submitted" || status === "streaming"
                     ? "Agent is working…"
-                    : "Session Ready"}
-                </Text>
-
-                <Text style={[styles.emptySubtitle, font("regular"), { color: colors.mutedForeground }]}>
-                  {status === "submitted" || status === "streaming"
+                    : "Session Ready"
+                }
+                description={
+                  status === "submitted" || status === "streaming"
                     ? "Executing tools and generating solution. Output will stream here."
-                    : `Active in ${pathSnippet || "workspace"}. Ask a question or run a task to begin.`}
-                </Text>
-
-                {!isStreaming && (
-                  <View style={styles.startersWrap}>
+                    : `Active in ${pathSnippet || "workspace"}. Ask a question or run a task to begin.`
+                }
+                action={
+                  !isStreaming ? (
+                    <View style={styles.startersWrap}>
                     <Text style={[styles.startersHeader, font("semibold"), { color: colors.mutedForeground }]}>
                       Quick Starters
                     </Text>
@@ -379,8 +368,9 @@ export function SessionScreen({
                       ))}
                     </View>
                   </View>
-                )}
-              </View>
+                  ) : null
+                }
+              />
             )
           }
           onScrollToIndexFailed={(info) => {
@@ -574,37 +564,11 @@ const styles = StyleSheet.create({
   },
   listContent: {
     paddingHorizontal: 14,
-    paddingVertical: 14,
-    gap: 16,
-  },
-  emptyContainer: {
-    alignItems: "center",
-    justifyContent: "center",
-    paddingTop: 60,
-    paddingHorizontal: 20,
-    gap: 10,
-  },
-  emptyMascotWrapper: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
-    alignItems: "center",
-    justifyContent: "center",
-    borderWidth: 1,
-    marginBottom: 6,
-  },
-  emptyTitle: {
-    fontSize: 18,
-    textAlign: "center",
-  },
-  emptySubtitle: {
-    fontSize: 13,
-    textAlign: "center",
-    lineHeight: 18,
-    maxWidth: 290,
+    paddingVertical: 16,
+    gap: 20,
   },
   startersWrap: {
-    marginTop: 24,
+    marginTop: 12,
     width: "100%",
     gap: 10,
   },

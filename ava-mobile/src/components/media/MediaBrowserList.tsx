@@ -315,8 +315,8 @@ export function MediaBrowserList({
                 onPress={() => enterFolder(folder.path)}
                 activeOpacity={0.7}
               >
-                <View style={[styles.folderIconBox, { backgroundColor: "rgba(245, 158, 11, 0.14)" }]}>
-                  <Folder size={17} color="#F59E0B" />
+                <View style={[styles.folderIconBox, { backgroundColor: `${colors.warning}24` }]}>
+                  <Folder size={17} color={colors.warning} />
                 </View>
                 <View style={styles.itemMeta}>
                   <Text
@@ -337,7 +337,7 @@ export function MediaBrowserList({
             {files.map((file) => {
               const kind = getFileKind(file.name);
               const IconComp = getKindIcon(kind);
-              const color = getKindColor(kind);
+              const color = getKindColor(kind, colors);
               const isSelected = selectedFile?.path === file.path;
               const ext = getFileExtension(file.name).toUpperCase();
               const isImage = kind === "image";
@@ -422,7 +422,7 @@ export function MediaBrowserList({
 
                   {/* Selection indicator */}
                   {isSelected ? (
-                    <CheckCircle2 size={19} color="#10B981" />
+                    <CheckCircle2 size={19} color={colors.success} />
                   ) : (
                     <View
                       style={[
@@ -458,8 +458,8 @@ export function MediaBrowserList({
                   onPress={() => enterFolder(folder.path)}
                   activeOpacity={0.75}
                 >
-                  <View style={styles.gridFolderIconBox}>
-                    <Folder size={28} color="#F59E0B" />
+                  <View style={[styles.gridFolderIconBox, { backgroundColor: `${colors.warning}1F` }]}>
+                    <Folder size={28} color={colors.warning} />
                   </View>
                   <Text
                     style={[styles.gridCardTitle, { color: colors.foreground }, font("semibold")]}
@@ -467,8 +467,8 @@ export function MediaBrowserList({
                   >
                     {folder.name}
                   </Text>
-                  <View style={styles.folderBadge}>
-                    <Text style={[styles.folderBadgeText, font("medium")]}>
+                  <View style={[styles.folderBadge, { backgroundColor: `${colors.warning}33` }]}>
+                    <Text style={[styles.folderBadgeText, font("medium"), { color: colors.warning }]}>
                       DIR
                     </Text>
                   </View>
@@ -479,7 +479,7 @@ export function MediaBrowserList({
               {files.map((file) => {
                 const kind = getFileKind(file.name);
                 const IconComp = getKindIcon(kind);
-                const color = getKindColor(kind);
+                const color = getKindColor(kind, colors);
                 const isSelected = selectedFile?.path === file.path;
                 const ext = getFileExtension(file.name).toUpperCase();
                 const isImage = kind === "image";
@@ -532,7 +532,7 @@ export function MediaBrowserList({
                       {/* Top-Right Selection Indicator */}
                       <View style={styles.gridSelectBadge}>
                         {isSelected ? (
-                          <CheckCircle2 size={17} color="#10B981" />
+                          <CheckCircle2 size={17} color={colors.success} />
                         ) : (
                           <View style={styles.gridUnselectedCircle} />
                         )}
@@ -881,7 +881,6 @@ const styles = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: 12,
-    backgroundColor: "rgba(245, 158, 11, 0.12)",
     alignItems: "center",
     justifyContent: "center",
   },
@@ -892,11 +891,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 5,
     paddingVertical: 2,
     borderRadius: 4,
-    backgroundColor: "rgba(245, 158, 11, 0.2)",
   },
   folderBadgeText: {
     fontSize: 8.5,
-    color: "#F59E0B",
     fontWeight: "700",
   },
   gridFileCard: {

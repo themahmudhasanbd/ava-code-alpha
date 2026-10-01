@@ -303,7 +303,7 @@ export function MediaSelectorModal({
                 isTabletOrWeb && styles.backdropCentered,
                 {
                   opacity: fadeAnim,
-                  backgroundColor: isDark ? "rgba(0, 0, 0, 0.70)" : "rgba(15, 23, 42, 0.45)",
+                  backgroundColor: "rgba(0, 0, 0, 0.6)",
                 },
               ]}
             >
@@ -321,7 +321,7 @@ export function MediaSelectorModal({
                       width: isTabletOrWeb ? cardWidth : "100%",
                       backgroundColor: colors.card,
                       borderColor: colors.border,
-                      shadowColor: isDark ? "#000" : "rgba(15, 23, 42, 0.35)",
+                      shadowColor: colors.glassShadow,
                       transform: [{ translateY: slideAnim }],
                     },
                   ]}
@@ -395,8 +395,8 @@ export function MediaSelectorModal({
                     <>
                       {[
                         { icon: Images, color: colors.primary, title: "Photo / Video Library", sub: "Pick from your gallery", fn: pickGallery },
-                        { icon: FileText, color: "#8B5CF6", title: "Files & Documents", sub: "Pick any file or document", fn: pickDocument },
-                        { icon: Camera, color: "#F59E0B", title: "Camera", sub: "Take a photo or video", fn: pickCamera },
+                        { icon: FileText, color: colors.primary, title: "Files & Documents", sub: "Pick any file or document", fn: pickDocument },
+                        { icon: Camera, color: colors.warning, title: "Camera", sub: "Take a photo or video", fn: pickCamera },
                       ].map((opt) => (
                         <TouchableOpacity
                           key={opt.title}
@@ -465,8 +465,8 @@ export function MediaSelectorModal({
                     disabled={uploading}
                     activeOpacity={0.7}
                   >
-                    <View style={[styles.optionIconBox, { backgroundColor: "rgba(16, 185, 129, 0.14)" }]}>
-                      <Server size={20} color="#10B981" />
+                    <View style={[styles.optionIconBox, { backgroundColor: colors.success + "24" }]}>
+                      <Server size={20} color={colors.success} />
                     </View>
                     <View style={styles.optionContent}>
                       <Text style={[styles.optionTitle, { color: colors.foreground }, font("semibold")]}>

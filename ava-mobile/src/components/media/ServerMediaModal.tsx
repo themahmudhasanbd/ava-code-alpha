@@ -104,7 +104,7 @@ export function ServerMediaModal({
           else onClose();
         }}
       >
-        <View style={[styles.backdrop, { backgroundColor: isDark ? "rgba(0,0,0,0.72)" : "rgba(15,23,42,0.5)" }]}>
+        <View style={[styles.backdrop, { backgroundColor: "rgba(0, 0, 0, 0.6)" }]}>
           <BlurView
             intensity={isDark ? 80 : 60}
             tint={isDark ? "dark" : "light"}
@@ -119,7 +119,7 @@ export function ServerMediaModal({
                   height: dialogHeight,
                   backgroundColor: colors.card,
                   borderColor: colors.border,
-                  shadowColor: isDark ? "#000000" : "rgba(15,23,42,0.3)",
+                  shadowColor: colors.glassShadow,
                 },
               ]}
             >

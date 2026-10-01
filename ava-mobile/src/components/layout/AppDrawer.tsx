@@ -771,7 +771,9 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: COLORS.secondary,
+    backgroundColor: "transparent",
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: COLORS.border,
   },
   tabsContainer: {
     paddingHorizontal: 12,
@@ -828,11 +830,11 @@ const styles = StyleSheet.create({
     marginBottom: 18,
   },
   sectionHeader: {
-    fontSize: 11,
+    fontSize: 10.5,
     fontWeight: "600",
     textTransform: "uppercase",
     color: COLORS.mutedForeground,
-    letterSpacing: 0.6,
+    letterSpacing: 0.5,
     paddingHorizontal: 10,
     marginBottom: 6,
   },
@@ -840,7 +842,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 12,
-    height: 40,
+    height: 42,
     paddingHorizontal: 12,
     borderRadius: 12,
   },
@@ -891,15 +893,15 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   groupContainer: {
-    borderRadius: 12,
-    backgroundColor: "rgba(255, 255, 255, 0.02)",
-    borderWidth: 1,
-    borderColor: "rgba(255, 255, 255, 0.05)",
+    borderRadius: 14,
+    backgroundColor: COLORS.card,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: COLORS.border,
     overflow: "hidden",
   },
   activeWorkspaceContainer: {
-    backgroundColor: "rgba(66, 64, 225, 0.05)",
-    borderColor: "rgba(66, 64, 225, 0.22)",
+    backgroundColor: COLORS.primary + "0D",
+    borderColor: COLORS.primary + "38",
   },
   groupHeader: {
     flexDirection: "row",
@@ -910,7 +912,7 @@ const styles = StyleSheet.create({
     borderRadius: 10,
   },
   activeWorkspaceHeader: {
-    backgroundColor: "rgba(66, 64, 225, 0.08)",
+    backgroundColor: COLORS.primary + "14",
   },
   groupInfoCol: {
     flex: 1,
@@ -935,8 +937,8 @@ const styles = StyleSheet.create({
   activeWorkspaceBadge: {
     paddingHorizontal: 5,
     paddingVertical: 1,
-    borderRadius: 5,
-    backgroundColor: "rgba(66, 64, 225, 0.14)",
+    borderRadius: 6,
+    backgroundColor: COLORS.primary + "24",
   },
   activeWorkspaceBadgeText: {
     fontSize: 9,
@@ -960,10 +962,11 @@ const styles = StyleSheet.create({
     color: COLORS.primary,
   },
   pathTag: {
-    fontSize: 10,
+    fontSize: 10.5,
     color: COLORS.mutedForeground,
-    marginTop: 1,
+    marginTop: 2,
     opacity: 0.8,
+    letterSpacing: 0.2,
   },
   groupHeaderRight: {
     flexDirection: "row",
@@ -988,20 +991,20 @@ const styles = StyleSheet.create({
   groupSessionList: {
     marginLeft: 14,
     marginRight: 6,
-    borderLeftWidth: 1.5,
-    borderLeftColor: "rgba(66, 64, 225, 0.2)",
+    borderLeftWidth: StyleSheet.hairlineWidth,
+    borderLeftColor: COLORS.primary + "33",
     paddingLeft: 8,
-    gap: 2,
-    paddingTop: 4,
-    paddingBottom: 6,
+    gap: 3,
+    paddingTop: 6,
+    paddingBottom: 8,
   },
   sessionRow: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    borderRadius: 8,
+    borderRadius: 10,
     paddingHorizontal: 4,
-    minHeight: 34,
+    minHeight: 36,
   },
   sessionRowSelected: {
     backgroundColor: COLORS.sidebarAccent,
@@ -1021,7 +1024,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 6,
     paddingVertical: 3,
     borderRadius: 999,
-    backgroundColor: COLORS.accent,
+    backgroundColor: COLORS.primary + "1A",
     marginLeft: 6,
   },
   sessionDot: {
@@ -1039,7 +1042,7 @@ const styles = StyleSheet.create({
     opacity: 1,
   },
   sessionBtnText: {
-    fontSize: 12.5,
+    fontSize: 13,
     color: COLORS.mutedForeground,
     flex: 1,
   },
@@ -1060,8 +1063,8 @@ const styles = StyleSheet.create({
   runningBadge: {
     paddingHorizontal: 5,
     paddingVertical: 1,
-    borderRadius: 5,
-    backgroundColor: "rgba(66, 64, 225, 0.12)",
+    borderRadius: 6,
+    backgroundColor: COLORS.primary + "1F",
     marginLeft: 4,
   },
   runningBadgeText: {
@@ -1130,8 +1133,8 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     borderRadius: 9,
-    backgroundColor: COLORS.secondary,
-    borderWidth: 1,
+    backgroundColor: "transparent",
+    borderWidth: StyleSheet.hairlineWidth,
     borderColor: COLORS.border,
   },
   modalBackdrop: {
@@ -1199,6 +1202,6 @@ const styles = StyleSheet.create({
   },
   renameSaveText: {
     fontSize: 13,
-    color: "#FFFFFF",
+    color: COLORS.primaryForeground,
   },
 });

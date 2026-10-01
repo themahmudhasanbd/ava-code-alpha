@@ -18,7 +18,7 @@ interface SlashCommandPopupProps {
 }
 
 export function SlashCommandPopup({ items, onSelect, onClose }: SlashCommandPopupProps) {
-  const { colors, isDark } = useTheme();
+  const { colors } = useTheme();
 
   if (items.length === 0) return null;
 
@@ -29,7 +29,7 @@ export function SlashCommandPopup({ items, onSelect, onClose }: SlashCommandPopu
         {
           backgroundColor: colors.card,
           borderColor: colors.border,
-          shadowColor: isDark ? "#000000" : colors.glassShadow,
+          shadowColor: colors.glassShadow,
         },
       ]}
     >
@@ -80,9 +80,7 @@ export function SlashCommandPopup({ items, onSelect, onClose }: SlashCommandPopu
                 style={[
                   styles.iconBox,
                   {
-                    backgroundColor: isDark
-                      ? "rgba(99, 102, 241, 0.16)"
-                      : "rgba(79, 70, 229, 0.10)",
+                    backgroundColor: colors.primary + "24",
                   },
                 ]}
               >

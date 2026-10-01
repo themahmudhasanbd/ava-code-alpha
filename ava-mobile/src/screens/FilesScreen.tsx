@@ -77,6 +77,25 @@ function TreeBranch({
     return <View style={{ padding: 12 }}><SkeletonRows count={5} /></View>;
   }
 
+  if (visible.length === 0) {
+    if (depth > 0) {
+      return (
+        <Text style={[styles.nestedEmpty, { marginHorizontal: 6, paddingLeft: Math.min(depth, 8) * 16 + 35 }]}>
+          {query ? "No matches" : "Empty folder"}
+        </Text>
+      );
+    }
+    return (
+      <View style={styles.emptyWrap}>
+        <EmptyState
+          icon={query ? Search : Folder}
+          title={query ? "No files match your search" : "This folder is empty"}
+          description={query ? `Nothing here matches "${query}".` : "Create a file or folder to get started."}
+        />
+      </View>
+    );
+  }
+
   return (
     <View>
       {visible.map((entry) => {
@@ -412,7 +431,7 @@ export function FilesScreen({ route }: { route?: { params?: { initialPath?: stri
               {showSearch && (
                 <View style={styles.searchBar}>
                   <View style={styles.searchBox}>
-                    <Search size={15} color={COLORS.mutedForeground} />
+                    <Search size={16} color={COLORS.mutedForeground} />
                     <TextInput
                       value={query}
                       onChangeText={setQuery}
@@ -463,23 +482,25 @@ const styles = StyleSheet.create({
   crumbActive: { color: COLORS.primary, fontWeight: "700" },
 
   codeCard: { flex: 1, backgroundColor: COLORS.codeBg, borderRadius: 18, borderWidth: 1, borderColor: "rgba(255, 255, 255, 0.1)", overflow: "hidden" },
-  searchBar: { padding: 10, borderBottomWidth: 1, borderBottomColor: "rgba(255, 255, 255, 0.08)" },
-  searchBox: { flexDirection: "row", alignItems: "center", backgroundColor: "rgba(255, 255, 255, 0.05)", borderWidth: 1, borderColor: "rgba(255, 255, 255, 0.1)", borderRadius: 10, paddingHorizontal: 10, height: 38, gap: 8 },
-  searchInput: { flex: 1, fontSize: 13, color: COLORS.codeForeground, paddingVertical: 0 },
-  treeScroll: { flex: 1, paddingTop: 6 },
-  treeRow: { flexDirection: "row", alignItems: "center", gap: 8, height: 38, paddingRight: 12 },
+  searchBar: { padding: 12, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: "rgba(255, 255, 255, 0.08)" },
+  searchBox: { flexDirection: "row", alignItems: "center", backgroundColor: "rgba(255, 255, 255, 0.05)", borderWidth: StyleSheet.hairlineWidth, borderColor: "rgba(255, 255, 255, 0.1)", borderRadius: 12, paddingHorizontal: 12, height: 40, gap: 10 },
+  searchInput: { flex: 1, fontSize: 13.5, lineHeight: 20, color: COLORS.codeForeground, paddingVertical: 0 },
+  treeScroll: { flex: 1, paddingTop: 8 },
+  treeRow: { flexDirection: "row", alignItems: "center", gap: 10, height: 42, marginHorizontal: 6, borderRadius: 10, paddingRight: 12 },
   treeRowActive: { backgroundColor: "rgba(255, 255, 255, 0.08)" },
-  treeEntryName: { fontSize: 13, color: COLORS.codeForeground, flex: 1 },
+  treeEntryName: { fontSize: 13.5, lineHeight: 20, color: COLORS.codeForeground, flex: 1 },
   treeEntryNameActive: { color: COLORS.primary, fontWeight: "600" },
+  emptyWrap: { padding: 16, paddingTop: 24 },
+  nestedEmpty: { fontSize: 11.5, letterSpacing: 0.2, color: COLORS.mutedForeground, paddingVertical: 10, paddingRight: 12 },
 
   editorContainer: { flex: 1 },
-  editorSubHeader: { height: 42, flexDirection: "row", alignItems: "center", justifyContent: "space-between", borderBottomWidth: 1, borderBottomColor: "rgba(255, 255, 255, 0.08)", paddingHorizontal: 12, backgroundColor: "rgba(255, 255, 255, 0.03)" },
+  editorSubHeader: { height: 46, flexDirection: "row", alignItems: "center", justifyContent: "space-between", borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: "rgba(255, 255, 255, 0.08)", paddingHorizontal: 14, backgroundColor: "rgba(255, 255, 255, 0.03)" },
   editorTab: { flexDirection: "row", alignItems: "center", gap: 6, maxWidth: "50%" },
   editorTabText: { fontSize: 12.5, color: COLORS.codeForeground, fontWeight: "600" },
   dirtyDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: COLORS.warning },
   editorActions: { flexDirection: "row", alignItems: "center", gap: 6 },
-  editorActionBtn: { flexDirection: "row", alignItems: "center", gap: 4, paddingVertical: 4, paddingHorizontal: 8, borderRadius: 6, backgroundColor: "rgba(255, 255, 255, 0.06)" },
-  editorActionBtnText: { fontSize: 11, color: COLORS.mutedForeground },
+  editorActionBtn: { flexDirection: "row", alignItems: "center", gap: 5, paddingVertical: 6, paddingHorizontal: 10, borderRadius: 8, backgroundColor: "rgba(255, 255, 255, 0.06)" },
+  editorActionBtnText: { fontSize: 11.5, letterSpacing: 0.2, color: COLORS.mutedForeground },
   saveBtn: { backgroundColor: COLORS.primary },
   editorContentArea: { flex: 1 },
   editInput: { flex: 1, fontSize: 13, lineHeight: 19, color: COLORS.codeForeground, backgroundColor: COLORS.codeBg, padding: 12, fontFamily: Platform.OS === "ios" ? "Menlo" : "monospace" },

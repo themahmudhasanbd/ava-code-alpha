@@ -445,14 +445,14 @@ const styles = StyleSheet.create({
   },
   groupCard: {
     borderRadius: 12,
-    backgroundColor: "rgba(255, 255, 255, 0.02)",
+    backgroundColor: COLORS.secondary,
     borderWidth: 1,
-    borderColor: "rgba(255, 255, 255, 0.05)",
+    borderColor: COLORS.border,
     overflow: "hidden",
   },
   activeWorkspaceCard: {
-    backgroundColor: "rgba(66, 64, 225, 0.05)",
-    borderColor: "rgba(66, 64, 225, 0.22)",
+    backgroundColor: COLORS.primary + "0D",
+    borderColor: COLORS.primary + "38",
   },
   groupHeader: {
     flexDirection: "row",
@@ -463,7 +463,7 @@ const styles = StyleSheet.create({
     borderRadius: 10,
   },
   activeWorkspaceHeader: {
-    backgroundColor: "rgba(66, 64, 225, 0.08)",
+    backgroundColor: COLORS.primary + "14",
   },
   groupInfoCol: {
     flex: 1,
@@ -487,7 +487,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 5,
     paddingVertical: 1,
     borderRadius: 5,
-    backgroundColor: "rgba(66, 64, 225, 0.14)",
+    backgroundColor: COLORS.primary + "24",
   },
   activeWorkspaceBadgeText: {
     fontSize: 9,
@@ -532,7 +532,7 @@ const styles = StyleSheet.create({
     marginLeft: 14,
     marginRight: 6,
     borderLeftWidth: 1.5,
-    borderLeftColor: "rgba(66, 64, 225, 0.2)",
+    borderLeftColor: COLORS.primary + "33",
     paddingLeft: 8,
     gap: 2,
     paddingTop: 4,
@@ -594,7 +594,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 5,
     paddingVertical: 1,
     borderRadius: 5,
-    backgroundColor: "rgba(66, 64, 225, 0.12)",
+    backgroundColor: COLORS.primary + "1F",
     marginLeft: 4,
   },
   runningBadgeText: {
@@ -656,6 +656,6 @@ const styles = StyleSheet.create({
   },
   renameSaveText: {
     fontSize: 12.5,
-    color: "#FFFFFF",
+    color: COLORS.primaryForeground,
   },
 });

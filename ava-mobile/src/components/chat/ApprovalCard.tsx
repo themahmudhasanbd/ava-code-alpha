@@ -1,7 +1,7 @@
 import React from "react";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { Check, ShieldAlert, X } from "lucide-react-native";
-import { COLORS } from "@/theme/colors";
+import { useTheme } from "@/theme/colors";
 import { font } from "@/theme/fonts";
 import type { PendingApproval } from "@/core/types";
 
@@ -32,40 +32,68 @@ interface ApprovalCardProps {
  * (see answerApproval in core/api/chat).
  */
 export function ApprovalCard({ approval, onRespond }: ApprovalCardProps) {
+  const { colors } = useTheme();
   return (
-    <View style={styles.card} accessibilityRole="alert">
+    <View
+      style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}
+      accessibilityRole="alert"
+    >
       <View style={styles.header}>
-        <ShieldAlert size={15} color={COLORS.warning} />
-        <Text style={[styles.label, font("semibold")]}>{methodLabel(approval.method)}</Text>
+        <View
+          style={[
+            styles.iconChip,
+            { backgroundColor: colors.warning + "14", borderColor: colors.warning + "33" },
+          ]}
+        >
+          <ShieldAlert size={14} color={colors.warning} />
+        </View>
+        <Text style={[styles.label, font("semibold"), { color: colors.warning }]}>
+          {methodLabel(approval.method)}
+        </Text>
       </View>
-      <Text style={[styles.title, font("semibold")]} numberOfLines={3}>
+      <Text
+        style={[styles.title, font("semibold"), { color: colors.foreground }]}
+        numberOfLines={3}
+      >
         {approval.title}
       </Text>
       {approval.detail ? (
-        <Text style={[styles.detail, font("regular")]} numberOfLines={6}>
+        <Text
+          style={[styles.detail, font("regular"), { color: colors.mutedForeground }]}
+          numberOfLines={6}
+        >
           {approval.detail}
         </Text>
       ) : null}
       <View style={styles.actions}>
         <TouchableOpacity
-          style={[styles.button, styles.denyButton]}
+          style={[styles.button, { borderColor: colors.destructive }]}
           onPress={() => onRespond(approval.id, false)}
           activeOpacity={0.7}
           accessibilityRole="button"
           accessibilityLabel="Deny"
         >
-          <X size={14} color={COLORS.destructive} />
-          <Text style={[styles.denyText, font("semibold")]}>Deny</Text>
+          <X size={14} color={colors.destructive} />
+          <Text style={[styles.denyText, font("semibold"), { color: colors.destructive }]}>
+            Deny
+          </Text>
         </TouchableOpacity>
         <TouchableOpacity
-          style={[styles.button, styles.allowButton]}
+          style={[
+            styles.button,
+            { backgroundColor: colors.success, borderColor: colors.success },
+          ]}
           onPress={() => onRespond(approval.id, true)}
           activeOpacity={0.7}
           accessibilityRole="button"
           accessibilityLabel="Allow"
         >
-          <Check size={14} color="#FFF" />
-          <Text style={[styles.allowText, font("semibold")]}>Allow</Text>
+          <Check size={14} color={colors.primaryForeground} />
+          <Text
+            style={[styles.allowText, font("semibold"), { color: colors.primaryForeground }]}
+          >
+            Allow
+          </Text>
         </TouchableOpacity>
       </View>
     </View>
@@ -74,32 +102,37 @@ export function ApprovalCard({ approval, onRespond }: ApprovalCardProps) {
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: COLORS.card,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: COLORS.warning,
-    padding: 12,
-    gap: 8,
-    marginBottom: 8,
+    borderRadius: 14,
+    borderWidth: StyleSheet.hairlineWidth,
+    padding: 14,
+    gap: 10,
+    marginBottom: 10,
   },
   header: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 6,
+    gap: 8,
+  },
+  iconChip: {
+    width: 26,
+    height: 26,
+    borderRadius: 13,
+    borderWidth: StyleSheet.hairlineWidth,
+    alignItems: "center",
+    justifyContent: "center",
   },
   label: {
-    fontSize: 11,
-    color: COLORS.warning,
+    fontSize: 10.5,
     textTransform: "uppercase",
-    letterSpacing: 0.5,
+    letterSpacing: 0.3,
   },
   title: {
-    fontSize: 13.5,
-    color: COLORS.foreground,
+    fontSize: 14,
+    lineHeight: 20,
   },
   detail: {
     fontSize: 12,
-    color: COLORS.mutedForeground,
+    lineHeight: 18,
     fontFamily: "monospace",
   },
   actions: {
@@ -113,24 +146,14 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     gap: 6,
-    paddingVertical: 9,
-    borderRadius: 8,
+    paddingVertical: 10,
+    borderRadius: 10,
     borderWidth: 1,
-  },
-  denyButton: {
-    backgroundColor: "transparent",
-    borderColor: COLORS.destructive,
   },
   denyText: {
     fontSize: 13,
-    color: COLORS.destructive,
-  },
-  allowButton: {
-    backgroundColor: COLORS.success,
-    borderColor: COLORS.success,
   },
   allowText: {
     fontSize: 13,
-    color: "#FFF",
   },
 });

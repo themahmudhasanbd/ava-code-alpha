@@ -38,7 +38,7 @@ import {
 } from "lucide-react-native";
 import { useQueryClient } from "@tanstack/react-query";
 import { AppShell } from "@/components/layout/AppShell";
-import { Surface } from "@/components/kit";
+import { EmptyState, Surface } from "@/components/kit";
 import { useAva } from "@/state/ava-provider";
 import { keys, useModels, useServerConfig, useWriteConfig } from "@/state/queries";
 import {
@@ -576,28 +576,28 @@ export function ModelsScreen() {
 
           <View style={styles.headerBtnGroup}>
             <TouchableOpacity
-              style={styles.reloadBtn}
+              style={[styles.reloadBtn, { borderColor: colors.primary + "59", backgroundColor: colors.primary + "14" }]}
               onPress={handleReloadModels}
               disabled={isReloading}
               activeOpacity={0.7}
             >
               {isReloading ? (
-                <ActivityIndicator size="small" color="#6366F1" />
+                <ActivityIndicator size="small" color={colors.primary} />
               ) : (
-                <RotateCw size={14} color="#6366F1" />
+                <RotateCw size={14} color={colors.primary} />
               )}
-              <Text style={[styles.reloadBtnText, font("semibold")]}>
+              <Text style={[styles.reloadBtnText, { color: colors.primary }, font("semibold")]}>
                 {isReloading ? "Reloading…" : "Reload"}
               </Text>
             </TouchableOpacity>
 
             <TouchableOpacity
-              style={styles.connectBtn}
+              style={[styles.connectBtn, { backgroundColor: colors.primary }]}
               onPress={handleOpenConnector}
               activeOpacity={0.8}
             >
-              <Plug size={14} color="#FFF" />
-              <Text style={[styles.connectBtnText, font("bold")]}>Connect API</Text>
+              <Plug size={14} color={colors.primaryForeground} />
+              <Text style={[styles.connectBtnText, { color: colors.primaryForeground }, font("bold")]}>Connect API</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -605,7 +605,7 @@ export function ModelsScreen() {
         {/* ── 1. AI PROVIDERS & MULTI-TOKEN CONNECTIONS ── */}
         <Surface style={[styles.providersCard, { borderColor: colors.border }]}>
           <View style={styles.providersHeaderRow}>
-            <Cpu size={15} color="#6366F1" />
+            <Cpu size={15} color={colors.primary} />
             <Text style={[styles.providersSectionTitle, { color: colors.mutedForeground }, font("bold")]}>
               AI PROVIDERS & MULTI-TOKEN AUTH
             </Text>
@@ -618,31 +618,21 @@ export function ModelsScreen() {
 
           {/* Empty state when no custom providers */}
           {customProviders.length === 0 && (
-            <View style={{ paddingVertical: 20, alignItems: "center", gap: 10 }}>
-              <Server size={24} color={colors.mutedForeground} />
-              <Text
-                style={[
-                  {
-                    color: colors.mutedForeground,
-                    fontSize: 13,
-                    textAlign: "center",
-                    paddingHorizontal: 20,
-                  },
-                  font("regular"),
-                ]}
-              >
-                No external providers connected yet. Connect Google Antigravity or OpenAI-compatible endpoints with
-                multi-token rotation.
-              </Text>
-              <TouchableOpacity
-                style={styles.connectBtn}
-                onPress={handleOpenConnector}
-                activeOpacity={0.8}
-              >
-                <Plus size={14} color="#FFF" />
-                <Text style={[styles.connectBtnText, font("bold")]}>Add Provider</Text>
-              </TouchableOpacity>
-            </View>
+            <EmptyState
+              icon={Server}
+              title="No external providers connected"
+              description="Connect Google Antigravity or OpenAI-compatible endpoints with multi-token rotation."
+              action={
+                <TouchableOpacity
+                  style={[styles.connectBtn, { backgroundColor: colors.primary }]}
+                  onPress={handleOpenConnector}
+                  activeOpacity={0.8}
+                >
+                  <Plus size={14} color={colors.primaryForeground} />
+                  <Text style={[styles.connectBtnText, { color: colors.primaryForeground }, font("bold")]}>Add Provider</Text>
+                </TouchableOpacity>
+              }
+            />
           )}
 
           {/* Custom Connected Providers */}
@@ -670,16 +660,16 @@ export function ModelsScreen() {
                       {cp.name}
                     </Text>
                     {tokenCount > 1 ? (
-                      <View style={styles.tokenMultiBadge}>
-                        <ShieldCheck size={11} color="#10B981" />
-                        <Text style={[styles.tokenMultiBadgeText, font("bold")]}>
+                      <View style={[styles.tokenMultiBadge, { backgroundColor: colors.success + "1F" }]}>
+                        <ShieldCheck size={11} color={colors.success} />
+                        <Text style={[styles.tokenMultiBadgeText, { color: colors.success }, font("bold")]}>
                           {tokenCount} Tokens (Auto-Rotate)
                         </Text>
                       </View>
                     ) : tokenCount === 1 ? (
-                      <View style={[styles.tokenMultiBadge, { backgroundColor: "rgba(99, 102, 241, 0.12)" }]}>
-                        <Key size={10} color="#6366F1" />
-                        <Text style={[styles.tokenMultiBadgeText, { color: "#6366F1" }, font("bold")]}>
+                      <View style={[styles.tokenMultiBadge, { backgroundColor: colors.primary + "1F" }]}>
+                        <Key size={10} color={colors.primary} />
+                        <Text style={[styles.tokenMultiBadgeText, { color: colors.primary }, font("bold")]}>
                           1 Token
                         </Text>
                       </View>
@@ -689,7 +679,7 @@ export function ModelsScreen() {
                     {cp.baseUrl}
                   </Text>
                   {cp.projectId && (
-                    <Text style={[styles.providerRowProject, mono("regular")]}>
+                    <Text style={[styles.providerRowProject, { color: colors.primary }, mono("regular")]}>
                       Project: {cp.projectId}
                     </Text>
                   )}
@@ -697,7 +687,7 @@ export function ModelsScreen() {
 
                 <View style={styles.providerActionCol}>
                   <TouchableOpacity
-                    style={[styles.iconActionBtn, { backgroundColor: colors.card }]}
+                    style={[styles.iconActionBtn, { borderColor: colors.border }]}
                     onPress={() => handleOpenEditProvider(cp)}
                     activeOpacity={0.7}
                   >
@@ -706,7 +696,7 @@ export function ModelsScreen() {
                   <Switch
                     value={isEnabled}
                     onValueChange={(val) => handleToggleProvider(cp.id, val)}
-                    trackColor={{ false: colors.border, true: "#6366F1" }}
+                    trackColor={{ false: colors.border, true: colors.primary }}
                     thumbColor={Platform.OS === "android" ? "#FFF" : undefined}
                     style={{ transform: [{ scaleX: 0.8 }, { scaleY: 0.8 }] }}
                   />
@@ -717,11 +707,11 @@ export function ModelsScreen() {
         </Surface>
 
         {/* ── 2. MODEL FALLBACK ROUTING CHAIN ── */}
-        <Surface style={[styles.fallbackChainCard, { borderColor: "rgba(139, 92, 246, 0.3)" }]}>
+        <Surface style={[styles.fallbackChainCard, { borderColor: colors.primary + "4D" }]}>
           <View style={styles.fallbackChainHeader}>
             <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
-              <Layers size={15} color="#8B5CF6" />
-              <Text style={[styles.fallbackChainTitle, font("bold")]}>
+              <Layers size={15} color={colors.primary} />
+              <Text style={[styles.fallbackChainTitle, { color: colors.primary }, font("bold")]}>
                 MODEL FALLBACK ROUTING CHAIN
               </Text>
             </View>
@@ -737,8 +727,8 @@ export function ModelsScreen() {
           </Text>
 
           {/* Primary Model (Active Selection) */}
-          <View style={[styles.chainItemPrimary, { backgroundColor: colors.secondary }]}>
-            <View style={styles.chainRankBadgePrimary}>
+          <View style={[styles.chainItemPrimary, { backgroundColor: colors.secondary, borderColor: colors.success + "59" }]}>
+            <View style={[styles.chainRankBadgePrimary, { backgroundColor: colors.success }]}>
               <Text style={[styles.chainRankTextPrimary, font("bold")]}>1</Text>
             </View>
             <View style={{ flex: 1 }}>
@@ -746,13 +736,13 @@ export function ModelsScreen() {
                 <Text style={[styles.chainItemName, { color: colors.foreground }, font("bold")]}>
                   {models.find((m) => m.id === activeId)?.name || activeId || "No Model Selected"}
                 </Text>
-                <View style={styles.activeDotPulse} />
+                <View style={[styles.activeDotPulse, { backgroundColor: colors.success }]} />
               </View>
               <Text style={[styles.chainItemSub, { color: colors.mutedForeground }, mono("regular")]}>
                 Primary Active Model ({activeId})
               </Text>
             </View>
-            <Zap size={15} color="#10B981" />
+            <Zap size={15} color={colors.success} />
           </View>
 
           {/* Fallback Targets */}
@@ -802,7 +792,7 @@ export function ModelsScreen() {
                     onPress={() => handleRemoveFromChain(idx)}
                     activeOpacity={0.6}
                   >
-                    <Trash2 size={13} color="#EF4444" />
+                    <Trash2 size={13} color={colors.destructive} />
                   </TouchableOpacity>
                 </View>
               </View>
@@ -811,26 +801,26 @@ export function ModelsScreen() {
 
           <View style={styles.chainActionsRow}>
             <TouchableOpacity
-              style={styles.addChainBtn}
+              style={[styles.addChainBtn, { borderColor: colors.primary + "59", backgroundColor: colors.primary + "14" }]}
               onPress={() => setShowAddChainModal(true)}
               activeOpacity={0.7}
             >
-              <Plus size={13} color="#8B5CF6" />
-              <Text style={[styles.addChainBtnText, font("bold")]}>Add Fallback Model</Text>
+              <Plus size={13} color={colors.primary} />
+              <Text style={[styles.addChainBtnText, { color: colors.primary }, font("bold")]}>Add Fallback Model</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
-              style={styles.saveChainBtn}
+              style={[styles.saveChainBtn, { backgroundColor: colors.primary }]}
               onPress={handleSaveFallbackChain}
               disabled={isSavingChain}
               activeOpacity={0.8}
             >
               {isSavingChain ? (
-                <ActivityIndicator size="small" color="#FFF" />
+                <ActivityIndicator size="small" color={colors.primaryForeground} />
               ) : (
-                <Check size={13} color="#FFF" />
+                <Check size={13} color={colors.primaryForeground} />
               )}
-              <Text style={[styles.saveChainBtnText, font("bold")]}>
+              <Text style={[styles.saveChainBtnText, { color: colors.primaryForeground }, font("bold")]}>
                 {isSavingChain ? "Saving…" : "Save Chain"}
               </Text>
             </TouchableOpacity>
@@ -878,7 +868,7 @@ export function ModelsScreen() {
                   style={[
                     styles.filterPill,
                     { backgroundColor: colors.secondary, borderColor: colors.border },
-                    active && styles.filterPillActive,
+                    active && [styles.filterPillActive, { backgroundColor: colors.primary + "1F", borderColor: colors.primary + "59" }],
                   ]}
                   onPress={() => setActiveFilter(tab.id)}
                   activeOpacity={0.7}
@@ -886,7 +876,7 @@ export function ModelsScreen() {
                   <Text
                     style={[
                       styles.filterPillText,
-                      { color: active ? "#6366F1" : colors.mutedForeground },
+                      { color: active ? colors.primary : colors.mutedForeground },
                       font(active ? "bold" : "regular"),
                     ]}
                   >
@@ -901,7 +891,7 @@ export function ModelsScreen() {
         {/* ── 4. MODEL CATALOG GROUPED BY PROVIDER ── */}
         {isLoading && (
           <View style={{ padding: 20, alignItems: "center", gap: 10 }}>
-            <ActivityIndicator size="small" color="#6366F1" />
+            <ActivityIndicator size="small" color={colors.primary} />
             <Text style={[{ color: colors.mutedForeground, fontSize: 12 }, font("regular")]}>
               Loading model catalog...
             </Text>
@@ -949,7 +939,10 @@ export function ModelsScreen() {
                         style={[
                           styles.modelItemCard,
                           { backgroundColor: colors.card, borderColor: colors.border },
-                          isSelected && styles.modelItemCardSelected,
+                          isSelected && [
+                            styles.modelItemCardSelected,
+                            { borderColor: colors.primary, backgroundColor: colors.primary + "0A" },
+                          ],
                         ]}
                         onPress={() => handleSelectModel(m.id)}
                         activeOpacity={0.75}
@@ -961,8 +954,8 @@ export function ModelsScreen() {
                                 {m.name}
                               </Text>
                               {m.isDefault && (
-                                <View style={styles.defaultBadge}>
-                                  <Text style={[styles.defaultBadgeText, font("bold")]}>DEFAULT</Text>
+                                <View style={[styles.defaultBadge, { backgroundColor: colors.primary + "26" }]}>
+                                  <Text style={[styles.defaultBadgeText, { color: colors.primary }, font("bold")]}>DEFAULT</Text>
                                 </View>
                               )}
                             </View>
@@ -973,8 +966,8 @@ export function ModelsScreen() {
 
                           <View style={styles.selectCol}>
                             {isSelected ? (
-                              <View style={styles.selectedCircle}>
-                                <Check size={12} color="#FFF" />
+                              <View style={[styles.selectedCircle, { backgroundColor: colors.primary }]}>
+                                <Check size={12} color={colors.primaryForeground} />
                               </View>
                             ) : (
                               <View style={[styles.unselectedCircle, { borderColor: colors.mutedForeground }]} />
@@ -992,9 +985,9 @@ export function ModelsScreen() {
                             </View>
                           )}
                           {m.reasoning && (
-                            <View style={[styles.specBadge, { backgroundColor: "rgba(139, 92, 246, 0.12)" }]}>
-                              <Sparkles size={10} color="#8B5CF6" />
-                              <Text style={[styles.specBadgeText, { color: "#8B5CF6" }, font("bold")]}>
+                            <View style={[styles.specBadge, { backgroundColor: colors.primary + "1F" }]}>
+                              <Sparkles size={10} color={colors.primary} />
+                              <Text style={[styles.specBadgeText, { color: colors.primary }, font("bold")]}>
                                 Reasoning
                               </Text>
                             </View>
@@ -1018,13 +1011,11 @@ export function ModelsScreen() {
 
         {/* Empty Search State */}
         {!isLoading && Object.keys(groupedModels).length === 0 && (
-          <View style={styles.emptyContainer}>
-            <AlertCircle size={28} color={colors.mutedForeground} />
-            <Text style={[styles.emptyTitle, { color: colors.foreground }, font("bold")]}>No Models Found</Text>
-            <Text style={[styles.emptySub, { color: colors.mutedForeground }, font("regular")]}>
-              No models match your search or filter criteria. Connect a provider or adjust filters.
-            </Text>
-          </View>
+          <EmptyState
+            icon={AlertCircle}
+            title="No Models Found"
+            description="No models match your search or filter criteria. Connect a provider or adjust filters."
+          />
         )}
 
         <View style={{ height: 90 }} />
@@ -1056,14 +1047,14 @@ export function ModelsScreen() {
             return (
               <TouchableOpacity
                 key={lvl}
-                style={[styles.effortPill, active && styles.effortPillActive]}
+                style={[styles.effortPill, active && [styles.effortPillActive, { backgroundColor: colors.primary }]]}
                 onPress={() => setEffort(lvl)}
                 activeOpacity={0.7}
               >
                 <Text
                   style={[
                     styles.effortPillText,
-                    { color: active ? "#FFF" : colors.mutedForeground },
+                    { color: active ? colors.primaryForeground : colors.mutedForeground },
                     font(active ? "bold" : "regular"),
                   ]}
                 >
@@ -1075,17 +1066,17 @@ export function ModelsScreen() {
         </View>
 
         <TouchableOpacity
-          style={styles.applyBtn}
+          style={[styles.applyBtn, { backgroundColor: colors.primary }]}
           onPress={handleApplyToServer}
           disabled={applying}
           activeOpacity={0.8}
         >
           {applying ? (
-            <ActivityIndicator size="small" color="#FFF" />
+            <ActivityIndicator size="small" color={colors.primaryForeground} />
           ) : (
-            <Check size={14} color="#FFF" />
+            <Check size={14} color={colors.primaryForeground} />
           )}
-          <Text style={[styles.applyBtnText, font("bold")]}>
+          <Text style={[styles.applyBtnText, { color: colors.primaryForeground }, font("bold")]}>
             {applying ? "Saving…" : "Save"}
           </Text>
         </TouchableOpacity>
@@ -1104,7 +1095,7 @@ export function ModelsScreen() {
               <Surface style={[styles.modalCard, { backgroundColor: colors.card }]}>
                 <View style={[styles.modalHeaderRow, { borderBottomColor: colors.border }]}>
                   <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
-                    <Plug size={16} color="#6366F1" />
+                    <Plug size={16} color={colors.primary} />
                     <Text style={[styles.modalTitle, { color: colors.foreground }, font("bold")]}>
                       Connect API Provider
                     </Text>
@@ -1131,7 +1122,7 @@ export function ModelsScreen() {
                           style={[
                             styles.presetChip,
                             { backgroundColor: colors.secondary, borderColor: colors.border },
-                            isSel && styles.presetChipActive,
+                            isSel && { backgroundColor: colors.primary + "1F", borderColor: colors.primary },
                           ]}
                           onPress={() => handleSelectPreset(preset)}
                           activeOpacity={0.7}
@@ -1139,7 +1130,7 @@ export function ModelsScreen() {
                           <Text
                             style={[
                               styles.presetChipText,
-                              { color: isSel ? "#6366F1" : colors.mutedForeground },
+                              { color: isSel ? colors.primary : colors.mutedForeground },
                               font(isSel ? "bold" : "regular"),
                             ]}
                           >
@@ -1151,9 +1142,9 @@ export function ModelsScreen() {
                   </ScrollView>
 
                   {selectedPresetId === "antigravity" && (
-                    <View style={styles.infoBanner}>
-                      <Info size={13} color="#4285F4" />
-                      <Text style={[styles.infoBannerText, font("regular")]}>
+                    <View style={[styles.infoBanner, { backgroundColor: colors.primary + "1A" }]}>
+                      <Info size={13} color={colors.primary} />
+                      <Text style={[styles.infoBannerText, { color: colors.primary }, font("regular")]}>
                         Google Antigravity is natively adapted in-binary. Connect OAuth tokens (ya29...) or API keys.
                       </Text>
                     </View>
@@ -1217,7 +1208,7 @@ export function ModelsScreen() {
                       <Text style={[styles.inputLabel, { color: colors.mutedForeground }, font("semibold")]}>
                         API Keys / Tokens ({providerApiKeys.length})
                       </Text>
-                      <Text style={[{ fontSize: 10, color: "#10B981" }, font("bold")]}>
+                      <Text style={[{ fontSize: 10, color: colors.success }, font("bold")]}>
                         Auto-Failover on 429/401
                       </Text>
                     </View>
@@ -1241,12 +1232,12 @@ export function ModelsScreen() {
                         autoCapitalize="none"
                       />
                       <TouchableOpacity
-                        style={styles.addTokenBtn}
+                        style={[styles.addTokenBtn, { backgroundColor: colors.primary }]}
                         onPress={handleAddTokenToNew}
                         activeOpacity={0.7}
                       >
-                        <Plus size={14} color="#FFF" />
-                        <Text style={[styles.addTokenBtnText, font("bold")]}>Add</Text>
+                        <Plus size={14} color={colors.primaryForeground} />
+                        <Text style={[styles.addTokenBtnText, { color: colors.primaryForeground }, font("bold")]}>Add</Text>
                       </TouchableOpacity>
                     </View>
 
@@ -1257,12 +1248,12 @@ export function ModelsScreen() {
                           key={`${k.slice(0, 8)}-${idx}`}
                           style={[styles.tokenChip, { backgroundColor: colors.secondary, borderColor: colors.border }]}
                         >
-                          <Key size={11} color="#10B981" />
+                          <Key size={11} color={colors.success} />
                           <Text style={[styles.tokenChipText, { color: colors.foreground }, mono("regular")]}>
                             Token #{idx + 1} ({k.slice(0, 4)}...{k.slice(-4)})
                           </Text>
                           <TouchableOpacity onPress={() => handleRemoveTokenFromNew(idx)}>
-                            <X size={12} color="#EF4444" />
+                            <X size={12} color={colors.destructive} />
                           </TouchableOpacity>
                         </View>
                       ))}
@@ -1271,35 +1262,35 @@ export function ModelsScreen() {
 
                   {/* Test & Discover Models */}
                   <TouchableOpacity
-                    style={styles.testBtn}
+                    style={[styles.testBtn, { borderColor: colors.primary + "66", backgroundColor: colors.primary + "14" }]}
                     onPress={handleTestAndFetchProvider}
                     disabled={isTestingProvider}
                     activeOpacity={0.8}
                   >
                     {isTestingProvider ? (
-                      <ActivityIndicator size="small" color="#6366F1" />
+                      <ActivityIndicator size="small" color={colors.primary} />
                     ) : (
-                      <RefreshCw size={13} color="#6366F1" />
+                      <RefreshCw size={13} color={colors.primary} />
                     )}
-                    <Text style={[styles.testBtnText, font("bold")]}>
+                    <Text style={[styles.testBtnText, { color: colors.primary }, font("bold")]}>
                       {isTestingProvider ? "Discovering Models…" : "Test Connection & Discover"}
                     </Text>
                   </TouchableOpacity>
 
                   {testedProviderModels.length > 0 && (
-                    <Text style={[styles.discoveredNote, font("bold")]}>
+                    <Text style={[styles.discoveredNote, { color: colors.success }, font("bold")]}>
                       ✓ {testedProviderModels.length} models ready to import
                     </Text>
                   )}
 
                   {/* Save Button */}
                   <TouchableOpacity
-                    style={styles.saveProviderBtn}
+                    style={[styles.saveProviderBtn, { backgroundColor: colors.primary }]}
                     onPress={handleSaveProvider}
                     activeOpacity={0.8}
                   >
-                    <Check size={14} color="#FFF" />
-                    <Text style={[styles.saveProviderBtnText, font("bold")]}>Save Provider</Text>
+                    <Check size={14} color={colors.primaryForeground} />
+                    <Text style={[styles.saveProviderBtnText, { color: colors.primaryForeground }, font("bold")]}>Save Provider</Text>
                   </TouchableOpacity>
                 </ScrollView>
               </Surface>
@@ -1322,7 +1313,7 @@ export function ModelsScreen() {
                 <Surface style={[styles.modalCard, { backgroundColor: colors.card }]}>
                   <View style={[styles.modalHeaderRow, { borderBottomColor: colors.border }]}>
                     <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
-                      <Settings size={16} color="#6366F1" />
+                      <Settings size={16} color={colors.primary} />
                       <Text style={[styles.modalTitle, { color: colors.foreground }, font("bold")]}>
                         {activeEditingProvider.name} Settings
                       </Text>
@@ -1363,7 +1354,7 @@ export function ModelsScreen() {
                     <Text style={[styles.inputLabel, { color: colors.mutedForeground }, font("semibold")]}>
                       Configured Tokens ({editProviderApiKeys.length})
                     </Text>
-                    <Text style={[{ fontSize: 10, color: "#10B981" }, font("bold")]}>
+                    <Text style={[{ fontSize: 10, color: colors.success }, font("bold")]}>
                       Auto Failover on 429 & 401/403
                     </Text>
                   </View>
@@ -1383,12 +1374,12 @@ export function ModelsScreen() {
                       autoCapitalize="none"
                     />
                     <TouchableOpacity
-                      style={styles.addTokenBtn}
+                      style={[styles.addTokenBtn, { backgroundColor: colors.primary }]}
                       onPress={handleAddTokenToEdit}
                       activeOpacity={0.7}
                     >
-                      <Plus size={14} color="#FFF" />
-                      <Text style={[styles.addTokenBtnText, font("bold")]}>Add</Text>
+                      <Plus size={14} color={colors.primaryForeground} />
+                      <Text style={[styles.addTokenBtnText, { color: colors.primaryForeground }, font("bold")]}>Add</Text>
                     </TouchableOpacity>
                   </View>
 
@@ -1399,33 +1390,33 @@ export function ModelsScreen() {
                         key={`${k.slice(0, 8)}-${idx}`}
                         style={[styles.tokenChip, { backgroundColor: colors.secondary, borderColor: colors.border }]}
                       >
-                        <Key size={11} color="#10B981" />
+                        <Key size={11} color={colors.success} />
                         <Text style={[styles.tokenChipText, { color: colors.foreground }, mono("regular")]}>
                           Token #{idx + 1} ({k.slice(0, 4)}...{k.slice(-4)})
                         </Text>
                         <TouchableOpacity onPress={() => handleRemoveTokenFromEdit(idx)}>
-                          <X size={12} color="#EF4444" />
+                          <X size={12} color={colors.destructive} />
                         </TouchableOpacity>
                       </View>
                     ))}
                   </View>
 
                   <TouchableOpacity
-                    style={styles.saveEditedProviderBtn}
+                    style={[styles.saveEditedProviderBtn, { backgroundColor: colors.primary }]}
                     onPress={handleSaveEditedProvider}
                     activeOpacity={0.8}
                   >
-                    <Check size={14} color="#FFF" />
-                    <Text style={[styles.saveProviderBtnText, font("bold")]}>Save Configuration</Text>
+                    <Check size={14} color={colors.primaryForeground} />
+                    <Text style={[styles.saveProviderBtnText, { color: colors.primaryForeground }, font("bold")]}>Save Configuration</Text>
                   </TouchableOpacity>
 
                   <TouchableOpacity
-                    style={styles.deleteProviderBtn}
+                    style={[styles.deleteProviderBtn, { backgroundColor: colors.destructive + "1F", borderColor: colors.destructive + "4D" }]}
                     onPress={() => handleDeleteProvider(activeEditingProvider.id)}
                     activeOpacity={0.8}
                   >
-                    <Trash2 size={15} color="#EF4444" />
-                    <Text style={[styles.deleteProviderBtnText, font("bold")]}>
+                    <Trash2 size={15} color={colors.destructive} />
+                    <Text style={[styles.deleteProviderBtnText, { color: colors.destructive }, font("bold")]}>
                       Delete Provider
                     </Text>
                   </TouchableOpacity>
@@ -1449,7 +1440,7 @@ export function ModelsScreen() {
               <Surface style={[styles.modalCard, { backgroundColor: colors.card }]}>
                 <View style={[styles.modalHeaderRow, { borderBottomColor: colors.border }]}>
                   <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
-                    <Layers size={16} color="#8B5CF6" />
+                    <Layers size={16} color={colors.primary} />
                     <Text style={[styles.modalTitle, { color: colors.foreground }, font("bold")]}>
                       Select Fallback Model
                     </Text>
@@ -1477,7 +1468,7 @@ export function ModelsScreen() {
                             {m.id}
                           </Text>
                         </View>
-                        <Plus size={16} color="#8B5CF6" />
+                        <Plus size={16} color={colors.primary} />
                       </TouchableOpacity>
                     ))}
 
@@ -1539,14 +1530,11 @@ const styles = StyleSheet.create({
     gap: 6,
     paddingHorizontal: 10,
     paddingVertical: 8,
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: "rgba(99, 102, 241, 0.35)",
-    backgroundColor: "rgba(99, 102, 241, 0.08)",
+    borderRadius: 12,
+    borderWidth: StyleSheet.hairlineWidth,
   },
   reloadBtnText: {
     fontSize: 12,
-    color: "#6366F1",
   },
   connectBtn: {
     flexDirection: "row",
@@ -1554,18 +1542,16 @@ const styles = StyleSheet.create({
     gap: 6,
     paddingHorizontal: 12,
     paddingVertical: 8,
-    borderRadius: 10,
-    backgroundColor: "#6366F1",
+    borderRadius: 12,
   },
   connectBtnText: {
     fontSize: 12,
-    color: "#FFF",
   },
   providersCard: {
-    padding: 14,
-    borderRadius: 16,
+    padding: 16,
+    borderRadius: 18,
     gap: 10,
-    borderWidth: 1,
+    borderWidth: StyleSheet.hairlineWidth,
   },
   providersHeaderRow: {
     flexDirection: "row",
@@ -1578,26 +1564,27 @@ const styles = StyleSheet.create({
     letterSpacing: 0.8,
   },
   countBadge: {
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 6,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 8,
     marginLeft: "auto",
   },
   countBadgeText: {
     fontSize: 10.5,
+    letterSpacing: 0.3,
   },
   providerRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 10,
-    padding: 10,
-    borderRadius: 12,
-    borderWidth: 1,
+    gap: 12,
+    padding: 12,
+    borderRadius: 14,
+    borderWidth: StyleSheet.hairlineWidth,
   },
   providerLogoBox: {
-    width: 34,
-    height: 34,
-    borderRadius: 9,
+    width: 36,
+    height: 36,
+    borderRadius: 10,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -1606,14 +1593,15 @@ const styles = StyleSheet.create({
   },
   providerRowName: {
     fontSize: 13.5,
+    lineHeight: 20,
   },
   providerRowSub: {
     fontSize: 10.5,
+    letterSpacing: 0.3,
     marginTop: 2,
   },
   providerRowProject: {
     fontSize: 10,
-    color: "#4285F4",
     marginTop: 1,
   },
   tokenMultiBadge: {
@@ -1621,13 +1609,11 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 3,
     paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 5,
-    backgroundColor: "rgba(16, 185, 129, 0.12)",
+    paddingVertical: 3,
+    borderRadius: 6,
   },
   tokenMultiBadgeText: {
     fontSize: 9.5,
-    color: "#10B981",
   },
   providerActionCol: {
     flexDirection: "row",
@@ -1635,8 +1621,9 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   iconActionBtn: {
-    padding: 6,
-    borderRadius: 7,
+    padding: 7,
+    borderRadius: 8,
+    borderWidth: StyleSheet.hairlineWidth,
   },
   fallbackChainCard: {
     padding: 14,
@@ -1652,7 +1639,6 @@ const styles = StyleSheet.create({
   fallbackChainTitle: {
     fontSize: 11,
     letterSpacing: 0.8,
-    color: "#8B5CF6",
   },
   fallbackChainDescription: {
     fontSize: 11.5,
@@ -1665,13 +1651,11 @@ const styles = StyleSheet.create({
     padding: 10,
     borderRadius: 10,
     borderWidth: 1,
-    borderColor: "rgba(16, 185, 129, 0.35)",
   },
   chainRankBadgePrimary: {
     width: 24,
     height: 24,
     borderRadius: 12,
-    backgroundColor: "#10B981",
     alignItems: "center",
     justifyContent: "center",
   },
@@ -1683,7 +1667,6 @@ const styles = StyleSheet.create({
     width: 8,
     height: 8,
     borderRadius: 4,
-    backgroundColor: "#10B981",
   },
   chainItemSecondary: {
     flexDirection: "row",
@@ -1729,12 +1712,9 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     borderRadius: 9,
     borderWidth: 1,
-    borderColor: "rgba(139, 92, 246, 0.35)",
-    backgroundColor: "rgba(139, 92, 246, 0.08)",
   },
   addChainBtnText: {
     fontSize: 12,
-    color: "#8B5CF6",
   },
   saveChainBtn: {
     flexDirection: "row",
@@ -1744,11 +1724,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 8,
     borderRadius: 9,
-    backgroundColor: "#8B5CF6",
   },
   saveChainBtnText: {
     fontSize: 12,
-    color: "#FFF",
   },
   chainPickerItem: {
     flexDirection: "row",
@@ -1772,15 +1750,16 @@ const styles = StyleSheet.create({
   searchBox: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 8,
-    height: 38,
-    paddingHorizontal: 12,
+    gap: 10,
+    height: 40,
+    paddingHorizontal: 14,
     borderRadius: 12,
-    borderWidth: 1,
+    borderWidth: StyleSheet.hairlineWidth,
   },
   searchInput: {
     flex: 1,
-    fontSize: 12.5,
+    fontSize: 13.5,
+    lineHeight: 20,
     paddingVertical: 0,
   },
   filterPillsRow: {
@@ -1789,59 +1768,58 @@ const styles = StyleSheet.create({
   },
   filterPill: {
     paddingHorizontal: 12,
-    paddingVertical: 6,
+    paddingVertical: 7,
     borderRadius: 16,
-    borderWidth: 1,
+    borderWidth: StyleSheet.hairlineWidth,
   },
   filterPillActive: {
-    backgroundColor: "rgba(99, 102, 241, 0.12)",
-    borderColor: "rgba(99, 102, 241, 0.35)",
   },
   filterPillText: {
     fontSize: 11.5,
+    letterSpacing: 0.2,
   },
   providerGroupCard: {
-    borderRadius: 16,
+    borderRadius: 18,
     overflow: "hidden",
-    borderWidth: 1,
+    borderWidth: StyleSheet.hairlineWidth,
   },
   groupHeaderRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 10,
-    padding: 12,
+    gap: 12,
+    padding: 14,
   },
   groupLogoBox: {
-    width: 28,
-    height: 28,
-    borderRadius: 7,
+    width: 30,
+    height: 30,
+    borderRadius: 8,
     alignItems: "center",
     justifyContent: "center",
   },
   groupTitle: {
     fontSize: 14,
+    lineHeight: 20,
   },
   groupCountBadge: {
-    paddingHorizontal: 7,
-    paddingVertical: 2,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
     borderRadius: 10,
   },
   groupCountText: {
     fontSize: 10.5,
+    letterSpacing: 0.3,
   },
   modelsList: {
-    padding: 10,
-    gap: 8,
+    padding: 12,
+    gap: 10,
   },
   modelItemCard: {
-    padding: 12,
-    borderRadius: 12,
-    borderWidth: 1,
-    gap: 8,
+    padding: 14,
+    borderRadius: 14,
+    borderWidth: StyleSheet.hairlineWidth,
+    gap: 10,
   },
   modelItemCardSelected: {
-    borderColor: "#6366F1",
-    backgroundColor: "rgba(99, 102, 241, 0.04)",
   },
   modelItemTop: {
     flexDirection: "row",
@@ -1856,38 +1834,37 @@ const styles = StyleSheet.create({
   },
   modelItemName: {
     fontSize: 13.5,
+    lineHeight: 20,
   },
   modelItemId: {
-    fontSize: 11,
+    fontSize: 10.5,
+    letterSpacing: 0.3,
     marginTop: 2,
   },
   defaultBadge: {
-    paddingHorizontal: 5,
-    paddingVertical: 1.5,
-    borderRadius: 4,
-    backgroundColor: "rgba(99, 102, 241, 0.15)",
+    paddingHorizontal: 6,
+    paddingVertical: 2.5,
+    borderRadius: 6,
   },
   defaultBadgeText: {
     fontSize: 9,
-    color: "#6366F1",
     letterSpacing: 0.5,
   },
   selectCol: {
     paddingTop: 2,
   },
   selectedCircle: {
-    width: 20,
-    height: 20,
-    borderRadius: 10,
-    backgroundColor: "#6366F1",
+    width: 22,
+    height: 22,
+    borderRadius: 11,
     alignItems: "center",
     justifyContent: "center",
   },
   unselectedCircle: {
-    width: 18,
-    height: 18,
-    borderRadius: 9,
-    borderWidth: 1.2,
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    borderWidth: 1.5,
     opacity: 0.35,
   },
   metaRow: {
@@ -1900,25 +1877,13 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 4,
-    paddingHorizontal: 6,
-    paddingVertical: 3,
-    borderRadius: 6,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
   },
   specBadgeText: {
     fontSize: 10,
-  },
-  emptyContainer: {
-    padding: 32,
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 8,
-  },
-  emptyTitle: {
-    fontSize: 14,
-  },
-  emptySub: {
-    fontSize: 11.5,
-    textAlign: "center",
+    letterSpacing: 0.2,
   },
   bottomBar: {
     position: "absolute",
@@ -1931,7 +1896,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingTop: 10,
     paddingBottom: Platform.OS === "ios" ? 32 : 14,
-    borderTopWidth: 1,
+    borderTopWidth: StyleSheet.hairlineWidth,
     gap: 8,
   },
   bottomModelInfo: {
@@ -1939,9 +1904,11 @@ const styles = StyleSheet.create({
   },
   bottomLabel: {
     fontSize: 10,
+    letterSpacing: 0.4,
   },
   bottomModelName: {
     fontSize: 12.5,
+    lineHeight: 18,
     marginTop: 1,
   },
   effortPills: {
@@ -1955,7 +1922,6 @@ const styles = StyleSheet.create({
     borderRadius: 6,
   },
   effortPillActive: {
-    backgroundColor: "#6366F1",
   },
   effortPillText: {
     fontSize: 9.5,
@@ -1967,11 +1933,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 8,
     borderRadius: 9,
-    backgroundColor: "#10B981",
   },
   applyBtnText: {
     fontSize: 12,
-    color: "#FFF",
   },
   modalBackdrop: {
     flex: 1,
@@ -2010,10 +1974,6 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     borderWidth: 1,
   },
-  presetChipActive: {
-    backgroundColor: "rgba(99, 102, 241, 0.12)",
-    borderColor: "#6366F1",
-  },
   presetChipText: {
     fontSize: 11,
   },
@@ -2023,12 +1983,10 @@ const styles = StyleSheet.create({
     gap: 6,
     padding: 8,
     borderRadius: 8,
-    backgroundColor: "rgba(66, 133, 244, 0.1)",
     marginVertical: 4,
   },
   infoBannerText: {
     fontSize: 11,
-    color: "#4285F4",
     flex: 1,
   },
   modalInput: {
@@ -2059,11 +2017,9 @@ const styles = StyleSheet.create({
     height: 38,
     paddingHorizontal: 12,
     borderRadius: 8,
-    backgroundColor: "#6366F1",
   },
   addTokenBtnText: {
     fontSize: 12,
-    color: "#FFF",
   },
   tokensChipsContainer: {
     flexDirection: "row",
@@ -2091,17 +2047,13 @@ const styles = StyleSheet.create({
     height: 36,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: "rgba(99, 102, 241, 0.4)",
-    backgroundColor: "rgba(99, 102, 241, 0.08)",
     marginTop: 8,
   },
   testBtnText: {
     fontSize: 12,
-    color: "#6366F1",
   },
   discoveredNote: {
     fontSize: 11,
-    color: "#10B981",
     textAlign: "center",
   },
   saveProviderBtn: {
@@ -2111,7 +2063,6 @@ const styles = StyleSheet.create({
     gap: 6,
     height: 40,
     borderRadius: 8,
-    backgroundColor: "#6366F1",
     marginTop: 8,
   },
   saveEditedProviderBtn: {
@@ -2121,12 +2072,10 @@ const styles = StyleSheet.create({
     gap: 6,
     height: 38,
     borderRadius: 8,
-    backgroundColor: "#10B981",
     marginTop: 8,
   },
   saveProviderBtnText: {
     fontSize: 13,
-    color: "#FFF",
   },
   readOnlyText: {
     fontSize: 12,
@@ -2140,13 +2089,10 @@ const styles = StyleSheet.create({
     gap: 6,
     height: 38,
     borderRadius: 8,
-    backgroundColor: "rgba(239, 68, 68, 0.12)",
     borderWidth: 1,
-    borderColor: "rgba(239, 68, 68, 0.3)",
     marginTop: 10,
   },
   deleteProviderBtnText: {
     fontSize: 12.5,
-    color: "#EF4444",
   },
 });

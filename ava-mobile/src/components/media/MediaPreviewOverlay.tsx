@@ -33,7 +33,6 @@ import {
   decodePreviewText,
   formatFileSize,
   getFileExtension,
-  getKindColor,
   type PreviewItem,
 } from "./media-helpers";
 
@@ -69,6 +68,20 @@ export function MediaPreviewOverlay({
   const isImg = IMAGE_PREVIEW_EXTS.includes(ext);
   const isText = TEXT_PREVIEW_EXTS.includes(ext);
   const isAudioVideo = item.kind === "video" || item.kind === "audio";
+
+  // Theme-token file-kind colors (matches MediaScreen grid pattern):
+  // image -> primary, video -> mascot, audio -> warning, document -> destructive,
+  // code + generic files -> accentForeground. Adapts to the active theme.
+  const kindColor =
+    item.kind === "image"
+      ? colors.primary
+      : item.kind === "video"
+        ? colors.mascot
+        : item.kind === "audio"
+          ? colors.warning
+          : item.kind === "document"
+            ? colors.destructive
+            : colors.accentForeground;
 
   useEffect(() => {
     let isMounted = true;
@@ -141,15 +154,15 @@ export function MediaPreviewOverlay({
       <View
         style={[
           styles.genericIconCircle,
-          { backgroundColor: `${getKindColor(item.kind)}18` },
+          { backgroundColor: `${kindColor}18` },
         ]}
       >
         {showKindIcon && item.kind === "video" ? (
-          <FileVideo size={42} color="#F59E0B" />
+          <FileVideo size={42} color={kindColor} />
         ) : showKindIcon && item.kind === "audio" ? (
-          <FileAudio size={42} color="#EC4899" />
+          <FileAudio size={42} color={kindColor} />
         ) : showKindIcon && item.kind === "document" ? (
-          <FileText size={42} color="#EF4444" />
+          <FileText size={42} color={kindColor} />
         ) : (
           <FileIcon size={42} color={colors.primary} />
         )}
@@ -185,14 +198,14 @@ export function MediaPreviewOverlay({
                 style={[
                   styles.extPill,
                   {
-                    backgroundColor: `${getKindColor(item.kind)}20`,
+                    backgroundColor: `${kindColor}20`,
                   },
                 ]}
               >
                 <Text
                   style={[
                     styles.extPillText,
-                    { color: getKindColor(item.kind) },
+                    { color: kindColor },
                     mono("bold"),
                   ]}
                 >
@@ -245,7 +258,7 @@ export function MediaPreviewOverlay({
             )
           ) : base64Uri ? (
             /* Image Viewer with Zoom Controls */
-            <View style={[styles.imageViewerWrap, { backgroundColor: isDark ? "#06080F" : "#F1F5F9" }]}>
+            <View style={[styles.imageViewerWrap, { backgroundColor: isDark ? colors.codeBg : colors.muted }]}>
               <View style={styles.zoomControls}>
                 <TouchableOpacity
                   style={styles.zoomBtn}
@@ -332,7 +345,7 @@ export function MediaPreviewOverlay({
             activeOpacity={0.7}
           >
             {copiedPath ? (
-              <Check size={14} color="#10B981" />
+              <Check size={14} color={colors.success} />
             ) : (
               <Copy size={14} color={colors.foreground} />
             )}
@@ -356,8 +369,8 @@ export function MediaPreviewOverlay({
             onPress={() => onAttach(item)}
             activeOpacity={0.8}
           >
-            <Check size={15} color={colors.primaryForeground || "#FFF"} />
-            <Text style={[styles.previewAttachBtnText, { color: colors.primaryForeground || "#FFF" }, font("bold")]}>
+            <Check size={15} color={colors.primaryForeground} />
+            <Text style={[styles.previewAttachBtnText, { color: colors.primaryForeground }, font("bold")]}>
               Attach This File
             </Text>
           </TouchableOpacity>

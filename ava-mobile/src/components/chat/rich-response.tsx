@@ -1997,19 +1997,19 @@ RichResponse.displayName = "RichResponse";
 
 const styles = StyleSheet.create({
   container: {
-    gap: 3,
+    gap: 4,
   },
   paragraphContainer: {
-    marginVertical: 1.5,
+    marginVertical: 2,
   },
   inlineBaseText: {
-    fontSize: 15.5,
-    lineHeight: 24,
+    fontSize: 15,
+    lineHeight: 23,
     color: COLORS.foreground,
   },
   inlineBaseTextUser: {
-    fontSize: 15.5,
-    lineHeight: 24,
+    fontSize: 15,
+    lineHeight: 23,
     color: COLORS.foreground,
   },
   boldText: {
@@ -2082,41 +2082,41 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: "700",
     color: COLORS.foreground,
-    marginTop: 10,
-    marginBottom: 4,
+    marginTop: 12,
+    marginBottom: 5,
     letterSpacing: -0.3,
   },
   heading2: {
     fontSize: 16,
     fontWeight: "700",
     color: COLORS.foreground,
-    marginTop: 8,
-    marginBottom: 3,
+    marginTop: 10,
+    marginBottom: 4,
     letterSpacing: -0.2,
   },
   heading3: {
     fontSize: 14.5,
     fontWeight: "600",
     color: COLORS.foreground,
-    marginTop: 6,
-    marginBottom: 2,
+    marginTop: 8,
+    marginBottom: 3,
   },
   heading4: {
     fontSize: 13.5,
     fontWeight: "600",
     color: COLORS.foreground,
-    marginTop: 5,
-    marginBottom: 2,
+    marginTop: 7,
+    marginBottom: 3,
   },
   headingUser: {
     color: COLORS.foreground,
   },
   blockquote: {
-    borderLeftWidth: 3,
+    borderLeftWidth: 2,
     borderLeftColor: COLORS.border,
     paddingLeft: 10,
-    paddingVertical: 4,
-    marginVertical: 3,
+    paddingVertical: 6,
+    marginVertical: 4,
     backgroundColor: COLORS.secondary,
     borderRadius: 4,
   },
@@ -2131,18 +2131,18 @@ const styles = StyleSheet.create({
   listItemRow: {
     flexDirection: "row",
     alignItems: "flex-start",
-    gap: 8,
-    marginVertical: 1,
+    gap: 10,
+    marginVertical: 2,
   },
   bulletDot: {
-    fontSize: 15.5,
-    lineHeight: 24,
+    fontSize: 15,
+    lineHeight: 23,
     color: COLORS.mutedForeground,
     fontWeight: "700",
   },
   numberIndex: {
     fontSize: 13,
-    lineHeight: 22,
+    lineHeight: 23,
     color: COLORS.mutedForeground,
     fontWeight: "600",
     minWidth: 16,
@@ -2199,7 +2199,7 @@ const styles = StyleSheet.create({
     borderBottomColor: COLORS.border,
   },
   tableHeaderRowUser: {
-    backgroundColor: "rgba(255, 255, 255, 0.05)",
+    backgroundColor: COLORS.secondary,
     borderBottomColor: COLORS.border,
   },
   tableHeaderCell: {
@@ -2227,7 +2227,7 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.secondary,
   },
   tableRowAltUser: {
-    backgroundColor: "rgba(255, 255, 255, 0.04)",
+    backgroundColor: COLORS.secondary,
   },
   tableRowLast: {
     borderBottomWidth: 0,
@@ -2319,7 +2319,7 @@ const styles = StyleSheet.create({
   },
   mermaidErrorBanner: {
     padding: 8,
-    backgroundColor: "rgba(239, 68, 68, 0.08)",
+    backgroundColor: COLORS.destructive + "14",
     borderRadius: 8,
     marginBottom: 6,
   },
@@ -2348,7 +2348,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     paddingHorizontal: 4,
     paddingVertical: 2,
-    shadowColor: "#000",
+    shadowColor: COLORS.glassShadow,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.12,
     shadowRadius: 4,

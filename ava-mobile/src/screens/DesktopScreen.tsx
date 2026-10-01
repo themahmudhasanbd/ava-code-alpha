@@ -50,7 +50,7 @@ export function DesktopScreen() {
             activeOpacity={0.8}
           >
             <Text style={[styles.actionBtnText, font("medium")]}>Return to Chat</Text>
-            <ArrowRight size={15} color="#FFFFFF" />
+            <ArrowRight size={15} color={COLORS.primaryForeground} />
           </TouchableOpacity>
         </Surface>
       </View>
@@ -134,6 +134,6 @@ const styles = StyleSheet.create({
   },
   actionBtnText: {
     fontSize: 14,
-    color: "#FFFFFF",
+    color: COLORS.primaryForeground,
   },
 });

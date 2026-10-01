@@ -20,7 +20,7 @@ import {
   ShieldAlert,
 } from "lucide-react-native";
 import { AppShell } from "@/components/layout/AppShell";
-import { PageIntro, Surface } from "@/components/kit";
+import { PageIntro, SectionHeader, Surface } from "@/components/kit";
 import { useTheme } from "@/theme/colors";
 import { font, mono } from "@/theme/fonts";
 import { useAva } from "@/state/ava-provider";
@@ -111,12 +111,7 @@ export function ServerSettingsScreen() {
 
         {/* ── Connection Details ── */}
         <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <Globe size={15} color={colors.primary} />
-            <Text style={[styles.sectionTitle, { color: colors.foreground }, font("semibold")]}>
-              Active Endpoint
-            </Text>
-          </View>
+          <SectionHeader icon={Globe} title="Active Endpoint" />
 
           <Surface style={[styles.card, { borderColor: colors.glassBorder }]}>
             <View style={styles.detailRow}>
@@ -154,12 +149,7 @@ export function ServerSettingsScreen() {
 
         {/* ── Host Process Diagnostics ── */}
         <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <Activity size={15} color={colors.primary} />
-            <Text style={[styles.sectionTitle, { color: colors.foreground }, font("semibold")]}>
-              Daemon Diagnostics (ava-rs)
-            </Text>
-          </View>
+          <SectionHeader icon={Activity} title="Daemon Diagnostics (ava-rs)" />
 
           <Surface style={[styles.card, { borderColor: colors.glassBorder }]}>
             <View style={styles.diagGrid}>
@@ -251,13 +241,6 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   section: { gap: 10 },
-  sectionHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-    paddingHorizontal: 2,
-  },
-  sectionTitle: { fontSize: 13.5 },
   card: {
     borderRadius: 16,
     borderWidth: 1,

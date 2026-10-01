@@ -18,7 +18,7 @@ import {
   Trash2,
 } from "lucide-react-native";
 import { AppShell } from "@/components/layout/AppShell";
-import { PageIntro, Surface } from "@/components/kit";
+import { PageIntro, SectionHeader, Surface } from "@/components/kit";
 import { useTheme } from "@/theme/colors";
 import { font, mono } from "@/theme/fonts";
 import { APP } from "@/config/app";
@@ -112,12 +112,7 @@ export function StorageSettingsScreen() {
 
         {/* ── Cache Overview ── */}
         <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <HardDrive size={15} color={colors.primary} />
-            <Text style={[styles.sectionTitle, { color: colors.foreground }, font("semibold")]}>
-              Local Cache Overview
-            </Text>
-          </View>
+          <SectionHeader icon={HardDrive} title="Local Cache Overview" />
 
           <Surface style={[styles.card, { borderColor: colors.glassBorder }]}>
             <View style={styles.statGrid}>
@@ -157,12 +152,7 @@ export function StorageSettingsScreen() {
 
         {/* ── Persistent Storage Inspection ── */}
         <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <Key size={15} color={colors.primary} />
-            <Text style={[styles.sectionTitle, { color: colors.foreground }, font("semibold")]}>
-              Client Key-Value Store
-            </Text>
-          </View>
+          <SectionHeader icon={Key} title="Client Key-Value Store" />
 
           <Surface style={[styles.card, { borderColor: colors.glassBorder }]}>
             <View style={styles.keyRow}>
@@ -242,13 +232,6 @@ const styles = StyleSheet.create({
   container: { flex: 1 },
   content: { padding: 16, paddingBottom: 40, gap: 20 },
   section: { gap: 10 },
-  sectionHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-    paddingHorizontal: 2,
-  },
-  sectionTitle: { fontSize: 13.5 },
   card: {
     borderRadius: 16,
     borderWidth: 1,

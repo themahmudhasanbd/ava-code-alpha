@@ -43,7 +43,7 @@ function SingleImageThumbnail({
   onPress: (uri: string, name: string) => void;
   compact?: boolean;
 }) {
-  const { colors, isDark } = useTheme();
+  const { colors } = useTheme();
   const [loadError, setLoadError] = useState(false);
 
   const cleanUrl = (item.url || "").trim();
@@ -73,7 +73,7 @@ function SingleImageThumbnail({
           styles.thumbnailCard,
           compact && styles.thumbnailCardCompact,
           {
-            backgroundColor: isDark ? "rgba(255,255,255,0.03)" : "rgba(0,0,0,0.03)",
+            backgroundColor: colors.secondary,
             borderColor: colors.border,
           },
         ]}
@@ -99,7 +99,7 @@ function SingleImageThumbnail({
         styles.thumbnailCard,
         compact && styles.thumbnailCardCompact,
         {
-          backgroundColor: isDark ? "rgba(255,255,255,0.04)" : "rgba(0,0,0,0.02)",
+          backgroundColor: colors.secondary,
           borderColor: colors.border,
         },
       ]}
@@ -115,13 +115,13 @@ function SingleImageThumbnail({
         />
         {/* Top badges */}
         <View style={styles.badgeRow}>
-          <View style={[styles.extPill, { backgroundColor: isDark ? "rgba(0,0,0,0.65)" : "rgba(255,255,255,0.85)" }]}>
-            <Text style={[styles.extPillText, mono("bold"), { color: colors.foreground }]}>
+          <View style={[styles.extPill, { backgroundColor: colors.secondary }]}>
+            <Text style={[styles.extPillText, mono("bold"), { color: colors.secondaryForeground }]}>
               {extBadge}
             </Text>
           </View>
-          <View style={[styles.expandBtn, { backgroundColor: isDark ? "rgba(0,0,0,0.65)" : "rgba(255,255,255,0.85)" }]}>
-            <Maximize2 size={11} color={colors.foreground} />
+          <View style={[styles.expandBtn, { backgroundColor: colors.secondary }]}>
+            <Maximize2 size={11} color={colors.secondaryForeground} />
           </View>
         </View>
       </View>
@@ -141,7 +141,7 @@ function SingleImageThumbnail({
 }
 
 export function MediaPreviewGallery({ media, title, compact }: MediaPreviewGalleryProps) {
-  const { colors, isDark } = useTheme();
+  const { colors } = useTheme();
   const [selectedUri, setSelectedUri] = useState<string | null>(null);
   const [selectedName, setSelectedName] = useState<string>("");
   const [copiedLink, setCopiedLink] = useState(false);

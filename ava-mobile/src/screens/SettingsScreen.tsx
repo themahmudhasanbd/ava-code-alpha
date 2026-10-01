@@ -16,14 +16,17 @@ import {
   Database,
   FolderGit2,
   Paintbrush,
+  Palette,
   Server,
+  Settings2,
   Shield,
   Trash2,
   User,
+  Zap,
   type LucideIcon,
 } from "lucide-react-native";
 import { AppShell } from "@/components/layout/AppShell";
-import { PageIntro, Surface } from "@/components/kit";
+import { PageIntro, SectionHeader, Surface } from "@/components/kit";
 import { APP } from "@/config/app";
 import { useAva } from "@/state/ava-provider";
 import { useTheme } from "@/theme/colors";
@@ -155,9 +158,7 @@ export function SettingsScreen() {
 
         {/* ── Appearance & UI ── */}
         <View style={styles.section}>
-          <Text style={[styles.sectionLabel, { color: colors.mutedForeground }, font("semibold")]}>
-            APPEARANCE & UI
-          </Text>
+          <SectionHeader icon={Palette} title="Appearance & UI" />
           <Surface style={[styles.tileGroup, { borderColor: colors.glassBorder }]}>
             <NavTile
               icon={Paintbrush}
@@ -171,9 +172,7 @@ export function SettingsScreen() {
 
         {/* ── AI & Workspace ── */}
         <View style={styles.section}>
-          <Text style={[styles.sectionLabel, { color: colors.mutedForeground }, font("semibold")]}>
-            CONFIGURATION
-          </Text>
+          <SectionHeader icon={Settings2} title="Configuration" />
           <Surface style={[styles.tileGroup, { borderColor: colors.glassBorder }]}>
             <NavTile
               icon={Cpu}
@@ -184,14 +183,14 @@ export function SettingsScreen() {
             />
             <NavTile
               icon={FolderGit2}
-              iconColor="#10B981"
+              iconColor={colors.success}
               title="Workspace"
               subtitle="Default directory, path shortcuts, context docs"
               onPress={() => navigation.navigate("WorkspaceSettings")}
             />
             <NavTile
               icon={Server}
-              iconColor="#0EA5E9"
+              iconColor={colors.primary}
               title="Server & Protocol"
               subtitle="Daemon status, RSS memory, RPC telemetry"
               onPress={() => navigation.navigate("ServerSettings")}
@@ -201,20 +200,18 @@ export function SettingsScreen() {
 
         {/* ── System & Permissions ── */}
         <View style={styles.section}>
-          <Text style={[styles.sectionLabel, { color: colors.mutedForeground }, font("semibold")]}>
-            SYSTEM & POLICIES
-          </Text>
+          <SectionHeader icon={Shield} title="System & Policies" />
           <Surface style={[styles.tileGroup, { borderColor: colors.glassBorder }]}>
             <NavTile
               icon={Bell}
-              iconColor="#8B5CF6"
+              iconColor={colors.primary}
               title="Notifications"
               subtitle="Foreground service, push alerts, native channels"
               onPress={() => navigation.navigate("NotificationSettings")}
             />
             <NavTile
               icon={Shield}
-              iconColor="#F59E0B"
+              iconColor={colors.warning}
               title="Permissions & Security"
               subtitle="Approval policy, sandbox boundaries, hardware"
               onPress={() => navigation.navigate("PermissionsSettings")}
@@ -231,9 +228,7 @@ export function SettingsScreen() {
 
         {/* ── Account ── */}
         <View style={styles.section}>
-          <Text style={[styles.sectionLabel, { color: colors.mutedForeground }, font("semibold")]}>
-            ACCOUNT
-          </Text>
+          <SectionHeader icon={User} title="Account" />
           <Surface style={[styles.tileGroup, { borderColor: colors.glassBorder }]}>
             <NavTile
               icon={User}
@@ -247,9 +242,7 @@ export function SettingsScreen() {
 
         {/* ── Quick Actions ── */}
         <View style={styles.section}>
-          <Text style={[styles.sectionLabel, { color: colors.mutedForeground }, font("semibold")]}>
-            QUICK ACTIONS
-          </Text>
+          <SectionHeader icon={Zap} title="Quick Actions" />
           <Surface style={[styles.tileGroup, { borderColor: colors.glassBorder }]}>
             <TouchableOpacity
               style={styles.actionRow}
@@ -277,14 +270,8 @@ export function SettingsScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  content: { padding: 16, paddingBottom: 40, gap: 16 },
-  section: { gap: 6 },
-  sectionLabel: {
-    fontSize: 10.5,
-    letterSpacing: 0.6,
-    paddingHorizontal: 4,
-    textTransform: "uppercase",
-  },
+  content: { padding: 16, paddingBottom: 40, gap: 20 },
+  section: { gap: 10 },
   quickCard: {
     borderRadius: 16,
     padding: 12,

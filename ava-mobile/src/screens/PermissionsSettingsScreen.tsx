@@ -20,7 +20,7 @@ import {
   Sliders,
 } from "lucide-react-native";
 import { AppShell } from "@/components/layout/AppShell";
-import { PageIntro, Surface } from "@/components/kit";
+import { PageIntro, SectionHeader, Surface } from "@/components/kit";
 import { useTheme } from "@/theme/colors";
 import { font } from "@/theme/fonts";
 import { useServerConfig, useWriteConfig } from "@/state/queries";
@@ -184,12 +184,7 @@ export function PermissionsSettingsScreen() {
 
         {/* ── Command Approval Policy ── */}
         <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <ShieldCheck size={15} color={colors.primary} />
-            <Text style={[styles.sectionTitle, { color: colors.foreground }, font("semibold")]}>
-              Command Approval Policy (ava-rs)
-            </Text>
-          </View>
+          <SectionHeader icon={ShieldCheck} title="Command Approval Policy (ava-rs)" />
 
           <View style={styles.cardsCol}>
             {APPROVAL_POLICIES.map((opt) => {
@@ -214,7 +209,7 @@ export function PermissionsSettingsScreen() {
                     </Text>
                     {isSelected && (
                       <View style={[styles.checkCircle, { backgroundColor: colors.primary }]}>
-                        <Check size={11} color="#FFFFFF" />
+                        <Check size={11} color={colors.primaryForeground} />
                       </View>
                     )}
                   </View>
@@ -229,12 +224,7 @@ export function PermissionsSettingsScreen() {
 
         {/* ── Sandbox Mode ── */}
         <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <Lock size={15} color={colors.primary} />
-            <Text style={[styles.sectionTitle, { color: colors.foreground }, font("semibold")]}>
-              Sandbox Isolation
-            </Text>
-          </View>
+          <SectionHeader icon={Lock} title="Sandbox Isolation" />
 
           <View style={styles.cardsCol}>
             {SANDBOX_MODES.map((opt) => {
@@ -259,7 +249,7 @@ export function PermissionsSettingsScreen() {
                     </Text>
                     {isSelected && (
                       <View style={[styles.checkCircle, { backgroundColor: colors.primary }]}>
-                        <Check size={11} color="#FFFFFF" />
+                        <Check size={11} color={colors.primaryForeground} />
                       </View>
                     )}
                   </View>
@@ -274,12 +264,7 @@ export function PermissionsSettingsScreen() {
 
         {/* ── Mobile Device Permissions ── */}
         <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <Sliders size={15} color={colors.primary} />
-            <Text style={[styles.sectionTitle, { color: colors.foreground }, font("semibold")]}>
-              Mobile Device Hardware
-            </Text>
-          </View>
+          <SectionHeader icon={Sliders} title="Mobile Device Hardware" />
 
           <Surface style={[styles.nativeCard, { borderColor: colors.glassBorder }]}>
             {/* Notifications */}
@@ -364,13 +349,6 @@ const styles = StyleSheet.create({
   container: { flex: 1 },
   content: { padding: 16, paddingBottom: 40, gap: 20 },
   section: { gap: 10 },
-  sectionHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-    paddingHorizontal: 2,
-  },
-  sectionTitle: { fontSize: 13.5 },
   cardsCol: { gap: 8 },
   policyCard: {
     borderRadius: 14,

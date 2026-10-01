@@ -16,7 +16,7 @@ import {
   Save,
 } from "lucide-react-native";
 import { AppShell } from "@/components/layout/AppShell";
-import { PageIntro, Surface } from "@/components/kit";
+import { PageIntro, SectionHeader, Surface } from "@/components/kit";
 import { useTheme } from "@/theme/colors";
 import { font, mono } from "@/theme/fonts";
 import { APP } from "@/config/app";
@@ -113,12 +113,7 @@ export function WorkspaceSettingsScreen() {
 
         {/* ── Active CWD Setting ── */}
         <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <FolderOpen size={15} color={colors.primary} />
-            <Text style={[styles.sectionTitle, { color: colors.foreground }, font("semibold")]}>
-              Default Working Directory (CWD)
-            </Text>
-          </View>
+          <SectionHeader icon={FolderOpen} title="Default Working Directory (CWD)" />
 
           <Surface style={[styles.card, { borderColor: colors.glassBorder }]}>
             <Text style={[styles.fieldHint, { color: colors.mutedForeground }, font("regular")]}>
@@ -140,7 +135,7 @@ export function WorkspaceSettingsScreen() {
                 onPress={() => handleApplyCwd(cwdInput)}
                 activeOpacity={0.8}
               >
-                <Save size={14} color="#FFFFFF" />
+                <Save size={14} color={colors.primaryForeground} />
               </TouchableOpacity>
             </View>
           </Surface>
@@ -148,12 +143,7 @@ export function WorkspaceSettingsScreen() {
 
         {/* ── Project Doc Byte Limit ── */}
         <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <FileCode2 size={15} color={colors.primary} />
-            <Text style={[styles.sectionTitle, { color: colors.foreground }, font("semibold")]}>
-              Project Documentation Limit
-            </Text>
-          </View>
+          <SectionHeader icon={FileCode2} title="Project Documentation Limit" />
 
           <Surface style={[styles.card, { borderColor: colors.glassBorder }]}>
             <Text style={[styles.fieldHint, { color: colors.mutedForeground }, font("regular")]}>
@@ -202,13 +192,6 @@ const styles = StyleSheet.create({
   container: { flex: 1 },
   content: { padding: 16, paddingBottom: 40, gap: 20 },
   section: { gap: 10 },
-  sectionHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-    paddingHorizontal: 2,
-  },
-  sectionTitle: { fontSize: 13.5 },
   card: {
     borderRadius: 16,
     borderWidth: 1,

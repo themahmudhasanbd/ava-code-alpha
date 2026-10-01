@@ -212,7 +212,7 @@ export function OptionPicker({
                       </View>
                       {isSel && (
                         <View style={[styles.check, { backgroundColor: colors.primary }]}>
-                          <Check size={12} color="#FFFFFF" />
+                          <Check size={12} color={colors.primaryForeground} />
                         </View>
                       )}
                     </TouchableOpacity>

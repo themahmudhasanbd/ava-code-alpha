@@ -134,14 +134,14 @@ export function AppHeader({
           {isConnecting ? (
             <ActivityIndicator size="small" color={COLORS.primary} />
           ) : (
-            <Zap size={18} color={isOnline ? "#10B981" : "#EF4444"} />
+            <Zap size={18} color={isOnline ? COLORS.success : COLORS.destructive} />
           )}
 
           {/* Core Online / Offline Status Dot */}
           <View
             style={[
               styles.headerStatusDot,
-              { backgroundColor: isOnline ? "#10B981" : "#EF4444" },
+              { backgroundColor: isOnline ? COLORS.success : COLORS.destructive },
             ]}
           />
         </TouchableOpacity>

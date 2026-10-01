@@ -138,13 +138,78 @@ function mergeWithLocalMessages(
       )
     : [];
 
+  // 2b. PRESERVE COMPLETED-TURN WORKFLOW STEPS (item #23).
+  // When the turn is NOT running, local assistant messages that carried
+  // workflow steps (tool / reasoning / plan parts) would otherwise be dropped
+  // in favor of the server history message — but the server message often
+  // arrives without tool/reasoning/plan parts, which unmounts the
+  // LiveStepOverviewCard (the "card vanishes when the turn ends" report).
+  // Graft the local workflow parts onto the matching server message (same id,
+  // or the last server assistant message for live-generated ids) so the card
+  // stays visible with completed/stopped/failed status. Part ids dedupe the
+  // graft, making repeated merges idempotent. If the server has no record of
+  // the turn at all, keep the local message instead of dropping it.
+  const isPreservableWorkflowPart = (p: MessagePart): boolean =>
+    p.kind === "tool" || p.kind === "reasoning" || p.kind === "plan";
+  const hasWorkflowSteps = (m: ChatMessage): boolean =>
+    m.role === "assistant" && (m.parts ?? []).some(isPreservableWorkflowPart);
+  let mostRecentLocalWorkflowIdx = -1;
+  for (let i = 0; i < localMsgs.length; i++) {
+    if (hasWorkflowSteps(localMsgs[i]!)) mostRecentLocalWorkflowIdx = i;
+  }
+  const finishedWorkflowMsgs =
+    !isTurnRunning && mostRecentLocalWorkflowIdx !== -1
+      ? localMsgs.filter(hasWorkflowSteps)
+      : [];
+
   // 3. Filter server messages to avoid duplicating any active live assistant message
   const serverFiltered = serverMsgs.filter(
     (sm) => !liveAssistantMsgs.some((lm) => lm.id === sm.id)
   );
 
-  // 4. Combine server history + unconfirmed local user messages + active streaming assistant message
-  const combined = [...serverFiltered, ...pendingLocalUserMsgs, ...liveAssistantMsgs];
+  const serverById = new Map<string, ChatMessage>();
+  for (const sm of serverFiltered) serverById.set(sm.id, sm);
+  const grafted = new Map<string, ChatMessage>(); // server id -> grafted copy
+  const keptLocal: ChatMessage[] = [];
+  for (const lm of finishedWorkflowMsgs) {
+    let target = serverById.get(lm.id);
+    if (!target && localMsgs.indexOf(lm) === mostRecentLocalWorkflowIdx) {
+      // Live-generated id (e.g. makeUniqueId("live")): the just-finished turn
+      // is the last assistant message in server history. Only the most recent
+      // local turn may use the positional fallback, so an older turn never
+      // grafts its steps onto the wrong message.
+      for (let i = serverFiltered.length - 1; i >= 0; i--) {
+        if (serverFiltered[i]!.role === "assistant") {
+          target = serverFiltered[i];
+          break;
+        }
+      }
+    }
+    if (!target) {
+      // Server has no record of this turn yet — keep the local message so the
+      // step overview card (and the turn itself) stays visible.
+      keptLocal.push(lm);
+      continue;
+    }
+    const existingPartIds = new Set((target.parts ?? []).map((p) => p.id));
+    const missing = (lm.parts ?? []).filter(
+      (p) => isPreservableWorkflowPart(p) && !existingPartIds.has(p.id)
+    );
+    if (missing.length > 0) {
+      const mergedMsg: ChatMessage = {
+        ...target,
+        parts: [...(target.parts ?? []), ...missing],
+      };
+      grafted.set(target.id, mergedMsg);
+      serverById.set(target.id, mergedMsg);
+    }
+  }
+  const finalServer = serverFiltered.map((sm) => grafted.get(sm.id) ?? sm);
+
+  // 4. Combine server history + unconfirmed local user messages + preserved
+  //    finished-turn message (when the server has no record of it yet) +
+  //    active streaming assistant message
+  const combined = [...finalServer, ...pendingLocalUserMsgs, ...keptLocal, ...liveAssistantMsgs];
 
   // Deduplicate by message ID to prevent any duplicate key errors in lists
   const seenIds = new Set<string>();

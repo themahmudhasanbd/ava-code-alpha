@@ -115,13 +115,13 @@ export function TypingBlinker({
 
 const styles = StyleSheet.create({
   baseText: {
-    fontSize: 13,
+    fontSize: 15,
     color: COLORS.foreground,
-    lineHeight: 20,
+    lineHeight: 23,
   },
   cursor: {
-    fontSize: 13,
-    lineHeight: 18,
+    fontSize: 15,
+    lineHeight: 21,
     includeFontPadding: false,
   },
 });

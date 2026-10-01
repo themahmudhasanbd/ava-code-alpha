@@ -24,6 +24,7 @@ import {
   RefreshCw,
   RotateCcw,
   Server,
+  Settings,
   ShieldCheck,
   Square,
   Terminal,
@@ -33,9 +34,11 @@ import {
 } from "lucide-react-native";
 import { AppShell } from "@/components/layout/AppShell";
 import {
+  EmptyState,
   GlassCapsule,
   GlassIconButton,
   PageIntro,
+  SectionHeader,
   Skeleton,
   SkeletonCard,
   SkeletonCapsule,
@@ -130,24 +133,6 @@ function ActionButton({
         {label}
       </Text>
     </TouchableOpacity>
-  );
-}
-
-function SectionHeader({
-  icon: Icon,
-  title,
-  badge,
-}: {
-  icon: LucideIcon;
-  title: string;
-  badge?: React.ReactNode;
-}) {
-  return (
-    <View style={styles.sectionHeader}>
-      <Icon size={16} color={COLORS.primary} />
-      <Text style={[styles.sectionTitle, font("semibold")]}>{title}</Text>
-      {badge && <View style={{ marginLeft: "auto" }}>{badge}</View>}
-    </View>
   );
 }
 
@@ -693,10 +678,10 @@ export function SystemScreen() {
                 <View
                   style={[
                     styles.metricIconWrap,
-                    { backgroundColor: "rgba(6,182,212,0.12)" },
+                    { backgroundColor: COLORS.success + "1F" },
                   ]}
                 >
-                  <HardDrive size={18} color="#06B6D4" />
+                  <HardDrive size={18} color={COLORS.success} />
                 </View>
                 <View style={{ flex: 1 }}>
                   <Text style={[styles.metricCardTitle, font("semibold")]}>
@@ -728,7 +713,7 @@ export function SystemScreen() {
                           ? COLORS.destructive
                           : diskPct >= 80
                           ? COLORS.warning
-                          : "#06B6D4",
+                          : COLORS.success,
                     },
                   ]}
                 />
@@ -836,11 +821,11 @@ export function SystemScreen() {
           {loadingPm2 ? (
             <SkeletonRows count={2} />
           ) : pm2Processes.length === 0 ? (
-            <Surface style={styles.emptyCard}>
-              <Text style={[styles.emptyText, font("regular")]}>
-                No PM2 processes found.
-              </Text>
-            </Surface>
+            <EmptyState
+              icon={Activity}
+              title="No PM2 processes found"
+              description="Processes running on the server will appear here."
+            />
           ) : (
             <Surface style={styles.listCard}>
               {pm2Processes.map((proc) => {
@@ -947,11 +932,11 @@ export function SystemScreen() {
           {loadingSystemd ? (
             <SkeletonRows count={3} />
           ) : systemdServices.length === 0 ? (
-            <Surface style={styles.emptyCard}>
-              <Text style={[styles.emptyText, font("regular")]}>
-                Could not inspect systemd services.
-              </Text>
-            </Surface>
+            <EmptyState
+              icon={Settings}
+              title="No systemd services"
+              description="Could not inspect systemd services."
+            />
           ) : (
             <Surface style={styles.listCard}>
               {systemdServices.map((svc) => {
@@ -1047,17 +1032,7 @@ export function SystemScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1 },
   content: { padding: 16, paddingBottom: 40, gap: 16 },
-  section: { gap: 8 },
-  sectionHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-    paddingHorizontal: 4,
-  },
-  sectionTitle: {
-    fontSize: 14,
-    color: COLORS.foreground,
-  },
+  section: { gap: 10 },
 
   // Hero
   heroCard: {
@@ -1292,14 +1267,4 @@ const styles = StyleSheet.create({
   ecoTitle: { fontSize: 13, color: COLORS.foreground },
   ecoSub: { fontSize: 11, color: COLORS.mutedForeground },
 
-  emptyCard: {
-    borderRadius: 16,
-    padding: 24,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  emptyText: {
-    fontSize: 12.5,
-    color: COLORS.mutedForeground,
-  },
 });

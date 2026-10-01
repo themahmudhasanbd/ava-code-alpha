@@ -72,7 +72,11 @@ export function LiveStepOverviewCard({
   }
 
   const latestPart: MessagePart | undefined = workflowParts[workflowParts.length - 1];
-  const isRunning = live && (latestPart?.status === "running" || latestPart == null);
+  // A live turn is still in progress by definition (SessionScreen sets live only
+  // while the turn status is "submitted"/"streaming"). Deriving "running" from the
+  // latest part alone caused a Completed-pill flicker in the gap between two steps,
+  // when every part is already "done" but the next step hasn't arrived yet.
+  const isRunning = live;
 
   const toolCount = workflowParts.filter((s) => s.kind === "tool").length;
   const completedCount = workflowParts.filter((s) => s.status === "done").length;
@@ -157,7 +161,7 @@ export function LiveStepOverviewCard({
         {
           borderColor: colors.border,
           ...(turnStatus === "running" ? { borderColor: colors.primary } : {}),
-          ...(turnStatus === "failed" ? { borderColor: "rgba(239, 68, 68, 0.3)" } : {}),
+          ...(turnStatus === "failed" ? { borderColor: colors.destructive } : {}),
         },
       ]}
     >
@@ -198,11 +202,11 @@ export function LiveStepOverviewCard({
             <ActivityIndicator size="small" color={colors.primary} />
           )}
           <TouchableOpacity
-            style={[styles.pillButton, { borderColor: colors.border }]}
+            style={styles.timelineLink}
             onPress={handleOpenTimeline}
             activeOpacity={0.7}
           >
-            <Text style={[styles.pillButtonText, font("medium"), { color: colors.secondaryForeground }]}>
+            <Text style={[styles.timelineLinkText, font("medium"), { color: colors.mutedForeground }]}>
               Timeline
             </Text>
             <ChevronRight size={11} color={colors.mutedForeground} />
@@ -226,7 +230,7 @@ export function LiveStepOverviewCard({
       {/* Expanded: recent steps (collapsed by default when done) */}
       {isExpanded && (
         <View style={[styles.expandedSection, { borderTopColor: colors.border }]}>
-          {turnStatus === "running" && latestPart && (
+          {turnStatus === "running" && latestPart && latestPart.status === "running" && (
             <RuntimeDottedIndicator
               label={displayToolName(latestPart.toolName || "tool", latestPart.meta)}
               subLabel={getToolSubtitle(latestPart) || latestPart.text || "Processing step…"}
@@ -278,7 +282,7 @@ export function LiveStepOverviewCard({
 const styles = StyleSheet.create({
   container: {
     borderWidth: 1,
-    borderRadius: 12,
+    borderRadius: 14,
     overflow: "hidden",
     marginTop: 8,
   },
@@ -286,7 +290,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     paddingHorizontal: 12,
-    paddingVertical: 10,
+    paddingVertical: 9,
     gap: 10,
   },
   statusPill: {
@@ -295,8 +299,8 @@ const styles = StyleSheet.create({
     gap: 5,
     borderWidth: 1,
     borderRadius: 999,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
+    paddingHorizontal: 7,
+    paddingVertical: 3,
   },
   statusPillText: {
     fontSize: 10,
@@ -313,9 +317,11 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 15,
+    lineHeight: 20,
   },
   subtitle: {
-    fontSize: 11,
+    fontSize: 10.5,
+    letterSpacing: 0.4,
     marginTop: 2,
   },
   rightAction: {
@@ -323,20 +329,18 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 8,
   },
-  pillButton: {
+  timelineLink: {
     flexDirection: "row",
     alignItems: "center",
-    borderWidth: 1,
-    borderRadius: 999,
-    paddingHorizontal: 9,
-    paddingVertical: 5,
+    paddingHorizontal: 4,
+    paddingVertical: 6,
     gap: 2,
   },
-  pillButtonText: {
+  timelineLinkText: {
     fontSize: 11,
   },
   progressTrack: {
-    height: 3,
+    height: 2,
     marginHorizontal: 12,
     borderRadius: 999,
     overflow: "hidden",
@@ -348,8 +352,8 @@ const styles = StyleSheet.create({
   expandedSection: {
     borderTopWidth: 1,
     paddingHorizontal: 12,
-    paddingVertical: 10,
-    gap: 8,
+    paddingVertical: 8,
+    gap: 6,
   },
   stepsList: {
     gap: 6,
@@ -360,8 +364,8 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   stepDot: {
-    width: 7,
-    height: 7,
+    width: 6,
+    height: 6,
     borderRadius: 999,
   },
   stepRowText: {

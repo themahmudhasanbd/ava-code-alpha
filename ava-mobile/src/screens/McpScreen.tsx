@@ -34,6 +34,7 @@ import {
   EmptyState,
   GlassIconButton,
   PageIntro,
+  SectionHeader,
   SkeletonRows,
   Surface,
   Badge,
@@ -315,13 +316,11 @@ export function McpScreen() {
 
         {/* ── Tool Permission Policy ── */}
         <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <Shield size={15} color={COLORS.primary} />
-            <Text style={[styles.sectionTitle, font("semibold")]}>Tool Permission Policy</Text>
-          </View>
-          <Text style={[styles.sectionDesc, font("regular")]}>
-            Controls how the agent requests approval before running tools.
-          </Text>
+          <SectionHeader
+            icon={Shield}
+            title="Tool Permission Policy"
+            description="Controls how the agent requests approval before running tools."
+          />
           <Surface style={styles.card}>
             {APPROVAL_POLICIES.map((p) => {
               const isActive = currentPolicy === p.id;
@@ -350,10 +349,7 @@ export function McpScreen() {
 
         {/* ── Server List ── */}
         <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <Plug size={15} color={COLORS.primary} />
-            <Text style={[styles.sectionTitle, font("semibold")]}>Servers</Text>
-          </View>
+          <SectionHeader icon={Plug} title="Servers" />
 
           {isLoading && <SkeletonRows count={3} />}
           {error && <EmptyState icon={Plug} title="Could not load servers" description={(error as Error).message} />}
@@ -462,17 +458,14 @@ function formatAuthStatus(status: string): string {
 const styles = StyleSheet.create({
   container: { flex: 1 },
   content: { padding: 16, paddingBottom: 40, gap: 16 },
-  section: { gap: 8 },
-  sectionHeader: { flexDirection: "row", alignItems: "center", gap: 6, paddingHorizontal: 4 },
-  sectionTitle: { fontSize: 13.5, color: COLORS.foreground },
-  sectionDesc: { fontSize: 12, color: COLORS.mutedForeground, paddingHorizontal: 4, lineHeight: 17 },
+  section: { gap: 10 },
   card: { borderRadius: 16, borderWidth: 1, borderColor: COLORS.glassBorder, overflow: "hidden" },
 
   // Stats Capsules
   capsuleRow: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
 
   // Policy
-  policyRow: { flexDirection: "row", alignItems: "center", gap: 12, paddingHorizontal: 14, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: "rgba(255,255,255,0.05)" },
+  policyRow: { flexDirection: "row", alignItems: "center", gap: 12, paddingHorizontal: 14, paddingVertical: 12, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: COLORS.border },
   policyRowActive: { backgroundColor: "rgba(66,64,225,0.06)" },
   policyIcon: { width: 32, height: 32, borderRadius: 8, alignItems: "center", justifyContent: "center" },
   policyInfo: { flex: 1, gap: 2 },
@@ -487,13 +480,13 @@ const styles = StyleSheet.create({
   serverName: { fontSize: 13.5, color: COLORS.foreground },
   serverTools: { fontSize: 11, color: COLORS.mutedForeground },
   serverBody: { borderTopWidth: 1, borderTopColor: COLORS.border },
-  serverActions: { flexDirection: "row", flexWrap: "wrap", gap: 8, paddingHorizontal: 14, paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: "rgba(255,255,255,0.05)" },
+  serverActions: { flexDirection: "row", flexWrap: "wrap", gap: 8, paddingHorizontal: 14, paddingVertical: 10, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: COLORS.border },
   actionBtn: { flexDirection: "row", alignItems: "center", gap: 5, paddingHorizontal: 10, paddingVertical: 6, borderRadius: 8, backgroundColor: COLORS.secondary, borderWidth: 1, borderColor: COLORS.border },
   actionBtnWarning: { backgroundColor: "rgba(234,179,43,0.1)", borderColor: "rgba(234,179,43,0.3)" },
   actionText: { fontSize: 11.5, color: COLORS.primary },
 
   // Auth
-  authRow: { flexDirection: "row", alignItems: "center", gap: 8, paddingHorizontal: 14, paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: "rgba(255,255,255,0.05)" },
+  authRow: { flexDirection: "row", alignItems: "center", gap: 8, paddingHorizontal: 14, paddingVertical: 8, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: COLORS.border },
   authText: { fontSize: 12, color: COLORS.mutedForeground },
 
   // Tools

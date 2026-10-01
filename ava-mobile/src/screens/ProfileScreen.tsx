@@ -31,7 +31,7 @@ import {
   Zap,
 } from "lucide-react-native";
 import { AppShell } from "@/components/layout/AppShell";
-import { EmptyState, PageIntro, SkeletonRows, StatusDot, Surface } from "@/components/kit";
+import { EmptyState, PageIntro, SectionHeader, SkeletonRows, StatusDot, Surface } from "@/components/kit";
 import { APP } from "@/config/app";
 import { useAva } from "@/state/ava-provider";
 import { useSessions } from "@/state/queries";
@@ -232,7 +232,7 @@ export function ProfileScreen() {
                   activeOpacity={0.8}
                   accessibilityLabel="Change avatar"
                 >
-                  <Camera size={13} color="#FFFFFF" />
+                  <Camera size={13} color={COLORS.primaryForeground} />
                 </TouchableOpacity>
               </View>
 
@@ -291,10 +291,7 @@ export function ProfileScreen() {
 
           {/* ── 3. Developer Details ── */}
           <View style={styles.section}>
-            <View style={styles.sectionHeader}>
-              <User size={15} color={COLORS.primary} />
-              <Text style={[styles.sectionTitle, font("semibold")]}>Developer Details</Text>
-            </View>
+            <SectionHeader icon={User} title="Developer Details" />
             <Surface style={styles.card}>
               <View style={styles.fieldGroup}>
                 <Text style={[styles.fieldLabel, font("medium")]}>Full Name</Text>
@@ -339,10 +336,7 @@ export function ProfileScreen() {
 
           {/* ── 4. AI Persona & Tone ── */}
           <View style={styles.section}>
-            <View style={styles.sectionHeader}>
-              <Sparkles size={15} color={COLORS.primary} />
-              <Text style={[styles.sectionTitle, font("semibold")]}>AI Persona & Tone</Text>
-            </View>
+            <SectionHeader icon={Sparkles} title="AI Persona & Tone" />
             <Surface style={styles.card}>
               <View style={styles.fieldGroup}>
                 <Text style={[styles.fieldLabel, font("medium")]}>AI Name</Text>
@@ -407,7 +401,7 @@ export function ProfileScreen() {
                                 { backgroundColor: COLORS.primary },
                               ]}
                             >
-                              <Check size={11} color="#FFFFFF" />
+                              <Check size={11} color={COLORS.primaryForeground} />
                             </View>
                           )}
                         </View>
@@ -444,10 +438,7 @@ export function ProfileScreen() {
 
           {/* ── 5. Engineering Context & Constraints ── */}
           <View style={styles.section}>
-            <View style={styles.sectionHeader}>
-              <Shield size={15} color={COLORS.primary} />
-              <Text style={[styles.sectionTitle, font("semibold")]}>Engineering Rules & Context</Text>
-            </View>
+            <SectionHeader icon={Shield} title="Engineering Rules & Context" />
             <Surface style={styles.card}>
               <View style={styles.switchRow}>
                 <View style={{ flex: 1, paddingRight: 12 }}>
@@ -462,7 +453,7 @@ export function ProfileScreen() {
                   value={form.enabled}
                   onValueChange={(val) => setForm((prev) => ({ ...prev, enabled: val }))}
                   trackColor={{ false: COLORS.muted, true: COLORS.primary }}
-                  thumbColor="#FFFFFF"
+                  thumbColor={COLORS.primaryForeground}
                 />
               </View>
 
@@ -515,7 +506,7 @@ export function ProfileScreen() {
                     onPress={handleAddRule}
                     activeOpacity={0.8}
                   >
-                    <Plus size={16} color="#FFFFFF" />
+                    <Plus size={16} color={COLORS.primaryForeground} />
                   </TouchableOpacity>
                 </View>
               </View>
@@ -541,15 +532,15 @@ export function ProfileScreen() {
               activeOpacity={0.8}
             >
               {saveMutation.isPending ? (
-                <ActivityIndicator color="#FFFFFF" size="small" />
+                <ActivityIndicator color={COLORS.primaryForeground} size="small" />
               ) : savedSuccess ? (
                 <>
-                  <Check size={18} color="#FFFFFF" />
+                  <Check size={18} color={COLORS.primaryForeground} />
                   <Text style={[styles.saveBtnText, font("semibold")]}>Saved to AvA Server!</Text>
                 </>
               ) : (
                 <>
-                  <Save size={18} color="#FFFFFF" />
+                  <Save size={18} color={COLORS.primaryForeground} />
                   <Text style={[styles.saveBtnText, font("semibold")]}>Save Profile</Text>
                 </>
               )}
@@ -703,17 +694,7 @@ const styles = StyleSheet.create({
     color: COLORS.foreground,
   },
   section: {
-    gap: 8,
-  },
-  sectionHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    paddingHorizontal: 4,
-  },
-  sectionTitle: {
-    fontSize: 13.5,
-    color: COLORS.foreground,
+    gap: 10,
   },
   card: {
     borderRadius: 18,
@@ -896,7 +877,7 @@ const styles = StyleSheet.create({
     opacity: 0.6,
   },
   saveBtnText: {
-    color: "#FFFFFF",
+    color: COLORS.primaryForeground,
     fontSize: 14,
   },
   signOutSection: {

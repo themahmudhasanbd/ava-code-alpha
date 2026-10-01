@@ -46,3 +46,10 @@ export async function verifyLogin(serverUrl: string, username: string, password:
   if (!res.ok) throw new Error(`Server replied ${res.status}`);
   return { serverUrl: base, username: username.trim() || APP.defaultUsername, token };
 }
+
+/** Splits a Basic token (base64 "username:password") back into its parts. In-memory use only. */
+export function decodeCredentials(token: string): { username: string; password: string } {
+  const raw = atob(token);
+  const i = raw.indexOf(":");
+  return i === -1 ? { username: raw, password: "" } : { username: raw.slice(0, i), password: raw.slice(i + 1) };
+}

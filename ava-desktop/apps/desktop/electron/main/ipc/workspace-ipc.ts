@@ -12,6 +12,7 @@ import {
   type FsChatRefProjectRoot,
   type FsChatRefResolveResult,
   type ProjectGroupRecord,
+  type ProjectRecord,
 } from "@pi-desktop/shared";
 import {
   loadComposerTemplates,
@@ -171,7 +172,28 @@ export function registerWorkspaceIpc({
 
   handle(IPC.invoke.projectList, async () => {
     if (!host) throw new Error("host unavailable");
-    return host.call("projects.list");
+    // ava-core returns { data: Project[] }; the renderer expects
+    // { projects: ProjectRecord[] } (see AgentCapabilityLayout).
+    const result = (await host.call("project/list", {})) as {
+      data?: Array<{
+        name?: unknown;
+        roots?: Array<{ path?: unknown }>;
+        createdAt?: unknown;
+        updatedAt?: unknown;
+        recencyAt?: unknown;
+      }>;
+    };
+    const projects: ProjectRecord[] = (result.data ?? []).map(
+      (project, index) => ({
+        id: index,
+        path: String(project.roots?.[0]?.path ?? ""),
+        name: String(project.name ?? ""),
+        pinned: false,
+        createdAt: Number(project.createdAt ?? 0),
+        lastOpenedAt: Number(project.recencyAt ?? project.updatedAt ?? 0),
+      }),
+    );
+    return { projects };
   });
   handle(IPC.invoke.projectOpenFolder, async (path: string) => {
     if (!host) throw new Error("host unavailable");
@@ -183,8 +205,13 @@ export function registerWorkspaceIpc({
     }
     // Open only known project records so the renderer cannot probe arbitrary
     // filesystem paths through this channel.
-    const listed = (await host.call("projects.list")) as {
-      projects?: Array<{ path?: string }>;
+    const result = (await host.call("project/list", {})) as {
+      data?: Array<{ roots?: Array<{ path?: string }> }>;
+    };
+    const listed = {
+      projects: (result.data ?? []).map((project) => ({
+        path: String(project.roots?.[0]?.path ?? ""),
+      })),
     };
     const projectPath = resolve(requestedPath);
     const known = (listed.projects ?? []).some((project) => {
@@ -206,20 +233,6 @@ export function registerWorkspaceIpc({
     return { ok: true, path: projectPath };
   });
 
-  handle(IPC.invoke.projectOpen, async () => {
-    if (!host) throw new Error("host unavailable");
-    const result = await openProjectPicker({
-      properties: ["openDirectory", "createDirectory"],
-    });
-    if (!result || result.canceled || !result.filePaths[0]) {
-      return { workspace: null, canceled: true };
-    }
-    const res = (await host.call("workspace.set", {
-      path: result.filePaths[0],
-    })) as { workspace: { path: string; name: string } | null };
-    setCurrentWorkspacePath(res.workspace?.path ?? result.filePaths[0]);
-    return { workspace: await withGitBranch(res.workspace), canceled: false };
-  });
   handle(IPC.invoke.projectPickFolders, async () => {
     const result = await openProjectPicker({
       properties: ["openDirectory", "multiSelections", "createDirectory"],
@@ -284,19 +297,30 @@ export function registerWorkspaceIpc({
     // Deletion only touches host records, so a project whose folder was moved
     // or deleted on disk stays deletable: deliberately no existence check.
     const projectPath = resolve(requestedPath);
-    const result = (await host.call("projects.remove", {
-      path: projectPath,
-    })) as { removed?: boolean; sessionsRemoved?: number };
-    const removed = Boolean(result?.removed);
+    // ava-core identifies projects by id; resolve it from the path first.
+    const listed = (await host.call("project/list", {})) as {
+      data?: Array<{ id?: unknown; roots?: Array<{ path?: unknown }> }>;
+    };
+    const match = (listed.data ?? []).find((project) =>
+      (project.roots ?? []).some((root) => {
+        const candidate = String(root?.path ?? "").trim();
+        return candidate && resolve(candidate) === projectPath;
+      }),
+    );
+    if (typeof match?.id !== "string" || !match.id) {
+      throw Object.assign(new Error("project not found"), {
+        errorCode: ErrorCodes.NOT_FOUND,
+      });
+    }
+    await host.call("project/delete", { projectId: match.id });
     const workspacePath = currentWorkspacePath();
-    if (removed && workspacePath && resolve(workspacePath) === projectPath) {
-      // Leaving the host bound to a deleted project would re-create it on boot.
+    if (workspacePath && resolve(workspacePath) === projectPath) {
+      // Leaving the window bound to a deleted project would re-create it on boot.
       setCurrentWorkspacePath(null);
-      await host.call("workspace.clear");
     }
     return {
-      removed,
-      sessionsRemoved: Number(result?.sessionsRemoved ?? 0),
+      removed: true,
+      sessionsRemoved: 0,
     };
   });
 
@@ -397,8 +421,10 @@ export function registerWorkspaceIpc({
   handle(
     IPC.invoke.workspaceReviewRollback,
     async (input: { sessionId: string; snapshotId: string }) => {
-      if (!host) throw new Error("host unavailable");
-      return host.call("review.rollback", input);
+      // ava-core has no rollback RPC (only review/start); report the
+      // "unavailable" status the renderer already handles with a toast
+      // instead of calling a dead host method.
+      return { status: "unavailable", snapshotId: input.snapshotId };
     },
   );
 
@@ -469,11 +495,9 @@ export function registerWorkspaceIpc({
   });
 
   const requireWorkspaceRoot = async () => {
-    if (!host) throw new Error("host unavailable");
-    const res = (await host.call("workspace.get")) as {
-      workspace: { path: string } | null;
-    };
-    const root = res.workspace?.path;
+    // The host-side workspace concept is gone; the active project path is
+    // tracked locally in the main process (see setCurrentWorkspacePath).
+    const root = currentWorkspacePath();
     if (!root) {
       throw Object.assign(new Error("workspace required"), {
         errorCode: ErrorCodes.INVALID_ARGUMENT,

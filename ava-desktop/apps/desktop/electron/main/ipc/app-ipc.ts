@@ -91,8 +91,12 @@ export function registerAppIpc({
   handle(IPC.invoke.appDismissOnboarding, async () => {
     const host = getHost();
     if (!host) throw new Error("host unavailable");
-    const settings = await host.call<any>("settings.get");
-    await host.call("settings.set", { ...settings, onboardingDismissed: true });
+    // Persisted in the user's ava-core config so the flag survives restarts.
+    await host.call("config/value/write", {
+      keyPath: "onboarding_dismissed",
+      value: true,
+      mergeStrategy: "replace",
+    });
     return { ok: true };
   });
 
@@ -152,10 +156,13 @@ export function registerAppIpc({
       });
     }
     const projectPath = resolve(requestedPath);
-    const listed = (await host.call("projects.list")) as {
-      projects?: Array<{ path?: string }>;
+    const listed = (await host.call("project/list", {})) as {
+      data?: Array<{ roots?: Array<{ path?: string }> }>;
     };
-    const known = (listed.projects ?? []).some((project) => {
+    const projects = (listed.data ?? []).map((project) => ({
+      path: String(project.roots?.[0]?.path ?? ""),
+    }));
+    const known = (projects ?? []).some((project) => {
       const candidate = String(project?.path ?? "").trim();
       return candidate && resolve(candidate) === projectPath;
     });

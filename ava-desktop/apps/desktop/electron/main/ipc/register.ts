@@ -178,13 +178,10 @@ export function registerIpcHandlers(dependencies: RegisterIpcDependencies) {
   };
 
   const optionalWorkspaceRoot = async (): Promise<string | null> => {
-    const currentHost = getHost();
-    if (!currentHost) return null;
+    // The host-side workspace concept is gone; fall back to the
+    // main-process-tracked path. Callers already handle null.
     try {
-      const result = (await currentHost.call("workspace.get")) as {
-        workspace: { path?: string } | null;
-      };
-      return result.workspace?.path ?? null;
+      return currentWorkspacePath() ?? null;
     } catch {
       return null;
     }

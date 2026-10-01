@@ -137,7 +137,6 @@ export const IPC = {
     secretsSet: "pi-desktop/secrets/set",
     secretsDelete: "pi-desktop/secrets/delete",
     secretsHas: "pi-desktop/secrets/has",
-    projectOpen: "pi-desktop/project/open",
     projectPickFolders: "pi-desktop/project/pickFolders",
     projectMemoryGet: "pi-desktop/project/memory/get",
     projectMemorySave: "pi-desktop/project/memory/save",

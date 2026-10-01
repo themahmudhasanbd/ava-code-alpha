@@ -2,7 +2,7 @@ import "@/polyfills";
 import "react-native-gesture-handler";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import React, { useEffect, useMemo, useState } from "react";
-import { ActivityIndicator, Alert, LogBox, Platform, StyleSheet, View } from "react-native";
+import { ActivityIndicator, Alert, LogBox, Platform, ScrollView, StyleSheet, Text, View } from "react-native";
 import {
   NavigationContainer,
   DefaultTheme,
@@ -120,7 +120,48 @@ function AppContent() {
   );
 }
 
-export default function App() {
+class RootErrorBoundary extends React.Component<
+  { children: React.ReactNode },
+  { error: Error | null }
+> {
+  state: { error: Error | null } = { error: null };
+
+  static getDerivedStateFromError(error: Error) {
+    return { error };
+  }
+
+  componentDidCatch(error: Error, info: React.ErrorInfo) {
+    console.error("[RootErrorBoundary]", error, info.componentStack);
+  }
+
+  render() {
+    const { error } = this.state;
+    if (error) {
+      return (
+        <View style={ebStyles.container}>
+          <ScrollView contentContainerStyle={ebStyles.content}>
+            <Text style={ebStyles.title}>Something went wrong</Text>
+            <Text style={ebStyles.message}>{String((error as Error).message || error)}</Text>
+            <Text style={ebStyles.stack}>{String((error as Error).stack || "").slice(0, 3000)}</Text>
+            <Text style={ebStyles.hint}>Please take a screenshot of this error.</Text>
+          </ScrollView>
+        </View>
+      );
+    }
+    return this.props.children;
+  }
+}
+
+const ebStyles = StyleSheet.create({
+  container: { flex: 1, backgroundColor: "#ffffff" },
+  content: { padding: 24, paddingTop: 64 },
+  title: { fontSize: 22, fontWeight: "700", color: "#111111", marginBottom: 12 },
+  message: { fontSize: 15, color: "#b00020", marginBottom: 12 },
+  stack: { fontSize: 11, color: "#444444", fontFamily: "monospace" },
+  hint: { fontSize: 13, color: "#666666", marginTop: 16 },
+});
+
+function AppInner() {
   const [ready, setReady] = useState(false);
   const [bootNotice, setBootNotice] = useState<string | null>(null);
 
@@ -210,3 +251,11 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
 });
+
+export default function App() {
+  return (
+    <RootErrorBoundary>
+      <AppInner />
+    </RootErrorBoundary>
+  );
+}

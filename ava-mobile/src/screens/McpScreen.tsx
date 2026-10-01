@@ -46,7 +46,7 @@ import {
 import type { McpServer } from "@/core/types";
 import { useAva } from "@/state/ava-provider";
 import { keys, useMcpServers, useReloadMcp, useMcpOAuth, useAddMcpServer, useServerConfig, useWriteConfig } from "@/state/queries";
-import { COLORS } from "@/theme/colors";
+import { useTheme } from "@/theme/colors";
 import { font, mono } from "@/theme/fonts";
 
 // ── Approval policy options ───────────────────────────────────────────────
@@ -62,13 +62,14 @@ const APPROVAL_POLICIES = [
 // Auth statuses per protocol: unknown | unsupported | notLoggedIn | bearerToken | oauth
 
 function StatusIcon({ status }: { status: string }) {
+  const { colors } = useTheme();
   if (status === "bearerToken" || status === "oauth") {
-    return <CheckCircle2 size={14} color={COLORS.success} />;
+    return <CheckCircle2 size={14} color={colors.success} />;
   }
   if (status === "notLoggedIn") {
-    return <AlertTriangle size={14} color={COLORS.warning} />;
+    return <AlertTriangle size={14} color={colors.warning} />;
   }
-  return <XCircle size={14} color={COLORS.mutedForeground} />;
+  return <XCircle size={14} color={colors.mutedForeground} />;
 }
 
 // ── Server Card ───────────────────────────────────────────────────────────
@@ -82,26 +83,27 @@ function ServerCard({
   onReload: (name: string) => void;
   onOAuth: (name: string) => void;
 }) {
+  const { colors } = useTheme();
   const [open, setOpen] = useState(false);
   const needsAuth = server.authStatus === "notLoggedIn";
   const isOnline = server.status === "ready" || server.status === "connected";
   const statusColor = isOnline
-    ? COLORS.success
+    ? colors.success
     : server.status === "error" || server.status === "failed"
-    ? COLORS.destructive
+    ? colors.destructive
     : needsAuth
-    ? COLORS.warning
-    : COLORS.mutedForeground;
+    ? colors.warning
+    : colors.mutedForeground;
 
   return (
-    <Surface style={styles.serverCard}>
+    <Surface style={[styles.serverCard, { borderColor: colors.glassBorder }]}>
       <TouchableOpacity style={styles.serverHeader} onPress={() => setOpen(!open)} activeOpacity={0.7}>
         <View style={[styles.serverIcon, { backgroundColor: `${statusColor}14` }]}>
           <Plug size={16} color={statusColor} />
         </View>
         <View style={styles.serverMeta}>
-          <Text style={[styles.serverName, font("semibold")]}>{server.name}</Text>
-          <Text style={[styles.serverTools, font("regular")]}>
+          <Text style={[styles.serverName, { color: colors.foreground }, font("semibold")]}>{server.name}</Text>
+          <Text style={[styles.serverTools, { color: colors.mutedForeground }, font("regular")]}>
             {server.tools.length} tool{server.tools.length === 1 ? "" : "s"}
             {server.authStatus ? ` · ${formatAuthStatus(server.authStatus)}` : ""}
           </Text>
@@ -112,35 +114,35 @@ function ServerCard({
           statusDot={isOnline ? "online" : "offline"}
           size="xs"
         />
-        <ChevronRight size={14} color={COLORS.mutedForeground} style={{ transform: [{ rotate: open ? "90deg" : "0deg" }] }} />
+        <ChevronRight size={14} color={colors.mutedForeground} style={{ transform: [{ rotate: open ? "90deg" : "0deg" }] }} />
       </TouchableOpacity>
 
       {open && (
-        <View style={styles.serverBody}>
+        <View style={[styles.serverBody, { borderTopColor: colors.border }]}>
           {/* Auth & Actions */}
-          <View style={styles.serverActions}>
-            <TouchableOpacity style={styles.actionBtn} onPress={() => onReload(server.name)} activeOpacity={0.7}>
-              <RotateCcw size={13} color={COLORS.primary} />
-              <Text style={[styles.actionText, font("medium")]}>Reload</Text>
+          <View style={[styles.serverActions, { borderBottomColor: colors.border }]}>
+            <TouchableOpacity style={[styles.actionBtn, { borderColor: colors.border }]} onPress={() => onReload(server.name)} activeOpacity={0.7}>
+              <RotateCcw size={13} color={colors.primary} />
+              <Text style={[styles.actionText, { color: colors.primary }, font("medium")]}>Reload</Text>
             </TouchableOpacity>
 
             {needsAuth && (
               <TouchableOpacity
-                style={[styles.actionBtn, styles.actionBtnWarning]}
+                style={[styles.actionBtn, { borderColor: colors.border }, { backgroundColor: colors.warning + "1A", borderColor: colors.warning + "40" }]}
                 onPress={() => onOAuth(server.name)}
                 activeOpacity={0.7}
               >
-                <Key size={13} color={COLORS.warning} />
-                <Text style={[styles.actionText, font("medium"), { color: COLORS.warning }]}>Login with OAuth</Text>
+                <Key size={13} color={colors.warning} />
+                <Text style={[styles.actionText, font("medium"), { color: colors.warning }]}>Login with OAuth</Text>
               </TouchableOpacity>
             )}
           </View>
 
           {/* Auth Status */}
           {server.authStatus && (
-            <View style={styles.authRow}>
+            <View style={[styles.authRow, { borderBottomColor: colors.border }]}>
               <StatusIcon status={server.authStatus} />
-              <Text style={[styles.authText, font("regular")]}>
+              <Text style={[styles.authText, { color: colors.mutedForeground }, font("regular")]}>
                 Auth: {formatAuthStatus(server.authStatus)}
               </Text>
             </View>
@@ -148,17 +150,17 @@ function ServerCard({
 
           {/* Tools list */}
           <View style={styles.toolsList}>
-            <Text style={[styles.toolsHeader, font("semibold")]}>Available Tools</Text>
+            <Text style={[styles.toolsHeader, { color: colors.mutedForeground }, font("semibold")]}>Available Tools</Text>
             {server.tools.length === 0 ? (
-              <Text style={[styles.noTools, font("regular")]}>No tools available</Text>
+              <Text style={[styles.noTools, { color: colors.mutedForeground }, font("regular")]}>No tools available</Text>
             ) : (
               server.tools.map((t) => (
                 <View key={t.name} style={styles.toolItem}>
-                  <Wrench size={12} color={COLORS.mutedForeground} style={{ marginTop: 2 }} />
+                  <Wrench size={12} color={colors.mutedForeground} style={{ marginTop: 2 }} />
                   <View style={{ flex: 1 }}>
-                    <Text style={[styles.toolName, mono("medium")]}>{t.name}</Text>
+                    <Text style={[styles.toolName, { color: colors.foreground }, mono("medium")]}>{t.name}</Text>
                     {t.description ? (
-                      <Text style={[styles.toolDesc, font("regular")]} numberOfLines={2}>
+                      <Text style={[styles.toolDesc, { color: colors.mutedForeground }, font("regular")]} numberOfLines={2}>
                         {t.description}
                       </Text>
                     ) : null}
@@ -176,6 +178,7 @@ function ServerCard({
 // ── Main Component ────────────────────────────────────────────────────────
 
 export function McpScreen() {
+  const { colors } = useTheme();
   const { rpc } = useAva();
   const queryClient = useQueryClient();
   const { data: servers = [], isLoading, error } = useMcpServers();
@@ -321,26 +324,26 @@ export function McpScreen() {
             title="Tool Permission Policy"
             description="Controls how the agent requests approval before running tools."
           />
-          <Surface style={styles.card}>
+          <Surface style={[styles.card, { borderColor: colors.glassBorder }]}>
             {APPROVAL_POLICIES.map((p) => {
               const isActive = currentPolicy === p.id;
               const Icon = p.icon;
               return (
                 <TouchableOpacity
                   key={p.id}
-                  style={[styles.policyRow, isActive && styles.policyRowActive]}
+                  style={[styles.policyRow, { borderBottomColor: colors.border }, isActive && { backgroundColor: colors.primary + "0F" }]}
                   onPress={() => handleSetPolicy(p.id)}
                   disabled={applyingPolicy}
                   activeOpacity={0.7}
                 >
-                  <View style={[styles.policyIcon, { backgroundColor: isActive ? COLORS.primary + "14" : COLORS.secondary }]}>
-                    <Icon size={16} color={isActive ? COLORS.primary : COLORS.mutedForeground} />
+                  <View style={[styles.policyIcon, { backgroundColor: isActive ? colors.primary + "14" : colors.secondary }]}>
+                    <Icon size={16} color={isActive ? colors.primary : colors.mutedForeground} />
                   </View>
                   <View style={styles.policyInfo}>
-                    <Text style={[styles.policyLabel, font("semibold")]}>{p.label}</Text>
-                    <Text style={[styles.policyDesc, font("regular")]}>{p.description}</Text>
+                    <Text style={[styles.policyLabel, { color: colors.foreground }, font("semibold")]}>{p.label}</Text>
+                    <Text style={[styles.policyDesc, { color: colors.mutedForeground }, font("regular")]}>{p.description}</Text>
                   </View>
-                  {isActive && <Check size={16} color={COLORS.primary} />}
+                  {isActive && <Check size={16} color={colors.primary} />}
                 </TouchableOpacity>
               );
             })}
@@ -367,9 +370,9 @@ export function McpScreen() {
         </View>
 
         {/* ── Info ── */}
-        <View style={styles.infoBox}>
-          <Info size={14} color={COLORS.mutedForeground} />
-          <Text style={[styles.infoText, font("regular")]}>
+        <View style={[styles.infoBox, { borderColor: colors.border }]}>
+          <Info size={14} color={colors.mutedForeground} />
+          <Text style={[styles.infoText, { color: colors.mutedForeground }, font("regular")]}>
             OAuth-enabled servers require browser authentication. Use Reload after changing server config.
           </Text>
         </View>
@@ -380,9 +383,9 @@ export function McpScreen() {
         <View style={styles.modalBackdrop}>
           <Surface style={styles.modalSheet}>
             <View style={styles.modalHeader}>
-              <Text style={[styles.modalTitle, { color: COLORS.foreground }, font("semibold")]}>Add MCP Server</Text>
+              <Text style={[styles.modalTitle, { color: colors.foreground }, font("semibold")]}>Add MCP Server</Text>
               <TouchableOpacity onPress={() => setShowAddModal(false)}>
-                <X size={18} color={COLORS.mutedForeground} />
+                <X size={18} color={colors.mutedForeground} />
               </TouchableOpacity>
             </View>
             <View style={styles.form}>
@@ -399,14 +402,14 @@ export function McpScreen() {
                       onPress={() => setAddTransport(t)}
                       style={[
                         styles.transportPill,
-                        { borderColor: COLORS.border },
-                        addTransport === t && { backgroundColor: COLORS.primary + "14", borderColor: COLORS.primary },
+                        { borderColor: colors.border },
+                        addTransport === t && { backgroundColor: colors.primary + "14", borderColor: colors.primary },
                       ]}
                     >
                       <Text
                         style={[
                           styles.transportPillText,
-                          { color: addTransport === t ? COLORS.primary : COLORS.mutedForeground },
+                          { color: addTransport === t ? colors.primary : colors.mutedForeground },
                         ]}
                       >
                         {t === "http" ? "HTTP" : "Stdio"}
@@ -468,47 +471,45 @@ const styles = StyleSheet.create({
   container: { flex: 1 },
   content: { padding: 16, paddingBottom: 40, gap: 20 },
   section: { gap: 12 },
-  card: { borderRadius: 20, borderWidth: StyleSheet.hairlineWidth, borderColor: COLORS.glassBorder, overflow: "hidden" },
+  card: { borderRadius: 20, borderWidth: StyleSheet.hairlineWidth, overflow: "hidden" },
 
   // Stats Capsules
   capsuleRow: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
 
   // Policy
-  policyRow: { flexDirection: "row", alignItems: "center", gap: 14, paddingHorizontal: 16, paddingVertical: 13, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: COLORS.border },
-  policyRowActive: { backgroundColor: COLORS.primary + "0F" },
+  policyRow: { flexDirection: "row", alignItems: "center", gap: 14, paddingHorizontal: 16, paddingVertical: 13, borderBottomWidth: StyleSheet.hairlineWidth },
   policyIcon: { width: 36, height: 36, borderRadius: 10, alignItems: "center", justifyContent: "center" },
   policyInfo: { flex: 1, gap: 2 },
-  policyLabel: { fontSize: 13.5, lineHeight: 20, color: COLORS.foreground },
-  policyDesc: { fontSize: 11.5, letterSpacing: 0.2, color: COLORS.mutedForeground, lineHeight: 16 },
+  policyLabel: { fontSize: 13.5, lineHeight: 20 },
+  policyDesc: { fontSize: 11.5, letterSpacing: 0.2, lineHeight: 16 },
 
   // Server card
-  serverCard: { borderRadius: 20, borderWidth: StyleSheet.hairlineWidth, borderColor: COLORS.glassBorder, overflow: "hidden" },
+  serverCard: { borderRadius: 20, borderWidth: StyleSheet.hairlineWidth, overflow: "hidden" },
   serverHeader: { flexDirection: "row", alignItems: "center", gap: 12, paddingHorizontal: 16, paddingVertical: 14 },
   serverIcon: { width: 36, height: 36, borderRadius: 10, alignItems: "center", justifyContent: "center" },
   serverMeta: { flex: 1, gap: 2 },
-  serverName: { fontSize: 14, lineHeight: 20, color: COLORS.foreground },
-  serverTools: { fontSize: 11.5, letterSpacing: 0.2, color: COLORS.mutedForeground },
-  serverBody: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: COLORS.border },
-  serverActions: { flexDirection: "row", flexWrap: "wrap", gap: 8, paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: COLORS.border },
-  actionBtn: { flexDirection: "row", alignItems: "center", gap: 6, paddingHorizontal: 12, paddingVertical: 8, borderRadius: 999, backgroundColor: "transparent", borderWidth: StyleSheet.hairlineWidth, borderColor: COLORS.border },
-  actionBtnWarning: { backgroundColor: COLORS.warning + "1A", borderColor: COLORS.warning + "40" },
-  actionText: { fontSize: 12, letterSpacing: 0.2, color: COLORS.primary },
+  serverName: { fontSize: 14, lineHeight: 20 },
+  serverTools: { fontSize: 11.5, letterSpacing: 0.2 },
+  serverBody: { borderTopWidth: StyleSheet.hairlineWidth },
+  serverActions: { flexDirection: "row", flexWrap: "wrap", gap: 8, paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: StyleSheet.hairlineWidth },
+  actionBtn: { flexDirection: "row", alignItems: "center", gap: 6, paddingHorizontal: 12, paddingVertical: 8, borderRadius: 999, backgroundColor: "transparent", borderWidth: StyleSheet.hairlineWidth },
+  actionText: { fontSize: 12, letterSpacing: 0.2 },
 
   // Auth
-  authRow: { flexDirection: "row", alignItems: "center", gap: 10, paddingHorizontal: 16, paddingVertical: 10, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: COLORS.border },
-  authText: { fontSize: 12, lineHeight: 18, color: COLORS.mutedForeground },
+  authRow: { flexDirection: "row", alignItems: "center", gap: 10, paddingHorizontal: 16, paddingVertical: 10, borderBottomWidth: StyleSheet.hairlineWidth },
+  authText: { fontSize: 12, lineHeight: 18 },
 
   // Tools
   toolsList: { paddingHorizontal: 16, paddingVertical: 12, gap: 10 },
-  toolsHeader: { fontSize: 12, color: COLORS.mutedForeground },
-  noTools: { fontSize: 12, color: COLORS.mutedForeground, fontStyle: "italic" },
+  toolsHeader: { fontSize: 12 },
+  noTools: { fontSize: 12, fontStyle: "italic" },
   toolItem: { flexDirection: "row", alignItems: "flex-start", gap: 8, paddingVertical: 4 },
-  toolName: { fontSize: 12.5, lineHeight: 18, color: COLORS.foreground },
-  toolDesc: { fontSize: 11.5, color: COLORS.mutedForeground, marginTop: 2, lineHeight: 16 },
+  toolName: { fontSize: 12.5, lineHeight: 18 },
+  toolDesc: { fontSize: 11.5, marginTop: 2, lineHeight: 16 },
 
   // Info
-  infoBox: { flexDirection: "row", gap: 10, padding: 14, backgroundColor: "transparent", borderRadius: 16, borderWidth: StyleSheet.hairlineWidth, borderColor: COLORS.border },
-  infoText: { flex: 1, fontSize: 12, color: COLORS.mutedForeground, lineHeight: 18 },
+  infoBox: { flexDirection: "row", gap: 10, padding: 14, backgroundColor: "transparent", borderRadius: 16, borderWidth: StyleSheet.hairlineWidth },
+  infoText: { flex: 1, fontSize: 12, lineHeight: 18 },
   modalBackdrop: {
     flex: 1,
     backgroundColor: "rgba(0,0,0,0.5)",

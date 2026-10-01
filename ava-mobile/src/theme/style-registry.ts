@@ -48,6 +48,13 @@ function detectToken(
     if (val === palette.codeBg) return "codeBg";
     if (val === palette.primary) return "primary";
     if (val === palette.destructive) return "destructive";
+    if (val === palette.success) return "success";
+    if (val === palette.warning) return "warning";
+    if (val === palette.mutedForeground) return "mutedForeground";
+    if (val === palette.mascot) return "mascot";
+    if (val === palette.mascotForeground) return "mascotForeground";
+    if (val === palette.input) return "input";
+    if (val === palette.border) return "border";
   }
 
   if (
@@ -64,10 +71,20 @@ function detectToken(
     if (val === palette.ring) return "ring";
     if (val === palette.primary) return "primary";
     if (val === palette.codeBorder) return "codeBorder";
+    if (val === palette.success) return "success";
+    if (val === palette.destructive) return "destructive";
+    if (val === palette.warning) return "warning";
+    if (val === palette.mascotRing) return "mascotRing";
+    if (val === palette.card) return "card";
+    if (val === palette.background) return "background";
+    if (val === palette.secondary) return "secondary";
   }
 
   if (prop === "shadowColor") {
     if (val === palette.glassShadow) return "glassShadow";
+    if (val === palette.destructive) return "destructive";
+    if (val === palette.mascot) return "mascot";
+    if (val === palette.primary) return "primary";
   }
 
   return null;

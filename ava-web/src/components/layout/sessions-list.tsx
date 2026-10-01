@@ -4,6 +4,7 @@ import { Check, ChevronDown, ChevronRight, Folder, MoreHorizontal, Pencil, Pin, 
 
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
 import { SkeletonRows } from "@/components/kit";
 import type { Session } from "@/core/types";
@@ -48,6 +49,7 @@ export function SessionsList({ onPick }: { onPick: () => void }) {
   const [draftName, setDraftName] = useState("");
   const [editingSession, setEditingSession] = useState<string | null>(null);
   const [sessionDraft, setSessionDraft] = useState("");
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
 
   useEffect(() => {
     setPins(readJson<string[]>(PIN_KEY, []));
@@ -102,6 +104,14 @@ export function SessionsList({ onPick }: { onPick: () => void }) {
     if (value) rename.mutate({ id, name: value });
     setEditingSession(null);
   };
+
+  const confirmDelete = (id: string) => {
+    if (activeSessionId === id) setActiveSessionId(null);
+    del.mutate(id);
+    setConfirmDeleteId(null);
+  };
+
+  const deleteTarget = data?.find((session) => session.id === confirmDeleteId);
 
   return (
     <div>
@@ -216,10 +226,7 @@ export function SessionsList({ onPick }: { onPick: () => void }) {
                             size="icon-sm"
                             aria-label="Delete session"
                             className="opacity-60 sm:opacity-0 sm:group-hover:opacity-100"
-                            onClick={() => {
-                              if (activeSessionId === session.id) setActiveSessionId(null);
-                              del.mutate(session.id);
-                            }}
+                            onClick={() => setConfirmDeleteId(session.id)}
                           >
                             <Trash2 />
                           </Button>
@@ -233,6 +240,25 @@ export function SessionsList({ onPick }: { onPick: () => void }) {
           );
         })}
       </div>
+      <AlertDialog open={confirmDeleteId !== null} onOpenChange={(open) => { if (!open) setConfirmDeleteId(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete session?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {deleteTarget ? `"${deleteTarget.title}"` : "This session"} will be permanently deleted. This cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={() => { if (confirmDeleteId) confirmDelete(confirmDeleteId); }}
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

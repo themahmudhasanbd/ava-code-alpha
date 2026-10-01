@@ -47,7 +47,8 @@ import { useAva } from "@/state/ava-provider";
 import { useDirectory, useMcpServers, useModels } from "@/state/queries";
 import type { ChatStatus } from "@/state/use-chat";
 import { MediaSelectorModal, type SelectedMedia } from "@/components/media/MediaSelectorModal";
-import { COLORS, useTheme } from "@/theme/colors";
+import { type ColorTokens } from "@/theme/colors";
+import { useStyles, useTheme } from "@/theme/theme-context";
 import { font, mono } from "@/theme/fonts";
 import { joinPath } from "@/core/api/files";
 import {
@@ -119,6 +120,8 @@ function FloatingOptionRow({
   onClick: () => void;
   badge?: string;
 }) {
+  const { colors } = useTheme();
+  const styles = useStyles(createStyles);
   return (
     <TouchableOpacity
       style={[
@@ -140,10 +143,10 @@ function FloatingOptionRow({
           size={16}
           color={
             destructive
-              ? COLORS.destructive
+              ? colors.destructive
               : active
-              ? COLORS.primary
-              : iconColor || COLORS.foreground
+              ? colors.primary
+              : iconColor || colors.foreground
           }
         />
       </View>
@@ -173,9 +176,9 @@ function FloatingOptionRow({
         )}
       </View>
       {active ? (
-        <Check size={16} color={COLORS.primary} />
+        <Check size={16} color={colors.primary} />
       ) : (
-        <ChevronRight size={15} color={COLORS.mutedForeground} />
+        <ChevronRight size={15} color={colors.mutedForeground} />
       )}
     </TouchableOpacity>
   );
@@ -198,6 +201,8 @@ function FloatingPopupModal({
   searchQuery?: string;
   onSearchChange?: (q: string) => void;
 }) {
+  const { colors } = useTheme();
+  const styles = useStyles(createStyles);
   const slideAnim = useRef(new Animated.Value(320)).current;
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const [mounted, setMounted] = useState(open);
@@ -269,7 +274,7 @@ function FloatingPopupModal({
                     onPress={onBack}
                     activeOpacity={0.7}
                   >
-                    <ArrowLeft size={16} color={COLORS.foreground} />
+                    <ArrowLeft size={16} color={colors.foreground} />
                   </TouchableOpacity>
                 ) : (
                   <View style={{ width: 28 }} />
@@ -282,19 +287,19 @@ function FloatingPopupModal({
                   onPress={onClose}
                   activeOpacity={0.7}
                 >
-                  <X size={15} color={COLORS.mutedForeground} />
+                  <X size={15} color={colors.mutedForeground} />
                 </TouchableOpacity>
               </View>
 
               {onSearchChange !== undefined && (
                 <View style={styles.searchBar}>
-                  <Search size={14} color={COLORS.mutedForeground} />
+                  <Search size={14} color={colors.mutedForeground} />
                   <TextInput
                     style={[styles.searchInput, font("regular")]}
                     value={searchQuery}
                     onChangeText={onSearchChange}
                     placeholder="Search…"
-                    placeholderTextColor={COLORS.mutedForeground}
+                    placeholderTextColor={colors.mutedForeground}
                     autoCapitalize="none"
                     autoCorrect={false}
                   />
@@ -303,7 +308,7 @@ function FloatingPopupModal({
                       onPress={() => onSearchChange("")}
                       hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                     >
-                      <X size={13} color={COLORS.mutedForeground} />
+                      <X size={13} color={colors.mutedForeground} />
                     </TouchableOpacity>
                   ) : null}
                 </View>
@@ -340,6 +345,7 @@ export const Composer = forwardRef<TextInput, Props>(
   ) {
     const effectiveStatus = (status || chatStatus || "idle") as ChatStatus;
     const { colors, isDark } = useTheme();
+    const styles = useStyles(createStyles);
     const {
       rpc,
       status: connectionStatus,
@@ -803,7 +809,7 @@ export const Composer = forwardRef<TextInput, Props>(
             <Text style={[styles.floatingPillText, font("semibold")]} numberOfLines={1}>
               {activeModel?.name ?? modelId ?? "Model"} · {effort}
             </Text>
-            <ChevronDown size={11} color={COLORS.mutedForeground} />
+            <ChevronDown size={11} color={colors.mutedForeground} />
           </TouchableOpacity>
         </View>
 
@@ -840,14 +846,14 @@ export const Composer = forwardRef<TextInput, Props>(
                 <View key={att.id} style={styles.attChip}>
                   {att.kind === "image" ? (
                     <View style={styles.imageChipBox}>
-                      <FileText size={13} color={COLORS.primary} />
+                      <FileText size={13} color={colors.primary} />
                       <Text style={[styles.fileChipText, font("medium")]} numberOfLines={1}>
                         {att.name}
                       </Text>
                     </View>
                   ) : att.kind === "audio" ? (
                     <View style={styles.audioChipBox}>
-                      <Mic size={13} color={COLORS.primary} />
+                      <Mic size={13} color={colors.primary} />
                       <Text style={[styles.fileChipText, font("medium")]} numberOfLines={1}>
                         {att.name}
                       </Text>
@@ -868,7 +874,7 @@ export const Composer = forwardRef<TextInput, Props>(
                     </View>
                   ) : (
                     <View style={styles.fileChipBox}>
-                      <FileText size={13} color={COLORS.primary} />
+                      <FileText size={13} color={colors.primary} />
                       <Text style={[styles.fileChipText, font("medium")]} numberOfLines={1}>
                         {att.name}
                       </Text>
@@ -878,7 +884,7 @@ export const Composer = forwardRef<TextInput, Props>(
                     onPress={() => removeAttachment(att.id)}
                     style={styles.removeAttBtn}
                   >
-                    <X size={11} color={COLORS.mutedForeground} />
+                    <X size={11} color={colors.mutedForeground} />
                   </TouchableOpacity>
                 </View>
               ))}
@@ -888,7 +894,7 @@ export const Composer = forwardRef<TextInput, Props>(
           {/* Uploading indicator */}
           {uploading && (
             <View style={styles.uploadingNotice}>
-              <ActivityIndicator size="small" color={COLORS.primary} />
+              <ActivityIndicator size="small" color={colors.primary} />
               <Text style={[styles.uploadingText, font("regular")]}>Transferring asset to VPS…</Text>
             </View>
           )}
@@ -1026,14 +1032,14 @@ export const Composer = forwardRef<TextInput, Props>(
                   onPress={() => stopRecording(false)}
                   activeOpacity={0.7}
                 >
-                  <Trash2 size={15} color={COLORS.mutedForeground} />
+                  <Trash2 size={15} color={colors.mutedForeground} />
                 </TouchableOpacity>
                 <TouchableOpacity
                   style={styles.finishRecBtn}
                   onPress={() => stopRecording(true)}
                   activeOpacity={0.7}
                 >
-                  <Check size={16} color={COLORS.primaryForeground} />
+                  <Check size={16} color={colors.primaryForeground} />
                 </TouchableOpacity>
               </View>
             </View>
@@ -1047,7 +1053,7 @@ export const Composer = forwardRef<TextInput, Props>(
                   ? "Type follow-up to queue or steer…"
                   : "Ask anything or request changes…"
               }
-              placeholderTextColor={COLORS.mutedForeground}
+              placeholderTextColor={colors.mutedForeground}
               value={value}
               onChangeText={onChange}
               onSelectionChange={(e) => setSelection(e.nativeEvent.selection)}
@@ -1080,7 +1086,7 @@ export const Composer = forwardRef<TextInput, Props>(
                 onPress={() => setMediaModalOpen(true)}
                 activeOpacity={0.7}
               >
-                <Plus size={16} color={COLORS.mutedForeground} />
+                <Plus size={16} color={colors.mutedForeground} />
               </TouchableOpacity>
 
               {/* Tools Pill Button */}
@@ -1089,9 +1095,9 @@ export const Composer = forwardRef<TextInput, Props>(
                 onPress={() => setPanel("tools")}
                 activeOpacity={0.7}
               >
-                <Cpu size={13} color={COLORS.mutedForeground} />
+                <Cpu size={13} color={colors.mutedForeground} />
                 <Text style={[styles.toolPillText, font("medium")]}>Tools</Text>
-                <ChevronDown size={11} color={COLORS.mutedForeground} />
+                <ChevronDown size={11} color={colors.mutedForeground} />
               </TouchableOpacity>
 
               {/* Sandbox Mode Pill */}
@@ -1100,9 +1106,9 @@ export const Composer = forwardRef<TextInput, Props>(
                 onPress={() => setPanel("sandbox")}
                 activeOpacity={0.7}
               >
-                <ShieldCheck size={13} color={COLORS.mutedForeground} />
+                <ShieldCheck size={13} color={colors.mutedForeground} />
                 <Text style={[styles.toolPillText, font("medium")]}>{sandboxOpt.label}</Text>
-                <ChevronDown size={11} color={COLORS.mutedForeground} />
+                <ChevronDown size={11} color={colors.mutedForeground} />
               </TouchableOpacity>
             </ScrollView>
 
@@ -1119,18 +1125,18 @@ export const Composer = forwardRef<TextInput, Props>(
               >
                 <Mic
                   size={16}
-                  color={isRecording ? COLORS.primaryForeground : COLORS.mutedForeground}
+                  color={isRecording ? colors.primaryForeground : colors.mutedForeground}
                 />
               </TouchableOpacity>
 
               {/* Action Button: Disconnected / Busy / Paused / Ready */}
               {connectionStatus !== "online" && !value.trim() && attachments.length === 0 ? (
                 <View style={styles.connectingBtn} accessibilityLabel="Connecting to server">
-                  <ActivityIndicator size="small" color={COLORS.primary} />
+                  <ActivityIndicator size="small" color={colors.primary} />
                 </View>
               ) : effectiveStatus === "stopping" && !value.trim() && attachments.length === 0 ? (
                 <View style={styles.stopBtn}>
-                  <ActivityIndicator size="small" color={COLORS.destructiveForeground} />
+                  <ActivityIndicator size="small" color={colors.destructiveForeground} />
                 </View>
               ) : (effectiveStatus === "streaming" || effectiveStatus === "submitted") && !value.trim() && attachments.length === 0 ? (
                 <View style={styles.busyActionGroup}>
@@ -1141,7 +1147,7 @@ export const Composer = forwardRef<TextInput, Props>(
                     accessibilityRole="button"
                     accessibilityLabel="Pause agent"
                   >
-                    <Pause size={14} color={COLORS.destructiveForeground} fill={COLORS.destructiveForeground} />
+                    <Pause size={14} color={colors.destructiveForeground} fill={colors.destructiveForeground} />
                   </TouchableOpacity>
                 </View>
               ) : (
@@ -1161,8 +1167,8 @@ export const Composer = forwardRef<TextInput, Props>(
                     size={17}
                     color={
                       value.trim() || attachments.length > 0
-                        ? COLORS.primaryForeground
-                        : COLORS.mutedForeground
+                        ? colors.primaryForeground
+                        : colors.mutedForeground
                     }
                   />
                 </TouchableOpacity>
@@ -1188,14 +1194,14 @@ export const Composer = forwardRef<TextInput, Props>(
           <Text style={[styles.sectionHeader, font("bold")]}>Model & reasoning</Text>
           <FloatingOptionRow
             icon={Cpu}
-            iconColor={COLORS.primary}
+            iconColor={colors.primary}
             title="Switch Model"
             subtitle={`${activeModel?.name ?? modelId ?? "Model"} (${effort})`}
             onClick={() => setPanel("model")}
           />
           <FloatingOptionRow
             icon={ShieldCheck}
-            iconColor={COLORS.foreground}
+            iconColor={colors.foreground}
             title="Sandbox Mode"
             subtitle={sandboxOpt.label}
             onClick={() => setPanel("sandbox")}
@@ -1204,7 +1210,7 @@ export const Composer = forwardRef<TextInput, Props>(
           <Text style={[styles.sectionHeader, font("bold")]}>Workspace tools</Text>
           <FloatingOptionRow
             icon={PlusCircle}
-            iconColor={COLORS.foreground}
+            iconColor={colors.foreground}
             title="New Session"
             subtitle="Start a fresh conversation thread"
             onClick={() => {
@@ -1215,7 +1221,7 @@ export const Composer = forwardRef<TextInput, Props>(
           />
           <FloatingOptionRow
             icon={FolderOpen}
-            iconColor={COLORS.foreground}
+            iconColor={colors.foreground}
             title="Browse Files"
             subtitle="Open workspace file explorer"
             onClick={() => {
@@ -1225,7 +1231,7 @@ export const Composer = forwardRef<TextInput, Props>(
           />
           <FloatingOptionRow
             icon={TerminalSquare}
-            iconColor={COLORS.foreground}
+            iconColor={colors.foreground}
             title="Terminal"
             subtitle="Launch interactive server console"
             onClick={() => {
@@ -1326,7 +1332,8 @@ export const Composer = forwardRef<TextInput, Props>(
   }
 );
 
-const styles = StyleSheet.create({
+const createStyles = (c: ColorTokens) =>
+  StyleSheet.create({
   container: {
     position: "relative",
     paddingHorizontal: 14,
@@ -1352,9 +1359,9 @@ const styles = StyleSheet.create({
     height: 26,
     paddingHorizontal: 12,
     borderRadius: 999,
-    backgroundColor: COLORS.card,
+    backgroundColor: c.card,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: COLORS.border,
+    borderColor: c.border,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.06,
@@ -1363,7 +1370,7 @@ const styles = StyleSheet.create({
   },
   floatingPillText: {
     fontSize: 11,
-    color: COLORS.mutedForeground,
+    color: c.mutedForeground,
     maxWidth: 160,
   },
 
@@ -1409,10 +1416,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingTop: 12,
     paddingBottom: 10,
-    backgroundColor: COLORS.card,
+    backgroundColor: c.card,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: COLORS.glassBorder,
-    shadowColor: COLORS.glassShadow,
+    borderColor: c.glassBorder,
+    shadowColor: c.glassShadow,
     shadowOffset: { width: 0, height: -2 },
     shadowOpacity: 0.12,
     shadowRadius: 10,
@@ -1427,12 +1434,12 @@ const styles = StyleSheet.create({
   attChip: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: COLORS.secondary,
+    backgroundColor: c.secondary,
     borderRadius: 999,
     paddingVertical: 5,
     paddingHorizontal: 10,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: COLORS.border,
+    borderColor: c.border,
     gap: 6,
     maxWidth: 160,
   },
@@ -1453,7 +1460,7 @@ const styles = StyleSheet.create({
   },
   fileChipText: {
     fontSize: 12,
-    color: COLORS.foreground,
+    color: c.foreground,
   },
   removeAttBtn: {
     padding: 2,
@@ -1466,7 +1473,7 @@ const styles = StyleSheet.create({
   },
   uploadingText: {
     fontSize: 12,
-    color: COLORS.primary,
+    color: c.primary,
   },
   liveRecordingBar: {
     flexDirection: "row",
@@ -1484,11 +1491,11 @@ const styles = StyleSheet.create({
     width: 10,
     height: 10,
     borderRadius: 5,
-    backgroundColor: COLORS.destructive,
+    backgroundColor: c.destructive,
   },
   liveRecordingTimer: {
     fontSize: 13,
-    color: COLORS.destructive,
+    color: c.destructive,
   },
   liveRecordingActions: {
     flexDirection: "row",
@@ -1506,14 +1513,14 @@ const styles = StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: COLORS.primary,
+    backgroundColor: c.primary,
     alignItems: "center",
     justifyContent: "center",
   },
   input: {
     fontSize: 15,
     lineHeight: 23,
-    color: COLORS.foreground,
+    color: c.foreground,
     minHeight: 38,
     maxHeight: 120,
     paddingTop: 4,
@@ -1526,7 +1533,7 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     paddingTop: 10,
     borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: COLORS.border,
+    borderTopColor: c.border,
   },
   bottomLeftScroll: {
     flexDirection: "row",
@@ -1549,11 +1556,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: 11,
     borderRadius: 999,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: COLORS.border,
+    borderColor: c.border,
   },
   toolPillText: {
     fontSize: 12,
-    color: COLORS.mutedForeground,
+    color: c.mutedForeground,
   },
   bottomRightActions: {
     flexDirection: "row",
@@ -1575,7 +1582,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   micBtnActive: {
-    backgroundColor: COLORS.destructive,
+    backgroundColor: c.destructive,
   },
   busyActionGroup: {
     flexDirection: "row",
@@ -1586,10 +1593,10 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: COLORS.destructive,
+    backgroundColor: c.destructive,
     alignItems: "center",
     justifyContent: "center",
-    shadowColor: COLORS.destructive,
+    shadowColor: c.destructive,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.25,
     shadowRadius: 4,
@@ -1603,8 +1610,8 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   sendBtnActive: {
-    backgroundColor: COLORS.primary,
-    shadowColor: COLORS.primary,
+    backgroundColor: c.primary,
+    shadowColor: c.primary,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.25,
     shadowRadius: 4,
@@ -1618,17 +1625,17 @@ const styles = StyleSheet.create({
     justifyContent: "flex-end",
   },
   bottomSheetCard: {
-    backgroundColor: COLORS.card,
+    backgroundColor: c.card,
     borderTopLeftRadius: 26,
     borderTopRightRadius: 26,
     borderWidth: 1,
-    borderColor: COLORS.glassBorder,
-    borderTopColor: COLORS.border,
+    borderColor: c.glassBorder,
+    borderTopColor: c.border,
     paddingTop: 8,
     paddingBottom: Platform.OS === "ios" ? 36 : 20,
     paddingHorizontal: 16,
     maxHeight: Dimensions.get("window").height * 0.75,
-    shadowColor: COLORS.glassShadow,
+    shadowColor: c.glassShadow,
     shadowOffset: { width: 0, height: -6 },
     shadowOpacity: 0.22,
     shadowRadius: 20,
@@ -1638,7 +1645,7 @@ const styles = StyleSheet.create({
     width: 38,
     height: 4,
     borderRadius: 2,
-    backgroundColor: COLORS.border,
+    backgroundColor: c.border,
     alignSelf: "center",
     marginBottom: 10,
   },
@@ -1648,30 +1655,30 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     paddingBottom: 10,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: COLORS.border,
+    borderBottomColor: c.border,
   },
   popupBackBtn: {
     padding: 7,
     borderRadius: 999,
-    backgroundColor: COLORS.secondary,
+    backgroundColor: c.secondary,
   },
   popupCloseBtn: {
     padding: 7,
     borderRadius: 999,
-    backgroundColor: COLORS.secondary,
+    backgroundColor: c.secondary,
   },
   popupTitle: {
     fontSize: 15,
-    color: COLORS.foreground,
+    color: c.foreground,
     flex: 1,
     textAlign: "center",
   },
   searchBar: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: COLORS.secondary,
+    backgroundColor: c.secondary,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: COLORS.border,
+    borderColor: c.border,
     borderRadius: 22,
     paddingHorizontal: 12,
     height: 40,
@@ -1682,7 +1689,7 @@ const styles = StyleSheet.create({
   searchInput: {
     flex: 1,
     fontSize: 12.5,
-    color: COLORS.foreground,
+    color: c.foreground,
     paddingVertical: 0,
   },
   popupContentScroll: {
@@ -1698,31 +1705,31 @@ const styles = StyleSheet.create({
     gap: 12,
     padding: 14,
     borderRadius: 16,
-    backgroundColor: COLORS.card,
+    backgroundColor: c.card,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: COLORS.border,
+    borderColor: c.border,
   },
   optionRowActive: {
-    borderColor: COLORS.primary,
-    backgroundColor: COLORS.accent,
+    borderColor: c.primary,
+    backgroundColor: c.accent,
   },
   optionRowDestructive: {
-    borderColor: COLORS.destructive + "4D",
-    backgroundColor: COLORS.destructive + "14",
+    borderColor: c.destructive + "4D",
+    backgroundColor: c.destructive + "14",
   },
   optionIconBox: {
     width: 36,
     height: 36,
     borderRadius: 10,
-    backgroundColor: COLORS.secondary,
+    backgroundColor: c.secondary,
     alignItems: "center",
     justifyContent: "center",
   },
   optionIconBoxActive: {
-    backgroundColor: COLORS.accent,
+    backgroundColor: c.accent,
   },
   optionIconBoxDestructive: {
-    backgroundColor: COLORS.destructive + "26",
+    backgroundColor: c.destructive + "26",
   },
   optionContent: {
     flex: 1,
@@ -1734,32 +1741,32 @@ const styles = StyleSheet.create({
   },
   optionTitle: {
     fontSize: 13.5,
-    color: COLORS.foreground,
+    color: c.foreground,
   },
   optionTitleActive: {
-    color: COLORS.primary,
+    color: c.primary,
   },
   optionTitleDestructive: {
-    color: COLORS.destructive,
+    color: c.destructive,
   },
   optionBadge: {
     paddingHorizontal: 6,
     paddingVertical: 1,
     borderRadius: 999,
-    backgroundColor: COLORS.accent,
+    backgroundColor: c.accent,
   },
   optionBadgeText: {
     fontSize: 10,
-    color: COLORS.foreground,
+    color: c.foreground,
   },
   optionSubtitle: {
     fontSize: 11.5,
-    color: COLORS.mutedForeground,
+    color: c.mutedForeground,
     marginTop: 2,
   },
   sectionHeader: {
     fontSize: 12,
-    color: COLORS.mutedForeground,
+    color: c.mutedForeground,
     letterSpacing: 0.2,
     paddingHorizontal: 8,
     paddingTop: 10,
@@ -1779,23 +1786,23 @@ const styles = StyleSheet.create({
     borderRadius: 999,
     backgroundColor: "transparent",
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: COLORS.border,
+    borderColor: c.border,
   },
   effortBtnActive: {
-    backgroundColor: COLORS.primary + "14",
-    borderColor: COLORS.primary,
+    backgroundColor: c.primary + "14",
+    borderColor: c.primary,
   },
   effortBtnText: {
     fontSize: 12,
-    color: COLORS.foreground,
+    color: c.foreground,
     textTransform: "capitalize",
   },
   effortBtnTextActive: {
-    color: COLORS.primary,
+    color: c.primary,
   },
   sandboxHintText: {
     fontSize: 11,
-    color: COLORS.mutedForeground,
+    color: c.mutedForeground,
     paddingHorizontal: 8,
     paddingTop: 6,
   },

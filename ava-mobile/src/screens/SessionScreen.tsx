@@ -11,7 +11,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { ChevronDown, Clock, Play, X } from "lucide-react-native";
+import { ChevronDown, Clock, Play, TriangleAlert, X } from "lucide-react-native";
 import { AppShell } from "@/components/layout/AppShell";
 import { AvaMascot } from "@/components/ui/ava-mascot";
 import { EmptyState } from "@/components/kit";
@@ -93,6 +93,7 @@ export function SessionScreen({
     resume,
     removeQueued,
     clear,
+    dismissError,
     loadingHistory,
     hasOlder,
     loadOlder,
@@ -459,8 +460,48 @@ export function SessionScreen({
         )}
 
         {error ? (
-          <View style={styles.errorContainer}>
-            <Text style={[styles.errorBannerText, { color: colors.destructive }]}>{error}</Text>
+          <View
+            style={[
+              styles.errorCard,
+              {
+                backgroundColor: colors.destructive + "12",
+                borderColor: colors.destructive + "3D",
+              },
+            ]}
+            accessibilityRole="alert"
+          >
+            <View style={styles.errorHeader}>
+              <View
+                style={[
+                  styles.errorIconChip,
+                  { backgroundColor: colors.destructive + "1F" },
+                ]}
+              >
+                <TriangleAlert size={14} color={colors.destructive} />
+              </View>
+              <Text
+                style={[styles.errorTitle, font("semibold"), { color: colors.foreground }]}
+              >
+                Something went wrong
+              </Text>
+              <TouchableOpacity
+                onPress={dismissError}
+                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                accessibilityRole="button"
+                accessibilityLabel="Dismiss error"
+              >
+                <X size={14} color={colors.mutedForeground} />
+              </TouchableOpacity>
+            </View>
+            <Text
+              style={[styles.errorMessage, font("regular"), { color: colors.mutedForeground }]}
+              numberOfLines={4}
+            >
+              {error}
+            </Text>
+            <Text style={[styles.errorHint, font("regular"), { color: colors.mutedForeground }]}>
+              Your chat is safe — send a new message below to continue.
+            </Text>
           </View>
         ) : null}
 
@@ -631,18 +672,38 @@ const styles = StyleSheet.create({
     height: 7,
     borderRadius: 3.5,
   },
-  errorContainer: {
+  errorCard: {
     marginHorizontal: 14,
     marginBottom: 6,
-    padding: 10,
-    borderRadius: 10,
-    backgroundColor: "rgba(239, 68, 68, 0.08)",
+    padding: 12,
+    borderRadius: 12,
     borderWidth: 1,
-    borderColor: "rgba(239, 68, 68, 0.25)",
+    gap: 8,
   },
-  errorBannerText: {
+  errorHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  errorIconChip: {
+    width: 26,
+    height: 26,
+    borderRadius: 13,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  errorTitle: {
+    fontSize: 13,
+    flex: 1,
+  },
+  errorMessage: {
     fontSize: 12,
-    textAlign: "center",
+    lineHeight: 18,
+  },
+  errorHint: {
+    fontSize: 11,
+    lineHeight: 16,
+    opacity: 0.85,
   },
   queueContainer: {
     marginHorizontal: 14,

@@ -1154,6 +1154,18 @@ export function useChat(explicitSessionId?: string | null, opts: { passive?: boo
   }, [currentSessionId, setSessionRunning]);
 
   /**
+   * Dismisses the error banner without touching the transcript. Clears both
+   * local state and the central store copy so the store subscription
+   * (which mirrors st.error) cannot re-raise the dismissed error.
+   */
+  const dismissError = useCallback(() => {
+    setError(null);
+    if (currentSessionId) {
+      chatStore.setState(currentSessionId, (prev) => ({ ...prev, error: null }));
+    }
+  }, [currentSessionId]);
+
+  /**
    * Responds to a pending approval from the sticky card above the composer.
    * Sends the structured protocol response, removes the card, and marks the
    * corresponding question part in the transcript as answered.
@@ -1203,6 +1215,7 @@ export function useChat(explicitSessionId?: string | null, opts: { passive?: boo
     resume,
     removeQueued,
     clear,
+    dismissError,
     loadingHistory: history.isLoading,
     hasOlder: allHistoryRef.current.length > visibleCount,
     loadOlder,

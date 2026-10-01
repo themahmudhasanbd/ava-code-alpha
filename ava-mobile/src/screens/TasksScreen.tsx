@@ -11,16 +11,19 @@ import {
 } from "react-native";
 import {
   CalendarClock,
+  CheckCircle2,
+  Clock,
   FileText,
+  Pause,
   Pencil,
   Play,
   Plus,
   Trash2,
   X,
+  XCircle,
 } from "lucide-react-native";
 import { AppShell } from "@/components/layout/AppShell";
 import {
-  Badge,
   EmptyState,
   GlassIconButton,
   PageIntro,
@@ -39,7 +42,6 @@ import {
   formatNextRun,
   formatRunAt,
   type ScheduledTask,
-  type ScheduleRunStatus,
   type TaskDraft,
 } from "@/core/api/schedule";
 import { SANDBOX_MODES } from "@/config/models";
@@ -51,6 +53,7 @@ import {
   useTasks,
 } from "@/state/queries";
 import { COLORS } from "@/theme/colors";
+import { mono } from "@/theme/fonts";
 
 type Draft = TaskDraft;
 const EMPTY_DRAFT: Draft = {
@@ -73,6 +76,36 @@ const toDraft = (t: ScheduledTask): Draft => ({
   sandbox: t.sandbox,
   enabled: t.enabled,
 });
+
+/**
+ * Lovable-style status pill: small icon + label in a soft tinted pill.
+ * Run lifecycle states are always icon + label + tint (never color alone).
+ */
+function StatusPill({
+  icon: Icon,
+  label,
+  tint,
+  color,
+  monoText = false,
+}: {
+  icon: typeof Clock;
+  label: string;
+  tint: string;
+  color: string;
+  monoText?: boolean;
+}) {
+  return (
+    <View style={[styles.statusPill, { backgroundColor: tint }]}>
+      <Icon size={11} color={color} strokeWidth={2.5} />
+      <Text
+        style={[styles.statusPillText, { color }, monoText && mono("regular")]}
+        numberOfLines={1}
+      >
+        {label}
+      </Text>
+    </View>
+  );
+}
 
 export function TasksScreen({ navigation }: { navigation: any }) {
   const { data: tasks = [], isLoading, error } = useTasks();
@@ -132,8 +165,60 @@ export function TasksScreen({ navigation }: { navigation: any }) {
   const sandboxLabel = (id: string) =>
     SANDBOX_MODES.find((s) => s.id === id)?.label ?? id;
 
-  const statusLabel = (s?: ScheduleRunStatus | null) =>
-    s === "succeeded" ? "last run ok" : s === "failed" ? "last run failed" : "never run";
+  const runStatusPill = (t: ScheduledTask) => {
+    if (!t.enabled) {
+      return (
+        <StatusPill
+          icon={Pause}
+          label="Paused"
+          tint={COLORS.secondary}
+          color={COLORS.mutedForeground}
+        />
+      );
+    }
+    if (t.lastStatus === "succeeded") {
+      return (
+        <StatusPill
+          icon={CheckCircle2}
+          label="Last run ok"
+          tint={COLORS.success + "1F"}
+          color={COLORS.success}
+        />
+      );
+    }
+    if (t.lastStatus === "failed") {
+      return (
+        <StatusPill
+          icon={XCircle}
+          label="Last run failed"
+          tint={COLORS.destructive + "1F"}
+          color={COLORS.destructive}
+        />
+      );
+    }
+    return (
+      <StatusPill
+        icon={Clock}
+        label="Never run"
+        tint={COLORS.secondary}
+        color={COLORS.mutedForeground}
+      />
+    );
+  };
+
+  const statusRows: Array<[string, string]> = statusTask
+    ? [
+        ["Status", statusTask.enabled ? "enabled" : "paused"],
+        [
+          "Last run",
+          `${formatRunAt(statusTask.lastRunAt)}${
+            statusTask.lastStatus ? ` (${statusTask.lastStatus})` : ""
+          }`,
+        ],
+        ["Next run", statusTask.enabled ? formatRunAt(statusTask.nextRunAt) : "—"],
+        ["Schedule", statusTask.schedule],
+      ]
+    : [];
 
   return (
     <AppShell
@@ -184,7 +269,10 @@ export function TasksScreen({ navigation }: { navigation: any }) {
         )}
 
         {tasks.map((t) => (
-          <Surface key={t.id} style={styles.taskCard}>
+          <Surface
+            key={t.id}
+            style={[styles.taskCard, !t.enabled && styles.taskCardDisabled]}
+          >
             <View style={styles.taskHeader}>
               <View style={{ flex: 1 }}>
                 <View style={styles.nameRow}>
@@ -205,11 +293,22 @@ export function TasksScreen({ navigation }: { navigation: any }) {
             </View>
 
             <View style={styles.taskFooter}>
-              <View style={styles.badgeRow}>
-                <Badge variant="outline">{t.schedule}</Badge>
-                <Badge variant="outline">{statusLabel(t.lastStatus)}</Badge>
+              <View style={styles.pillRow}>
+                <StatusPill
+                  icon={Clock}
+                  label={t.schedule}
+                  tint={COLORS.secondary}
+                  color={COLORS.mutedForeground}
+                  monoText
+                />
+                {runStatusPill(t)}
                 {t.enabled && formatNextRun(t.nextRunAt) && (
-                  <Badge variant="outline">{formatNextRun(t.nextRunAt)}</Badge>
+                  <StatusPill
+                    icon={CalendarClock}
+                    label={`Next ${formatNextRun(t.nextRunAt)}`}
+                    tint={COLORS.primary + "14"}
+                    color={COLORS.primary}
+                  />
                 )}
               </View>
               <View style={styles.actionIcons}>
@@ -486,31 +585,18 @@ export function TasksScreen({ navigation }: { navigation: any }) {
                 </TouchableOpacity>
               </View>
               <View style={styles.statusRows}>
-                <View style={styles.statusRow}>
-                  <Text style={styles.statusLabel}>Status</Text>
-                  <Text style={styles.statusValue}>
-                    {statusTask?.enabled ? "enabled" : "paused"}
-                  </Text>
-                </View>
-                <View style={styles.statusRow}>
-                  <Text style={styles.statusLabel}>Last run</Text>
-                  <Text style={styles.statusValue}>
-                    {formatRunAt(statusTask?.lastRunAt)}
-                    {statusTask?.lastStatus ? ` (${statusTask.lastStatus})` : ""}
-                  </Text>
-                </View>
-                <View style={styles.statusRow}>
-                  <Text style={styles.statusLabel}>Next run</Text>
-                  <Text style={styles.statusValue}>
-                    {statusTask?.enabled
-                      ? formatRunAt(statusTask?.nextRunAt)
-                      : "—"}
-                  </Text>
-                </View>
-                <View style={styles.statusRow}>
-                  <Text style={styles.statusLabel}>Schedule</Text>
-                  <Text style={styles.statusValue}>{statusTask?.schedule}</Text>
-                </View>
+                {statusRows.map(([label, value], i) => (
+                  <View
+                    key={label}
+                    style={[
+                      styles.statusRow,
+                      i === statusRows.length - 1 && styles.statusRowLast,
+                    ]}
+                  >
+                    <Text style={styles.statusLabel}>{label}</Text>
+                    <Text style={styles.statusValue}>{value}</Text>
+                  </View>
+                ))}
               </View>
             </Surface>
           </View>
@@ -529,14 +615,14 @@ const styles = StyleSheet.create({
   },
   presetChip: {
     paddingHorizontal: 12,
-    paddingVertical: 8,
+    paddingVertical: 9,
     borderRadius: 999,
     borderWidth: 1,
     borderColor: COLORS.border,
     backgroundColor: COLORS.card,
   },
   presetChipActive: {
-    backgroundColor: COLORS.accent,
+    backgroundColor: COLORS.primary + "14",
     borderColor: COLORS.primary,
   },
   presetChipText: {
@@ -551,9 +637,9 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: COLORS.border,
     backgroundColor: COLORS.card,
-    borderRadius: 12,
+    borderRadius: 14,
     paddingHorizontal: 14,
-    paddingVertical: 12,
+    paddingVertical: 13,
   },
   pickerButtonText: {
     fontSize: 14,
@@ -563,12 +649,13 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: COLORS.border,
     backgroundColor: COLORS.card,
-    borderRadius: 12,
+    borderRadius: 14,
     paddingHorizontal: 14,
     paddingVertical: 12,
     fontSize: 14,
+    lineHeight: 20,
     color: COLORS.foreground,
-    minHeight: 96,
+    minHeight: 110,
   },
   hintText: {
     fontSize: 12,
@@ -579,7 +666,20 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 8,
   },
-  badgeRow: {
+  statusPill: {
+    flexDirection: "row",
+    alignItems: "center",
+    alignSelf: "flex-start",
+    gap: 4,
+    borderRadius: 999,
+    paddingHorizontal: 9,
+    paddingVertical: 4,
+  },
+  statusPillText: {
+    fontSize: 11,
+    fontWeight: "600",
+  },
+  pillRow: {
     flexDirection: "row",
     alignItems: "center",
     gap: 6,
@@ -594,9 +694,12 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   taskCard: {
-    borderRadius: 16,
-    padding: 14,
+    borderRadius: 20,
+    padding: 18,
     gap: 12,
+  },
+  taskCardDisabled: {
+    opacity: 0.62,
   },
   taskHeader: {
     flexDirection: "row",
@@ -605,27 +708,27 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   taskName: {
-    fontSize: 15,
+    fontSize: 16,
     fontWeight: "600",
     color: COLORS.foreground,
   },
   taskCommand: {
-    fontSize: 12,
+    fontSize: 13,
     color: COLORS.mutedForeground,
-    marginTop: 2,
+    marginTop: 3,
   },
   taskMeta: {
-    fontSize: 11,
+    fontSize: 12,
     color: COLORS.mutedForeground,
-    marginTop: 4,
+    marginTop: 6,
   },
   taskFooter: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    borderTopWidth: 1,
+    borderTopWidth: StyleSheet.hairlineWidth,
     borderTopColor: COLORS.border,
-    paddingTop: 10,
+    paddingTop: 12,
     gap: 8,
   },
   actionIcons: {
@@ -652,8 +755,8 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   modalTitle: {
-    fontSize: 17,
-    fontWeight: "600",
+    fontSize: 18,
+    fontWeight: "700",
     color: COLORS.foreground,
   },
   formScroll: {
@@ -666,7 +769,6 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   statusRows: {
-    gap: 12,
     paddingBottom: 8,
   },
   statusRow: {
@@ -674,6 +776,12 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     alignItems: "center",
     gap: 12,
+    paddingVertical: 12,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: COLORS.border,
+  },
+  statusRowLast: {
+    borderBottomWidth: 0,
   },
   statusLabel: {
     fontSize: 13,
@@ -687,3 +795,4 @@ const styles = StyleSheet.create({
     flex: 1,
   },
 });
+

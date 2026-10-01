@@ -1096,10 +1096,12 @@ export function ModelsScreen() {
         <TouchableWithoutFeedback onPress={() => setShowConnectorModal(false)}>
           <View style={styles.modalBackdrop}>
             <TouchableWithoutFeedback onPress={() => {}}>
-              <Surface style={[styles.modalCard, { backgroundColor: colors.card }]}>
+              <Surface style={[styles.modalCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
                 <View style={[styles.modalHeaderRow, { borderBottomColor: colors.border }]}>
-                  <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
-                    <Plug size={16} color={colors.primary} />
+                  <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
+                    <View style={[styles.sectionIconBox, { backgroundColor: colors.primary + "14" }]}>
+                      <Plug size={15} color={colors.primary} />
+                    </View>
                     <Text style={[styles.modalTitle, { color: colors.foreground }, font("bold")]}>
                       Connect API Provider
                     </Text>
@@ -1125,7 +1127,7 @@ export function ModelsScreen() {
                           key={preset.id}
                           style={[
                             styles.presetChip,
-                            { backgroundColor: colors.secondary, borderColor: colors.border },
+                            { backgroundColor: "transparent", borderColor: "transparent" },
                             isSel && { backgroundColor: colors.primary + "1F", borderColor: colors.primary },
                           ]}
                           onPress={() => handleSelectPreset(preset)}
@@ -1146,7 +1148,7 @@ export function ModelsScreen() {
                   </ScrollView>
 
                   {selectedPresetId === "antigravity" && (
-                    <View style={[styles.infoBanner, { backgroundColor: colors.primary + "1A" }]}>
+                    <View style={[styles.infoBanner, { backgroundColor: colors.primary + "1A", borderColor: colors.primary + "33" }]}>
                       <Info size={13} color={colors.primary} />
                       <Text style={[styles.infoBannerText, { color: colors.primary }, font("regular")]}>
                         Google Antigravity is natively adapted in-binary. Connect OAuth tokens (ya29...) or API keys.
@@ -1282,9 +1284,12 @@ export function ModelsScreen() {
                   </TouchableOpacity>
 
                   {testedProviderModels.length > 0 && (
-                    <Text style={[styles.discoveredNote, { color: colors.success }, font("bold")]}>
-                      ✓ {testedProviderModels.length} models ready to import
-                    </Text>
+                    <View style={[styles.discoveredNote, { backgroundColor: colors.success + "14", borderColor: colors.success + "33" }]}>
+                      <Check size={13} color={colors.success} />
+                      <Text style={[{ color: colors.success, fontSize: 12 }, font("bold")]}>
+                        {testedProviderModels.length} models ready to import
+                      </Text>
+                    </View>
                   )}
 
                   {/* Save Button */}
@@ -1314,10 +1319,12 @@ export function ModelsScreen() {
           <TouchableWithoutFeedback onPress={() => setActiveEditingProvider(null)}>
             <View style={styles.modalBackdrop}>
               <TouchableWithoutFeedback onPress={() => {}}>
-                <Surface style={[styles.modalCard, { backgroundColor: colors.card }]}>
+                <Surface style={[styles.modalCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
                   <View style={[styles.modalHeaderRow, { borderBottomColor: colors.border }]}>
-                    <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
-                      <Settings size={16} color={colors.primary} />
+                    <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
+                      <View style={[styles.sectionIconBox, { backgroundColor: colors.primary + "14" }]}>
+                        <Settings size={15} color={colors.primary} />
+                      </View>
                       <Text style={[styles.modalTitle, { color: colors.foreground }, font("bold")]}>
                         {activeEditingProvider.name} Settings
                       </Text>
@@ -1328,7 +1335,7 @@ export function ModelsScreen() {
                   </View>
 
                   <Text style={[styles.inputLabel, { color: colors.mutedForeground }, font("semibold")]}>Base URL</Text>
-                  <Text style={[styles.readOnlyText, { backgroundColor: colors.secondary, color: colors.foreground }, mono("regular")]}>
+                  <Text style={[styles.readOnlyText, { backgroundColor: colors.secondary, color: colors.foreground, borderColor: colors.border }, mono("regular")]}>
                     {activeEditingProvider.baseUrl}
                   </Text>
 
@@ -1441,10 +1448,12 @@ export function ModelsScreen() {
         <TouchableWithoutFeedback onPress={() => setShowAddChainModal(false)}>
           <View style={styles.modalBackdrop}>
             <TouchableWithoutFeedback onPress={() => {}}>
-              <Surface style={[styles.modalCard, { backgroundColor: colors.card }]}>
+              <Surface style={[styles.modalCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
                 <View style={[styles.modalHeaderRow, { borderBottomColor: colors.border }]}>
-                  <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
-                    <Layers size={16} color={colors.primary} />
+                  <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
+                    <View style={[styles.sectionIconBox, { backgroundColor: colors.primary + "14" }]}>
+                      <Layers size={15} color={colors.primary} />
+                    </View>
                     <Text style={[styles.modalTitle, { color: colors.foreground }, font("bold")]}>
                       Select Fallback Model
                     </Text>
@@ -1460,7 +1469,7 @@ export function ModelsScreen() {
                     .map((m) => (
                       <TouchableOpacity
                         key={m.id}
-                        style={[styles.chainPickerItem, { backgroundColor: colors.secondary }]}
+                        style={[styles.chainPickerItem, { backgroundColor: colors.secondary, borderColor: colors.border }]}
                         onPress={() => handleAddToChain(m.id)}
                         activeOpacity={0.7}
                       >
@@ -1472,7 +1481,9 @@ export function ModelsScreen() {
                             {m.id}
                           </Text>
                         </View>
-                        <Plus size={16} color={colors.primary} />
+                        <View style={[styles.addToChainBtn, { backgroundColor: colors.primary + "14" }]}>
+                          <Plus size={15} color={colors.primary} />
+                        </View>
                       </TouchableOpacity>
                     ))}
 
@@ -1482,9 +1493,9 @@ export function ModelsScreen() {
                       style={[
                         {
                           color: colors.mutedForeground,
-                          fontSize: 12,
+                          fontSize: 12.5,
                           textAlign: "center",
-                          paddingVertical: 20,
+                          paddingVertical: 28,
                         },
                         font("regular"),
                       ]}
@@ -1744,17 +1755,25 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    paddingVertical: 10,
-    paddingHorizontal: 12,
-    borderRadius: 9,
-    marginBottom: 6,
+    paddingVertical: 14,
+    paddingHorizontal: 14,
+    borderRadius: 14,
+    marginBottom: 8,
+    borderWidth: StyleSheet.hairlineWidth,
   },
   chainPickerName: {
-    fontSize: 13,
+    fontSize: 13.5,
   },
   chainPickerId: {
-    fontSize: 11,
-    marginTop: 1,
+    fontSize: 11.5,
+    marginTop: 2,
+  },
+  addToChainBtn: {
+    width: 32,
+    height: 32,
+    borderRadius: 999,
+    alignItems: "center",
+    justifyContent: "center",
   },
   searchFilterSection: {
     gap: 10,
@@ -1956,79 +1975,85 @@ const styles = StyleSheet.create({
     padding: 16,
   },
   modalCard: {
-    padding: 16,
-    borderRadius: 18,
+    padding: 20,
+    borderRadius: 20,
     gap: 12,
     maxHeight: "85%",
+    borderWidth: StyleSheet.hairlineWidth,
   },
   modalHeaderRow: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    paddingBottom: 8,
-    borderBottomWidth: 1,
+    paddingBottom: 12,
+    marginBottom: 4,
+    borderBottomWidth: StyleSheet.hairlineWidth,
   },
   modalTitle: {
-    fontSize: 15,
+    fontSize: 16,
+    letterSpacing: -0.1,
   },
   inputLabel: {
-    fontSize: 11.5,
-    marginTop: 4,
+    fontSize: 12,
+    letterSpacing: 0.2,
+    marginTop: 6,
   },
   presetsScroll: {
     flexDirection: "row",
-    gap: 6,
+    gap: 8,
     paddingVertical: 6,
   },
   presetChip: {
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 8,
-    borderWidth: 1,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 999,
+    borderWidth: StyleSheet.hairlineWidth,
   },
   presetChipText: {
-    fontSize: 11,
+    fontSize: 12,
   },
   infoBanner: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 6,
-    padding: 8,
-    borderRadius: 8,
-    marginVertical: 4,
+    gap: 8,
+    padding: 12,
+    borderRadius: 12,
+    marginVertical: 6,
+    borderWidth: StyleSheet.hairlineWidth,
   },
   infoBannerText: {
-    fontSize: 11,
+    fontSize: 12,
+    lineHeight: 17,
     flex: 1,
   },
   modalInput: {
-    height: 38,
-    borderRadius: 8,
-    borderWidth: 1,
-    paddingHorizontal: 10,
-    fontSize: 12,
+    height: 44,
+    borderRadius: 12,
+    borderWidth: StyleSheet.hairlineWidth,
+    paddingHorizontal: 14,
+    fontSize: 13,
   },
   tokenInputRow: {
     flexDirection: "row",
-    gap: 6,
+    gap: 8,
     alignItems: "center",
-    marginTop: 4,
+    marginTop: 6,
   },
   tokenInput: {
     flex: 1,
-    height: 38,
-    borderRadius: 8,
-    borderWidth: 1,
-    paddingHorizontal: 10,
-    fontSize: 12,
+    height: 44,
+    borderRadius: 12,
+    borderWidth: StyleSheet.hairlineWidth,
+    paddingHorizontal: 14,
+    fontSize: 13,
   },
   addTokenBtn: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 4,
-    height: 38,
-    paddingHorizontal: 12,
-    borderRadius: 8,
+    gap: 6,
+    height: 44,
+    paddingHorizontal: 16,
+    borderRadius: 999,
   },
   addTokenBtnText: {
     fontSize: 12,
@@ -2036,75 +2061,84 @@ const styles = StyleSheet.create({
   tokensChipsContainer: {
     flexDirection: "row",
     flexWrap: "wrap",
-    gap: 6,
-    paddingVertical: 4,
+    gap: 8,
+    paddingVertical: 6,
   },
   tokenChip: {
     flexDirection: "row",
     alignItems: "center",
     gap: 6,
-    paddingHorizontal: 8,
-    paddingVertical: 5,
-    borderRadius: 6,
-    borderWidth: 1,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    borderRadius: 999,
+    borderWidth: StyleSheet.hairlineWidth,
   },
   tokenChipText: {
-    fontSize: 11,
+    fontSize: 11.5,
   },
   testBtn: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
     gap: 6,
-    height: 36,
-    borderRadius: 8,
-    borderWidth: 1,
-    marginTop: 8,
+    height: 44,
+    borderRadius: 999,
+    borderWidth: StyleSheet.hairlineWidth,
+    marginTop: 12,
   },
   testBtnText: {
-    fontSize: 12,
+    fontSize: 12.5,
   },
   discoveredNote: {
-    fontSize: 11,
-    textAlign: "center",
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
+    fontSize: 12,
+    paddingVertical: 9,
+    paddingHorizontal: 12,
+    borderRadius: 999,
+    borderWidth: StyleSheet.hairlineWidth,
+    marginTop: 10,
   },
   saveProviderBtn: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
     gap: 6,
-    height: 40,
-    borderRadius: 8,
-    marginTop: 8,
+    height: 46,
+    borderRadius: 999,
+    marginTop: 12,
   },
   saveEditedProviderBtn: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
     gap: 6,
-    height: 38,
-    borderRadius: 8,
-    marginTop: 8,
+    height: 44,
+    borderRadius: 999,
+    marginTop: 12,
   },
   saveProviderBtnText: {
-    fontSize: 13,
+    fontSize: 13.5,
   },
   readOnlyText: {
-    fontSize: 12,
-    padding: 8,
-    borderRadius: 6,
+    fontSize: 12.5,
+    padding: 12,
+    borderRadius: 12,
+    borderWidth: StyleSheet.hairlineWidth,
   },
   deleteProviderBtn: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
     gap: 6,
-    height: 38,
-    borderRadius: 8,
-    borderWidth: 1,
-    marginTop: 10,
+    height: 44,
+    borderRadius: 999,
+    borderWidth: StyleSheet.hairlineWidth,
+    marginTop: 12,
   },
   deleteProviderBtnText: {
-    fontSize: 12.5,
+    fontSize: 13,
   },
 });

@@ -35,6 +35,7 @@ export interface AgentQuestion {
 /** A pending server approval shown as a sticky card above the composer. */
 export interface PendingApproval {
   id: string;
+  threadId: string;
   method: string;
   title: string;
   detail?: string;

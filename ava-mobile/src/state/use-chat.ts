@@ -508,6 +508,7 @@ export function useChat(explicitSessionId?: string | null, opts: { passive?: boo
                   ...prev,
                   {
                     id: qId,
+                    threadId,
                     method: question.method!,
                     title: question.title,
                     detail,
@@ -690,6 +691,11 @@ export function useChat(explicitSessionId?: string | null, opts: { passive?: boo
         }
         runningThreadIdRef.current = null;
 
+        // Approval cards are thread-scoped: drop cards from the previous
+        // session. A genuinely paused turn re-emits its question via item
+        // sync when this session re-attaches (onQuestion dedups by id),
+        // so the card returns instead of going stale.
+        setPendingApprovals([]);
         setError(null);
         setVisibleCount(30);
         allHistoryRef.current = historyMessages;
@@ -1053,6 +1059,9 @@ export function useChat(explicitSessionId?: string | null, opts: { passive?: boo
   const stop = useCallback(async () => {
     if (!rpc || !currentSessionId) return;
     setStatus("stopping");
+    // The interrupted turn can no longer answer its pending approval
+    // requests — drop the cards instead of letting Allow/Deny hit a dead requestId.
+    setPendingApprovals([]);
     statusRef.current = "stopping";
     chatStore.setState(currentSessionId, (prev) => ({
       ...prev,
@@ -1208,7 +1217,9 @@ export function useChat(explicitSessionId?: string | null, opts: { passive?: boo
     status,
     error,
     queuedPrompts,
-    pendingApprovals,
+    // Thread-scope guard: cards belong to the session whose turn
+    // requested them; never show another session's pending approval.
+    pendingApprovals: pendingApprovals.filter((a) => a.threadId === currentSessionId),
     answerPendingApproval,
     send,
     stop,

@@ -605,9 +605,11 @@ export function ModelsScreen() {
         {/* ── 1. AI PROVIDERS & MULTI-TOKEN CONNECTIONS ── */}
         <Surface style={[styles.providersCard, { borderColor: colors.border }]}>
           <View style={styles.providersHeaderRow}>
-            <Cpu size={15} color={colors.primary} />
+            <View style={[styles.sectionIconBox, { backgroundColor: colors.primary + "14" }]}>
+              <Cpu size={15} color={colors.primary} />
+            </View>
             <Text style={[styles.providersSectionTitle, { color: colors.mutedForeground }, font("bold")]}>
-              AI PROVIDERS & MULTI-TOKEN AUTH
+              AI providers & multi-token auth
             </Text>
             <View style={[styles.countBadge, { backgroundColor: colors.secondary }]}>
               <Text style={[styles.countBadgeText, { color: colors.mutedForeground }, font("bold")]}>
@@ -710,9 +712,11 @@ export function ModelsScreen() {
         <Surface style={[styles.fallbackChainCard, { borderColor: colors.primary + "4D" }]}>
           <View style={styles.fallbackChainHeader}>
             <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
-              <Layers size={15} color={colors.primary} />
+              <View style={[styles.sectionIconBox, { backgroundColor: colors.primary + "14" }]}>
+                <Layers size={15} color={colors.primary} />
+              </View>
               <Text style={[styles.fallbackChainTitle, { color: colors.primary }, font("bold")]}>
-                MODEL FALLBACK ROUTING CHAIN
+                Model fallback routing chain
               </Text>
             </View>
             <View style={[styles.countBadge, { backgroundColor: colors.secondary }]}>
@@ -867,8 +871,8 @@ export function ModelsScreen() {
                   key={tab.id}
                   style={[
                     styles.filterPill,
-                    { backgroundColor: colors.secondary, borderColor: colors.border },
-                    active && [styles.filterPillActive, { backgroundColor: colors.primary + "1F", borderColor: colors.primary + "59" }],
+                    { backgroundColor: "transparent", borderColor: "transparent" },
+                    active && [styles.filterPillActive, { backgroundColor: colors.card, borderColor: colors.border }],
                   ]}
                   onPress={() => setActiveFilter(tab.id)}
                   activeOpacity={0.7}
@@ -876,7 +880,7 @@ export function ModelsScreen() {
                   <Text
                     style={[
                       styles.filterPillText,
-                      { color: active ? colors.primary : colors.mutedForeground },
+                      { color: active ? colors.foreground : colors.mutedForeground },
                       font(active ? "bold" : "regular"),
                     ]}
                   >
@@ -1503,8 +1507,8 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   content: {
-    padding: 16,
-    gap: 16,
+    padding: 18,
+    gap: 20,
   },
   topHeaderRow: {
     flexDirection: "row",
@@ -1513,11 +1517,12 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   mainHeading: {
-    fontSize: 20,
+    fontSize: 24,
+    letterSpacing: -0.2,
   },
   mainSubheading: {
-    fontSize: 12,
-    marginTop: 2,
+    fontSize: 13,
+    marginTop: 4,
   },
   headerBtnGroup: {
     flexDirection: "row",
@@ -1528,9 +1533,9 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 6,
-    paddingHorizontal: 10,
-    paddingVertical: 8,
-    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 9,
+    borderRadius: 999,
     borderWidth: StyleSheet.hairlineWidth,
   },
   reloadBtnText: {
@@ -1540,33 +1545,40 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 6,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 9,
+    borderRadius: 999,
   },
   connectBtnText: {
     fontSize: 12,
   },
   providersCard: {
-    padding: 16,
-    borderRadius: 18,
-    gap: 10,
+    padding: 20,
+    borderRadius: 20,
+    gap: 12,
     borderWidth: StyleSheet.hairlineWidth,
   },
   providersHeaderRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 8,
+    gap: 10,
     paddingBottom: 4,
   },
+  sectionIconBox: {
+    width: 28,
+    height: 28,
+    borderRadius: 9,
+    alignItems: "center",
+    justifyContent: "center",
+  },
   providersSectionTitle: {
-    fontSize: 11,
-    letterSpacing: 0.8,
+    fontSize: 13,
+    letterSpacing: 0.2,
   },
   countBadge: {
-    paddingHorizontal: 8,
+    paddingHorizontal: 10,
     paddingVertical: 3,
-    borderRadius: 8,
+    borderRadius: 999,
     marginLeft: "auto",
   },
   countBadgeText: {
@@ -1577,14 +1589,14 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 12,
-    padding: 12,
-    borderRadius: 14,
+    padding: 14,
+    borderRadius: 16,
     borderWidth: StyleSheet.hairlineWidth,
   },
   providerLogoBox: {
-    width: 36,
-    height: 36,
-    borderRadius: 10,
+    width: 40,
+    height: 40,
+    borderRadius: 12,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -1592,7 +1604,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   providerRowName: {
-    fontSize: 13.5,
+    fontSize: 14,
     lineHeight: 20,
   },
   providerRowSub: {
@@ -1608,9 +1620,9 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 3,
-    paddingHorizontal: 6,
+    paddingHorizontal: 8,
     paddingVertical: 3,
-    borderRadius: 6,
+    borderRadius: 999,
   },
   tokenMultiBadgeText: {
     fontSize: 9.5,
@@ -1621,15 +1633,15 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   iconActionBtn: {
-    padding: 7,
-    borderRadius: 8,
+    padding: 8,
+    borderRadius: 10,
     borderWidth: StyleSheet.hairlineWidth,
   },
   fallbackChainCard: {
-    padding: 14,
-    borderRadius: 16,
-    gap: 10,
-    borderWidth: 1,
+    padding: 20,
+    borderRadius: 20,
+    gap: 12,
+    borderWidth: StyleSheet.hairlineWidth,
   },
   fallbackChainHeader: {
     flexDirection: "row",
@@ -1637,20 +1649,20 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
   },
   fallbackChainTitle: {
-    fontSize: 11,
-    letterSpacing: 0.8,
+    fontSize: 13,
+    letterSpacing: 0.2,
   },
   fallbackChainDescription: {
-    fontSize: 11.5,
-    lineHeight: 16,
+    fontSize: 12.5,
+    lineHeight: 18,
   },
   chainItemPrimary: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 10,
-    padding: 10,
-    borderRadius: 10,
-    borderWidth: 1,
+    gap: 12,
+    padding: 12,
+    borderRadius: 14,
+    borderWidth: StyleSheet.hairlineWidth,
   },
   chainRankBadgePrimary: {
     width: 24,
@@ -1671,10 +1683,10 @@ const styles = StyleSheet.create({
   chainItemSecondary: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 10,
-    padding: 10,
-    borderRadius: 10,
-    borderWidth: 1,
+    gap: 12,
+    padding: 12,
+    borderRadius: 14,
+    borderWidth: StyleSheet.hairlineWidth,
   },
   chainRankBadge: {
     width: 24,
@@ -1695,8 +1707,8 @@ const styles = StyleSheet.create({
     marginTop: 1,
   },
   chainIconBtn: {
-    padding: 5,
-    borderRadius: 6,
+    padding: 6,
+    borderRadius: 8,
   },
   chainActionsRow: {
     flexDirection: "row",
@@ -1709,9 +1721,9 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     gap: 6,
-    paddingVertical: 8,
-    borderRadius: 9,
-    borderWidth: 1,
+    paddingVertical: 10,
+    borderRadius: 999,
+    borderWidth: StyleSheet.hairlineWidth,
   },
   addChainBtnText: {
     fontSize: 12,
@@ -1721,9 +1733,9 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     gap: 6,
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 9,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 999,
   },
   saveChainBtnText: {
     fontSize: 12,
@@ -1751,14 +1763,14 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 10,
-    height: 40,
+    height: 44,
     paddingHorizontal: 14,
-    borderRadius: 12,
+    borderRadius: 22,
     borderWidth: StyleSheet.hairlineWidth,
   },
   searchInput: {
     flex: 1,
-    fontSize: 13.5,
+    fontSize: 14,
     lineHeight: 20,
     paddingVertical: 0,
   },
@@ -1767,9 +1779,9 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   filterPill: {
-    paddingHorizontal: 12,
-    paddingVertical: 7,
-    borderRadius: 16,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 999,
     borderWidth: StyleSheet.hairlineWidth,
   },
   filterPillActive: {
@@ -1779,7 +1791,7 @@ const styles = StyleSheet.create({
     letterSpacing: 0.2,
   },
   providerGroupCard: {
-    borderRadius: 18,
+    borderRadius: 20,
     overflow: "hidden",
     borderWidth: StyleSheet.hairlineWidth,
   },
@@ -1787,37 +1799,37 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 12,
-    padding: 14,
+    padding: 16,
   },
   groupLogoBox: {
-    width: 30,
-    height: 30,
-    borderRadius: 8,
+    width: 34,
+    height: 34,
+    borderRadius: 10,
     alignItems: "center",
     justifyContent: "center",
   },
   groupTitle: {
-    fontSize: 14,
+    fontSize: 15,
     lineHeight: 20,
   },
   groupCountBadge: {
     paddingHorizontal: 8,
     paddingVertical: 3,
-    borderRadius: 10,
+    borderRadius: 999,
   },
   groupCountText: {
     fontSize: 10.5,
     letterSpacing: 0.3,
   },
   modelsList: {
-    padding: 12,
-    gap: 10,
+    padding: 14,
+    gap: 12,
   },
   modelItemCard: {
-    padding: 14,
-    borderRadius: 14,
+    padding: 16,
+    borderRadius: 16,
     borderWidth: StyleSheet.hairlineWidth,
-    gap: 10,
+    gap: 12,
   },
   modelItemCardSelected: {
   },
@@ -1833,7 +1845,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   modelItemName: {
-    fontSize: 13.5,
+    fontSize: 14,
     lineHeight: 20,
   },
   modelItemId: {
@@ -1844,7 +1856,7 @@ const styles = StyleSheet.create({
   defaultBadge: {
     paddingHorizontal: 6,
     paddingVertical: 2.5,
-    borderRadius: 6,
+    borderRadius: 999,
   },
   defaultBadgeText: {
     fontSize: 9,
@@ -1879,7 +1891,7 @@ const styles = StyleSheet.create({
     gap: 4,
     paddingHorizontal: 8,
     paddingVertical: 4,
-    borderRadius: 8,
+    borderRadius: 999,
   },
   specBadgeText: {
     fontSize: 10,
@@ -1907,19 +1919,19 @@ const styles = StyleSheet.create({
     letterSpacing: 0.4,
   },
   bottomModelName: {
-    fontSize: 12.5,
+    fontSize: 13,
     lineHeight: 18,
     marginTop: 1,
   },
   effortPills: {
     flexDirection: "row",
-    borderRadius: 8,
-    padding: 2,
+    borderRadius: 999,
+    padding: 3,
   },
   effortPill: {
-    paddingHorizontal: 7,
-    paddingVertical: 4,
-    borderRadius: 6,
+    paddingHorizontal: 8,
+    paddingVertical: 5,
+    borderRadius: 999,
   },
   effortPillActive: {
   },
@@ -1930,9 +1942,9 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 6,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 9,
+    paddingHorizontal: 14,
+    paddingVertical: 9,
+    borderRadius: 999,
   },
   applyBtnText: {
     fontSize: 12,

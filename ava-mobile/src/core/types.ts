@@ -28,7 +28,7 @@ export interface AgentQuestion {
   method?: string;
   /** Raw server params for the request (used to build approval responses). */
   params?: unknown;
-  /** Set when the question was answered via the sticky approval card. */
+  /** Set when the question was answered (sticky approval card or in-message option). */
   answered?: boolean;
 }
 

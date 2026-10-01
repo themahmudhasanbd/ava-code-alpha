@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Image,
@@ -51,6 +51,7 @@ import { font, FONTS, mono } from "@/theme/fonts";
 import { useAva } from "@/state/ava-provider";
 import { useUserProfile } from "@/state/queries";
 import { answerQuestion } from "@/core/api/chat";
+import { chatStore } from "@/state/chat-store";
 
 export const formatDuration = fmtDuration;
 const formatTokens = fmtTokens;
@@ -234,6 +235,15 @@ function AssistantTurn({
 
   const [copied, setCopied] = useState(false);
   const [answeredQuestions, setAnsweredQuestions] = useState<Set<string>>(new Set());
+  // Optimistic answer marks are only valid while this turn is live. When the
+  // turn ends (interrupt, completion, error), drop them so a half-answered
+  // question on a dead turn cannot linger as a stale check mark. The
+  // store-level `question.answered` (set on genuine success below) survives.
+  const wasLiveRef = useRef(live);
+  useEffect(() => {
+    if (wasLiveRef.current && !live) setAnsweredQuestions(new Set());
+    wasLiveRef.current = live;
+  }, [live]);
   const duration = message.stats?.durationMs ?? (live ? elapsed : undefined);
   const hasError = message.parts.some(
     (part) => part.status === "error" || part.meta?.tone === "error"
@@ -266,10 +276,32 @@ function AssistantTurn({
   };
 
   const handleQuestionAnswer = async (questionId: string | undefined, answer: string, requestId?: number | string) => {
-    if (!rpc || !sessionId || !questionId) return;
+    // Questions belong to the live turn only. Answering a dead or historical
+    // turn's question would hit a stale requestId / steer into the void, and
+    // the protocol fallback would start a stray new turn with the bare option
+    // text as its prompt.
+    if (!live || !rpc || !sessionId || !questionId) return;
     setAnsweredQuestions((prev) => new Set(prev).add(questionId));
     try {
       await answerQuestion(rpc, sessionId, answer, requestId);
+      // Persist the answered mark at the store level (mirrors
+      // answerPendingApproval) so it survives the optimistic reset above
+      // and history re-syncs.
+      chatStore.patchAssistant(sessionId, message.id, (parts) =>
+        parts.map((p) =>
+          p.kind === "question" && p.meta?.questions?.some((q) => q.id === questionId)
+            ? {
+                ...p,
+                meta: {
+                  ...p.meta,
+                  questions: (p.meta.questions ?? []).map((q) =>
+                    q.id === questionId ? { ...q, answered: true } : q
+                  ),
+                },
+              }
+            : p
+        )
+      );
     } catch (e) {
       console.warn("[Question] Failed to send answer:", e);
       setAnsweredQuestions((prev) => {
@@ -360,9 +392,10 @@ function AssistantTurn({
                     style={[
                       styles.questionOptionPill,
                       isAnswered && styles.questionOptionPillAnswered,
+                      !live && !isAnswered && styles.questionOptionPillExpired,
                     ]}
                     onPress={() => handleQuestionAnswer(question.id, opt, question.requestId)}
-                    disabled={isAnswered}
+                    disabled={isAnswered || !live}
                     activeOpacity={0.7}
                   >
                     <Text style={[styles.questionOptionText, font("medium", opt)]}>{opt}</Text>
@@ -370,7 +403,7 @@ function AssistantTurn({
                   </TouchableOpacity>
                 );
               })}
-              {!question.options?.length && !answeredQuestions.has(question.id ?? "") && !question.answered && (
+              {live && !question.options?.length && !answeredQuestions.has(question.id ?? "") && !question.answered && (
                 <Text style={[styles.questionHint, font("regular")]}>
                   Type your answer in the composer below
                 </Text>
@@ -903,6 +936,9 @@ const styles = StyleSheet.create({
   questionOptionPillAnswered: {
     opacity: 0.5,
     borderColor: COLORS.success,
+  },
+  questionOptionPillExpired: {
+    opacity: 0.55,
   },
   questionOptionText: {
     fontSize: 12.5,

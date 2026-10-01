@@ -9,7 +9,7 @@ import { SkeletonRows } from "@/components/kit";
 import type { Session } from "@/core/types";
 import { storage } from "@/core/storage";
 import { useAva } from "@/state/ava-provider";
-import { useDeleteSession, useSessions } from "@/state/queries";
+import { useDeleteSession, useRenameSession, useSessions } from "@/state/queries";
 import { cn } from "@/lib/utils";
 
 const PIN_KEY = "ava.workspace.pins";
@@ -39,12 +39,15 @@ export function SessionsList({ onPick }: { onPick: () => void }) {
   const { activeSessionId, setActiveSessionId, workingSessionId, status } = useAva();
   const { data, isLoading, error } = useSessions();
   const del = useDeleteSession();
+  const rename = useRenameSession();
   const navigate = useNavigate();
   const [pins, setPins] = useState<string[]>([]);
   const [names, setNames] = useState<Record<string, string>>({});
   const [expanded, setExpanded] = useState<string[]>([]);
   const [editing, setEditing] = useState<string | null>(null);
   const [draftName, setDraftName] = useState("");
+  const [editingSession, setEditingSession] = useState<string | null>(null);
+  const [sessionDraft, setSessionDraft] = useState("");
 
   useEffect(() => {
     setPins(readJson<string[]>(PIN_KEY, []));
@@ -92,6 +95,12 @@ export function SessionsList({ onPick }: { onPick: () => void }) {
       return next;
     });
     setEditing(null);
+  };
+
+  const saveSessionName = (id: string) => {
+    const value = sessionDraft.trim();
+    if (value) rename.mutate({ id, name: value });
+    setEditingSession(null);
   };
 
   return (
@@ -164,29 +173,58 @@ export function SessionsList({ onPick }: { onPick: () => void }) {
                 <div className="ml-5 mr-1 space-y-0.5 border-l border-sidebar-border pl-3 pb-2">
                   {sessions.map((session) => (
                     <div key={session.id} className="group flex items-center">
-                      <Button
-                        variant="ghost"
-                        onClick={() => void pick(session.id)}
-                        className={cn(
-                          "h-auto min-h-9 min-w-0 flex-1 justify-start truncate rounded-lg px-2 py-2 text-left text-sm font-normal",
-                          activeSessionId === session.id ? "bg-sidebar-accent font-medium text-sidebar-accent-foreground" : "text-muted-foreground",
-                        )}
-                      >
-                        <span className="truncate">{session.title}</span>
-                        {workingSessionId === session.id && <span className="ml-auto size-3 animate-spin rounded-full border-2 border-primary/30 border-t-primary" />}
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon-sm"
-                        aria-label="Delete session"
-                        className="opacity-60 sm:opacity-0 sm:group-hover:opacity-100"
-                        onClick={() => {
-                          if (activeSessionId === session.id) setActiveSessionId(null);
-                          del.mutate(session.id);
-                        }}
-                      >
-                        <Trash2 />
-                      </Button>
+                      {editingSession === session.id ? (
+                        <>
+                          <Input
+                            autoFocus
+                            value={sessionDraft}
+                            onChange={(event) => setSessionDraft(event.target.value)}
+                            onKeyDown={(event) => {
+                              if (event.key === "Enter") saveSessionName(session.id);
+                              if (event.key === "Escape") setEditingSession(null);
+                            }}
+                            className="h-7 min-w-0 flex-1 px-2 text-sm"
+                            aria-label="Session title"
+                          />
+                          <Button variant="ghost" size="icon-sm" aria-label="Save session title" onClick={() => saveSessionName(session.id)}><Check /></Button>
+                          <Button variant="ghost" size="icon-sm" aria-label="Cancel rename" onClick={() => setEditingSession(null)}><X /></Button>
+                        </>
+                      ) : (
+                        <>
+                          <Button
+                            variant="ghost"
+                            onClick={() => void pick(session.id)}
+                            className={cn(
+                              "h-auto min-h-9 min-w-0 flex-1 justify-start truncate rounded-lg px-2 py-2 text-left text-sm font-normal",
+                              activeSessionId === session.id ? "bg-sidebar-accent font-medium text-sidebar-accent-foreground" : "text-muted-foreground",
+                            )}
+                          >
+                            <span className="truncate">{session.title}</span>
+                            {workingSessionId === session.id && <span className="ml-auto size-3 animate-spin rounded-full border-2 border-primary/30 border-t-primary" />}
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon-sm"
+                            aria-label="Rename session"
+                            className="opacity-60 sm:opacity-0 sm:group-hover:opacity-100"
+                            onClick={() => { setEditingSession(session.id); setSessionDraft(session.title); }}
+                          >
+                            <Pencil />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon-sm"
+                            aria-label="Delete session"
+                            className="opacity-60 sm:opacity-0 sm:group-hover:opacity-100"
+                            onClick={() => {
+                              if (activeSessionId === session.id) setActiveSessionId(null);
+                              del.mutate(session.id);
+                            }}
+                          >
+                            <Trash2 />
+                          </Button>
+                        </>
+                      )}
                     </div>
                   ))}
                 </div>

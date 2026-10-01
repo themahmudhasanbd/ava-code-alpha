@@ -134,3 +134,4 @@ verify_live_browser.py
 **/.output/
 **/.wrangler/
 **/.tanstack/
+.output/

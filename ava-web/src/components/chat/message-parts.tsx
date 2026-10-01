@@ -70,7 +70,7 @@ function useElapsed(startedAt?: number, running?: boolean) {
 function StepShell({ part, title, subtitle, children }: { part: MessagePart; title: string; subtitle?: string | undefined; children?: React.ReactNode }) {
   const Icon = toolIcon(part);
   return (
-    <Tool defaultOpen={false} className="glass mb-0 overflow-hidden rounded-xl border-0 [--glass-shadow:0_1px_2px_rgb(0_0_0/0.06),0_8px_20px_-8px_rgb(0_0_0/0.12),inset_0_1px_0_rgb(255_255_255/0.5)]">
+    <Tool defaultOpen={false} className="glass mb-0 overflow-hidden rounded-xl border-0 [--glass-shadow:0_1px_2px_rgb(0_0_0/0.06),0_4px_12px_-6px_rgb(0_0_0/0.12),inset_0_1px_0_rgb(255_255_255/0.5)]">
       <CollapsibleTrigger className="group flex w-full items-center gap-2.5 px-4 py-2.5 text-left">
         <span className="flex size-7 shrink-0 items-center justify-center rounded-lg bg-secondary text-secondary-foreground">
           <Icon className="size-3.5" />
@@ -263,7 +263,7 @@ function AssistantTurn({ message, live, onAnswerQuestion }: { message: ChatMessa
             </p>
           </div>
         </div>
-        <div className="space-y-4">
+        <div className="flex flex-col gap-6">
         {message.parts.map((p) =>
           p.kind === "tool" ? (
             <ToolStep key={p.id} part={p} />

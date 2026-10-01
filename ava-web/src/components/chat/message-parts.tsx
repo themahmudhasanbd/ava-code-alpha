@@ -263,7 +263,7 @@ function AssistantTurn({ message, live, onAnswerQuestion }: { message: ChatMessa
             </p>
           </div>
         </div>
-        <div className="space-y-3">
+        <div className="space-y-4">
         {message.parts.map((p) =>
           p.kind === "tool" ? (
             <ToolStep key={p.id} part={p} />

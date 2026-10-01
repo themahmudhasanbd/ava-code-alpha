@@ -20,6 +20,7 @@ import {
 
 import { Message, MessageAction, MessageActions, MessageContent } from "@/components/ai-elements/message";
 import { RichResponse } from "./rich-response";
+import { AttachmentCard, splitAttachmentSegments } from "./attachment-card";
 import { Shimmer } from "@/components/ai-elements/shimmer";
 import { Tool, ToolContent, ToolInput } from "@/components/ai-elements/tool";
 import { CollapsibleTrigger } from "@/components/ui/collapsible";
@@ -312,9 +313,29 @@ export function ChatMessageView({ message, live = false, onAnswerQuestion }: { m
   return (
     <Message from="user">
       <MessageContent className="rounded-2xl rounded-br-md bg-primary px-4 py-2.5 text-primary-foreground">
-        {message.parts.map((p) => (
-          <p key={p.id} className="whitespace-pre-wrap">{p.text}</p>
-        ))}
+        {message.parts.map((p) => {
+          const segs = splitAttachmentSegments(p.text);
+          if (segs.length === 1 && segs[0]!.kind === "text") {
+            return (
+              <p key={p.id} className="whitespace-pre-wrap">
+                {p.text}
+              </p>
+            );
+          }
+          return (
+            <div key={p.id}>
+              {segs.map((s, i) =>
+                s.kind === "attachment" ? (
+                  <AttachmentCard key={i} name={s.name} path={s.path} />
+                ) : s.text.trim() ? (
+                  <p key={i} className="whitespace-pre-wrap">
+                    {s.text}
+                  </p>
+                ) : null,
+              )}
+            </div>
+          );
+        })}
       </MessageContent>
     </Message>
   );

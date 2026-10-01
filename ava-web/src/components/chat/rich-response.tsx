@@ -18,6 +18,7 @@ import {
 } from "recharts";
 
 import { MessageResponse } from "@/components/ai-elements/message";
+import { AttachmentCard, splitAttachmentSegments } from "./attachment-card";
 
 /**
  * Agent markdown renderer: markdown, GFM tables, code (syntax + diff), mermaid,
@@ -39,24 +40,39 @@ interface ChartSpec {
 const COLORS = ["var(--chart-1)", "var(--chart-2)", "var(--chart-3)", "var(--chart-4)", "var(--chart-5)"];
 const CHART_RE = /```(?:chart|graph|recharts)\s*\n([\s\S]*?)```/g;
 
-type Segment = { kind: "md"; text: string } | { kind: "chart"; spec: ChartSpec } ;
+type Segment =
+  | { kind: "md"; text: string }
+  | { kind: "chart"; spec: ChartSpec }
+  | { kind: "attachment"; name: string; path: string };
 
 function split(text: string): Segment[] {
-  const out: Segment[] = [];
+  const raw: Segment[] = [];
   let last = 0;
   for (const m of text.matchAll(CHART_RE)) {
     const idx = m.index ?? 0;
     try {
       const spec = JSON.parse(m[1]!) as ChartSpec;
       if (!Array.isArray(spec.data) || !spec.data.length) continue;
-      if (idx > last) out.push({ kind: "md", text: text.slice(last, idx) });
-      out.push({ kind: "chart", spec });
+      if (idx > last) raw.push({ kind: "md", text: text.slice(last, idx) });
+      raw.push({ kind: "chart", spec });
       last = idx + m[0].length;
     } catch {
       /* incomplete while streaming — leave as code */
     }
   }
-  if (last < text.length) out.push({ kind: "md", text: text.slice(last) });
+  if (last < text.length) raw.push({ kind: "md", text: text.slice(last) });
+  // Expand `[Attachment: name (path)]` refs and local-path markdown images into media cards.
+  const out: Segment[] = [];
+  for (const s of raw) {
+    if (s.kind !== "md") {
+      out.push(s);
+      continue;
+    }
+    for (const t of splitAttachmentSegments(s.text)) {
+      if (t.kind === "attachment") out.push({ kind: "attachment", name: t.name, path: t.path });
+      else if (t.text.trim()) out.push({ kind: "md", text: t.text });
+    }
+  }
   return out;
 }
 
@@ -117,7 +133,13 @@ export const RichResponse = memo(({ text }: { text: string }) => {
   return (
     <>
       {segments.map((s, i) =>
-        s.kind === "chart" ? <ChartBlock key={i} spec={s.spec} /> : <MessageResponse key={i}>{s.text}</MessageResponse>,
+        s.kind === "chart" ? (
+          <ChartBlock key={i} spec={s.spec} />
+        ) : s.kind === "attachment" ? (
+          <AttachmentCard key={i} name={s.name} path={s.path} />
+        ) : (
+          <MessageResponse key={i}>{s.text}</MessageResponse>
+        ),
       )}
     </>
   );

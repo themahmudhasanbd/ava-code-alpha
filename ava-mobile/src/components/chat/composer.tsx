@@ -1185,7 +1185,7 @@ export const Composer = forwardRef<TextInput, Props>(
           title="Prompt actions & tools"
           onClose={close}
         >
-          <Text style={[styles.sectionHeader, font("bold")]}>MODEL & REASONING</Text>
+          <Text style={[styles.sectionHeader, font("bold")]}>Model & reasoning</Text>
           <FloatingOptionRow
             icon={Cpu}
             iconColor={COLORS.primary}
@@ -1201,7 +1201,7 @@ export const Composer = forwardRef<TextInput, Props>(
             onClick={() => setPanel("sandbox")}
           />
 
-          <Text style={[styles.sectionHeader, font("bold")]}>WORKSPACE TOOLS</Text>
+          <Text style={[styles.sectionHeader, font("bold")]}>Workspace tools</Text>
           <FloatingOptionRow
             icon={PlusCircle}
             iconColor={COLORS.foreground}
@@ -1234,7 +1234,7 @@ export const Composer = forwardRef<TextInput, Props>(
             }}
           />
 
-          <Text style={[styles.sectionHeader, font("bold")]}>DANGER ZONE</Text>
+          <Text style={[styles.sectionHeader, font("bold")]}>Danger zone</Text>
           <FloatingOptionRow
             icon={Trash2}
             destructive
@@ -1255,7 +1255,7 @@ export const Composer = forwardRef<TextInput, Props>(
           searchQuery={searchQuery}
           onSearchChange={setSearchQuery}
         >
-          <Text style={[styles.sectionHeader, font("bold")]}>THINKING DEPTH</Text>
+          <Text style={[styles.sectionHeader, font("bold")]}>Thinking depth</Text>
           <View style={styles.effortRow}>
             {REASONING_EFFORTS.map((e) => (
               <TouchableOpacity
@@ -1281,7 +1281,7 @@ export const Composer = forwardRef<TextInput, Props>(
           </View>
 
           <Text style={[styles.sectionHeader, font("bold")]}>
-            MODELS ({filteredModels.length})
+            Models ({filteredModels.length})
           </Text>
           {filteredModels.map((m) => (
             <FloatingOptionRow
@@ -1329,8 +1329,8 @@ export const Composer = forwardRef<TextInput, Props>(
 const styles = StyleSheet.create({
   container: {
     position: "relative",
-    paddingHorizontal: 12,
-    paddingTop: 8,
+    paddingHorizontal: 14,
+    paddingTop: 10,
     paddingBottom: Platform.OS === "ios" ? 22 : 12,
     backgroundColor: "transparent",
   },
@@ -1349,17 +1349,17 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 4,
-    height: 24,
-    paddingHorizontal: 10,
+    height: 26,
+    paddingHorizontal: 12,
     borderRadius: 999,
     backgroundColor: COLORS.card,
-    borderWidth: 1,
+    borderWidth: StyleSheet.hairlineWidth,
     borderColor: COLORS.border,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.08,
+    shadowOpacity: 0.06,
     shadowRadius: 3,
-    elevation: 3,
+    elevation: 2,
   },
   floatingPillText: {
     fontSize: 11,
@@ -1379,10 +1379,10 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 5,
-    borderRadius: 8,
-    paddingVertical: 3.5,
-    paddingHorizontal: 8,
-    borderWidth: 1,
+    borderRadius: 999,
+    paddingVertical: 4,
+    paddingHorizontal: 10,
+    borderWidth: StyleSheet.hairlineWidth,
   },
   tokenChipSlash: {},
   tokenChipMcp: {},
@@ -1405,18 +1405,18 @@ const styles = StyleSheet.create({
   },
 
   composerCard: {
-    borderRadius: 26,
-    paddingHorizontal: 14,
-    paddingTop: 10,
-    paddingBottom: 8,
+    borderRadius: 28,
+    paddingHorizontal: 16,
+    paddingTop: 12,
+    paddingBottom: 10,
     backgroundColor: COLORS.card,
-    borderWidth: 1,
+    borderWidth: StyleSheet.hairlineWidth,
     borderColor: COLORS.glassBorder,
     shadowColor: COLORS.glassShadow,
-    shadowOffset: { width: 0, height: -3 },
-    shadowOpacity: 0.28,
-    shadowRadius: 12,
-    elevation: 8,
+    shadowOffset: { width: 0, height: -2 },
+    shadowOpacity: 0.12,
+    shadowRadius: 10,
+    elevation: 3,
   },
   attachmentsRow: {
     flexDirection: "row",
@@ -1428,10 +1428,10 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     backgroundColor: COLORS.secondary,
-    borderRadius: 12,
-    paddingVertical: 4,
-    paddingHorizontal: 8,
-    borderWidth: 1,
+    borderRadius: 999,
+    paddingVertical: 5,
+    paddingHorizontal: 10,
+    borderWidth: StyleSheet.hairlineWidth,
     borderColor: COLORS.border,
     gap: 6,
     maxWidth: 160,
@@ -1524,7 +1524,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    paddingTop: 6,
+    paddingTop: 10,
     borderTopWidth: StyleSheet.hairlineWidth,
     borderTopColor: COLORS.border,
   },
@@ -1535,9 +1535,9 @@ const styles = StyleSheet.create({
     paddingRight: 8,
   },
   plusBtn: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -1545,10 +1545,10 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 5,
-    height: 30,
-    paddingHorizontal: 10,
-    borderRadius: 15,
-    borderWidth: 1,
+    height: 32,
+    paddingHorizontal: 11,
+    borderRadius: 999,
+    borderWidth: StyleSheet.hairlineWidth,
     borderColor: COLORS.border,
   },
   toolPillText: {
@@ -1561,16 +1561,16 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   connectingBtn: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     alignItems: "center",
     justifyContent: "center",
   },
   micBtn: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -1583,22 +1583,22 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   stopBtn: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     backgroundColor: COLORS.destructive,
     alignItems: "center",
     justifyContent: "center",
     shadowColor: COLORS.destructive,
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.35,
+    shadowOpacity: 0.25,
     shadowRadius: 4,
     elevation: 3,
   },
   sendBtn: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -1606,7 +1606,7 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.primary,
     shadowColor: COLORS.primary,
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.35,
+    shadowOpacity: 0.25,
     shadowRadius: 4,
     elevation: 3,
   },
@@ -1630,7 +1630,7 @@ const styles = StyleSheet.create({
     maxHeight: Dimensions.get("window").height * 0.75,
     shadowColor: COLORS.glassShadow,
     shadowOffset: { width: 0, height: -6 },
-    shadowOpacity: 0.35,
+    shadowOpacity: 0.22,
     shadowRadius: 20,
     elevation: 12,
   },
@@ -1647,17 +1647,17 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-between",
     paddingBottom: 10,
-    borderBottomWidth: 1,
+    borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: COLORS.border,
   },
   popupBackBtn: {
-    padding: 6,
-    borderRadius: 8,
+    padding: 7,
+    borderRadius: 999,
     backgroundColor: COLORS.secondary,
   },
   popupCloseBtn: {
-    padding: 6,
-    borderRadius: 8,
+    padding: 7,
+    borderRadius: 999,
     backgroundColor: COLORS.secondary,
   },
   popupTitle: {
@@ -1670,12 +1670,12 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     backgroundColor: COLORS.secondary,
-    borderWidth: 1,
+    borderWidth: StyleSheet.hairlineWidth,
     borderColor: COLORS.border,
-    borderRadius: 10,
-    paddingHorizontal: 8,
-    height: 36,
-    gap: 6,
+    borderRadius: 22,
+    paddingHorizontal: 12,
+    height: 40,
+    gap: 8,
     marginTop: 8,
     marginBottom: 6,
   },
@@ -1690,16 +1690,16 @@ const styles = StyleSheet.create({
   },
   popupContent: {
     paddingTop: 8,
-    gap: 6,
+    gap: 8,
   },
   optionRow: {
     flexDirection: "row",
     alignItems: "center",
     gap: 12,
-    padding: 11,
-    borderRadius: 12,
-    backgroundColor: COLORS.secondary,
-    borderWidth: 1,
+    padding: 14,
+    borderRadius: 16,
+    backgroundColor: COLORS.card,
+    borderWidth: StyleSheet.hairlineWidth,
     borderColor: COLORS.border,
   },
   optionRowActive: {
@@ -1707,13 +1707,13 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.accent,
   },
   optionRowDestructive: {
-    borderColor: "rgba(239, 68, 68, 0.3)",
-    backgroundColor: "rgba(239, 68, 68, 0.08)",
+    borderColor: COLORS.destructive + "4D",
+    backgroundColor: COLORS.destructive + "14",
   },
   optionIconBox: {
-    width: 32,
-    height: 32,
-    borderRadius: 8,
+    width: 36,
+    height: 36,
+    borderRadius: 10,
     backgroundColor: COLORS.secondary,
     alignItems: "center",
     justifyContent: "center",
@@ -1722,7 +1722,7 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.accent,
   },
   optionIconBoxDestructive: {
-    backgroundColor: "rgba(239, 68, 68, 0.15)",
+    backgroundColor: COLORS.destructive + "26",
   },
   optionContent: {
     flex: 1,
@@ -1743,9 +1743,9 @@ const styles = StyleSheet.create({
     color: COLORS.destructive,
   },
   optionBadge: {
-    paddingHorizontal: 5,
+    paddingHorizontal: 6,
     paddingVertical: 1,
-    borderRadius: 4,
+    borderRadius: 999,
     backgroundColor: COLORS.accent,
   },
   optionBadgeText: {
@@ -1758,9 +1758,9 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   sectionHeader: {
-    fontSize: 10.5,
+    fontSize: 12,
     color: COLORS.mutedForeground,
-    letterSpacing: 0.6,
+    letterSpacing: 0.2,
     paddingHorizontal: 8,
     paddingTop: 10,
     paddingBottom: 4,
@@ -1775,14 +1775,14 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: "center",
     justifyContent: "center",
-    paddingVertical: 7,
-    borderRadius: 8,
-    backgroundColor: COLORS.secondary,
-    borderWidth: 1,
+    paddingVertical: 9,
+    borderRadius: 999,
+    backgroundColor: "transparent",
+    borderWidth: StyleSheet.hairlineWidth,
     borderColor: COLORS.border,
   },
   effortBtnActive: {
-    backgroundColor: COLORS.primary,
+    backgroundColor: COLORS.primary + "14",
     borderColor: COLORS.primary,
   },
   effortBtnText: {
@@ -1791,7 +1791,7 @@ const styles = StyleSheet.create({
     textTransform: "capitalize",
   },
   effortBtnTextActive: {
-    color: COLORS.primaryForeground,
+    color: COLORS.primary,
   },
   sandboxHintText: {
     fontSize: 11,

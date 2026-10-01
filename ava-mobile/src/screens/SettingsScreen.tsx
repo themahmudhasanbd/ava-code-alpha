@@ -58,7 +58,7 @@ function NavTile({
         <Icon size={18} color={tint} />
       </View>
       <View style={styles.tileContent}>
-        <Text style={[styles.tileTitle, { color: colors.foreground }, font("medium")]}>
+        <Text style={[styles.tileTitle, { color: colors.foreground }, font("semibold")]}>
           {title}
         </Text>
         <Text
@@ -68,7 +68,7 @@ function NavTile({
           {subtitle}
         </Text>
       </View>
-      <ChevronRight size={16} color={colors.mutedForeground} />
+      <ChevronRight size={18} color={colors.mutedForeground} />
     </TouchableOpacity>
   );
 }
@@ -77,14 +77,24 @@ function QuickRow({
   label,
   value,
   monoValue,
+  last,
 }: {
   label: string;
   value: string;
   monoValue?: boolean;
+  last?: boolean;
 }) {
   const { colors } = useTheme();
   return (
-    <View style={styles.quickRow}>
+    <View
+      style={[
+        styles.quickRow,
+        !last && {
+          borderBottomWidth: StyleSheet.hairlineWidth,
+          borderBottomColor: colors.border,
+        },
+      ]}
+    >
       <Text style={[styles.quickLabel, { color: colors.mutedForeground }, font("regular")]}>
         {label}
       </Text>
@@ -153,7 +163,7 @@ export function SettingsScreen() {
           />
           <QuickRow label="Active Model" value={modelId || "Server Default"} monoValue />
           <QuickRow label="Appearance" value={themeLabel} />
-          <QuickRow label="Client" value={`${APP.name} Mobile v${APP.version}`} />
+          <QuickRow label="Client" value={`${APP.name} Mobile v${APP.version}`} last />
         </Surface>
 
         {/* ── Appearance & UI ── */}
@@ -270,34 +280,34 @@ export function SettingsScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  content: { padding: 16, paddingBottom: 40, gap: 20 },
-  section: { gap: 10 },
+  content: { padding: 20, paddingBottom: 40, gap: 24 },
+  section: { gap: 12 },
   quickCard: {
-    borderRadius: 16,
-    padding: 12,
-    gap: 6,
-    borderWidth: 1,
+    borderRadius: 20,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderWidth: StyleSheet.hairlineWidth,
   },
   quickRow: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    paddingVertical: 4,
+    paddingVertical: 8,
   },
-  quickLabel: { fontSize: 12 },
-  quickValue: { fontSize: 12, maxWidth: "60%" },
+  quickLabel: { fontSize: 12.5 },
+  quickValue: { fontSize: 12.5, maxWidth: "60%" },
   tileGroup: {
-    borderRadius: 16,
-    borderWidth: 1,
+    borderRadius: 20,
+    borderWidth: StyleSheet.hairlineWidth,
     overflow: "hidden",
   },
   tile: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 12,
-    paddingHorizontal: 14,
-    paddingVertical: 14,
-    borderBottomWidth: 1,
+    gap: 14,
+    paddingHorizontal: 16,
+    paddingVertical: 15,
+    borderBottomWidth: StyleSheet.hairlineWidth,
   },
   tileIcon: {
     width: 36,
@@ -307,16 +317,16 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   tileContent: { flex: 1, gap: 2 },
-  tileTitle: { fontSize: 13.5 },
-  tileSubtitle: { fontSize: 11.5 },
+  tileTitle: { fontSize: 14, lineHeight: 20 },
+  tileSubtitle: { fontSize: 12, lineHeight: 16, letterSpacing: 0.2 },
   actionRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 12,
-    paddingHorizontal: 14,
-    paddingVertical: 14,
+    gap: 14,
+    paddingHorizontal: 16,
+    paddingVertical: 15,
   },
-  actionText: { fontSize: 13 },
-  footer: { alignItems: "center", paddingVertical: 12 },
-  footerText: { fontSize: 11 },
+  actionText: { fontSize: 13.5, lineHeight: 20 },
+  footer: { alignItems: "center", paddingVertical: 16 },
+  footerText: { fontSize: 11.5 },
 });

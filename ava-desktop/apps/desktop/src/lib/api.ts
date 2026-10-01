@@ -907,7 +907,7 @@ export const api = {
       IPC.invoke.mcpList,
       query,
     ),
-  /** Create or replace a server; the id decides which level-local file. */
+  /** Create or replace a server in ava-core's global MCP registry (config/batchWrite + reload). */
   upsertMcpServer: (server: McpServerInput) =>
     invoke<{ server: McpServerRecord }>(IPC.invoke.mcpUpsert, server),
   removeMcpServer: (
@@ -919,15 +919,6 @@ export const api = {
     enabled: boolean,
     query?: Partial<AgentCapabilityQuery>,
   ) => invoke(IPC.invoke.mcpSetEnabled, { id, enabled, ...query }),
-  setMcpServerScope: (id: string, scope: ActivationScope) =>
-    invoke(IPC.invoke.mcpSetScope, { id, scope }),
-  /**
-   * Move one server to the other level. The document is moved, not copied, and
-   * the response carries the id it ended up under: a destination that already
-   * holds the same id or name renames the arriving server.
-   */
-  transferMcpServer: (move: AgentCapabilityMove) =>
-    invoke<{ server: McpServerRecord }>(IPC.invoke.mcpTransfer, move),
   /** Force one handshake and report what happened, for the editor's test button. */
   testMcpServer: (id: string, query?: Partial<AgentCapabilityQuery>) =>
     invoke<{ status: McpServerStatus }>(IPC.invoke.mcpTest, { id, ...query }),
@@ -936,12 +927,6 @@ export const api = {
     invoke<{ ok: boolean; loginId: string }>(IPC.invoke.mcpOauthStart, { id, ...query }),
   cancelMcpOAuth: (payload: { loginId?: string; id?: string }) =>
     invoke<{ ok: boolean }>(IPC.invoke.mcpOauthCancel, payload),
-  /** Accept a pasted `mcpServers` block; bad entries are reported, not fatal. */
-  importMcpServers: (text: string) =>
-    invoke<{
-      imported: McpServerRecord[];
-      failed: Array<{ id: string; reason: string }>;
-    }>(IPC.invoke.mcpImport, { text }),
   /**
    * Scan third-party AI-tool config files for MCP server definitions. The
    * scanner never throws; a source that failed to read is reported with an

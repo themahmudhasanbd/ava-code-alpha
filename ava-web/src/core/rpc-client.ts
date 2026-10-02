@@ -17,6 +17,7 @@ export class RpcClient {
   private opening: Promise<void> | null = null;
   private retry: ReturnType<typeof setTimeout> | null = null;
   private closed = false;
+  private heartbeat: ReturnType<typeof setInterval> | null = null;
   status: ConnectionStatus = "offline";
 
   constructor(private serverUrl: string, private token: string) {}
@@ -29,6 +30,38 @@ export class RpcClient {
   private setStatus(s: ConnectionStatus) {
     this.status = s;
     this.statusListeners.forEach((l) => l(s));
+  }
+
+  /** App-level keepalive: a socket that dies without firing `onclose` (half-open
+   * after a server crash) would otherwise look connected forever. A cheap
+   * server/diagnostics round trip every 30s proves the connection is live; a
+   * failed ping force-closes the socket so the normal onclose -> retry flow
+   * recovers the connection. */
+  private startHeartbeat() {
+    this.stopHeartbeat();
+    this.heartbeat = setInterval(() => void this.ping(), 30_000);
+  }
+
+  private stopHeartbeat() {
+    if (this.heartbeat) clearInterval(this.heartbeat);
+    this.heartbeat = null;
+  }
+
+  private async ping() {
+    if (this.closed || this.status !== "online") return;
+    try {
+      await Promise.race([
+        this.send("server/diagnostics", {}),
+        new Promise((_, reject) => setTimeout(() => reject(new Error("ping timeout")), 10_000)),
+      ]);
+    } catch {
+      // Dead or wedged socket: close it so onclose schedules a reconnect.
+      try {
+        this.ws?.close();
+      } catch {
+        /* ignore */
+      }
+    }
   }
 
   connect(): Promise<void> {
@@ -46,6 +79,7 @@ export class RpcClient {
             capabilities: { experimentalApi: true },
           });
           this.setStatus("online");
+          this.startHeartbeat();
           resolve();
         } catch (e) {
           reject(e as Error);
@@ -55,10 +89,12 @@ export class RpcClient {
       };
       ws.onmessage = (ev) => this.handle(ev.data);
       ws.onerror = () => {
+        this.stopHeartbeat();
         this.opening = null;
         reject(new Error("Could not reach AvA server"));
       };
       ws.onclose = () => {
+        this.stopHeartbeat();
         this.opening = null;
         this.ws = null;
         this.setStatus("offline");

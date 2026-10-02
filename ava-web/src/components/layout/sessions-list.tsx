@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "@tanstack/react-router";
-import { Check, ChevronDown, ChevronRight, Folder, MessageSquare, MoreHorizontal, Pencil, Pin, PinOff, Plus, Trash2, X } from "lucide-react";
+import { Check, ChevronDown, ChevronRight, Folder, MessageSquare, MoreHorizontal, Pencil, Pin, PinOff, Plus, Search, Trash2, X } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
@@ -50,6 +50,7 @@ export function SessionsList({ onPick }: { onPick: () => void }) {
   const [editingSession, setEditingSession] = useState<string | null>(null);
   const [sessionDraft, setSessionDraft] = useState("");
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+  const [query, setQuery] = useState("");
 
   useEffect(() => {
     setPins(readJson<string[]>(PIN_KEY, []));
@@ -57,8 +58,13 @@ export function SessionsList({ onPick }: { onPick: () => void }) {
   }, []);
 
   const activeDirectory = data?.find((session) => session.id === (workingSessionId ?? activeSessionId))?.directory;
+  const visible = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    if (!q) return data ?? [];
+    return (data ?? []).filter((session) => session.title.toLowerCase().includes(q));
+  }, [data, query]);
   const groups = useMemo(() => {
-    const grouped = groupByProject(data ?? []);
+    const grouped = groupByProject(visible);
     return grouped.sort(([a], [b]) => {
       if (a === activeDirectory) return -1;
       if (b === activeDirectory) return 1;
@@ -67,7 +73,7 @@ export function SessionsList({ onPick }: { onPick: () => void }) {
       if (ai >= 0 || bi >= 0) return ai < 0 ? 1 : bi < 0 ? -1 : ai - bi;
       return projectName(a).localeCompare(projectName(b));
     });
-  }, [data, pins, activeDirectory]);
+  }, [visible, pins, activeDirectory]);
 
   useEffect(() => {
     if (activeDirectory) setExpanded((items) => (items.includes(activeDirectory) ? items : [...items, activeDirectory]));
@@ -119,6 +125,31 @@ export function SessionsList({ onPick }: { onPick: () => void }) {
         <Plus /> New session
       </Button>
 
+      {data && data.length > 0 && (
+        <div className="relative mb-3">
+          <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            value={query}
+            onChange={(event) => setQuery(event.target.value)}
+            onKeyDown={(event) => { if (event.key === "Escape") setQuery(""); }}
+            placeholder="Search sessions"
+            aria-label="Search sessions"
+            className="h-10 rounded-xl pl-9 pr-9"
+          />
+          {query !== "" && (
+            <Button
+              variant="ghost"
+              size="icon-sm"
+              aria-label="Clear search"
+              onClick={() => setQuery("")}
+              className="absolute right-1.5 top-1/2 -translate-y-1/2"
+            >
+              <X />
+            </Button>
+          )}
+        </div>
+      )}
+
       {status !== "online" && <p className="px-2 text-sm text-muted-foreground">Waiting for server connection…</p>}
       {isLoading && <SkeletonRows />}
       {error && <p className="px-2 text-sm text-destructive">Could not load sessions.</p>}
@@ -135,10 +166,15 @@ export function SessionsList({ onPick }: { onPick: () => void }) {
         />
       )}
 
+      {data && data.length > 0 && visible.length === 0 && query.trim() !== "" && (
+        <p className="px-2 text-sm text-muted-foreground">No sessions match &ldquo;{query.trim()}&rdquo;.</p>
+      )}
+
       <div className="space-y-2">
         {groups.map(([dir, sessions]) => {
           const isActiveWorkspace = dir === activeDirectory;
-          const isOpen = isActiveWorkspace || expanded.includes(dir);
+          const searching = query.trim() !== "";
+          const isOpen = searching || isActiveWorkspace || expanded.includes(dir);
           const pinned = pins.includes(dir);
           return (
             <section key={dir} className={cn("rounded-xl", isActiveWorkspace && "bg-sidebar-accent/55")}> 

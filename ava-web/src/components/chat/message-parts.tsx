@@ -26,6 +26,7 @@ import { Tool, ToolContent, ToolInput } from "@/components/ai-elements/tool";
 import { CollapsibleTrigger } from "@/components/ui/collapsible";
 import { AIMascot } from "@/components/ui/ask-ai";
 import type { ChatMessage, MessagePart } from "@/core/types";
+import { isApprovalMethod } from "@/core/api/chat";
 import { cn } from "@/lib/utils";
 
 // ---------- helpers -------------------------------------------------------
@@ -265,7 +266,11 @@ function QuestionCard({ part, onAnswer }: { part: MessagePart; onAnswer?: ((ques
               </button>
             ))}
             {!q.options?.length && !answered && (
-              <p className="text-xs text-muted-foreground">Type your answer in the composer below</p>
+              <p className="text-xs text-muted-foreground">
+                {q.method && isApprovalMethod(q.method)
+                  ? "Respond with the approval card above the composer"
+                  : "Type your answer in the composer below"}
+              </p>
             )}
           </div>
         );

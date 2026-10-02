@@ -11,6 +11,7 @@ import {
   interruptTurn,
   isApprovalMethod,
   listQueuedPrompts,
+  parseElicitationForm,
   runTurn,
   startQueuedPrompt,
   type TurnHandlers,
@@ -163,6 +164,10 @@ export function useChat() {
           const qId = question.id || makeId("q");
           if (question.method && isApprovalMethod(question.method)) {
             const detail = approvalDetail(question.method, question.params);
+            const form =
+              question.method === "mcpServer/elicitation/request"
+                ? (parseElicitationForm(question.params) ?? undefined)
+                : undefined;
             setPendingApprovals((prev) =>
               prev.some((a) => a.id === qId)
                 ? prev
@@ -175,6 +180,7 @@ export function useChat() {
                       detail,
                       params: question.params,
                       requestId,
+                      form,
                     },
                   ]
             );
@@ -216,6 +222,9 @@ export function useChat() {
           if (threadId) qc.invalidateQueries({ queryKey: keys.session(threadId) });
           // Auto-drain queue: if the server has queued prompts, start the next one.
           if (!err && info !== "Stopped") scheduleDrain();
+          // The turn ended — any still-pending approval/elicitation cards are
+          // stale (their request ids are dead). Same dismissal as in stop().
+          setPendingApprovals([]);
         },
       };
     },
@@ -343,11 +352,11 @@ export function useChat() {
    * corresponding question part in the transcript as answered.
    */
   const answerPendingApproval = useCallback(
-    (id: string, approved: boolean) => {
+    (id: string, approved: boolean, content?: Record<string, unknown> | null) => {
       const approval = pendingApprovals.find((a) => a.id === id);
       if (!approval) return;
       try {
-        if (rpc) answerApproval(rpc, approval.requestId, approval.method, approved, approval.params);
+        if (rpc) answerApproval(rpc, approval.requestId, approval.method, approved, approval.params, content);
       } catch (e) {
         console.warn("[useChat.answerPendingApproval] failed:", e);
       }
@@ -446,6 +455,10 @@ export function useChat() {
     aidRef.current = null;
     setStatus("ready");
     setWorkingSessionId(null);
+    // The turn is dead but its elicitation/approval request ids die with it —
+    // drop any sticky cards so a stale respond() can't linger (mirrors the
+    // desktop TUI's resolved-request dismissal).
+    setPendingApprovals([]);
   }, [rpc, activeSessionId, setWorkingSessionId, patchAssistant]);
 
   const clear = useCallback(() => setMessages([]), []);

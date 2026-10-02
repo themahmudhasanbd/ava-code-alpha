@@ -121,7 +121,7 @@ export function ChatScreen() {
         <div className="px-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-2 sm:px-6 sm:pb-5">
           <div className="mx-auto max-w-3xl">
             {pendingApprovals.map((a) => (
-              <ApprovalCard key={a.id} approval={a} onRespond={(id, approved) => answerPendingApproval(id, approved)} />
+              <ApprovalCard key={a.id} approval={a} onRespond={(id, approved, content) => answerPendingApproval(id, approved, content)} />
             ))}
             {queuedPrompts.length > 0 && (
               <div className="glass mb-2 rounded-2xl border p-3">

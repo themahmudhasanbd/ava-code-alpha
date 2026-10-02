@@ -1,5 +1,5 @@
 import type { RpcClient } from "../rpc-client";
-import type { AgentQuestion, MessagePart, PlanStep, QueuedPrompt, TurnStats } from "../types";
+import type { AgentQuestion, ElicitationField, MessagePart, PlanStep, QueuedPrompt, TurnStats } from "../types";
 import { itemToPart, toPlanSteps } from "./items";
 import { formatCoreError } from "../errors";
 
@@ -47,6 +47,15 @@ export function approvalDetail(method: string, params: Raw): string | undefined 
   if (typeof params.reason === "string" && params.reason.trim()) {
     parts.push(params.reason.trim().slice(0, 300));
   }
+  // Elicitation modes carry these (url mode: openable link; userVerification
+  // mode: what the user is verifying) — surface them so the card is actionable
+  // instead of showing a bare Allow/Deny for an unseen prompt.
+  if (typeof params.url === "string" && params.url.trim()) {
+    parts.push(params.url.trim().slice(0, 300));
+  }
+  if (typeof params.description === "string" && params.description.trim()) {
+    parts.push(params.description.trim().slice(0, 500));
+  }
   // Wire format is camelCase (server serializes with serde rename_all) —
   // accept snake_case too in case an older server sends it.
   const serverName = params.serverName ?? params.server_name;
@@ -61,6 +70,92 @@ export function approvalDetail(method: string, params: Raw): string | undefined 
     parts.push(`cwd: ${params.cwd.trim()}`);
   }
   return parts.length ? parts.join("\n") : undefined;
+}
+
+/**
+ * Parses an MCP elicitation form (mcpServer/elicitation/request, form mode)
+ * into renderable fields. Mirrors the desktop TUI's form-mode parsing
+ * (ava-rs/tui mcp_server_elicitation.rs): object schemas with string fields
+ * become text inputs, enums/single-selects and booleans become selects, and
+ * anything the TUI cannot render (numbers, multi-selects, unknown shapes)
+ * returns null so the caller falls back to the plain Allow/Deny card.
+ */
+export function parseElicitationForm(params: Raw): ElicitationField[] | null {
+  if (!params || typeof params !== "object") return null;
+  // The TUI only renders forms for "form" mode; other modes (openai/form,
+  // url, userVerification) keep the Allow/Deny fallback.
+  if (params.mode !== "form") return null;
+  const schema = params.requestedSchema;
+  if (!schema || typeof schema !== "object") return null;
+  if (schema.type !== "object") return null;
+  const props = schema.properties;
+  if (!props || typeof props !== "object") return null;
+  const ids = Object.keys(props);
+  if (ids.length === 0) return null;
+  const required = new Set(
+    Array.isArray(schema.required) ? schema.required.filter((r: unknown) => typeof r === "string") : [],
+  );
+  const fields: ElicitationField[] = [];
+  for (const id of ids) {
+    const prop = props[id];
+    if (!prop || typeof prop !== "object") return null;
+    const label = typeof prop.title === "string" && prop.title ? prop.title : id;
+    const description = typeof prop.description === "string" ? prop.description : undefined;
+    const field: ElicitationField = { id, label, description, required: required.has(id), kind: "text" };
+    const enumVals = Array.isArray(prop.enum) ? prop.enum : null;
+    const oneOf = Array.isArray(prop.oneOf) ? prop.oneOf : null;
+    if (enumVals && enumVals.length > 0) {
+      // Legacy enum: { enum: [...], enumNames?: [...] }
+      const names = Array.isArray(prop.enumNames) ? prop.enumNames : [];
+      const options: ElicitationField["options"] = [];
+      for (let i = 0; i < enumVals.length; i++) {
+        const v = enumVals[i];
+        if (typeof v !== "string" && typeof v !== "boolean") return null;
+        options.push({
+          label: typeof names[i] === "string" ? (names[i] as string) : String(v),
+          value: v as string | boolean,
+        });
+      }
+      field.kind = "select";
+      field.options = options;
+      if (prop.default !== undefined && options.some((o) => o.value === prop.default)) {
+        field.defaultValue = prop.default as string | boolean;
+      }
+    } else if (oneOf && oneOf.length > 0) {
+      // Single-select enum: { oneOf: [{ const, title? }] }
+      const options: ElicitationField["options"] = [];
+      for (const entry of oneOf) {
+        if (!entry || typeof entry !== "object" || entry.const === undefined) return null;
+        if (typeof entry.const !== "string" && typeof entry.const !== "boolean") return null;
+        options.push({
+          label: typeof entry.title === "string" ? entry.title : String(entry.const),
+          value: entry.const as string | boolean,
+        });
+      }
+      field.kind = "select";
+      field.options = options;
+      if (prop.default !== undefined && options.some((o) => o.value === prop.default)) {
+        field.defaultValue = prop.default as string | boolean;
+      }
+    } else if (prop.type === "string") {
+      field.kind = "text";
+      field.secret = prop.format === "password";
+      if (typeof prop.default === "string") field.defaultValue = prop.default;
+    } else if (prop.type === "boolean") {
+      field.kind = "select";
+      field.options = [
+        { label: "True", value: true },
+        { label: "False", value: false },
+      ];
+      if (typeof prop.default === "boolean") field.defaultValue = prop.default;
+    } else {
+      // Numbers, multi-select enums and unknown shapes are not rendered by
+      // the TUI either — fall back to the Allow/Deny card.
+      return null;
+    }
+    fields.push(field);
+  }
+  return fields;
 }
 
 /** Dedupes the "output truncated" notice per process. */
@@ -436,6 +531,7 @@ export function answerApproval(
   method: string,
   approved: boolean,
   params?: Raw,
+  content?: Record<string, unknown> | null,
 ): void {
   if (requestId == null) return;
   let response: Record<string, unknown> | null = null;
@@ -450,7 +546,12 @@ export function answerApproval(
         : { permissions: {}, scope: "turn" };
       break;
     case "mcpServer/elicitation/request":
-      response = { action: approved ? "accept" : "decline", content: null };
+      response = {
+        action: approved ? "accept" : "decline",
+        // Form-mode elicitations carry the filled fields on accept; the TUI
+        // sends content only for accept, null for decline/cancel.
+        content: approved ? (content ?? null) : null,
+      };
       break;
     default:
       return;

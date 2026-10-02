@@ -28,6 +28,31 @@ export interface AgentQuestion {
   answered?: boolean | undefined;
 }
 
+/** One selectable option of an elicitation form field. */
+export interface ElicitationFieldOption {
+  label: string;
+  /** Value sent back to the server (string for enums, boolean for booleans). */
+  value: string | boolean;
+}
+
+/**
+ * One input field of an MCP elicitation form (mcpServer/elicitation/request,
+ * form mode). Mirrors the desktop TUI's form-field model: text inputs for
+ * strings, selects for enums/booleans, required validation before submit.
+ */
+export interface ElicitationField {
+  id: string;
+  label: string;
+  description?: string | undefined;
+  required: boolean;
+  kind: "text" | "select";
+  /** Render as a password input (e.g. string format "password"). */
+  secret?: boolean | undefined;
+  options?: ElicitationFieldOption[] | undefined;
+  /** Preselected option value / prefilled text from the schema default. */
+  defaultValue?: string | boolean | undefined;
+}
+
 /** A pending server approval shown as a sticky card above the composer. */
 export interface PendingApproval {
   id: string;
@@ -36,6 +61,12 @@ export interface PendingApproval {
   detail?: string | undefined;
   params?: unknown;
   requestId?: number | string | undefined;
+  /**
+   * Parsed elicitation form fields (mcpServer/elicitation/request, form mode).
+   * When present and non-empty the card renders the fillable form (submit /
+   * dismiss) instead of the plain Allow/Deny buttons.
+   */
+  form?: ElicitationField[] | undefined;
 }
 
 export interface QueuedPrompt {

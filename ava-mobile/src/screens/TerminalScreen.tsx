@@ -42,17 +42,18 @@ import {
   TerminalEntry,
   TerminalTab,
 } from "@/state/terminal-store";
-import { COLORS } from "@/theme/colors";
+import { useStyles, useTheme } from "@/theme/theme-context";
+import type { ColorTokens } from "@/theme/palette";
 import { font, mono } from "@/theme/fonts";
 
 // ── Constants ─────────────────────────────────────────────────────────────
 
-const CONTROL_KEYS = [
+const CONTROL_KEYS: { label: string; key: string; danger?: boolean }[] = [
   { label: "ESC", key: "\x1b" },
   { label: "⌴ 2sp", key: "\t" },
   { label: "▲", key: "HIST_UP" },
   { label: "▼", key: "HIST_DOWN" },
-  { label: "C", key: "CTRL_C", color: COLORS.destructive },
+  { label: "C", key: "CTRL_C", danger: true },
   { label: "CLR", key: "CTRL_D" },
   { label: "L", key: "CLEAR" },
 ];
@@ -75,6 +76,8 @@ function nextEntryId(): number {
 export function TerminalScreen({ route }: { route?: { params?: { initialCwd?: string } } } = {}) {
   const navigation = useNavigation<any>();
   const { status, rpc } = useAva();
+  const { colors } = useTheme();
+  const styles = useStyles(createStyles);
 
   const initialCwd = route?.params?.initialCwd || APP.defaultCwd;
 
@@ -340,11 +343,11 @@ export function TerminalScreen({ route }: { route?: { params?: { initialCwd?: st
         )}
         <GlassIconButton icon={Menu} size={18} onPress={() => openAppDrawer(navigation)} />
         <View style={styles.badge}>
-          <TerminalSquare size={13} color={COLORS.primary} />
+          <TerminalSquare size={13} color={colors.primary} />
           <Text style={[styles.badgeText, mono("bold")]}>bash</Text>
         </View>
         <View style={styles.cwd}>
-          <Folder size={11} color={COLORS.mutedForeground} />
+          <Folder size={11} color={colors.mutedForeground} />
           <Text style={[styles.cwdText, mono("regular")]} numberOfLines={1}>
             {tab.cwd}
           </Text>
@@ -400,7 +403,7 @@ export function TerminalScreen({ route }: { route?: { params?: { initialCwd?: st
                       onPress={() => closeTab(t.id)}
                       hitSlop={{ top: 8, bottom: 8, left: 6, right: 6 }}
                     >
-                      <X size={12} color={t.id === activeTabId ? COLORS.primary : COLORS.mutedForeground} />
+                      <X size={12} color={t.id === activeTabId ? colors.primary : colors.mutedForeground} />
                     </TouchableOpacity>
                   )}
                 </TouchableOpacity>
@@ -454,9 +457,9 @@ export function TerminalScreen({ route }: { route?: { params?: { initialCwd?: st
                     hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
                   >
                     {copiedId === item.id ? (
-                      <Check size={12} color={COLORS.success} />
+                      <Check size={12} color={colors.success} />
                     ) : (
-                      <Copy size={12} color={COLORS.mutedForeground} />
+                      <Copy size={12} color={colors.mutedForeground} />
                     )}
                   </TouchableOpacity>
                 </View>
@@ -500,11 +503,20 @@ export function TerminalScreen({ route }: { route?: { params?: { initialCwd?: st
               {CONTROL_KEYS.map((ck) => (
                 <TouchableOpacity
                   key={ck.label}
-                  style={[styles.ctrlKey, ck.color && { borderColor: `${ck.color}40` }]}
+                  style={[
+                    styles.ctrlKey,
+                    ck.danger && { borderColor: colors.destructive + "40" },
+                  ]}
                   onPress={() => handleCtrl(ck.key)}
                   activeOpacity={0.6}
                 >
-                  <Text style={[styles.ctrlText, mono("bold"), ck.color && { color: ck.color }]}>
+                  <Text
+                    style={[
+                      styles.ctrlText,
+                      mono("bold"),
+                      ck.danger && { color: colors.destructive },
+                    ]}
+                  >
                     {ck.label}
                   </Text>
                 </TouchableOpacity>
@@ -549,9 +561,9 @@ export function TerminalScreen({ route }: { route?: { params?: { initialCwd?: st
           >
             <Text style={[styles.toggleT, font("medium")]}>CTRL</Text>
             {showCtrl ? (
-              <ChevronDown size={10} color={COLORS.mutedForeground} />
+              <ChevronDown size={10} color={colors.mutedForeground} />
             ) : (
-              <ChevronUp size={10} color={COLORS.mutedForeground} />
+              <ChevronUp size={10} color={colors.mutedForeground} />
             )}
           </TouchableOpacity>
           <TouchableOpacity
@@ -563,9 +575,9 @@ export function TerminalScreen({ route }: { route?: { params?: { initialCwd?: st
           >
             <Text style={[styles.toggleT, font("medium")]}>SYM</Text>
             {showSym ? (
-              <ChevronDown size={10} color={COLORS.mutedForeground} />
+              <ChevronDown size={10} color={colors.mutedForeground} />
             ) : (
-              <ChevronUp size={10} color={COLORS.mutedForeground} />
+              <ChevronUp size={10} color={colors.mutedForeground} />
             )}
           </TouchableOpacity>
         </View>
@@ -578,7 +590,7 @@ export function TerminalScreen({ route }: { route?: { params?: { initialCwd?: st
               ref={inputRef}
               style={[styles.input, mono("regular")]}
               placeholder="Enter command…"
-              placeholderTextColor={COLORS.mutedForeground}
+              placeholderTextColor={colors.mutedForeground}
               value={inputText}
               onChangeText={setInputText}
               onSubmitEditing={() => exec(inputText)}
@@ -593,9 +605,9 @@ export function TerminalScreen({ route }: { route?: { params?: { initialCwd?: st
               activeOpacity={0.7}
             >
               {isTabBusy ? (
-                <ActivityIndicator size={14} color="#FFF" />
+                <ActivityIndicator size={14} color={colors.primaryForeground} />
               ) : (
-                <CornerDownLeft size={14} color="#FFF" />
+                <CornerDownLeft size={14} color={colors.primaryForeground} />
               )}
             </TouchableOpacity>
           </Surface>
@@ -605,7 +617,8 @@ export function TerminalScreen({ route }: { route?: { params?: { initialCwd?: st
   );
 }
 
-const styles = StyleSheet.create({
+function createStyles(c: ColorTokens) {
+  return StyleSheet.create({
   header: {
     marginHorizontal: 12,
     marginTop: Platform.OS === "android" ? 8 : 4,
@@ -615,7 +628,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    borderRadius: 18,
+    borderRadius: 16,
     height: 56,
   },
   hLeft: { flexDirection: "row", alignItems: "center", gap: 8, flex: 1 },
@@ -624,28 +637,28 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 4,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 8,
-    backgroundColor: "rgba(66, 64, 225, 0.1)",
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 999,
+    backgroundColor: c.primary + "14",
   },
-  badgeText: { fontSize: 12, color: COLORS.primary },
+  badgeText: { fontSize: 12, color: c.primary },
   cwd: {
     flexDirection: "row",
     alignItems: "center",
     gap: 4,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 8,
-    backgroundColor: COLORS.secondary,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 999,
+    backgroundColor: c.secondary,
     maxWidth: 160,
   },
-  cwdText: { fontSize: 11, color: COLORS.mutedForeground },
+  cwdText: { fontSize: 11, color: c.mutedForeground },
 
   tabBar: {
-    backgroundColor: COLORS.card,
+    backgroundColor: c.card,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: COLORS.border,
+    borderBottomColor: c.border,
     paddingVertical: 4,
   },
   tab: {
@@ -654,109 +667,109 @@ const styles = StyleSheet.create({
     gap: 6,
     paddingHorizontal: 10,
     paddingVertical: 5,
-    borderRadius: 8,
-    backgroundColor: COLORS.secondary,
-    borderWidth: 1,
-    borderColor: COLORS.border,
+    borderRadius: 999,
+    backgroundColor: c.secondary,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: c.border,
   },
-  tabOn: { backgroundColor: "rgba(66, 64, 225, 0.1)", borderColor: COLORS.primary },
-  tabText: { fontSize: 11.5, color: COLORS.mutedForeground },
-  tabTextOn: { color: COLORS.primary, fontWeight: "600" },
+  tabOn: { backgroundColor: c.primary + "1A", borderColor: c.primary },
+  tabText: { fontSize: 11.5, color: c.mutedForeground },
+  tabTextOn: { color: c.primary, fontWeight: "600" },
 
   log: { paddingHorizontal: 14, paddingVertical: 10, gap: 10, flexGrow: 1 },
-  entry: { gap: 4 },
+  entry: { gap: 6 },
   prompt: { flexDirection: "row", alignItems: "center", gap: 6 },
-  dollar: { fontSize: 13, color: COLORS.primary },
-  cmd: { fontSize: 13, color: COLORS.foreground, flex: 1 },
-  exit: { paddingHorizontal: 5, paddingVertical: 1, borderRadius: 4 },
-  exitOk: { backgroundColor: "rgba(59, 179, 96, 0.12)" },
-  exitErr: { backgroundColor: "rgba(231, 0, 11, 0.12)" },
-  exitT: { fontSize: 9.5, color: COLORS.mutedForeground },
+  dollar: { fontSize: 13, color: c.primary },
+  cmd: { fontSize: 13, color: c.foreground, flex: 1 },
+  exit: { paddingHorizontal: 7, paddingVertical: 2, borderRadius: 999 },
+  exitOk: { backgroundColor: c.success + "1F" },
+  exitErr: { backgroundColor: c.destructive + "1F" },
+  exitT: { fontSize: 9.5, color: c.mutedForeground },
   copyBtn: {
-    padding: 4,
-    borderRadius: 6,
-    backgroundColor: "rgba(255, 255, 255, 0.04)",
+    padding: 5,
+    borderRadius: 999,
+    backgroundColor: c.codeActive,
   },
   outputBox: {
-    backgroundColor: COLORS.codeBg,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: "rgba(255, 255, 255, 0.06)",
+    backgroundColor: c.codeBg,
+    borderRadius: 16,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: c.codeBorder,
     overflow: "hidden",
   },
   out: {
     fontSize: 12,
     lineHeight: 17,
-    color: COLORS.codeForeground,
-    padding: 8,
+    color: c.codeForeground,
+    padding: 10,
   },
   expandBar: {
-    paddingVertical: 6,
+    paddingVertical: 7,
     paddingHorizontal: 10,
-    backgroundColor: "rgba(255, 255, 255, 0.03)",
-    borderTopWidth: 1,
-    borderTopColor: "rgba(255, 255, 255, 0.06)",
+    backgroundColor: c.codeActive,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: c.codeBorder,
     alignItems: "center",
   },
   expandText: {
-    fontSize: 10.5,
-    color: COLORS.primary,
+    fontSize: 11,
+    color: c.primary,
   },
 
   ctrlBar: {
-    backgroundColor: COLORS.card,
+    backgroundColor: c.card,
     borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: COLORS.border,
+    borderTopColor: c.border,
     paddingVertical: 4,
   },
   ctrlKey: {
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 6,
-    backgroundColor: COLORS.secondary,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    minWidth: 32,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 999,
+    backgroundColor: c.secondary,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: c.border,
+    minWidth: 34,
     alignItems: "center",
   },
-  ctrlText: { fontSize: 11, color: COLORS.mutedForeground },
+  ctrlText: { fontSize: 11, color: c.mutedForeground },
 
   symBar: {
-    backgroundColor: COLORS.card,
+    backgroundColor: c.card,
     borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: COLORS.border,
+    borderTopColor: c.border,
     paddingVertical: 3,
     gap: 2,
   },
   symKey: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 5,
-    backgroundColor: COLORS.secondary,
-    minWidth: 28,
+    paddingHorizontal: 9,
+    paddingVertical: 5,
+    borderRadius: 999,
+    backgroundColor: c.secondary,
+    minWidth: 30,
     alignItems: "center",
   },
-  symText: { fontSize: 11, color: COLORS.foreground },
+  symText: { fontSize: 11, color: c.foreground },
 
   toggles: {
     flexDirection: "row",
     justifyContent: "center",
     gap: 12,
     paddingVertical: 4,
-    backgroundColor: COLORS.card,
+    backgroundColor: c.card,
     borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: COLORS.border,
+    borderTopColor: c.border,
   },
   toggle: {
     flexDirection: "row",
     alignItems: "center",
     gap: 3,
-    paddingHorizontal: 10,
-    paddingVertical: 3,
-    borderRadius: 6,
-    backgroundColor: COLORS.secondary,
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+    borderRadius: 999,
+    backgroundColor: c.secondary,
   },
-  toggleT: { fontSize: 10, color: COLORS.mutedForeground },
+  toggleT: { fontSize: 10, color: c.mutedForeground },
 
   inputBar: {
     paddingHorizontal: 12,
@@ -771,14 +784,16 @@ const styles = StyleSheet.create({
     height: 48,
     gap: 8,
   },
-  dollarInput: { fontSize: 14, color: COLORS.primary },
-  input: { flex: 1, fontSize: 13, color: COLORS.foreground, paddingVertical: 0 },
+  dollarInput: { fontSize: 14, color: c.primary },
+  input: { flex: 1, fontSize: 13, color: c.foreground, paddingVertical: 0 },
   sendBtn: {
     width: 32,
     height: 32,
-    borderRadius: 10,
-    backgroundColor: COLORS.primary,
+    borderRadius: 16,
+    backgroundColor: c.primary,
     alignItems: "center",
     justifyContent: "center",
   },
-});
+  });
+}
+

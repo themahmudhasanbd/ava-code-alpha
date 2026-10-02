@@ -45,7 +45,8 @@ import { MediaPreviewGallery } from "./media-preview-gallery";
 import { getToolIcon } from "./tool-icons";
 import { Surface } from "@/components/kit";
 import type { ChatMessage, MediaItem, MessagePart } from "@/core/types";
-import { COLORS, useTheme } from "@/theme/colors";
+import type { ColorTokens } from "@/theme/colors";
+import { useStyles, useTheme } from "@/theme/theme-context";
 import { formatDuration as fmtDuration, formatTokens as fmtTokens } from "@/lib/format";
 import { font, FONTS, mono } from "@/theme/fonts";
 import { useAva } from "@/state/ava-provider";
@@ -67,6 +68,8 @@ function useElapsed(startedAt?: number, running?: boolean) {
 }
 
 function NoticeStep({ part }: { part: MessagePart }) {
+  const { colors } = useTheme();
+  const styles = useStyles(createStyles);
   const tone = part.meta?.tone ?? "info";
   const isErr = tone === "error";
   const Icon = isErr ? AlertTriangle : Info;
@@ -80,7 +83,7 @@ function NoticeStep({ part }: { part: MessagePart }) {
     >
       <Icon
         size={14}
-        color={isErr ? COLORS.destructive : COLORS.mutedForeground}
+        color={isErr ? colors.destructive : colors.mutedForeground}
       />
       <View style={{ flex: 1 }}>
         <InlineText
@@ -141,6 +144,7 @@ function AssistantTurn({
 }) {
   const { rpc } = useAva();
   const { colors } = useTheme();
+  const styles = useStyles(createStyles);
   const elapsed = useElapsed(message.stats?.startedAt, live);
   const steps = message.parts.filter((p) => p.kind === "tool").length;
   const workflowParts = message.parts.filter(
@@ -399,7 +403,7 @@ function AssistantTurn({
                     activeOpacity={0.7}
                   >
                     <Text style={[styles.questionOptionText, font("medium", opt)]}>{opt}</Text>
-                    {isAnswered && <Check size={13} color={COLORS.success} />}
+                    {isAnswered && <Check size={13} color={colors.success} />}
                   </TouchableOpacity>
                 );
               })}
@@ -470,9 +474,9 @@ function AssistantTurn({
               accessibilityLabel={copied ? "Copied" : "Copy output"}
             >
               {copied ? (
-                <Check size={12} color={COLORS.success} />
+                <Check size={12} color={colors.success} />
               ) : (
-                <Copy size={12} color={COLORS.mutedForeground} />
+                <Copy size={12} color={colors.mutedForeground} />
               )}
             </TouchableOpacity>
           ) : null}
@@ -537,6 +541,7 @@ function detectFileKind(path: string, name: string): { kind: ParsedUserAttachmen
 
 function AttachmentChip({ item }: { item: ParsedUserAttachment }) {
   const { colors } = useTheme();
+  const styles = useStyles(createStyles);
 
   const getIconAndColor = () => {
     switch (item.kind) {
@@ -588,6 +593,8 @@ function AttachmentChip({ item }: { item: ParsedUserAttachment }) {
 
 function UserTurnView({ message }: { message: ChatMessage }) {
   const { auth } = useAva();
+  const { colors } = useTheme();
+  const styles = useStyles(createStyles);
   const { data: userProfileData } = useUserProfile();
   const profile = userProfileData?.profile;
 
@@ -733,9 +740,9 @@ function UserTurnView({ message }: { message: ChatMessage }) {
                 {expanded ? "Show less" : "Show more"}
               </Text>
               {expanded ? (
-                <ChevronUp size={12} color={COLORS.mutedForeground} />
+                <ChevronUp size={12} color={colors.mutedForeground} />
               ) : (
-                <ChevronDown size={12} color={COLORS.mutedForeground} />
+                <ChevronDown size={12} color={colors.mutedForeground} />
               )}
             </TouchableOpacity>
           )}
@@ -751,9 +758,9 @@ function UserTurnView({ message }: { message: ChatMessage }) {
           hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
         >
           {copiedPrompt ? (
-            <Check size={11} color={COLORS.success} />
+            <Check size={11} color={colors.success} />
           ) : (
-            <Copy size={11} color={COLORS.mutedForeground} />
+            <Copy size={11} color={colors.mutedForeground} />
           )}
           <Text
             style={[
@@ -813,7 +820,7 @@ export const ChatMessageView = React.memo(
   (a, b) => a.message === b.message && a.live === b.live && a.sessionId === b.sessionId && a.userPrompt === b.userPrompt,
 );
 
-const styles = StyleSheet.create({
+const createStyles = (c: ColorTokens) => StyleSheet.create({
   assistantContainer: {
     marginVertical: 10,
     paddingLeft: 0,
@@ -839,7 +846,7 @@ const styles = StyleSheet.create({
     height: 40,
     borderRadius: 20,
     borderWidth: 1.5,
-    borderColor: COLORS.primary + "66",
+    borderColor: c.primary + "66",
   },
   turnHeaderTextGroup: {
     justifyContent: "center",
@@ -854,18 +861,18 @@ const styles = StyleSheet.create({
     fontSize: 13.5,
     fontWeight: "600",
     letterSpacing: 0.15,
-    color: COLORS.foreground,
+    color: c.foreground,
   },
   pulseDot: {
     width: 6,
     height: 6,
     borderRadius: 3,
-    backgroundColor: COLORS.success,
+    backgroundColor: c.success,
   },
   turnSubText: {
     fontSize: 10.5,
     letterSpacing: 0.25,
-    color: COLORS.mutedForeground,
+    color: c.mutedForeground,
     marginTop: 2,
   },
   intentCard: {
@@ -913,14 +920,14 @@ const styles = StyleSheet.create({
     backgroundColor: "transparent",
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: COLORS.border,
+    borderColor: c.border,
     padding: 12,
     marginVertical: 6,
     gap: 8,
   },
   questionTitle: {
     fontSize: 13.5,
-    color: COLORS.foreground,
+    color: c.foreground,
   },
   questionOptionPill: {
     backgroundColor: "transparent",
@@ -928,26 +935,26 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: COLORS.border,
+    borderColor: c.border,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
   },
   questionOptionPillAnswered: {
     opacity: 0.5,
-    borderColor: COLORS.success,
+    borderColor: c.success,
   },
   questionOptionPillExpired: {
     opacity: 0.55,
   },
   questionOptionText: {
     fontSize: 12.5,
-    color: COLORS.foreground,
+    color: c.foreground,
     flex: 1,
   },
   questionHint: {
     fontSize: 11.5,
-    color: COLORS.mutedForeground,
+    color: c.mutedForeground,
     fontStyle: "italic",
     paddingVertical: 2,
   },
@@ -963,12 +970,12 @@ const styles = StyleSheet.create({
   noticeBoxInfo: {
     backgroundColor: "transparent",
     borderWidth: 1,
-    borderColor: COLORS.border,
+    borderColor: c.border,
   },
   noticeBoxError: {
     backgroundColor: "transparent",
     borderWidth: 1,
-    borderColor: COLORS.destructive + "40",
+    borderColor: c.destructive + "40",
   },
   noticeText: {
     fontSize: 12,
@@ -976,10 +983,10 @@ const styles = StyleSheet.create({
     lineHeight: 17,
   },
   noticeTextInfo: {
-    color: COLORS.mutedForeground,
+    color: c.mutedForeground,
   },
   noticeTextError: {
-    color: COLORS.destructive,
+    color: c.destructive,
   },
   turnFooter: {
     flexDirection: "row",
@@ -997,12 +1004,12 @@ const styles = StyleSheet.create({
     borderRadius: 6,
     backgroundColor: "transparent",
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: COLORS.border,
+    borderColor: c.border,
   },
   footerStatsText: {
     fontSize: 10.5,
     letterSpacing: 0.2,
-    color: COLORS.mutedForeground,
+    color: c.mutedForeground,
   },
   userContainer: {
     alignSelf: "flex-end",
@@ -1059,7 +1066,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 13,
     paddingVertical: 11,
     borderWidth: 1,
-    borderColor: COLORS.border,
+    borderColor: c.border,
     flexDirection: "column",
     alignSelf: "flex-end",
   },
@@ -1074,11 +1081,11 @@ const styles = StyleSheet.create({
     borderRadius: 6,
     backgroundColor: "transparent",
     borderWidth: 1,
-    borderColor: COLORS.border,
+    borderColor: c.border,
   },
   seeMoreText: {
     fontSize: 11,
-    color: COLORS.mutedForeground,
+    color: c.mutedForeground,
   },
   userFooter: {
     flexDirection: "row",
@@ -1096,32 +1103,32 @@ const styles = StyleSheet.create({
     borderRadius: 5,
     backgroundColor: "transparent",
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: COLORS.border,
+    borderColor: c.border,
   },
   copyUserPromptText: {
     fontSize: 10.5,
-    color: COLORS.mutedForeground,
+    color: c.mutedForeground,
   },
   copyUserPromptTextSuccess: {
-    color: COLORS.success,
+    color: c.success,
   },
   userAvatarImg: {
     width: 22,
     height: 22,
     borderRadius: 11,
     borderWidth: 1,
-    borderColor: COLORS.primary,
+    borderColor: c.primary,
   },
   userAvatarBox: {
     width: 22,
     height: 22,
     borderRadius: 11,
-    backgroundColor: COLORS.primary,
+    backgroundColor: c.primary,
     alignItems: "center",
     justifyContent: "center",
   },
   userAvatarInitials: {
     fontSize: 10,
-    color: COLORS.primaryForeground,
+    color: c.primaryForeground,
   },
 });

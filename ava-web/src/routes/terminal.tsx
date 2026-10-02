@@ -108,7 +108,7 @@ function TerminalPage() {
             onChange={(e) => setCommand(e.target.value)}
             placeholder="Type a command"
             aria-label="Command"
-            className="h-9 border-0 bg-transparent font-mono text-sm shadow-none focus-visible:ring-0"
+            className="h-9 border-0 bg-transparent font-mono text-base shadow-none focus-visible:ring-0 md:text-sm"
           />
           <Button type="submit" size="icon-sm" disabled={!command.trim() || run.isPending} className="rounded-xl">
             {run.isPending ? <Loader2 className="animate-spin" /> : <CornerDownLeft />}

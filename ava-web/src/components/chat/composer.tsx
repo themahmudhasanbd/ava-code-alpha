@@ -350,7 +350,7 @@ export const Composer = forwardRef<HTMLTextAreaElement, Props>(({ value, onChang
             value={value}
             onChange={(e) => onChange(e.target.value)}
             placeholder="Message AvA (e.g. check status, run tasks, edit code)…"
-            className="min-h-16 px-4 pt-5 text-[15px] leading-6"
+            className="min-h-16 px-4 pt-5 text-base leading-6 md:text-[15px]"
           />
           <PromptInputFooter className="gap-2 px-2.5 pb-2.5">
             <PromptInputTools className="min-w-0 gap-1.5 overflow-x-auto">

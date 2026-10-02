@@ -78,7 +78,16 @@ export function itemToPart(item: Raw, fallback: MessagePart["status"] = "done"):
       return { id, kind: "question", text: qs[0]?.title ?? "Question", status, meta: { questions: qs } };
     }
     case "reasoning": {
-      const s = Array.isArray(item.summary) ? item.summary.join("\n\n") : "";
+      // Server sends summary/content as part objects ({ type, text }) — never
+      // join() them directly or the UI would render "[object Object]".
+      const partText = (v: unknown): string =>
+        Array.isArray(v)
+          ? v
+              .map((e) => (typeof e === "string" ? e : str((e as Raw)?.text)))
+              .filter(Boolean)
+              .join("\n\n")
+          : "";
+      const s = partText(item.summary) || partText(item.content) || str(item.text);
       return { id, kind: "reasoning", text: s, status };
     }
     case "commandExecution": {

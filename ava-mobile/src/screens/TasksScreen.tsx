@@ -52,7 +52,8 @@ import {
   useSaveTask,
   useTasks,
 } from "@/state/queries";
-import { COLORS } from "@/theme/colors";
+import { useStyles, useTheme } from "@/theme/theme-context";
+import type { ColorTokens } from "@/theme/palette";
 import { mono } from "@/theme/fonts";
 
 type Draft = TaskDraft;
@@ -94,6 +95,7 @@ function StatusPill({
   color: string;
   monoText?: boolean;
 }) {
+  const styles = useStyles(createStyles);
   return (
     <View style={[styles.statusPill, { backgroundColor: tint }]}>
       <Icon size={11} color={color} strokeWidth={2.5} />
@@ -113,6 +115,8 @@ export function TasksScreen({ navigation }: { navigation: any }) {
   const saveTask = useSaveTask();
   const deleteTask = useDeleteTask();
   const runTask = useRunTask();
+  const { colors } = useTheme();
+  const styles = useStyles(createStyles);
 
   const [editingDraft, setEditingDraft] = useState<Draft | null>(null);
   const [modelPickerOpen, setModelPickerOpen] = useState(false);
@@ -171,8 +175,8 @@ export function TasksScreen({ navigation }: { navigation: any }) {
         <StatusPill
           icon={Pause}
           label="Paused"
-          tint={COLORS.secondary}
-          color={COLORS.mutedForeground}
+          tint={colors.secondary}
+          color={colors.mutedForeground}
         />
       );
     }
@@ -181,8 +185,8 @@ export function TasksScreen({ navigation }: { navigation: any }) {
         <StatusPill
           icon={CheckCircle2}
           label="Last run ok"
-          tint={COLORS.success + "1F"}
-          color={COLORS.success}
+          tint={colors.success + "1F"}
+          color={colors.success}
         />
       );
     }
@@ -191,8 +195,8 @@ export function TasksScreen({ navigation }: { navigation: any }) {
         <StatusPill
           icon={XCircle}
           label="Last run failed"
-          tint={COLORS.destructive + "1F"}
-          color={COLORS.destructive}
+          tint={colors.destructive + "1F"}
+          color={colors.destructive}
         />
       );
     }
@@ -200,8 +204,8 @@ export function TasksScreen({ navigation }: { navigation: any }) {
       <StatusPill
         icon={Clock}
         label="Never run"
-        tint={COLORS.secondary}
-        color={COLORS.mutedForeground}
+        tint={colors.secondary}
+        color={colors.mutedForeground}
       />
     );
   };
@@ -228,6 +232,7 @@ export function TasksScreen({ navigation }: { navigation: any }) {
           icon={Plus}
           size={18}
           onPress={() => setEditingDraft({ ...EMPTY_DRAFT })}
+          style={styles.roundIcon}
         />
       }
     >
@@ -297,8 +302,8 @@ export function TasksScreen({ navigation }: { navigation: any }) {
                 <StatusPill
                   icon={Clock}
                   label={t.schedule}
-                  tint={COLORS.secondary}
-                  color={COLORS.mutedForeground}
+                  tint={colors.secondary}
+                  color={colors.mutedForeground}
                   monoText
                 />
                 {runStatusPill(t)}
@@ -306,8 +311,8 @@ export function TasksScreen({ navigation }: { navigation: any }) {
                   <StatusPill
                     icon={CalendarClock}
                     label={`Next ${formatNextRun(t.nextRunAt)}`}
-                    tint={COLORS.primary + "14"}
-                    color={COLORS.primary}
+                    tint={colors.primary + "14"}
+                    color={colors.primary}
                   />
                 )}
               </View>
@@ -316,22 +321,26 @@ export function TasksScreen({ navigation }: { navigation: any }) {
                   icon={FileText}
                   size={14}
                   onPress={() => setStatusTask(t)}
+                  style={styles.roundIcon}
                 />
                 <GlassIconButton
                   icon={Play}
                   size={14}
                   onPress={() => handleRun(t)}
                   disabled={runTask.isPending}
+                  style={styles.roundIcon}
                 />
                 <GlassIconButton
                   icon={Pencil}
                   size={14}
                   onPress={() => setEditingDraft(toDraft(t))}
+                  style={styles.roundIcon}
                 />
                 <GlassIconButton
                   icon={Trash2}
                   size={14}
                   onPress={() => handleDelete(t)}
+                  style={styles.roundIcon}
                 />
               </View>
             </View>
@@ -351,9 +360,13 @@ export function TasksScreen({ navigation }: { navigation: any }) {
                 <Text style={styles.modalTitle}>
                   {editingDraft?.id ? "Edit task" : "New task"}
                 </Text>
-                <TouchableOpacity onPress={() => setEditingDraft(null)}>
-                  <X size={18} color={COLORS.mutedForeground} />
-                </TouchableOpacity>
+                <GlassIconButton
+                  icon={X}
+                  size={16}
+                  onPress={() => setEditingDraft(null)}
+                  style={styles.roundIcon}
+                  label="Close"
+                />
               </View>
 
               {editingDraft && (
@@ -447,7 +460,7 @@ export function TasksScreen({ navigation }: { navigation: any }) {
                     <TextInput
                       style={styles.multilineInput}
                       placeholder="e.g. Check disk usage and summarize the largest folders"
-                      placeholderTextColor={COLORS.mutedForeground}
+                      placeholderTextColor={colors.mutedForeground}
                       value={editingDraft.prompt}
                       onChangeText={(t) =>
                         setEditingDraft({ ...editingDraft, prompt: t })
@@ -580,9 +593,13 @@ export function TasksScreen({ navigation }: { navigation: any }) {
                 <Text style={styles.modalTitle}>
                   {statusTask?.name} — run status
                 </Text>
-                <TouchableOpacity onPress={() => setStatusTask(null)}>
-                  <X size={18} color={COLORS.mutedForeground} />
-                </TouchableOpacity>
+                <GlassIconButton
+                  icon={X}
+                  size={16}
+                  onPress={() => setStatusTask(null)}
+                  style={styles.roundIcon}
+                  label="Close"
+                />
               </View>
               <View style={styles.statusRows}>
                 {statusRows.map(([label, value], i) => (
@@ -606,193 +623,200 @@ export function TasksScreen({ navigation }: { navigation: any }) {
   );
 }
 
-const styles = StyleSheet.create({
-  presetRow: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 8,
-    marginBottom: 8,
-  },
-  presetChip: {
-    paddingHorizontal: 12,
-    paddingVertical: 9,
-    borderRadius: 999,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    backgroundColor: COLORS.card,
-  },
-  presetChipActive: {
-    backgroundColor: COLORS.primary + "14",
-    borderColor: COLORS.primary,
-  },
-  presetChipText: {
-    fontSize: 13,
-    color: COLORS.mutedForeground,
-  },
-  presetChipTextActive: {
-    color: COLORS.primary,
-    fontWeight: "700",
-  },
-  pickerButton: {
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    backgroundColor: COLORS.card,
-    borderRadius: 14,
-    paddingHorizontal: 14,
-    paddingVertical: 13,
-  },
-  pickerButtonText: {
-    fontSize: 14,
-    color: COLORS.foreground,
-  },
-  multilineInput: {
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    backgroundColor: COLORS.card,
-    borderRadius: 14,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    fontSize: 14,
-    lineHeight: 20,
-    color: COLORS.foreground,
-    minHeight: 110,
-  },
-  hintText: {
-    fontSize: 12,
-    color: COLORS.mutedForeground,
-  },
-  nameRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-  },
-  statusPill: {
-    flexDirection: "row",
-    alignItems: "center",
-    alignSelf: "flex-start",
-    gap: 4,
-    borderRadius: 999,
-    paddingHorizontal: 9,
-    paddingVertical: 4,
-  },
-  statusPillText: {
-    fontSize: 11,
-    fontWeight: "600",
-  },
-  pillRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    flexWrap: "wrap",
-    flex: 1,
-  },
-  container: {
-    flex: 1,
-  },
-  content: {
-    padding: 16,
-    gap: 12,
-  },
-  taskCard: {
-    borderRadius: 20,
-    padding: 18,
-    gap: 12,
-  },
-  taskCardDisabled: {
-    opacity: 0.62,
-  },
-  taskHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    gap: 12,
-  },
-  taskName: {
-    fontSize: 16,
-    fontWeight: "600",
-    color: COLORS.foreground,
-  },
-  taskCommand: {
-    fontSize: 13,
-    color: COLORS.mutedForeground,
-    marginTop: 3,
-  },
-  taskMeta: {
-    fontSize: 12,
-    color: COLORS.mutedForeground,
-    marginTop: 6,
-  },
-  taskFooter: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: COLORS.border,
-    paddingTop: 12,
-    gap: 8,
-  },
-  actionIcons: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-  },
-  modalBackdrop: {
-    flex: 1,
-    backgroundColor: "rgba(0, 0, 0, 0.25)",
-    justifyContent: "flex-end",
-  },
-  modalSheet: {
-    borderTopLeftRadius: 28,
-    borderTopRightRadius: 28,
-    padding: 20,
-    paddingBottom: 32,
-    maxHeight: "88%",
-  },
-  modalHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    marginBottom: 16,
-  },
-  modalTitle: {
-    fontSize: 18,
-    fontWeight: "700",
-    color: COLORS.foreground,
-  },
-  formScroll: {
-    flexGrow: 0,
-  },
-  form: {
-    gap: 14,
-  },
-  fieldGroup: {
-    gap: 6,
-  },
-  statusRows: {
-    paddingBottom: 8,
-  },
-  statusRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    gap: 12,
-    paddingVertical: 12,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: COLORS.border,
-  },
-  statusRowLast: {
-    borderBottomWidth: 0,
-  },
-  statusLabel: {
-    fontSize: 13,
-    color: COLORS.mutedForeground,
-  },
-  statusValue: {
-    fontSize: 13,
-    color: COLORS.foreground,
-    fontWeight: "500",
-    textAlign: "right",
-    flex: 1,
-  },
-});
-
+function createStyles(c: ColorTokens) {
+  return StyleSheet.create({
+    roundIcon: {
+      borderRadius: 999,
+    },
+    presetRow: {
+      flexDirection: "row",
+      flexWrap: "wrap",
+      gap: 8,
+      marginBottom: 8,
+    },
+    presetChip: {
+      paddingHorizontal: 12,
+      paddingVertical: 9,
+      borderRadius: 999,
+      borderWidth: StyleSheet.hairlineWidth,
+      borderColor: c.border,
+      backgroundColor: c.card,
+    },
+    presetChipActive: {
+      backgroundColor: c.primary + "14",
+      borderColor: c.primary,
+    },
+    presetChipText: {
+      fontSize: 13,
+      color: c.mutedForeground,
+    },
+    presetChipTextActive: {
+      color: c.primary,
+      fontWeight: "700",
+    },
+    pickerButton: {
+      borderWidth: StyleSheet.hairlineWidth,
+      borderColor: c.border,
+      backgroundColor: c.card,
+      borderRadius: 16,
+      paddingHorizontal: 14,
+      paddingVertical: 13,
+    },
+    pickerButtonText: {
+      fontSize: 14,
+      color: c.foreground,
+    },
+    multilineInput: {
+      borderWidth: StyleSheet.hairlineWidth,
+      borderColor: c.border,
+      backgroundColor: c.card,
+      borderRadius: 16,
+      paddingHorizontal: 14,
+      paddingVertical: 12,
+      fontSize: 14,
+      lineHeight: 20,
+      color: c.foreground,
+      minHeight: 110,
+    },
+    hintText: {
+      fontSize: 12,
+      color: c.mutedForeground,
+    },
+    nameRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 8,
+    },
+    statusPill: {
+      flexDirection: "row",
+      alignItems: "center",
+      alignSelf: "flex-start",
+      gap: 4,
+      borderRadius: 999,
+      paddingHorizontal: 9,
+      paddingVertical: 4,
+    },
+    statusPillText: {
+      fontSize: 11,
+      fontWeight: "600",
+    },
+    pillRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 6,
+      flexWrap: "wrap",
+      flex: 1,
+    },
+    container: {
+      flex: 1,
+    },
+    content: {
+      padding: 16,
+      gap: 12,
+    },
+    taskCard: {
+      borderRadius: 16,
+      borderWidth: StyleSheet.hairlineWidth,
+      padding: 16,
+      gap: 12,
+    },
+    taskCardDisabled: {
+      opacity: 0.62,
+    },
+    taskHeader: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      gap: 12,
+    },
+    taskName: {
+      fontSize: 16,
+      fontWeight: "600",
+      color: c.foreground,
+    },
+    taskCommand: {
+      fontSize: 13,
+      color: c.mutedForeground,
+      marginTop: 3,
+    },
+    taskMeta: {
+      fontSize: 12,
+      color: c.mutedForeground,
+      marginTop: 6,
+    },
+    taskFooter: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      borderTopWidth: StyleSheet.hairlineWidth,
+      borderTopColor: c.border,
+      paddingTop: 12,
+      gap: 8,
+    },
+    actionIcons: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 6,
+    },
+    modalBackdrop: {
+      flex: 1,
+      backgroundColor: "rgba(0, 0, 0, 0.25)",
+      justifyContent: "flex-end",
+    },
+    modalSheet: {
+      borderTopLeftRadius: 20,
+      borderTopRightRadius: 20,
+      borderWidth: StyleSheet.hairlineWidth,
+      borderColor: c.border,
+      padding: 20,
+      paddingBottom: 32,
+      maxHeight: "88%",
+    },
+    modalHeader: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      marginBottom: 16,
+    },
+    modalTitle: {
+      fontSize: 16,
+      fontWeight: "600",
+      color: c.foreground,
+    },
+    formScroll: {
+      flexGrow: 0,
+    },
+    form: {
+      gap: 14,
+    },
+    fieldGroup: {
+      gap: 6,
+    },
+    statusRows: {
+      paddingBottom: 8,
+    },
+    statusRow: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+      gap: 12,
+      paddingVertical: 12,
+      borderBottomWidth: StyleSheet.hairlineWidth,
+      borderBottomColor: c.border,
+    },
+    statusRowLast: {
+      borderBottomWidth: 0,
+    },
+    statusLabel: {
+      fontSize: 13,
+      color: c.mutedForeground,
+    },
+    statusValue: {
+      fontSize: 13,
+      color: c.foreground,
+      fontWeight: "500",
+      textAlign: "right",
+      flex: 1,
+    },
+  });
+}

@@ -204,10 +204,12 @@ function PlanCard({ part }: { part: MessagePart }) {
               <Check className="mt-0.5 size-3.5 shrink-0 text-success" />
             ) : s.status === "active" ? (
               <CircleDot className="mt-0.5 size-3.5 shrink-0 text-primary" />
+            ) : s.status === "cancelled" ? (
+              <X className="mt-0.5 size-3.5 shrink-0 text-muted-foreground" />
             ) : (
               <Circle className="mt-0.5 size-3.5 shrink-0 text-muted-foreground" />
             )}
-            <span className={cn(s.status === "done" && "text-muted-foreground line-through")}>{s.text}</span>
+            <span className={cn((s.status === "done" || s.status === "cancelled") && "text-muted-foreground line-through")}>{s.text}</span>
           </li>
         ))}
       </ul>

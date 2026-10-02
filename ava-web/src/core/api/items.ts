@@ -34,10 +34,8 @@ export function toPlanSteps(list: Raw[]): PlanStep[] {
     const isDone = s.completed || st === "completed" || st === "done";
     const isActive = st === "inprogress" || st === "in_progress" || st === "active";
     const isCancelled = st === "cancelled" || st === "canceled" || st === "abandoned";
-    return {
-      text: str(s.step ?? s.content ?? s.text ?? s.title),
-      status: isDone ? "done" : isActive ? "active" : isCancelled ? "cancelled" : "pending",
-    } as PlanStep;
+    const status: PlanStep["status"] = isDone ? "done" : isActive ? "active" : isCancelled ? "cancelled" : "pending";
+    return { text: str(s.step ?? s.content ?? s.text ?? s.title), status };
   }).filter((s) => s.text);
 }
 
@@ -113,7 +111,7 @@ export function itemToPart(item: Raw, fallback: MessagePart["status"] = "done"):
       return { id, kind: "tool", text: "", toolName: "Web search", input: str(item.query), status, meta: { command: str(item.query) } };
     case "todoList":
     case "plan":
-      return { id, kind: "plan", text: "", status, meta: { steps: toPlanSteps(item.items ?? item.plan ?? []) } };
+      return { id, kind: "plan", text: str(item.explanation ?? item.title ?? item.text), status, meta: { steps: toPlanSteps(item.items ?? item.plan ?? []) } };
     case "contextCompaction":
       return { id, kind: "notice", text: "Context compacted to keep the conversation going", status, meta: { tone: "info" } };
     case "error":

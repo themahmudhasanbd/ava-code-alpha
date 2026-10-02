@@ -12,7 +12,7 @@ export type PartKind = "text" | "reasoning" | "tool" | "plan" | "notice" | "ques
 
 export interface PlanStep {
   text: string;
-  status: "pending" | "active" | "done";
+  status: "pending" | "active" | "done" | "cancelled";
 }
 
 export interface AgentQuestion {

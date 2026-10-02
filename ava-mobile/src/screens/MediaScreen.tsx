@@ -54,7 +54,8 @@ import { APP } from "@/config/app";
 import { useAva } from "@/state/ava-provider";
 import { useMedia, useRemoveMedia } from "@/state/queries";
 import type { MediaItem, MediaKind } from "@/core/api/media";
-import { COLORS } from "@/theme/colors";
+import type { ColorTokens } from "@/theme/colors";
+import { useStyles, useTheme } from "@/theme/theme-context";
 
 type CategoryFilter = "all" | "image" | "video" | "audio" | "code" | "archive";
 
@@ -97,17 +98,18 @@ function categorizeFile(path: string): CategoryFilter {
 }
 
 function CategoryIcon({ cat, size }: { cat: CategoryFilter; size: number }) {
+  const { colors } = useTheme();
   switch (cat) {
     case "image":
-      return <ImageIcon size={size} color={COLORS.primary} />;
+      return <ImageIcon size={size} color={colors.primary} />;
     case "video":
-      return <FileVideo size={size} color={COLORS.mascot} />;
+      return <FileVideo size={size} color={colors.mascot} />;
     case "audio":
-      return <FileAudio size={size} color={COLORS.warning} />;
+      return <FileAudio size={size} color={colors.warning} />;
     case "archive":
-      return <Archive size={size} color={COLORS.success} />;
+      return <Archive size={size} color={colors.success} />;
     default:
-      return <FileCode size={size} color={COLORS.accentForeground} />;
+      return <FileCode size={size} color={colors.accentForeground} />;
   }
 }
 
@@ -143,6 +145,8 @@ export function MediaScreen() {
     isFetching,
   } = useMedia(APP.mediaDir);
   const removeMedia = useRemoveMedia();
+  const { colors } = useTheme();
+  const styles = useStyles(createStyles);
 
   const filteredItems = useMemo(() => {
     return mediaItems.filter((item) => {
@@ -298,7 +302,7 @@ export function MediaScreen() {
           onPress={() => setActiveModal("selector")}
           activeOpacity={0.8}
         >
-          <Plus size={15} color={COLORS.primaryForeground} />
+          <Plus size={15} color={colors.primaryForeground} />
           <Text style={styles.uploadBtnText}>Add</Text>
         </TouchableOpacity>
       </View>
@@ -312,19 +316,19 @@ export function MediaScreen() {
         {showSearch && (
           <View style={styles.searchBarWrapper}>
             <View style={styles.searchBox}>
-              <Search size={15} color={COLORS.mutedForeground} />
+              <Search size={15} color={colors.mutedForeground} />
               <TextInput
                 value={searchQuery}
                 onChangeText={setSearchQuery}
                 placeholder="Search shared files…"
-                placeholderTextColor={COLORS.mutedForeground}
+                placeholderTextColor={colors.mutedForeground}
                 style={styles.searchInput}
                 autoCapitalize="none"
                 autoCorrect={false}
               />
               {searchQuery ? (
                 <TouchableOpacity onPress={() => setSearchQuery("")}>
-                  <X size={14} color={COLORS.mutedForeground} />
+                  <X size={14} color={colors.mutedForeground} />
                 </TouchableOpacity>
               ) : null}
             </View>
@@ -353,7 +357,7 @@ export function MediaScreen() {
                 >
                   <Icon
                     size={13}
-                    color={isActive ? COLORS.primaryForeground : COLORS.mutedForeground}
+                    color={isActive ? colors.primaryForeground : colors.mutedForeground}
                   />
                   <Text
                     style={[
@@ -392,7 +396,7 @@ export function MediaScreen() {
               onPress={() => setActiveModal("selector")}
               activeOpacity={0.8}
             >
-              <UploadCloud size={15} color={COLORS.primaryForeground} />
+              <UploadCloud size={15} color={colors.primaryForeground} />
               <Text style={styles.emptyAddBtnText}>Upload / Select Media</Text>
             </TouchableOpacity>
           </View>
@@ -470,7 +474,7 @@ export function MediaScreen() {
                       style={styles.viewerCloseBtn}
                       onPress={() => closePreview()}
                     >
-                      <X size={16} color={COLORS.mutedForeground} />
+                      <X size={16} color={colors.mutedForeground} />
                     </TouchableOpacity>
                   </View>
 
@@ -478,7 +482,7 @@ export function MediaScreen() {
                   <View style={styles.viewerBody}>
                     {isLoadingPreview ? (
                       <View style={styles.previewLoadingBox}>
-                        <ActivityIndicator size="small" color={COLORS.primary} />
+                        <ActivityIndicator size="small" color={colors.primary} />
                         <Text style={styles.previewLoadingText}>Loading file content…</Text>
                       </View>
                     ) : previewBase64 ? (
@@ -537,13 +541,13 @@ export function MediaScreen() {
                       <View style={styles.genericFileBox}>
                         <View style={styles.genericIconCircle}>
                           {previewItem && categorizeFile(previewItem.path) === "video" ? (
-                            <FileVideo size={36} color={COLORS.mascot} />
+                            <FileVideo size={36} color={colors.mascot} />
                           ) : previewItem && categorizeFile(previewItem.path) === "audio" ? (
-                            <Music size={36} color={COLORS.warning} />
+                            <Music size={36} color={colors.warning} />
                           ) : previewItem && categorizeFile(previewItem.path) === "archive" ? (
-                            <Archive size={36} color={COLORS.success} />
+                            <Archive size={36} color={colors.success} />
                           ) : (
-                            <FileQuestion size={36} color={COLORS.primary} />
+                            <FileQuestion size={36} color={colors.primary} />
                           )}
                         </View>
                         <Text style={styles.genericFileName}>
@@ -565,9 +569,9 @@ export function MediaScreen() {
                         activeOpacity={0.7}
                       >
                         {copied ? (
-                          <Check size={15} color={COLORS.success} />
+                          <Check size={15} color={colors.success} />
                         ) : (
-                          <Copy size={15} color={COLORS.foreground} />
+                          <Copy size={15} color={colors.foreground} />
                         )}
                         <Text style={styles.viewerActionText}>
                           {copied ? "Copied" : "Copy Path"}
@@ -579,7 +583,7 @@ export function MediaScreen() {
                         onPress={() => handleShareOrExport(previewItem)}
                         activeOpacity={0.7}
                       >
-                        <Share2 size={15} color={COLORS.foreground} />
+                        <Share2 size={15} color={colors.foreground} />
                         <Text style={styles.viewerActionText}>Export / Share</Text>
                       </TouchableOpacity>
 
@@ -588,7 +592,7 @@ export function MediaScreen() {
                         onPress={() => handleDeleteItem(previewItem)}
                         activeOpacity={0.7}
                       >
-                        <Trash2 size={15} color={COLORS.destructive} />
+                        <Trash2 size={15} color={colors.destructive} />
                         <Text style={styles.viewerDeleteText}>Delete</Text>
                       </TouchableOpacity>
                     </View>
@@ -603,7 +607,8 @@ export function MediaScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+function createStyles(c: ColorTokens) {
+  return StyleSheet.create({
   container: {
     flex: 1,
   },
@@ -616,7 +621,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    borderRadius: 18,
+    borderRadius: 16,
     height: 56,
   },
   headerLeft: {
@@ -632,12 +637,12 @@ const styles = StyleSheet.create({
   headerTitleText: {
     fontSize: 15,
     fontWeight: "700",
-    color: COLORS.foreground,
+    color: c.foreground,
   },
   headerSubtitleText: {
     fontSize: 10.5,
     letterSpacing: 0.3,
-    color: COLORS.mutedForeground,
+    color: c.mutedForeground,
     marginTop: 2,
   },
   headerRight: {
@@ -649,15 +654,15 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 4,
-    backgroundColor: COLORS.primary,
-    paddingHorizontal: 10,
+    backgroundColor: c.primary,
+    paddingHorizontal: 12,
     paddingVertical: 6,
-    borderRadius: 12,
+    borderRadius: 999,
   },
   uploadBtnText: {
     fontSize: 12.5,
     fontWeight: "600",
-    color: COLORS.primaryForeground,
+    color: c.primaryForeground,
   },
   searchBarWrapper: {
     paddingHorizontal: 12,
@@ -666,10 +671,10 @@ const styles = StyleSheet.create({
   searchBox: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: COLORS.secondary,
+    backgroundColor: c.secondary,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: COLORS.border,
-    borderRadius: 12,
+    borderColor: c.border,
+    borderRadius: 16,
     paddingHorizontal: 12,
     height: 40,
     gap: 10,
@@ -678,7 +683,7 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 13.5,
     lineHeight: 20,
-    color: COLORS.foreground,
+    color: c.foreground,
     paddingVertical: 0,
   },
   categoryFilterContainer: {
@@ -697,19 +702,19 @@ const styles = StyleSheet.create({
     borderRadius: 999,
     backgroundColor: "transparent",
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: COLORS.border,
+    borderColor: c.border,
   },
   categoryPillActive: {
-    backgroundColor: COLORS.primary,
+    backgroundColor: c.primary,
   },
   categoryText: {
     fontSize: 12,
     fontWeight: "500",
     letterSpacing: 0.2,
-    color: COLORS.mutedForeground,
+    color: c.mutedForeground,
   },
   categoryTextActive: {
-    color: COLORS.primaryForeground,
+    color: c.primaryForeground,
     fontWeight: "600",
   },
   gridContent: {
@@ -734,7 +739,7 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: COLORS.muted,
+    backgroundColor: c.muted,
     borderRadius: 12,
     position: "relative",
   },
@@ -757,14 +762,14 @@ const styles = StyleSheet.create({
     fontSize: 13,
     lineHeight: 19,
     fontWeight: "600",
-    color: COLORS.foreground,
+    color: c.foreground,
     marginTop: 8,
     paddingHorizontal: 2,
   },
   gridPath: {
     fontSize: 10.5,
     letterSpacing: 0.3,
-    color: COLORS.mutedForeground,
+    color: c.mutedForeground,
     paddingHorizontal: 2,
     marginTop: 1,
   },
@@ -779,15 +784,15 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 8,
-    backgroundColor: COLORS.primary,
+    backgroundColor: c.primary,
     paddingHorizontal: 18,
     paddingVertical: 12,
-    borderRadius: 12,
+    borderRadius: 999,
   },
   emptyAddBtnText: {
     fontSize: 13.5,
     fontWeight: "600",
-    color: COLORS.primaryForeground,
+    color: c.primaryForeground,
   },
   modalBackdrop: {
     flex: 1,
@@ -795,11 +800,11 @@ const styles = StyleSheet.create({
     justifyContent: "flex-end",
   },
   viewerSheet: {
-    backgroundColor: COLORS.card,
-    borderTopLeftRadius: 26,
-    borderTopRightRadius: 26,
-    borderWidth: 1,
-    borderColor: COLORS.glassBorder,
+    backgroundColor: c.card,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: c.border,
     paddingTop: 10,
     paddingHorizontal: 16,
     paddingBottom: Platform.OS === "ios" ? 34 : 20,
@@ -809,7 +814,7 @@ const styles = StyleSheet.create({
     width: 36,
     height: 4,
     borderRadius: 2,
-    backgroundColor: COLORS.border,
+    backgroundColor: c.muted,
     alignSelf: "center",
     marginBottom: 10,
   },
@@ -819,7 +824,7 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     paddingBottom: 10,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: COLORS.border,
+    borderBottomColor: c.border,
   },
   viewerTitleGroup: {
     flex: 1,
@@ -828,20 +833,20 @@ const styles = StyleSheet.create({
   viewerTitle: {
     fontSize: 15,
     fontWeight: "700",
-    color: COLORS.foreground,
+    color: c.foreground,
   },
   viewerSubtitle: {
     fontSize: 10.5,
     letterSpacing: 0.3,
-    color: COLORS.mutedForeground,
+    color: c.mutedForeground,
     marginTop: 2,
   },
   viewerCloseBtn: {
     padding: 7,
-    borderRadius: 10,
+    borderRadius: 999,
     backgroundColor: "transparent",
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: COLORS.border,
+    borderColor: c.border,
   },
   viewerBody: {
     minHeight: 240,
@@ -856,13 +861,13 @@ const styles = StyleSheet.create({
   },
   previewLoadingText: {
     fontSize: 12,
-    color: COLORS.mutedForeground,
+    color: c.mutedForeground,
   },
   imageViewerBox: {
     flex: 1,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: COLORS.muted,
+    backgroundColor: c.muted,
     borderRadius: 14,
     overflow: "hidden",
     position: "relative",
@@ -876,7 +881,7 @@ const styles = StyleSheet.create({
     gap: 4,
     backgroundColor: "rgba(0, 0, 0, 0.6)",
     padding: 4,
-    borderRadius: 8,
+    borderRadius: 999,
   },
   zoomBtn: {
     padding: 4,
@@ -906,19 +911,19 @@ const styles = StyleSheet.create({
     borderRadius: 36,
     backgroundColor: "transparent",
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: COLORS.border,
+    borderColor: c.border,
     alignItems: "center",
     justifyContent: "center",
   },
   genericFileName: {
     fontSize: 14,
     fontWeight: "600",
-    color: COLORS.foreground,
+    color: c.foreground,
     textAlign: "center",
   },
   genericFileNotice: {
     fontSize: 11.5,
-    color: COLORS.mutedForeground,
+    color: c.mutedForeground,
     textAlign: "center",
   },
   viewerActionBar: {
@@ -927,7 +932,7 @@ const styles = StyleSheet.create({
     gap: 8,
     paddingTop: 10,
     borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: COLORS.border,
+    borderTopColor: c.border,
   },
   viewerActionBtn: {
     flex: 1,
@@ -936,21 +941,22 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     gap: 6,
     paddingVertical: 9,
-    borderRadius: 12,
-    backgroundColor: COLORS.secondary,
+    borderRadius: 999,
+    backgroundColor: c.secondary,
   },
   viewerActionText: {
     fontSize: 12,
     fontWeight: "600",
-    color: COLORS.foreground,
+    color: c.foreground,
   },
   viewerDeleteBtn: {
-    backgroundColor: COLORS.destructive + "1A",
+    backgroundColor: c.destructive + "1A",
     maxWidth: 90,
   },
   viewerDeleteText: {
     fontSize: 12,
     fontWeight: "600",
-    color: COLORS.destructive,
+    color: c.destructive,
   },
-});
+  });
+}

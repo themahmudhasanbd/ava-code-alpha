@@ -9,7 +9,8 @@ import {
   type ViewStyle,
   Platform,
 } from "react-native";
-import { COLORS } from "@/theme/colors";
+import { type ColorTokens } from "@/theme/colors";
+import { useStyles, useTheme } from "@/theme/theme-context";
 import { font, mono } from "@/theme/fonts";
 
 interface Props {
@@ -24,9 +25,12 @@ export function TypewriterText({
   text,
   isStreaming = false,
   style,
-  cursorColor = COLORS.primary,
+  cursorColor,
   cursorChar = "▊",
 }: Props) {
+  const { colors } = useTheme();
+  const styles = useStyles(createStyles);
+  const resolvedCursorColor = cursorColor ?? colors.primary;
   const cursorOpacity = useRef(new Animated.Value(1)).current;
 
   useEffect(() => {
@@ -62,7 +66,7 @@ export function TypewriterText({
           style={[
             styles.cursor,
             mono("bold"),
-            { color: cursorColor, opacity: cursorOpacity },
+            { color: resolvedCursorColor, opacity: cursorOpacity },
           ]}
         >
           {` ${cursorChar}`}
@@ -73,12 +77,15 @@ export function TypewriterText({
 }
 
 export function TypingBlinker({
-  color = COLORS.primary,
+  color,
   char = "▊",
 }: {
   color?: string;
   char?: string;
 }) {
+  const { colors } = useTheme();
+  const resolvedColor = color ?? colors.primary;
+  const styles = useStyles(createStyles);
   const cursorOpacity = useRef(new Animated.Value(1)).current;
 
   useEffect(() => {
@@ -105,7 +112,7 @@ export function TypingBlinker({
       style={[
         styles.cursor,
         mono("bold"),
-        { color, opacity: cursorOpacity },
+        { color: resolvedColor, opacity: cursorOpacity },
       ]}
     >
       {char}
@@ -113,15 +120,17 @@ export function TypingBlinker({
   );
 }
 
-const styles = StyleSheet.create({
-  baseText: {
-    fontSize: 15,
-    color: COLORS.foreground,
-    lineHeight: 23,
-  },
-  cursor: {
-    fontSize: 15,
-    lineHeight: 21,
-    includeFontPadding: false,
-  },
-});
+function createStyles(c: ColorTokens) {
+  return StyleSheet.create({
+    baseText: {
+      fontSize: 15,
+      color: c.foreground,
+      lineHeight: 23,
+    },
+    cursor: {
+      fontSize: 15,
+      lineHeight: 21,
+      includeFontPadding: false,
+    },
+  });
+}

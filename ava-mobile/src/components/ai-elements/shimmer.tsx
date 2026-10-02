@@ -2,7 +2,8 @@ import React, { useEffect, useRef } from "react";
 import { Animated, type StyleProp, StyleSheet, Text, type TextStyle,
   Platform,
 } from "react-native";
-import { COLORS } from "@/theme/colors";
+import { type ColorTokens } from "@/theme/colors";
+import { useStyles } from "@/theme/theme-context";
 
 export function Shimmer({
   children,
@@ -11,6 +12,7 @@ export function Shimmer({
   children: string;
   style?: StyleProp<TextStyle>;
 }) {
+  const styles = useStyles(createStyles);
   const opacity = useRef(new Animated.Value(0.4)).current;
 
   useEffect(() => {
@@ -39,10 +41,12 @@ export function Shimmer({
   );
 }
 
-const styles = StyleSheet.create({
-  shimmerText: {
-    fontSize: 13,
-    color: COLORS.mutedForeground,
-    fontStyle: "italic",
-  },
-});
+function createStyles(c: ColorTokens) {
+  return StyleSheet.create({
+    shimmerText: {
+      fontSize: 13,
+      color: c.mutedForeground,
+      fontStyle: "italic",
+    },
+  });
+}

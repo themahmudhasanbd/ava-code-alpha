@@ -48,7 +48,8 @@ import {
 } from "@/components/kit";
 import { useAva } from "@/state/ava-provider";
 import { useDiagnostics, useRunCommand } from "@/state/queries";
-import { COLORS } from "@/theme/colors";
+import { useStyles, useTheme } from "@/theme/theme-context";
+import type { ColorTokens } from "@/theme/palette";
 import { font, mono } from "@/theme/fonts";
 
 // ── Types ─────────────────────────────────────────────────────────────────
@@ -91,17 +92,18 @@ interface SystemdService {
 // ── Helpers ───────────────────────────────────────────────────────────────
 
 function StatusIcon({ status }: { status: string }) {
+  const { colors } = useTheme();
   const s = status.toLowerCase();
   if (s === "online" || s === "active" || s === "running") {
-    return <CheckCircle2 size={15} color={COLORS.success} />;
+    return <CheckCircle2 size={15} color={colors.success} />;
   }
   if (s === "stopped" || s === "inactive" || s === "dead") {
-    return <XCircle size={15} color={COLORS.mutedForeground} />;
+    return <XCircle size={15} color={colors.mutedForeground} />;
   }
   if (s === "errored" || s === "failed") {
-    return <AlertTriangle size={15} color={COLORS.destructive} />;
+    return <AlertTriangle size={15} color={colors.destructive} />;
   }
-  return <Activity size={15} color={COLORS.warning} />;
+  return <Activity size={15} color={colors.warning} />;
 }
 
 function ActionButton({
@@ -117,6 +119,7 @@ function ActionButton({
   onPress: () => void;
   loading?: boolean;
 }) {
+  const styles = useStyles(createStyles);
   return (
     <TouchableOpacity
       style={[styles.actionBtn, { borderColor: `${color}30` }]}
@@ -166,6 +169,8 @@ function getServiceDescription(name: string): string {
 
 export function SystemScreen() {
   const { auth } = useAva();
+  const { colors } = useTheme();
+  const styles = useStyles(createStyles);
   const diag = useDiagnostics();
   const runCmd = useRunCommand();
   // useMutation result identity changes on every state transition.
@@ -373,7 +378,7 @@ export function SystemScreen() {
           <RefreshControl
             refreshing={isRefreshing}
             onRefresh={handleRefreshAll}
-            tintColor={COLORS.primary}
+            tintColor={colors.primary}
           />
         }
       >
@@ -481,7 +486,7 @@ export function SystemScreen() {
             <Surface style={styles.metricCard}>
               <View style={styles.metricCardTop}>
                 <View style={styles.metricIconWrap}>
-                  <Zap size={18} color={COLORS.primary} />
+                  <Zap size={18} color={colors.primary} />
                 </View>
                 <View style={{ flex: 1 }}>
                   <Text style={[styles.metricCardTitle, font("semibold")]}>
@@ -508,10 +513,10 @@ export function SystemScreen() {
                       width: `${Math.min(100, Math.max(4, loadPct))}%`,
                       backgroundColor:
                         loadPct >= 85
-                          ? COLORS.destructive
+                          ? colors.destructive
                           : loadPct >= 65
-                          ? COLORS.warning
-                          : COLORS.primary,
+                          ? colors.warning
+                          : colors.primary,
                     },
                   ]}
                 />
@@ -572,10 +577,10 @@ export function SystemScreen() {
                 <View
                   style={[
                     styles.metricIconWrap,
-                    { backgroundColor: "rgba(59,179,96,0.12)" },
+                    { backgroundColor: colors.success + "1F" },
                   ]}
                 >
-                  <Cpu size={18} color={COLORS.success} />
+                  <Cpu size={18} color={colors.success} />
                 </View>
                 <View style={{ flex: 1 }}>
                   <Text style={[styles.metricCardTitle, font("semibold")]}>
@@ -606,10 +611,10 @@ export function SystemScreen() {
                       width: `${Math.min(100, Math.max(4, ramPct))}%`,
                       backgroundColor:
                         ramPct >= 90
-                          ? COLORS.destructive
+                          ? colors.destructive
                           : ramPct >= 75
-                          ? COLORS.warning
-                          : COLORS.success,
+                          ? colors.warning
+                          : colors.success,
                     },
                   ]}
                 />
@@ -678,10 +683,10 @@ export function SystemScreen() {
                 <View
                   style={[
                     styles.metricIconWrap,
-                    { backgroundColor: COLORS.success + "1F" },
+                    { backgroundColor: colors.success + "1F" },
                   ]}
                 >
-                  <HardDrive size={18} color={COLORS.success} />
+                  <HardDrive size={18} color={colors.success} />
                 </View>
                 <View style={{ flex: 1 }}>
                   <Text style={[styles.metricCardTitle, font("semibold")]}>
@@ -710,10 +715,10 @@ export function SystemScreen() {
                       width: `${Math.min(100, Math.max(4, diskPct))}%`,
                       backgroundColor:
                         diskPct >= 90
-                          ? COLORS.destructive
+                          ? colors.destructive
                           : diskPct >= 80
-                          ? COLORS.warning
-                          : COLORS.success,
+                          ? colors.warning
+                          : colors.success,
                     },
                   ]}
                 />
@@ -864,7 +869,7 @@ export function SystemScreen() {
                       />
                       <ChevronRight
                         size={14}
-                        color={COLORS.mutedForeground}
+                        color={colors.mutedForeground}
                         style={{
                           transform: [
                             {
@@ -882,21 +887,21 @@ export function SystemScreen() {
                         <ActionButton
                           icon={RotateCcw}
                           label="Restart"
-                          color={COLORS.primary}
+                          color={colors.primary}
                           onPress={() => handlePm2Action("restart", proc.name)}
                           loading={actionLoading === `restart-${proc.name}`}
                         />
                         <ActionButton
                           icon={Square}
                           label="Stop"
-                          color={COLORS.destructive}
+                          color={colors.destructive}
                           onPress={() => handlePm2Action("stop", proc.name)}
                           loading={actionLoading === `stop-${proc.name}`}
                         />
                         <ActionButton
                           icon={Play}
                           label="Start"
-                          color={COLORS.success}
+                          color={colors.success}
                           onPress={() => handlePm2Action("start", proc.name)}
                           loading={actionLoading === `start-${proc.name}`}
                         />
@@ -972,10 +977,10 @@ export function SystemScreen() {
                       `${isActive ? "restart" : "start"}-${svc.name}` ? (
                         <ActivityIndicator
                           size={12}
-                          color={COLORS.mutedForeground}
+                          color={colors.mutedForeground}
                         />
                       ) : (
-                        <RotateCcw size={12} color={COLORS.mutedForeground} />
+                        <RotateCcw size={12} color={colors.mutedForeground} />
                       )}
                     </TouchableOpacity>
                   </View>
@@ -991,7 +996,7 @@ export function SystemScreen() {
           <Surface style={styles.listCard}>
             <View style={styles.ecoRow}>
               <View style={styles.ecoIconBox}>
-                <Globe size={15} color={COLORS.primary} />
+                <Globe size={15} color={colors.primary} />
               </View>
               <View style={styles.ecoInfo}>
                 <Text style={[styles.ecoTitle, font("semibold")]}>
@@ -1008,7 +1013,7 @@ export function SystemScreen() {
 
             <View style={styles.ecoRow}>
               <View style={styles.ecoIconBox}>
-                <Database size={15} color={COLORS.primary} />
+                <Database size={15} color={colors.primary} />
               </View>
               <View style={styles.ecoInfo}>
                 <Text style={[styles.ecoTitle, font("semibold")]}>
@@ -1029,7 +1034,8 @@ export function SystemScreen() {
 
 // ── Styles ────────────────────────────────────────────────────────────────
 
-const styles = StyleSheet.create({
+function createStyles(c: ColorTokens) {
+  return StyleSheet.create({
   container: { flex: 1 },
   content: { padding: 16, paddingBottom: 40, gap: 16 },
   section: { gap: 10 },
@@ -1039,10 +1045,10 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    padding: 14,
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: COLORS.glassBorder,
+    padding: 16,
+    borderRadius: 16,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: c.glassBorder,
     gap: 12,
   },
   heroLeft: {
@@ -1054,8 +1060,8 @@ const styles = StyleSheet.create({
   heroIconBox: {
     width: 32,
     height: 32,
-    borderRadius: 16,
-    backgroundColor: "rgba(66, 64, 225, 0.08)",
+    borderRadius: 20,
+    backgroundColor: c.primary + "14",
     alignItems: "center",
     justifyContent: "center",
   },
@@ -1066,11 +1072,11 @@ const styles = StyleSheet.create({
   },
   heroTitle: {
     fontSize: 14,
-    color: COLORS.foreground,
+    color: c.foreground,
   },
   heroSub: {
     fontSize: 11.5,
-    color: COLORS.mutedForeground,
+    color: c.mutedForeground,
   },
 
   // Quick Capsules Row
@@ -1083,11 +1089,11 @@ const styles = StyleSheet.create({
 
   // Metric Cards (CPU, RAM, ROM)
   metricCard: {
-    borderRadius: 18,
-    padding: 14,
+    borderRadius: 16,
+    padding: 16,
     gap: 12,
-    borderWidth: 1,
-    borderColor: COLORS.glassBorder,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: c.glassBorder,
   },
   metricCardTop: {
     flexDirection: "row",
@@ -1097,24 +1103,24 @@ const styles = StyleSheet.create({
   metricIconWrap: {
     width: 34,
     height: 34,
-    borderRadius: 10,
-    backgroundColor: "rgba(66, 64, 225, 0.10)",
+    borderRadius: 17,
+    backgroundColor: c.primary + "1A",
     alignItems: "center",
     justifyContent: "center",
   },
   metricCardTitle: {
-    fontSize: 13.5,
-    color: COLORS.foreground,
+    fontSize: 14,
+    color: c.foreground,
   },
   metricCardSubtitle: {
     fontSize: 11,
-    color: COLORS.mutedForeground,
+    color: c.mutedForeground,
     marginTop: 2,
   },
   progressBarTrack: {
     height: 8,
     borderRadius: 4,
-    backgroundColor: COLORS.secondary,
+    backgroundColor: c.secondary,
     overflow: "hidden",
   },
   progressBarFill: {
@@ -1134,10 +1140,10 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    backgroundColor: "rgba(0, 0, 0, 0.02)",
+    backgroundColor: c.secondary,
     paddingVertical: 8,
     paddingHorizontal: 12,
-    borderRadius: 12,
+    borderRadius: 16,
   },
   resourceItem: {
     flex: 1,
@@ -1146,25 +1152,25 @@ const styles = StyleSheet.create({
   },
   resourceLabel: {
     fontSize: 11,
-    color: COLORS.mutedForeground,
+    color: c.mutedForeground,
   },
   resourceValue: {
     fontSize: 12.5,
-    color: COLORS.foreground,
+    color: c.foreground,
   },
   resourceDivider: {
     width: 1,
     height: 20,
-    backgroundColor: COLORS.border,
+    backgroundColor: c.border,
   },
 
   // Details Card
   detailsCard: {
     borderRadius: 16,
-    padding: 14,
+    padding: 16,
     gap: 10,
-    borderWidth: 1,
-    borderColor: COLORS.glassBorder,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: c.glassBorder,
   },
   detailsRow: {
     flexDirection: "row",
@@ -1174,26 +1180,26 @@ const styles = StyleSheet.create({
   },
   detailsLabel: {
     fontSize: 12,
-    color: COLORS.mutedForeground,
+    color: c.mutedForeground,
   },
   detailsValue: {
     fontSize: 12,
-    color: COLORS.foreground,
+    color: c.foreground,
     maxWidth: "60%",
   },
   detailsDivider: {
     height: 1,
-    backgroundColor: COLORS.border,
+    backgroundColor: c.border,
     opacity: 0.6,
   },
 
   // Lists (PM2 & Systemd)
   listCard: {
     borderRadius: 16,
-    padding: 10,
+    padding: 12,
     gap: 6,
-    borderWidth: 1,
-    borderColor: COLORS.glassBorder,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: c.glassBorder,
   },
   processRow: {
     flexDirection: "row",
@@ -1201,11 +1207,11 @@ const styles = StyleSheet.create({
     gap: 8,
     paddingVertical: 8,
     paddingHorizontal: 6,
-    borderRadius: 10,
+    borderRadius: 12,
   },
   processInfo: { flex: 1, gap: 2 },
-  processName: { fontSize: 13, color: COLORS.foreground },
-  processMeta: { fontSize: 11, color: COLORS.mutedForeground },
+  processName: { fontSize: 13, color: c.foreground },
+  processMeta: { fontSize: 11, color: c.mutedForeground },
   processActions: {
     flexDirection: "row",
     alignItems: "center",
@@ -1215,19 +1221,19 @@ const styles = StyleSheet.create({
     flexWrap: "wrap",
   },
   processStats: { marginLeft: "auto" },
-  processStatText: { fontSize: 10.5, color: COLORS.mutedForeground },
+  processStatText: { fontSize: 10.5, color: c.mutedForeground },
 
   actionBtn: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 4,
-    paddingHorizontal: 8,
-    paddingVertical: 5,
-    borderRadius: 8,
-    borderWidth: 1,
-    backgroundColor: COLORS.secondary,
+    gap: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    borderRadius: 999,
+    borderWidth: StyleSheet.hairlineWidth,
+    backgroundColor: c.secondary,
   },
-  actionText: { fontSize: 11 },
+  actionText: { fontSize: 12 },
 
   serviceRow: {
     flexDirection: "row",
@@ -1237,15 +1243,15 @@ const styles = StyleSheet.create({
     paddingHorizontal: 6,
   },
   serviceInfo: { flex: 1, gap: 2 },
-  serviceName: { fontSize: 13, color: COLORS.foreground },
-  serviceDesc: { fontSize: 11, color: COLORS.mutedForeground },
+  serviceName: { fontSize: 13, color: c.foreground },
+  serviceDesc: { fontSize: 11, color: c.mutedForeground },
   serviceActionBtn: {
     width: 28,
     height: 28,
-    borderRadius: 8,
+    borderRadius: 14,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: COLORS.secondary,
+    backgroundColor: c.secondary,
   },
 
   ecoRow: {
@@ -1258,13 +1264,14 @@ const styles = StyleSheet.create({
   ecoIconBox: {
     width: 30,
     height: 30,
-    borderRadius: 8,
-    backgroundColor: "rgba(66, 64, 225, 0.08)",
+    borderRadius: 15,
+    backgroundColor: c.primary + "14",
     alignItems: "center",
     justifyContent: "center",
   },
   ecoInfo: { flex: 1, gap: 2 },
-  ecoTitle: { fontSize: 13, color: COLORS.foreground },
-  ecoSub: { fontSize: 11, color: COLORS.mutedForeground },
+  ecoTitle: { fontSize: 13, color: c.foreground },
+  ecoSub: { fontSize: 11, color: c.mutedForeground },
 
-});
+  });
+}

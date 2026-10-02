@@ -10,7 +10,8 @@ import {
   Platform,
 } from "react-native";
 import { Activity, Zap } from "lucide-react-native";
-import { COLORS } from "@/theme/colors";
+import { type ColorTokens } from "@/theme/colors";
+import { useStyles, useTheme } from "@/theme/theme-context";
 import { font, mono } from "@/theme/fonts";
 
 interface Props {
@@ -28,6 +29,8 @@ export function RuntimeDottedIndicator({
   size = "md",
   style,
 }: Props) {
+  const { colors } = useTheme();
+  const styles = useStyles(createStyles);
   const dot1 = useRef(new Animated.Value(0)).current;
   const dot2 = useRef(new Animated.Value(0)).current;
   const dot3 = useRef(new Animated.Value(0)).current;
@@ -139,7 +142,7 @@ export function RuntimeDottedIndicator({
         {
           borderColor: pulseBorder.interpolate({
             inputRange: [0.35, 0.9],
-            outputRange: ["rgba(66, 64, 225, 0.35)", "rgba(66, 64, 225, 0.85)"],
+            outputRange: [colors.primary + "59", colors.primary + "D9"],
           }),
         },
         style,
@@ -148,7 +151,7 @@ export function RuntimeDottedIndicator({
       <View style={styles.blockHeader}>
         <View style={styles.tagWrap}>
           <View style={styles.iconCircle}>
-            <Zap size={11} color={COLORS.primary} />
+            <Zap size={11} color={colors.primary} />
           </View>
           <Text style={[styles.blockLabel, mono("bold")]}>{label}</Text>
         </View>
@@ -170,96 +173,97 @@ export function RuntimeDottedIndicator({
   );
 }
 
-const styles = StyleSheet.create({
-  inlineContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 4,
-    paddingHorizontal: 4,
-    height: 16,
-  },
-  miniDot: {
-    width: 4.5,
-    height: 4.5,
-    borderRadius: 2.25,
-    backgroundColor: COLORS.primary,
-  },
-  badgeContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 12,
-    backgroundColor: "rgba(66, 64, 225, 0.08)",
-    borderWidth: 1,
-    borderColor: "rgba(66, 64, 225, 0.25)",
-  },
-  badgeDots: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 3,
-  },
-  badgeText: {
-    fontSize: 10,
-    color: COLORS.primary,
-    letterSpacing: 0.4,
-  },
-  blockContainer: {
-    paddingHorizontal: 12,
-    paddingVertical: 9,
-    borderRadius: 10,
-    borderWidth: 1.5,
-    borderStyle: "dashed",
-    backgroundColor: "rgba(66, 64, 225, 0.04)",
-    gap: 5,
-    marginVertical: 4,
-  },
-  blockContainerSm: {
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 8,
-  },
-  blockHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-  },
-  tagWrap: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-  },
-  iconCircle: {
-    width: 18,
-    height: 18,
-    borderRadius: 9,
-    backgroundColor: "rgba(66, 64, 225, 0.12)",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  blockLabel: {
-    fontSize: 11,
-    color: COLORS.primary,
-    letterSpacing: 0.5,
-    textTransform: "uppercase",
-  },
-  dotsWaveRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 4,
-    paddingHorizontal: 4,
-  },
-  waveDot: {
-    width: 5,
-    height: 5,
-    borderRadius: 2.5,
-    backgroundColor: COLORS.primary,
-  },
-  blockSubLabel: {
-    fontSize: 11.5,
-    color: COLORS.foreground,
-    paddingLeft: 24,
-    opacity: 0.9,
-  },
-});
+const createStyles = (c: ColorTokens) =>
+  StyleSheet.create({
+    inlineContainer: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 4,
+      paddingHorizontal: 4,
+      height: 16,
+    },
+    miniDot: {
+      width: 4.5,
+      height: 4.5,
+      borderRadius: 2.25,
+      backgroundColor: c.primary,
+    },
+    badgeContainer: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 6,
+      paddingHorizontal: 8,
+      paddingVertical: 3,
+      borderRadius: 999,
+      backgroundColor: c.primary + "14",
+      borderWidth: 1,
+      borderColor: c.primary + "40",
+    },
+    badgeDots: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 3,
+    },
+    badgeText: {
+      fontSize: 10,
+      color: c.primary,
+      letterSpacing: 0.4,
+    },
+    blockContainer: {
+      paddingHorizontal: 12,
+      paddingVertical: 9,
+      borderRadius: 14,
+      borderWidth: 1.5,
+      borderStyle: "dashed",
+      backgroundColor: c.primary + "0A",
+      gap: 5,
+      marginVertical: 4,
+    },
+    blockContainerSm: {
+      paddingHorizontal: 10,
+      paddingVertical: 6,
+      borderRadius: 8,
+    },
+    blockHeader: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+    },
+    tagWrap: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 6,
+    },
+    iconCircle: {
+      width: 18,
+      height: 18,
+      borderRadius: 9,
+      backgroundColor: c.primary + "1F",
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    blockLabel: {
+      fontSize: 11,
+      color: c.primary,
+      letterSpacing: 0.5,
+      textTransform: "uppercase",
+    },
+    dotsWaveRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 4,
+      paddingHorizontal: 4,
+    },
+    waveDot: {
+      width: 5,
+      height: 5,
+      borderRadius: 2.5,
+      backgroundColor: c.primary,
+    },
+    blockSubLabel: {
+      fontSize: 11.5,
+      color: c.foreground,
+      paddingLeft: 24,
+      opacity: 0.9,
+    },
+  });

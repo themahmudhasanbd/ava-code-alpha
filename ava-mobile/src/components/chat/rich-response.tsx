@@ -47,7 +47,8 @@ import {
 } from "lucide-react-native";
 import { CodeBlock } from "@/components/ai-elements/code-block";
 import { Surface } from "@/components/kit";
-import { COLORS } from "@/theme/colors";
+import type { ColorTokens } from "@/theme/colors";
+import { useStyles, useTheme } from "@/theme/theme-context";
 import { font, FONTS, mono } from "@/theme/fonts";
 
 const SCREEN_WIDTH = Dimensions.get("window").width;
@@ -123,6 +124,8 @@ export function InlineText({
   isUser?: boolean;
   numberOfLines?: number;
 }) {
+  const { colors } = useTheme();
+  const styles = useStyles(createStyles);
   const tokens = parseInlineFormatting(text);
 
   const handleOpenUrl = (url?: string) => {
@@ -299,7 +302,7 @@ function getDiagramTypeLabel(code: string): string {
   return "Mermaid Diagram";
 }
 
-function buildMermaidHtml(diagramCode: string): string {
+function buildMermaidHtml(diagramCode: string, c: ColorTokens): string {
   return `<!DOCTYPE html>
 <html>
 <head>
@@ -309,7 +312,7 @@ function buildMermaidHtml(diagramCode: string): string {
     * { box-sizing: border-box; margin: 0; padding: 0; -webkit-user-select: none; user-select: none; }
     html, body {
       background-color: transparent !important;
-      color: ${COLORS.foreground};
+      color: ${c.foreground};
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
       width: 100%;
       height: 100%;
@@ -352,29 +355,29 @@ function buildMermaidHtml(diagramCode: string): string {
       margin: 0 auto;
     }
     .node rect, .node circle, .node ellipse, .node polygon, .node path {
-      fill: ${COLORS.secondary} !important;
-      stroke: ${COLORS.border} !important;
+      fill: ${c.secondary} !important;
+      stroke: ${c.border} !important;
       stroke-width: 1px !important;
       rx: 5px !important;
       ry: 5px !important;
     }
     .node .label, .node text {
-      fill: ${COLORS.foreground} !important;
+      fill: ${c.foreground} !important;
       font-weight: 500 !important;
       font-size: 10.5px !important;
       line-height: 1.2 !important;
     }
     .edgePath .path {
-      stroke: ${COLORS.mutedForeground} !important;
+      stroke: ${c.mutedForeground} !important;
       stroke-width: 1.2px !important;
     }
     .edgeLabel {
-      background-color: ${COLORS.card} !important;
-      color: ${COLORS.mutedForeground} !important;
+      background-color: ${c.card} !important;
+      color: ${c.mutedForeground} !important;
       font-size: 9.5px !important;
       padding: 1px 4px !important;
-      border-radius: 3px !important;
-      border: 1px solid ${COLORS.border} !important;
+      border-radius: 6px !important;
+      border: 1px solid ${c.border} !important;
     }
   </style>
   <script src="https://cdn.jsdelivr.net/npm/mermaid@10.9.0/dist/mermaid.min.js"></script>
@@ -483,19 +486,19 @@ function buildMermaidHtml(diagramCode: string): string {
           startOnLoad: false,
           theme: 'neutral',
           themeVariables: {
-            primaryColor: '${COLORS.secondary}',
-            primaryTextColor: '${COLORS.foreground}',
-            primaryBorderColor: '${COLORS.border}',
-            lineColor: '${COLORS.mutedForeground}',
-            secondaryColor: '${COLORS.card}',
-            tertiaryColor: '${COLORS.card}',
-            mainBkg: '${COLORS.card}',
-            nodeBorder: '${COLORS.border}',
-            nodeTextColor: '${COLORS.foreground}',
-            clusterBkg: '${COLORS.secondary}',
-            clusterBorder: '${COLORS.border}',
-            titleColor: '${COLORS.foreground}',
-            edgeLabelBackground: '${COLORS.card}',
+            primaryColor: '${c.secondary}',
+            primaryTextColor: '${c.foreground}',
+            primaryBorderColor: '${c.border}',
+            lineColor: '${c.mutedForeground}',
+            secondaryColor: '${c.card}',
+            tertiaryColor: '${c.card}',
+            mainBkg: '${c.card}',
+            nodeBorder: '${c.border}',
+            nodeTextColor: '${c.foreground}',
+            clusterBkg: '${c.secondary}',
+            clusterBorder: '${c.border}',
+            titleColor: '${c.foreground}',
+            edgeLabelBackground: '${c.card}',
             fontSize: '10.5px',
             fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif'
           },
@@ -586,6 +589,8 @@ function useDeferredMount(): boolean {
 }
 
 function MermaidBlock({ code }: { code: string }) {
+  const { colors } = useTheme();
+  const styles = useStyles(createStyles);
   const [viewMode, setViewMode] = useState<"diagram" | "code">("diagram");
   const [copied, setCopied] = useState(false);
   const [webViewHeight, setWebViewHeight] = useState(90);
@@ -599,7 +604,7 @@ function MermaidBlock({ code }: { code: string }) {
   const fullscreenWebViewRef = useRef<WebView>(null);
 
   const diagramLabel = useMemo(() => getDiagramTypeLabel(code), [code]);
-  const html = useMemo(() => buildMermaidHtml(code), [code]);
+  const html = useMemo(() => buildMermaidHtml(code, colors), [code, colors]);
 
   const handleCopy = async () => {
     await Clipboard.setStringAsync(code);
@@ -647,7 +652,7 @@ function MermaidBlock({ code }: { code: string }) {
       <View style={styles.mermaidHeader}>
         <View style={styles.mermaidLabelGroup}>
           <View style={styles.mermaidIconTag}>
-            <GitGraph size={13} color={COLORS.primary} />
+            <GitGraph size={13} color={colors.primary} />
           </View>
           <Text style={[styles.mermaidHeaderText, font("semibold")]} numberOfLines={1}>
             {diagramLabel}
@@ -663,15 +668,15 @@ function MermaidBlock({ code }: { code: string }) {
             activeOpacity={0.7}
           >
             {viewMode === "diagram" ? (
-              <Code2 size={12} color={COLORS.mutedForeground} />
+              <Code2 size={12} color={colors.mutedForeground} />
             ) : (
-              <Eye size={12} color={COLORS.primary} />
+              <Eye size={12} color={colors.primary} />
             )}
             <Text
               style={[
                 styles.mermaidActionBtnText,
                 font("medium"),
-                viewMode === "code" && { color: COLORS.primary },
+                viewMode === "code" && { color: colors.primary },
               ]}
             >
               {viewMode === "diagram" ? "Code" : "Diagram"}
@@ -684,7 +689,7 @@ function MermaidBlock({ code }: { code: string }) {
               onPress={() => setFullscreenOpen(true)}
               activeOpacity={0.7}
             >
-              <Maximize2 size={12} color={COLORS.mutedForeground} />
+              <Maximize2 size={12} color={colors.mutedForeground} />
             </TouchableOpacity>
           )}
 
@@ -694,9 +699,9 @@ function MermaidBlock({ code }: { code: string }) {
             activeOpacity={0.7}
           >
             {copied ? (
-              <Check size={12} color={COLORS.success} />
+              <Check size={12} color={colors.success} />
             ) : (
-              <Copy size={12} color={COLORS.mutedForeground} />
+              <Copy size={12} color={colors.mutedForeground} />
             )}
           </TouchableOpacity>
         </View>
@@ -719,7 +724,7 @@ function MermaidBlock({ code }: { code: string }) {
         >
           {isLoading && (
             <View style={styles.mermaidLoaderBox}>
-              <ActivityIndicator size="small" color={COLORS.primary} />
+              <ActivityIndicator size="small" color={colors.primary} />
             </View>
           )}
           {mountReady ? <WebView
@@ -744,7 +749,7 @@ function MermaidBlock({ code }: { code: string }) {
               onPress={handleZoomOut}
               activeOpacity={0.7}
             >
-              <ZoomOut size={13} color={COLORS.foreground} />
+              <ZoomOut size={13} color={colors.foreground} />
             </TouchableOpacity>
 
             <TouchableOpacity
@@ -762,7 +767,7 @@ function MermaidBlock({ code }: { code: string }) {
               onPress={handleZoomIn}
               activeOpacity={0.7}
             >
-              <ZoomIn size={13} color={COLORS.foreground} />
+              <ZoomIn size={13} color={colors.foreground} />
             </TouchableOpacity>
           </View>
         </View>
@@ -784,7 +789,7 @@ function MermaidBlock({ code }: { code: string }) {
           />
           <View style={styles.fullscreenHeader}>
             <View style={styles.mermaidLabelGroup}>
-              <GitGraph size={15} color={COLORS.primary} />
+              <GitGraph size={15} color={colors.primary} />
               <Text style={[styles.fullscreenTitle, font("semibold")]}>
                 {diagramLabel}
               </Text>
@@ -796,7 +801,7 @@ function MermaidBlock({ code }: { code: string }) {
                 onPress={handleZoomOut}
                 activeOpacity={0.7}
               >
-                <ZoomOut size={15} color={COLORS.foreground} />
+                <ZoomOut size={15} color={colors.foreground} />
               </TouchableOpacity>
 
               <TouchableOpacity
@@ -804,7 +809,7 @@ function MermaidBlock({ code }: { code: string }) {
                 onPress={handleResetZoom}
                 activeOpacity={0.7}
               >
-                <RotateCcw size={14} color={COLORS.foreground} />
+                <RotateCcw size={14} color={colors.foreground} />
               </TouchableOpacity>
 
               <TouchableOpacity
@@ -812,7 +817,7 @@ function MermaidBlock({ code }: { code: string }) {
                 onPress={handleZoomIn}
                 activeOpacity={0.7}
               >
-                <ZoomIn size={15} color={COLORS.foreground} />
+                <ZoomIn size={15} color={colors.foreground} />
               </TouchableOpacity>
 
               <TouchableOpacity
@@ -820,7 +825,7 @@ function MermaidBlock({ code }: { code: string }) {
                 style={styles.fullscreenCloseBtn}
                 activeOpacity={0.7}
               >
-                <X size={18} color={COLORS.foreground} />
+                <X size={18} color={colors.foreground} />
               </TouchableOpacity>
             </View>
           </View>
@@ -847,7 +852,7 @@ function MermaidBlock({ code }: { code: string }) {
 // 3. MATH & LATEX EQUATION RENDERER
 // ============================================================================
 
-function buildMathHtml(formula: string): string {
+function buildMathHtml(formula: string, c: ColorTokens): string {
   return `<!DOCTYPE html>
 <html>
 <head>
@@ -859,7 +864,7 @@ function buildMathHtml(formula: string): string {
     * { box-sizing: border-box; margin: 0; padding: 0; }
     html, body {
       background-color: transparent !important;
-      color: ${COLORS.foreground} !important;
+      color: ${c.foreground} !important;
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
       display: flex;
       justify-content: center;
@@ -876,11 +881,11 @@ function buildMathHtml(formula: string): string {
       align-items: center;
     }
     .katex {
-      color: ${COLORS.foreground} !important;
+      color: ${c.foreground} !important;
       font-size: 1.15em !important;
     }
     .katex-html, .katex .base {
-      color: ${COLORS.foreground} !important;
+      color: ${c.foreground} !important;
     }
     .katex-display {
       margin: 0 !important;
@@ -920,9 +925,11 @@ function buildMathHtml(formula: string): string {
 }
 
 function MathBlock({ formula }: { formula: string }) {
+  const { colors } = useTheme();
+  const styles = useStyles(createStyles);
   const [height, setHeight] = useState(54);
   const [copied, setCopied] = useState(false);
-  const html = useMemo(() => buildMathHtml(formula), [formula]);
+  const html = useMemo(() => buildMathHtml(formula, colors), [formula, colors]);
   const mountReady = useDeferredMount();
 
   const handleCopy = async () => {
@@ -943,9 +950,9 @@ function MathBlock({ formula }: { formula: string }) {
           activeOpacity={0.7}
         >
           {copied ? (
-            <Check size={12} color={COLORS.success} />
+            <Check size={12} color={colors.success} />
           ) : (
-            <Copy size={12} color={COLORS.mutedForeground} />
+            <Copy size={12} color={colors.mutedForeground} />
           )}
         </TouchableOpacity>
       </View>
@@ -1000,6 +1007,8 @@ function MarkdownTable({
   table: ParsedTable;
   isUser?: boolean;
 }) {
+  const { colors } = useTheme();
+  const styles = useStyles(createStyles);
   return (
     <Surface style={[styles.tableCard, isUser && styles.tableCardUser]}>
       <ScrollView horizontal showsHorizontalScrollIndicator={false}>
@@ -1142,6 +1151,8 @@ function createPieSlicePath(
 }
 
 function ChartBlock({ spec }: { spec: ChartSpec }) {
+  const { colors } = useTheme();
+  const styles = useStyles(createStyles);
   const [selectedSliceIndex, setSelectedSliceIndex] = useState<number | null>(
     null
   );
@@ -1250,7 +1261,7 @@ function ChartBlock({ spec }: { spec: ChartSpec }) {
                         key={slice.index}
                         d={pathData}
                         fill={slice.color}
-                        stroke={COLORS.card}
+                        stroke={colors.card}
                         strokeWidth={2}
                         opacity={
                           selectedSliceIndex === null || isSelected ? 1 : 0.5
@@ -1318,7 +1329,7 @@ function ChartBlock({ spec }: { spec: ChartSpec }) {
                       style={[
                         styles.legendLabel,
                         font(isSelected ? "bold" : "medium", slice.label),
-                        isSelected && { color: COLORS.foreground },
+                        isSelected && { color: colors.foreground },
                       ]}
                       numberOfLines={1}
                     >
@@ -1328,7 +1339,7 @@ function ChartBlock({ spec }: { spec: ChartSpec }) {
                       style={[
                         styles.legendValue,
                         mono("medium"),
-                        isSelected && { color: COLORS.primary },
+                        isSelected && { color: colors.primary },
                       ]}
                     >
                       {slice.val} ({slice.pct.toFixed(1)}%)
@@ -1346,12 +1357,12 @@ function ChartBlock({ spec }: { spec: ChartSpec }) {
                 <LinearGradient id="areaGrad" x1="0" y1="0" x2="0" y2="1">
                   <Stop
                     offset="0%"
-                    stopColor={COLORS.primary}
+                    stopColor={colors.primary}
                     stopOpacity="0.30"
                   />
                   <Stop
                     offset="100%"
-                    stopColor={COLORS.primary}
+                    stopColor={colors.primary}
                     stopOpacity="0.02"
                   />
                 </LinearGradient>
@@ -1367,14 +1378,14 @@ function ChartBlock({ spec }: { spec: ChartSpec }) {
                       y1={y}
                       x2="310"
                       y2={y}
-                      stroke={COLORS.border}
+                      stroke={colors.border}
                       strokeWidth="1"
                       strokeDasharray="3 3"
                     />
                     <SvgText
                       x="4"
                       y={y + 3}
-                      fill={COLORS.mutedForeground}
+                      fill={colors.mutedForeground}
                       fontSize="9"
                       fontFamily={FONTS.monoRegular}
                     >
@@ -1426,7 +1437,7 @@ function ChartBlock({ spec }: { spec: ChartSpec }) {
                           cx={p.x}
                           cy={p.y}
                           r="3"
-                          fill={COLORS.card}
+                          fill={colors.card}
                           stroke={strokeColor}
                           strokeWidth="2"
                         />
@@ -1487,14 +1498,14 @@ function ChartBlock({ spec }: { spec: ChartSpec }) {
                       y1={y}
                       x2="310"
                       y2={y}
-                      stroke={COLORS.border}
+                      stroke={colors.border}
                       strokeWidth="1"
                       strokeDasharray="3 3"
                     />
                     <SvgText
                       x="4"
                       y={y + 3}
-                      fill={COLORS.mutedForeground}
+                      fill={colors.mutedForeground}
                       fontSize="9"
                       fontFamily={FONTS.monoRegular}
                     >
@@ -1598,6 +1609,8 @@ function ChartBlock({ spec }: { spec: ChartSpec }) {
 
 export const RichResponse = memo(
   ({ text, isUser = false }: { text: string; isUser?: boolean }) => {
+    const { colors } = useTheme();
+    const styles = useStyles(createStyles);
     if (!text) return null;
 
     const lines = text.split("\n");
@@ -1741,7 +1754,7 @@ export const RichResponse = memo(
             key={`hr-${currentKey++}`}
             style={[
               styles.hr,
-              isUser && { backgroundColor: COLORS.border },
+              isUser && { backgroundColor: colors.border },
             ]}
           />
         );
@@ -1824,8 +1837,8 @@ export const RichResponse = memo(
             style={[
               styles.blockquote,
               isUser && {
-                borderLeftColor: COLORS.primary,
-                backgroundColor: COLORS.card,
+                borderLeftColor: colors.primary,
+                backgroundColor: colors.card,
               },
             ]}
           >
@@ -1853,13 +1866,13 @@ export const RichResponse = memo(
             {isDone ? (
               <CheckSquare
                 size={15}
-                color={COLORS.success}
+                color={colors.success}
                 style={styles.taskIcon}
               />
             ) : (
               <Square
                 size={15}
-                color={COLORS.mutedForeground}
+                color={colors.mutedForeground}
                 style={styles.taskIcon}
               />
             )}
@@ -1995,7 +2008,7 @@ RichResponse.displayName = "RichResponse";
 // STYLES
 // ============================================================================
 
-const styles = StyleSheet.create({
+const createStyles = (c: ColorTokens) => StyleSheet.create({
   container: {
     gap: 4,
   },
@@ -2005,74 +2018,74 @@ const styles = StyleSheet.create({
   inlineBaseText: {
     fontSize: 15,
     lineHeight: 23,
-    color: COLORS.foreground,
+    color: c.foreground,
   },
   inlineBaseTextUser: {
     fontSize: 15,
     lineHeight: 23,
-    color: COLORS.foreground,
+    color: c.foreground,
   },
   boldText: {
     fontWeight: "700",
-    color: COLORS.foreground,
+    color: c.foreground,
   },
   boldTextUser: {
     fontWeight: "700",
-    color: COLORS.foreground,
+    color: c.foreground,
   },
   italicText: {
     fontStyle: "italic",
-    color: COLORS.foreground,
+    color: c.foreground,
   },
   italicTextUser: {
     fontStyle: "italic",
-    color: COLORS.foreground,
+    color: c.foreground,
   },
   boldItalicText: {
     fontWeight: "700",
     fontStyle: "italic",
-    color: COLORS.foreground,
+    color: c.foreground,
   },
   strikeText: {
     textDecorationLine: "line-through",
-    color: COLORS.mutedForeground,
+    color: c.mutedForeground,
   },
   strikeTextUser: {
     textDecorationLine: "line-through",
-    color: COLORS.mutedForeground,
+    color: c.mutedForeground,
   },
   linkText: {
-    color: COLORS.primary,
+    color: c.primary,
     textDecorationLine: "underline",
     fontWeight: "500",
   },
   linkTextUser: {
-    color: COLORS.primary,
+    color: c.primary,
     textDecorationLine: "underline",
     fontWeight: "600",
   },
   inlineCodeText: {
     fontSize: 13.5,
-    backgroundColor: COLORS.secondary,
-    color: COLORS.foreground,
-    borderRadius: 4,
+    backgroundColor: c.secondary,
+    color: c.foreground,
+    borderRadius: 6,
     overflow: "hidden",
   },
   inlineCodeTextUser: {
     fontSize: 13.5,
-    backgroundColor: COLORS.card,
-    color: COLORS.foreground,
-    borderRadius: 4,
+    backgroundColor: c.card,
+    color: c.foreground,
+    borderRadius: 6,
     overflow: "hidden",
   },
   inlineMathText: {
     fontSize: 13,
-    color: COLORS.foreground,
+    color: c.foreground,
     paddingHorizontal: 2,
   },
   inlineMathTextUser: {
     fontSize: 13,
-    color: COLORS.foreground,
+    color: c.foreground,
     paddingHorizontal: 2,
   },
   headingBlock: {
@@ -2081,7 +2094,7 @@ const styles = StyleSheet.create({
   heading1: {
     fontSize: 18,
     fontWeight: "700",
-    color: COLORS.foreground,
+    color: c.foreground,
     marginTop: 12,
     marginBottom: 5,
     letterSpacing: -0.3,
@@ -2089,7 +2102,7 @@ const styles = StyleSheet.create({
   heading2: {
     fontSize: 16,
     fontWeight: "700",
-    color: COLORS.foreground,
+    color: c.foreground,
     marginTop: 10,
     marginBottom: 4,
     letterSpacing: -0.2,
@@ -2097,36 +2110,36 @@ const styles = StyleSheet.create({
   heading3: {
     fontSize: 14.5,
     fontWeight: "600",
-    color: COLORS.foreground,
+    color: c.foreground,
     marginTop: 8,
     marginBottom: 3,
   },
   heading4: {
     fontSize: 13.5,
     fontWeight: "600",
-    color: COLORS.foreground,
+    color: c.foreground,
     marginTop: 7,
     marginBottom: 3,
   },
   headingUser: {
-    color: COLORS.foreground,
+    color: c.foreground,
   },
   blockquote: {
     borderLeftWidth: 2,
-    borderLeftColor: COLORS.border,
-    paddingLeft: 10,
-    paddingVertical: 6,
+    borderLeftColor: c.border,
+    paddingLeft: 12,
+    paddingVertical: 8,
     marginVertical: 4,
-    backgroundColor: COLORS.secondary,
-    borderRadius: 4,
+    backgroundColor: c.secondary,
+    borderRadius: 12,
   },
   blockquoteText: {
     fontStyle: "italic",
-    color: COLORS.mutedForeground,
+    color: c.mutedForeground,
   },
   blockquoteTextUser: {
     fontStyle: "italic",
-    color: COLORS.mutedForeground,
+    color: c.mutedForeground,
   },
   listItemRow: {
     flexDirection: "row",
@@ -2137,13 +2150,13 @@ const styles = StyleSheet.create({
   bulletDot: {
     fontSize: 15,
     lineHeight: 23,
-    color: COLORS.mutedForeground,
+    color: c.mutedForeground,
     fontWeight: "700",
   },
   numberIndex: {
     fontSize: 13,
     lineHeight: 23,
-    color: COLORS.mutedForeground,
+    color: c.mutedForeground,
     fontWeight: "600",
     minWidth: 16,
   },
@@ -2160,16 +2173,16 @@ const styles = StyleSheet.create({
     marginTop: 3,
   },
   taskDoneText: {
-    color: COLORS.mutedForeground,
+    color: c.mutedForeground,
     textDecorationLine: "line-through",
   },
   taskDoneTextUser: {
-    color: COLORS.mutedForeground,
+    color: c.mutedForeground,
     textDecorationLine: "line-through",
   },
   hr: {
     height: 1,
-    backgroundColor: COLORS.border,
+    backgroundColor: c.border,
     marginVertical: 8,
   },
   spacer: {
@@ -2180,27 +2193,27 @@ const styles = StyleSheet.create({
   tableCard: {
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: COLORS.border,
-    backgroundColor: COLORS.card,
+    borderColor: c.border,
+    backgroundColor: c.card,
     marginVertical: 6,
     overflow: "hidden",
   },
   tableCardUser: {
-    backgroundColor: COLORS.card,
-    borderColor: COLORS.border,
+    backgroundColor: c.card,
+    borderColor: c.border,
   },
   tableGrid: {
     minWidth: "100%",
   },
   tableHeaderRow: {
     flexDirection: "row",
-    backgroundColor: COLORS.secondary,
+    backgroundColor: c.secondary,
     borderBottomWidth: 1,
-    borderBottomColor: COLORS.border,
+    borderBottomColor: c.border,
   },
   tableHeaderRowUser: {
-    backgroundColor: COLORS.secondary,
-    borderBottomColor: COLORS.border,
+    backgroundColor: c.secondary,
+    borderBottomColor: c.border,
   },
   tableHeaderCell: {
     paddingHorizontal: 12,
@@ -2211,23 +2224,23 @@ const styles = StyleSheet.create({
   tableHeaderText: {
     fontSize: 12,
     fontWeight: "700",
-    color: COLORS.foreground,
+    color: c.foreground,
   },
   tableHeaderTextUser: {
     fontSize: 12,
     fontWeight: "700",
-    color: COLORS.foreground,
+    color: c.foreground,
   },
   tableRow: {
     flexDirection: "row",
     borderBottomWidth: 1,
-    borderBottomColor: COLORS.border,
+    borderBottomColor: c.border,
   },
   tableRowAlt: {
-    backgroundColor: COLORS.secondary,
+    backgroundColor: c.secondary,
   },
   tableRowAltUser: {
-    backgroundColor: COLORS.secondary,
+    backgroundColor: c.secondary,
   },
   tableRowLast: {
     borderBottomWidth: 0,
@@ -2241,12 +2254,12 @@ const styles = StyleSheet.create({
   tableCellText: {
     fontSize: 12.5,
     lineHeight: 18,
-    color: COLORS.foreground,
+    color: c.foreground,
   },
   tableCellTextUser: {
     fontSize: 12.5,
     lineHeight: 18,
-    color: COLORS.foreground,
+    color: c.foreground,
   },
   cellCenter: {
     alignItems: "center",
@@ -2257,10 +2270,10 @@ const styles = StyleSheet.create({
 
   // Mermaid Diagram Styles
   mermaidCard: {
-    borderRadius: 14,
+    borderRadius: 16,
     borderWidth: 1,
-    borderColor: COLORS.border,
-    backgroundColor: COLORS.card,
+    borderColor: c.border,
+    backgroundColor: c.card,
     marginVertical: 6,
     overflow: "hidden",
   },
@@ -2270,9 +2283,9 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     paddingHorizontal: 12,
     paddingVertical: 7,
-    backgroundColor: COLORS.secondary,
+    backgroundColor: c.secondary,
     borderBottomWidth: 1,
-    borderBottomColor: COLORS.border,
+    borderBottomColor: c.border,
   },
   mermaidLabelGroup: {
     flexDirection: "row",
@@ -2284,14 +2297,14 @@ const styles = StyleSheet.create({
     width: 20,
     height: 20,
     borderRadius: 4,
-    backgroundColor: COLORS.secondary,
+    backgroundColor: c.secondary,
     alignItems: "center",
     justifyContent: "center",
   },
   mermaidHeaderText: {
     fontSize: 11.5,
     fontWeight: "600",
-    color: COLORS.mutedForeground,
+    color: c.mutedForeground,
     textTransform: "lowercase",
   },
   mermaidActionsRow: {
@@ -2305,27 +2318,27 @@ const styles = StyleSheet.create({
     gap: 3,
     paddingHorizontal: 7,
     paddingVertical: 3.5,
-    borderRadius: 6,
-    backgroundColor: COLORS.card,
+    borderRadius: 999,
+    backgroundColor: c.card,
     borderWidth: 1,
-    borderColor: COLORS.border,
+    borderColor: c.border,
   },
   mermaidActionBtnText: {
     fontSize: 11,
-    color: COLORS.mutedForeground,
+    color: c.mutedForeground,
   },
   mermaidCodeFallback: {
     padding: 6,
   },
   mermaidErrorBanner: {
     padding: 8,
-    backgroundColor: COLORS.destructive + "14",
+    backgroundColor: c.destructive + "14",
     borderRadius: 8,
     marginBottom: 6,
   },
   mermaidErrorText: {
     fontSize: 11,
-    color: COLORS.destructive,
+    color: c.destructive,
   },
   mermaidWebViewContainer: {
     width: "100%",
@@ -2342,13 +2355,13 @@ const styles = StyleSheet.create({
     right: 8,
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: COLORS.card,
+    backgroundColor: c.card,
     borderWidth: 1,
-    borderColor: COLORS.border,
-    borderRadius: 8,
+    borderColor: c.border,
+    borderRadius: 999,
     paddingHorizontal: 4,
     paddingVertical: 2,
-    shadowColor: COLORS.glassShadow,
+    shadowColor: c.glassShadow,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.12,
     shadowRadius: 4,
@@ -2362,7 +2375,7 @@ const styles = StyleSheet.create({
     borderRadius: 6,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: COLORS.secondary,
+    backgroundColor: c.secondary,
   },
   floatingZoomResetBtn: {
     paddingHorizontal: 6,
@@ -2373,7 +2386,7 @@ const styles = StyleSheet.create({
   },
   floatingZoomText: {
     fontSize: 10.5,
-    color: COLORS.foreground,
+    color: c.foreground,
     minWidth: 32,
     textAlign: "center",
   },
@@ -2381,12 +2394,12 @@ const styles = StyleSheet.create({
     ...StyleSheet.absoluteFill,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: COLORS.card,
+    backgroundColor: c.card,
     zIndex: 2,
   },
   fullscreenBackdrop: {
     flex: 1,
-    backgroundColor: COLORS.background,
+    backgroundColor: c.background,
     paddingTop: Platform.OS === "ios" ? 44 : 12,
   },
   fullscreenHeader: {
@@ -2396,12 +2409,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 10,
     borderBottomWidth: 1,
-    borderBottomColor: COLORS.border,
+    borderBottomColor: c.border,
   },
   fullscreenTitle: {
     fontSize: 14,
     fontWeight: "600",
-    color: COLORS.foreground,
+    color: c.foreground,
   },
   fullscreenZoomRow: {
     flexDirection: "row",
@@ -2414,9 +2427,9 @@ const styles = StyleSheet.create({
     borderRadius: 6,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: COLORS.secondary,
+    backgroundColor: c.secondary,
     borderWidth: 1,
-    borderColor: COLORS.border,
+    borderColor: c.border,
   },
   fullscreenCloseBtn: {
     width: 30,
@@ -2424,7 +2437,7 @@ const styles = StyleSheet.create({
     borderRadius: 6,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: COLORS.secondary,
+    backgroundColor: c.secondary,
     marginLeft: 4,
   },
   fullscreenWebViewBox: {
@@ -2437,10 +2450,10 @@ const styles = StyleSheet.create({
 
   // Math styles
   mathCard: {
-    borderRadius: 12,
+    borderRadius: 16,
     borderWidth: 1,
-    borderColor: COLORS.border,
-    backgroundColor: COLORS.card,
+    borderColor: c.border,
+    backgroundColor: c.card,
     marginVertical: 5,
     overflow: "hidden",
     padding: 4,
@@ -2456,18 +2469,18 @@ const styles = StyleSheet.create({
   mathBadge: {
     paddingHorizontal: 6,
     paddingVertical: 2,
-    borderRadius: 4,
-    backgroundColor: COLORS.secondary,
+    borderRadius: 999,
+    backgroundColor: c.secondary,
   },
   mathBadgeText: {
     fontSize: 10,
-    color: COLORS.mutedForeground,
+    color: c.mutedForeground,
     fontWeight: "700",
   },
   mathCopyBtn: {
     padding: 4,
-    borderRadius: 4,
-    backgroundColor: COLORS.secondary,
+    borderRadius: 8,
+    backgroundColor: c.secondary,
   },
   mathWebViewBox: {
     width: "100%",
@@ -2483,13 +2496,13 @@ const styles = StyleSheet.create({
     padding: 12,
     marginVertical: 12,
     borderWidth: 1,
-    borderColor: COLORS.border,
-    backgroundColor: COLORS.card,
+    borderColor: c.border,
+    backgroundColor: c.card,
   },
   chartTitle: {
     fontSize: 14,
     fontWeight: "500",
-    color: COLORS.foreground,
+    color: c.foreground,
     marginBottom: 8,
   },
   chartBody: {
@@ -2516,11 +2529,11 @@ const styles = StyleSheet.create({
   pieCenterValue: {
     fontSize: 14,
     fontWeight: "700",
-    color: COLORS.foreground,
+    color: c.foreground,
   },
   pieCenterLabel: {
     fontSize: 10,
-    color: COLORS.mutedForeground,
+    color: c.mutedForeground,
   },
   legendGrid: {
     flexDirection: "row",
@@ -2538,7 +2551,7 @@ const styles = StyleSheet.create({
     borderRadius: 5,
   },
   legendItemSelected: {
-    backgroundColor: COLORS.secondary,
+    backgroundColor: c.secondary,
   },
   legendDot: {
     width: 8,
@@ -2547,13 +2560,13 @@ const styles = StyleSheet.create({
   },
   legendLabel: {
     fontSize: 11,
-    color: COLORS.mutedForeground,
+    color: c.mutedForeground,
     flex: 1,
   },
   legendValue: {
     fontSize: 10.5,
     fontWeight: "600",
-    color: COLORS.foreground,
+    color: c.foreground,
   },
   svgChartContainer: {
     alignItems: "center",
@@ -2569,7 +2582,7 @@ const styles = StyleSheet.create({
   },
   xAxisLabel: {
     fontSize: 10,
-    color: COLORS.mutedForeground,
+    color: c.mutedForeground,
     maxWidth: 55,
     textAlign: "center",
   },

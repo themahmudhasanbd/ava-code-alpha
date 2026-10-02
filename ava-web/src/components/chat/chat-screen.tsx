@@ -60,11 +60,13 @@ export function ChatScreen() {
     resume,
   } = useChat();
   const [draft, setDraft] = useState("");
+  const [scrollSignal, setScrollSignal] = useState(0);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const title = sessions?.find((s) => s.id === activeSessionId)?.title ?? "New session";
 
   const submit = (text: string) => {
     setDraft("");
+    setScrollSignal((n) => n + 1);
     send(text);
   };
 
@@ -102,6 +104,12 @@ export function ChatScreen() {
                 <p className="rounded-xl bg-destructive/10 px-3 py-2 text-sm text-destructive">{error}</p>
               )}
             </ConversationContent>
+            <ScrollToBottomTrigger
+              signal={scrollSignal}
+              sessionId={activeSessionId}
+              hasMessages={messages.length > 0}
+              loadingHistory={loadingHistory}
+            />
             <ConversationScrollButton />
           </Conversation>
         )}
@@ -155,6 +163,47 @@ export function ChatScreen() {
       </div>
     </AppShell>
   );
+}
+
+/**
+ * StickToBottom only auto-scrolls while the user is already at the bottom,
+ * which is right for streaming, but two moments must always land on the
+ * latest message: sending your own message (even when scrolled up reading
+ * history) and opening a session (even if the previous session was left
+ * scrolled up). This bridge lives inside <Conversation> so it can call
+ * scrollToBottom() for those moments. Every other append keeps the
+ * library's stick / escape behaviour, and loading older history is
+ * untouched because the session id does not change then.
+ */
+function ScrollToBottomTrigger({
+  signal,
+  sessionId,
+  hasMessages,
+  loadingHistory,
+}: {
+  signal: number;
+  sessionId: string | null;
+  hasMessages: boolean;
+  loadingHistory: boolean;
+}) {
+  const { scrollToBottom } = useStickToBottomContext();
+  const lastSignalRef = useRef(signal);
+  const scrolledSessionRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (signal === lastSignalRef.current) return;
+    lastSignalRef.current = signal;
+    void scrollToBottom();
+  }, [signal, scrollToBottom]);
+
+  useEffect(() => {
+    if (!hasMessages || loadingHistory) return;
+    if (scrolledSessionRef.current === sessionId) return;
+    scrolledSessionRef.current = sessionId;
+    void scrollToBottom({ animation: "instant" });
+  }, [sessionId, hasMessages, loadingHistory, scrollToBottom]);
+
+  return null;
 }
 
 function HistoryLoader({ loading, hasOlder, onLoadOlder }: { loading: boolean; hasOlder: boolean; onLoadOlder: () => void }) {

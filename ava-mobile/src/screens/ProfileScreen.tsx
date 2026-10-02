@@ -42,7 +42,8 @@ import {
   type PresetOption,
   type UserProfile,
 } from "@/core/api/profile";
-import { COLORS } from "@/theme/colors";
+import type { ColorTokens } from "@/theme/colors";
+import { useStyles, useTheme } from "@/theme/theme-context";
 import { font, mono } from "@/theme/fonts";
 
 const DEFAULT_PROFILE: UserProfile = {
@@ -90,6 +91,8 @@ const DEFAULT_PRESETS: PresetOption[] = [
 
 export function ProfileScreen() {
   const { rpc, auth, status, signOut } = useAva();
+  const { colors } = useTheme();
+  const styles = useStyles(createStyles);
   const qc = useQueryClient();
   const { data: sessions = [] } = useSessions();
   const projectsCount = new Set(sessions.map((s) => s.directory)).size;
@@ -232,7 +235,7 @@ export function ProfileScreen() {
                   activeOpacity={0.8}
                   accessibilityLabel="Change avatar"
                 >
-                  <Camera size={13} color={COLORS.primaryForeground} />
+                  <Camera size={13} color={colors.primaryForeground} />
                 </TouchableOpacity>
               </View>
 
@@ -258,7 +261,7 @@ export function ProfileScreen() {
                 onPress={handleRemoveAvatar}
                 activeOpacity={0.7}
               >
-                <Trash2 size={13} color={COLORS.destructive} />
+                <Trash2 size={13} color={colors.destructive} />
                 <Text style={[styles.removeAvatarText, font("medium")]}>Remove photo</Text>
               </TouchableOpacity>
             ) : null}
@@ -268,21 +271,21 @@ export function ProfileScreen() {
           <View style={styles.statsGrid}>
             <Surface style={styles.statCard}>
               <View style={styles.statIconBox}>
-                <Layers size={14} color={COLORS.primary} />
+                <Layers size={14} color={colors.primary} />
               </View>
               <Text style={[styles.statVal, mono("bold")]}>{sessions.length}</Text>
               <Text style={[styles.statLabel, font("medium")]}>Sessions</Text>
             </Surface>
             <Surface style={styles.statCard}>
               <View style={styles.statIconBox}>
-                <FolderGit2 size={14} color={COLORS.primary} />
+                <FolderGit2 size={14} color={colors.primary} />
               </View>
               <Text style={[styles.statVal, mono("bold")]}>{projectsCount}</Text>
               <Text style={[styles.statLabel, font("medium")]}>Projects</Text>
             </Surface>
             <Surface style={styles.statCard}>
               <View style={styles.statIconBox}>
-                <Shield size={14} color={COLORS.primary} />
+                <Shield size={14} color={colors.primary} />
               </View>
               <Text style={[styles.statVal, mono("bold")]}>{form.userRules.length}</Text>
               <Text style={[styles.statLabel, font("medium")]}>Rules</Text>
@@ -298,7 +301,7 @@ export function ProfileScreen() {
                 <TextInput
                   style={[styles.input, font("regular")]}
                   placeholder="e.g. Mahmud Hasan"
-                  placeholderTextColor={COLORS.mutedForeground}
+                  placeholderTextColor={colors.mutedForeground}
                   value={form.name}
                   onChangeText={(v) => setForm((prev) => ({ ...prev, name: v }))}
                 />
@@ -311,7 +314,7 @@ export function ProfileScreen() {
                 <TextInput
                   style={[styles.input, mono("regular")]}
                   placeholder="e.g. mahmud"
-                  placeholderTextColor={COLORS.mutedForeground}
+                  placeholderTextColor={colors.mutedForeground}
                   value={form.username}
                   onChangeText={(v) => setForm((prev) => ({ ...prev, username: v }))}
                   autoCapitalize="none"
@@ -326,7 +329,7 @@ export function ProfileScreen() {
                 <TextInput
                   style={[styles.input, font("regular")]}
                   placeholder="e.g. Lead Full-Stack Architect"
-                  placeholderTextColor={COLORS.mutedForeground}
+                  placeholderTextColor={colors.mutedForeground}
                   value={form.roleOrTitle}
                   onChangeText={(v) => setForm((prev) => ({ ...prev, roleOrTitle: v }))}
                 />
@@ -343,7 +346,7 @@ export function ProfileScreen() {
                 <TextInput
                   style={[styles.input, font("semibold")]}
                   placeholder="AvA"
-                  placeholderTextColor={COLORS.mutedForeground}
+                  placeholderTextColor={colors.mutedForeground}
                   value={form.aiName}
                   onChangeText={(v) => setForm((prev) => ({ ...prev, aiName: v }))}
                 />
@@ -356,7 +359,7 @@ export function ProfileScreen() {
                 <TextInput
                   style={[styles.input, font("regular")]}
                   placeholder="Autonomous Pair Programmer"
-                  placeholderTextColor={COLORS.mutedForeground}
+                  placeholderTextColor={colors.mutedForeground}
                   value={form.aiRole}
                   onChangeText={(v) => setForm((prev) => ({ ...prev, aiRole: v }))}
                 />
@@ -398,10 +401,10 @@ export function ProfileScreen() {
                             <View
                               style={[
                                 styles.presetCheck,
-                                { backgroundColor: COLORS.primary },
+                                { backgroundColor: colors.primary },
                               ]}
                             >
-                              <Check size={11} color={COLORS.primaryForeground} />
+                              <Check size={11} color={colors.primaryForeground} />
                             </View>
                           )}
                         </View>
@@ -424,7 +427,7 @@ export function ProfileScreen() {
                     <TextInput
                       style={[styles.multilineInput, font("regular")]}
                       placeholder="Describe how AvA should behave, communicate, and solve problems..."
-                      placeholderTextColor={COLORS.mutedForeground}
+                      placeholderTextColor={colors.mutedForeground}
                       value={form.customPersonality}
                       onChangeText={(v) => setForm((prev) => ({ ...prev, customPersonality: v }))}
                       multiline
@@ -452,8 +455,8 @@ export function ProfileScreen() {
                 <Switch
                   value={form.enabled}
                   onValueChange={(val) => setForm((prev) => ({ ...prev, enabled: val }))}
-                  trackColor={{ false: COLORS.muted, true: COLORS.primary }}
-                  thumbColor={COLORS.primaryForeground}
+                  trackColor={{ false: colors.muted, true: colors.primary }}
+                  thumbColor={colors.primaryForeground}
                 />
               </View>
 
@@ -464,7 +467,7 @@ export function ProfileScreen() {
                 <TextInput
                   style={[styles.multilineInput, font("regular")]}
                   placeholder="e.g. Always write typed Rust/TypeScript, prefer functional patterns, explain trade-offs concisely..."
-                  placeholderTextColor={COLORS.mutedForeground}
+                  placeholderTextColor={colors.mutedForeground}
                   value={form.customInstructions}
                   onChangeText={(v) => setForm((prev) => ({ ...prev, customInstructions: v }))}
                   multiline
@@ -486,7 +489,7 @@ export function ProfileScreen() {
                       hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                       accessibilityLabel="Delete rule"
                     >
-                      <Trash2 size={14} color={COLORS.destructive} />
+                      <Trash2 size={14} color={colors.destructive} />
                     </TouchableOpacity>
                   </View>
                 ))}
@@ -495,7 +498,7 @@ export function ProfileScreen() {
                   <TextInput
                     style={[styles.addRuleInput, font("regular")]}
                     placeholder="Add a new engineering rule..."
-                    placeholderTextColor={COLORS.mutedForeground}
+                    placeholderTextColor={colors.mutedForeground}
                     value={newRule}
                     onChangeText={setNewRule}
                     onSubmitEditing={handleAddRule}
@@ -506,7 +509,7 @@ export function ProfileScreen() {
                     onPress={handleAddRule}
                     activeOpacity={0.8}
                   >
-                    <Plus size={16} color={COLORS.primaryForeground} />
+                    <Plus size={16} color={colors.primaryForeground} />
                   </TouchableOpacity>
                 </View>
               </View>
@@ -532,15 +535,15 @@ export function ProfileScreen() {
               activeOpacity={0.8}
             >
               {saveMutation.isPending ? (
-                <ActivityIndicator color={COLORS.primaryForeground} size="small" />
+                <ActivityIndicator color={colors.primaryForeground} size="small" />
               ) : savedSuccess ? (
                 <>
-                  <Check size={18} color={COLORS.primaryForeground} />
+                  <Check size={18} color={colors.primaryForeground} />
                   <Text style={[styles.saveBtnText, font("semibold")]}>Saved to AvA Server!</Text>
                 </>
               ) : (
                 <>
-                  <Save size={18} color={COLORS.primaryForeground} />
+                  <Save size={18} color={colors.primaryForeground} />
                   <Text style={[styles.saveBtnText, font("semibold")]}>Save Profile</Text>
                 </>
               )}
@@ -554,7 +557,7 @@ export function ProfileScreen() {
               onPress={signOut}
               activeOpacity={0.8}
             >
-              <LogOut size={16} color={COLORS.destructive} />
+              <LogOut size={16} color={colors.destructive} />
               <Text style={[styles.signOutText, font("semibold")]}>Sign Out of Server</Text>
             </TouchableOpacity>
           </View>
@@ -570,7 +573,7 @@ export function ProfileScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (c: ColorTokens) => StyleSheet.create({
   container: {
     flex: 1,
   },
@@ -581,9 +584,9 @@ const styles = StyleSheet.create({
   },
   profileHeroCard: {
     padding: 16,
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: COLORS.glassBorder,
+    borderRadius: 16,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: c.glassBorder,
   },
   avatarRow: {
     flexDirection: "row",
@@ -598,21 +601,21 @@ const styles = StyleSheet.create({
     height: 68,
     borderRadius: 34,
     borderWidth: 2,
-    borderColor: COLORS.primary,
+    borderColor: c.primary,
   },
   avatarPlaceholder: {
     width: 68,
     height: 68,
     borderRadius: 34,
-    backgroundColor: "rgba(66, 64, 225, 0.12)",
+    backgroundColor: c.primary + "1F",
     borderWidth: 2,
-    borderColor: COLORS.primary,
+    borderColor: c.primary,
     alignItems: "center",
     justifyContent: "center",
   },
   avatarInitials: {
     fontSize: 22,
-    color: COLORS.primary,
+    color: c.primary,
   },
   cameraBtn: {
     position: "absolute",
@@ -621,11 +624,11 @@ const styles = StyleSheet.create({
     width: 26,
     height: 26,
     borderRadius: 13,
-    backgroundColor: COLORS.primary,
+    backgroundColor: c.primary,
     alignItems: "center",
     justifyContent: "center",
     borderWidth: 2,
-    borderColor: COLORS.background,
+    borderColor: c.background,
   },
   heroMeta: {
     flex: 1,
@@ -633,11 +636,11 @@ const styles = StyleSheet.create({
   },
   heroName: {
     fontSize: 18,
-    color: COLORS.foreground,
+    color: c.foreground,
   },
   heroRole: {
     fontSize: 12.5,
-    color: COLORS.mutedForeground,
+    color: c.mutedForeground,
   },
   serverRow: {
     flexDirection: "row",
@@ -647,7 +650,7 @@ const styles = StyleSheet.create({
   },
   serverUrl: {
     fontSize: 11,
-    color: COLORS.mutedForeground,
+    color: c.mutedForeground,
     flex: 1,
   },
   removeAvatarRow: {
@@ -657,11 +660,11 @@ const styles = StyleSheet.create({
     paddingTop: 12,
     marginTop: 10,
     borderTopWidth: 1,
-    borderTopColor: "rgba(255, 255, 255, 0.08)",
+    borderTopColor: c.border,
   },
   removeAvatarText: {
     fontSize: 12,
-    color: COLORS.destructive,
+    color: c.destructive,
   },
   statsGrid: {
     flexDirection: "row",
@@ -673,69 +676,69 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     alignItems: "center",
     gap: 3,
-    borderWidth: 1,
-    borderColor: COLORS.glassBorder,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: c.glassBorder,
   },
   statIconBox: {
     width: 28,
     height: 28,
-    borderRadius: 8,
-    backgroundColor: "rgba(66, 64, 225, 0.10)",
+    borderRadius: 14,
+    backgroundColor: c.primary + "1A",
     alignItems: "center",
     justifyContent: "center",
     marginBottom: 2,
   },
   statLabel: {
     fontSize: 11,
-    color: COLORS.mutedForeground,
+    color: c.mutedForeground,
   },
   statVal: {
     fontSize: 16,
-    color: COLORS.foreground,
+    color: c.foreground,
   },
   section: {
     gap: 10,
   },
   card: {
-    borderRadius: 18,
+    borderRadius: 16,
     padding: 14,
     gap: 10,
-    borderWidth: 1,
-    borderColor: COLORS.glassBorder,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: c.glassBorder,
   },
   fieldGroup: {
     paddingVertical: 2,
   },
   fieldLabel: {
     fontSize: 12,
-    color: COLORS.mutedForeground,
+    color: c.mutedForeground,
     marginBottom: 6,
   },
   input: {
     height: 42,
-    backgroundColor: COLORS.secondary,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    borderRadius: 10,
+    backgroundColor: c.secondary,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: c.border,
+    borderRadius: 12,
     paddingHorizontal: 12,
-    color: COLORS.foreground,
+    color: c.foreground,
     fontSize: 13.5,
   },
   multilineInput: {
     minHeight: 84,
-    backgroundColor: COLORS.secondary,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    borderRadius: 10,
+    backgroundColor: c.secondary,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: c.border,
+    borderRadius: 12,
     paddingHorizontal: 12,
     paddingVertical: 10,
-    color: COLORS.foreground,
+    color: c.foreground,
     fontSize: 13,
     textAlignVertical: "top",
   },
   fieldDivider: {
     height: 1,
-    backgroundColor: "rgba(255, 255, 255, 0.06)",
+    backgroundColor: c.border,
     marginVertical: 4,
   },
   presetCards: {
@@ -746,14 +749,14 @@ const styles = StyleSheet.create({
   presetCard: {
     paddingHorizontal: 12,
     paddingVertical: 10,
-    borderRadius: 12,
-    backgroundColor: COLORS.secondary,
-    borderWidth: 1,
-    borderColor: COLORS.border,
+    borderRadius: 14,
+    backgroundColor: c.secondary,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: c.border,
     gap: 4,
   },
   presetCardActive: {
-    borderColor: COLORS.primary,
+    borderColor: c.primary,
     borderWidth: 1.5,
   },
   presetCardHeader: {
@@ -763,10 +766,10 @@ const styles = StyleSheet.create({
   },
   presetCardTitle: {
     fontSize: 13.5,
-    color: COLORS.foreground,
+    color: c.foreground,
   },
   presetCardTitleActive: {
-    color: COLORS.primary,
+    color: c.primary,
   },
   presetCheck: {
     width: 18,
@@ -777,7 +780,7 @@ const styles = StyleSheet.create({
   },
   presetCardDesc: {
     fontSize: 12,
-    color: COLORS.mutedForeground,
+    color: c.mutedForeground,
     lineHeight: 17,
   },
   switchRow: {
@@ -788,21 +791,21 @@ const styles = StyleSheet.create({
   },
   switchTitle: {
     fontSize: 13,
-    color: COLORS.foreground,
+    color: c.foreground,
   },
   switchSubtitle: {
     fontSize: 11.5,
-    color: COLORS.mutedForeground,
+    color: c.mutedForeground,
     marginTop: 2,
     lineHeight: 16,
   },
   ruleItem: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: COLORS.secondary,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    borderRadius: 8,
+    backgroundColor: c.secondary,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: c.border,
+    borderRadius: 10,
     paddingHorizontal: 10,
     paddingVertical: 8,
     marginBottom: 6,
@@ -811,13 +814,13 @@ const styles = StyleSheet.create({
     width: 5,
     height: 5,
     borderRadius: 3,
-    backgroundColor: COLORS.primary,
+    backgroundColor: c.primary,
     marginRight: 8,
   },
   ruleText: {
     flex: 1,
     fontSize: 12.5,
-    color: COLORS.foreground,
+    color: c.foreground,
   },
   ruleDeleteBtn: {
     padding: 4,
@@ -830,32 +833,32 @@ const styles = StyleSheet.create({
   addRuleInput: {
     flex: 1,
     height: 40,
-    backgroundColor: COLORS.secondary,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    borderRadius: 8,
+    backgroundColor: c.secondary,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: c.border,
+    borderRadius: 10,
     paddingHorizontal: 10,
-    color: COLORS.foreground,
+    color: c.foreground,
     fontSize: 12.5,
   },
   addRuleBtn: {
     width: 40,
     height: 40,
-    borderRadius: 8,
-    backgroundColor: COLORS.primary,
+    borderRadius: 12,
+    backgroundColor: c.primary,
     alignItems: "center",
     justifyContent: "center",
   },
   errorBox: {
-    backgroundColor: "rgba(231, 0, 11, 0.10)",
-    borderColor: COLORS.destructive,
-    borderWidth: 1,
-    borderRadius: 12,
+    backgroundColor: c.destructive + "1A",
+    borderColor: c.destructive,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderRadius: 16,
     padding: 12,
   },
   errorText: {
     fontSize: 12,
-    color: COLORS.destructive,
+    color: c.destructive,
     textAlign: "center",
   },
   actionsSection: {
@@ -863,21 +866,21 @@ const styles = StyleSheet.create({
   },
   saveBtn: {
     height: 48,
-    backgroundColor: COLORS.primary,
-    borderRadius: 12,
+    backgroundColor: c.primary,
+    borderRadius: 999,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
     gap: 8,
   },
   saveBtnSuccess: {
-    backgroundColor: COLORS.success,
+    backgroundColor: c.success,
   },
   saveBtnDisabled: {
     opacity: 0.6,
   },
   saveBtnText: {
-    color: COLORS.primaryForeground,
+    color: c.primaryForeground,
     fontSize: 14,
   },
   signOutSection: {
@@ -885,17 +888,17 @@ const styles = StyleSheet.create({
   },
   signOutBtn: {
     height: 44,
-    borderWidth: 1,
-    borderColor: "rgba(231, 0, 11, 0.35)",
-    borderRadius: 12,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: c.destructive + "59",
+    borderRadius: 999,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
     gap: 8,
-    backgroundColor: "rgba(231, 0, 11, 0.06)",
+    backgroundColor: c.destructive + "0F",
   },
   signOutText: {
-    color: COLORS.destructive,
+    color: c.destructive,
     fontSize: 13,
   },
   footer: {
@@ -904,6 +907,6 @@ const styles = StyleSheet.create({
   },
   footerText: {
     fontSize: 11,
-    color: COLORS.mutedForeground,
+    color: c.mutedForeground,
   },
 });

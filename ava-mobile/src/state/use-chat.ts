@@ -17,7 +17,6 @@ import {
   type TurnHandlers,
 } from "@/core/api/chat";
 import { startSession } from "@/core/api/sessions";
-import { generateSessionTitle } from "@/core/api/title";
 import { formatCoreError } from "@/core/errors";
 import type { ChatMessage, MessagePart, PendingApproval } from "@/core/types";
 import { useAva } from "./ava-provider";
@@ -42,50 +41,6 @@ export function makeUniqueId(prefix = "id"): string {
 
 const isOptimisticId = (id: string) => /^u_\d+_/.test(id);
 
-/** Sessions already considered for auto-titling this app launch. */
-const autoTitledThreads = new Set<string>();
-
-/**
- * TUI parity: after the first successful turn of a session, generate a short
- * title from the opening exchange on an ephemeral helper thread and rename
- * the real session. Best-effort — failures are swallowed.
- */
-async function maybeAutoTitleSession(opts: {
-  rpc: RpcClient;
-  threadId: string;
-  qc: QueryClient;
-  cwd: string;
-  model?: string;
-}): Promise<void> {
-  const { rpc, threadId, qc, cwd, model } = opts;
-  if (!threadId || autoTitledThreads.has(threadId)) return;
-  autoTitledThreads.add(threadId);
-  try {
-    const messages = chatStore.getState(threadId)?.messages ?? [];
-    const userMsgs = messages.filter((m) => m.role === "user");
-    // Only brand-new sessions (single exchange) — never overwrite a rename.
-    if (userMsgs.length !== 1) return;
-    const textOf = (m: ChatMessage | undefined) =>
-      m?.parts
-        ?.filter((p) => p.kind === "text" && p.text)
-        .map((p) => p.text)
-        .join("\n") ?? "";
-    const userText = textOf(userMsgs[0]).slice(0, 2000);
-    if (!userText.trim()) return;
-    const lastAssistant = [...messages].reverse().find((m) => m.role === "assistant");
-    const assistantText = textOf(lastAssistant).slice(0, 2000);
-    const title = await generateSessionTitle(rpc, {
-      sessionId: threadId,
-      cwd,
-      model,
-      userText,
-      assistantText: assistantText || undefined,
-    });
-    if (title) qc.invalidateQueries({ queryKey: keys.sessions });
-  } catch {
-    /* auto-title must never break chat */
-  }
-}
 const userText = (m: ChatMessage) =>
   (m.parts ?? []).map((p) => p.text ?? "").join("\n").trim();
 
@@ -614,16 +569,6 @@ export function useChat(explicitSessionId?: string | null, opts: { passive?: boo
           qc.invalidateQueries({ queryKey: keys.session(threadId) });
         }
 
-        // TUI parity: auto-generate a session title after the first turn.
-        if (rpc && !err && info !== "Stopped") {
-          void maybeAutoTitleSession({
-            rpc,
-            threadId,
-            qc,
-            cwd: workingCwd || defaultCwd || APP.defaultCwd,
-            model: modelId || undefined,
-          });
-        }
 
         // Auto-drain queue: If server has queued items, start next prompt.
         // Tracked in a ref so a newer drain replaces a pending one and the

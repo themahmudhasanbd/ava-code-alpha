@@ -196,6 +196,8 @@ pub(crate) async fn apply_bespoke_event_handling(
                 turn_complete_event,
                 &outgoing,
                 &thread_state,
+                Some(&thread_manager),
+                Some(&conversation),
             )
             .await;
         }
@@ -1504,6 +1506,8 @@ async fn handle_turn_complete(
     turn_complete_event: TurnCompleteEvent,
     outgoing: &ThreadScopedOutgoingMessageSender,
     thread_state: &Arc<Mutex<ThreadState>>,
+    thread_manager: Option<&Arc<ThreadManager>>,
+    conversation: Option<&Arc<AvaThread>>,
 ) {
     let turn_summary = find_and_remove_turn_summary(conversation_id, thread_state).await;
 
@@ -1512,6 +1516,10 @@ async fn handle_turn_complete(
         None => (TurnStatus::Completed, None, turn_summary.last_agent_message),
     };
 
+    let assistant_text_for_title = match &status {
+        TurnStatus::Completed => turn_complete_event.last_agent_message.clone(),
+        _ => None,
+    };
     emit_turn_completed_with_status(
         conversation_id,
         event_turn_id,
@@ -1526,6 +1534,20 @@ async fn handle_turn_complete(
         outgoing,
     )
     .await;
+
+    // Server-side automatic title generation (replaces mobile client-side).
+    if let (Some(assistant_text), Some(thread_manager), Some(conversation)) = (
+        assistant_text_for_title,
+        thread_manager,
+        conversation,
+    ) {
+        crate::thread_title::maybe_generate_thread_title(
+            thread_manager.clone(),
+            conversation.clone(),
+            conversation_id,
+            assistant_text,
+        );
+    }
 }
 
 async fn handle_turn_interrupted(
@@ -3446,6 +3468,8 @@ mod tests {
             event,
             &outgoing,
             &thread_state,
+            None,
+            None,
         )
         .await;
 
@@ -3555,6 +3579,8 @@ mod tests {
             turn_complete_event(&event_turn_id),
             &outgoing,
             &thread_state,
+            None,
+            None,
         )
         .await;
 

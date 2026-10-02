@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   AlertTriangle,
   Brain,
@@ -64,6 +64,40 @@ function useElapsed(startedAt?: number, running?: boolean) {
     return () => clearInterval(id);
   }, [running]);
   return startedAt ? now - startedAt : undefined;
+}
+
+// Clipboard copy with availability guard, error swallow, and timer cleanup.
+// Returns { copied, copy(text) } — copy resolves false when the clipboard
+// API is unavailable or the write fails.
+function useCopy(timeout = 1500) {
+  const [copied, setCopied] = useState(false);
+  const timer = useRef<number | null>(null);
+
+  useEffect(
+    () => () => {
+      if (timer.current != null) window.clearTimeout(timer.current);
+    },
+    [],
+  );
+
+  const copy = useCallback(
+    async (text: string) => {
+      if (typeof window === "undefined" || !navigator?.clipboard?.writeText)
+        return false;
+      try {
+        await navigator.clipboard.writeText(text);
+      } catch {
+        return false;
+      }
+      setCopied(true);
+      if (timer.current != null) window.clearTimeout(timer.current);
+      timer.current = window.setTimeout(() => setCopied(false), timeout);
+      return true;
+    },
+    [timeout],
+  );
+
+  return { copied, copy };
 }
 
 // ---------- step views ----------------------------------------------------
@@ -236,7 +270,7 @@ function AssistantTurn({ message, live, onAnswerQuestion }: { message: ChatMessa
   const steps = message.parts.filter((p) => p.kind === "tool").length;
   // Final agent output = the last text part of the turn.
   const text = [...message.parts].reverse().find((p) => p.kind === "text" && p.text.trim())?.text.trim() ?? "";
-  const [copied, setCopied] = useState(false);
+  const { copied, copy } = useCopy();
   const duration = message.stats?.durationMs ?? (live ? elapsed : undefined);
   const hasError = message.parts.some((part) => part.status === "error" || part.meta?.tone === "error");
   const activityLabel = hasError
@@ -289,9 +323,7 @@ function AssistantTurn({ message, live, onAnswerQuestion }: { message: ChatMessa
               tooltip="Copy final output"
               label="Copy final output"
               onClick={() => {
-                navigator.clipboard.writeText(text);
-                setCopied(true);
-                setTimeout(() => setCopied(false), 1500);
+                void copy(text);
               }}
             >
               {copied ? <Check className="size-3.5" /> : <Copy className="size-3.5" />}
@@ -308,8 +340,13 @@ function AssistantTurn({ message, live, onAnswerQuestion }: { message: ChatMessa
   );
 }
 
-export function ChatMessageView({ message, live = false, onAnswerQuestion }: { message: ChatMessage; live?: boolean; onAnswerQuestion?: ((questionId: string, option: string) => void) | undefined }) {
-  if (message.role === "assistant") return <AssistantTurn message={message} live={live} onAnswerQuestion={onAnswerQuestion} />;
+function UserTurn({ message }: { message: ChatMessage }) {
+  const { copied, copy } = useCopy();
+  const text = message.parts
+    .map((p) => p.text.trim())
+    .filter(Boolean)
+    .join("\n\n");
+
   return (
     <Message from="user">
       <MessageContent className="rounded-2xl rounded-br-md bg-primary px-4 py-2.5 text-primary-foreground">
@@ -337,6 +374,24 @@ export function ChatMessageView({ message, live = false, onAnswerQuestion }: { m
           );
         })}
       </MessageContent>
+      {text && (
+        <MessageActions className="items-center justify-end gap-1 text-[11px] text-muted-foreground">
+          <MessageAction
+            tooltip="Copy message"
+            label="Copy message"
+            onClick={() => {
+              void copy(text);
+            }}
+          >
+            {copied ? <Check className="size-3.5" /> : <Copy className="size-3.5" />}
+          </MessageAction>
+        </MessageActions>
+      )}
     </Message>
   );
+}
+
+export function ChatMessageView({ message, live = false, onAnswerQuestion }: { message: ChatMessage; live?: boolean; onAnswerQuestion?: ((questionId: string, option: string) => void) | undefined }) {
+  if (message.role === "assistant") return <AssistantTurn message={message} live={live} onAnswerQuestion={onAnswerQuestion} />;
+  return <UserTurn message={message} />;
 }

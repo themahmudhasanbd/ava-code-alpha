@@ -1,7 +1,7 @@
 import type { ModelInfo } from "@/core/types";
 
-/** Reasoning levels the OmniRoute combos accept. */
-export const REASONING_EFFORTS = ["low", "medium", "high", "xhigh", "max"] as const;
+/** Reasoning levels the agent server accepts (parity with ava-rs ReasoningEffort enum). */
+export const REASONING_EFFORTS = ["none", "minimal", "low", "medium", "high", "xhigh", "max", "ultra", "persistent"] as const;
 
 /** Sandbox modes the agent server understands. */
 export const SANDBOX_MODES = [

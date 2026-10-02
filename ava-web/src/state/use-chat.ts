@@ -423,12 +423,30 @@ export function useChat() {
 
   const stop = useCallback(() => {
     if (rpc && activeSessionId) interruptTurn(rpc, activeSessionId).catch(() => {});
+    // Finalize the visible turn the way onDone would, so a stopped turn leaves a
+    // "Stopped" notice instead of vanishing. stop() unsubscribes immediately, so
+    // the server's turn/completed (interrupted) never reaches the handlers.
+    const aid = aidRef.current;
+    if (aid) {
+      patchAssistant(aid, (parts) => {
+        const done = parts.map((pt) => (pt.status === "running" ? { ...pt, status: "done" as const } : pt));
+        if (done.some((pt) => pt.kind === "notice" && pt.text === "Stopped")) return done;
+        return [...done, { id: makeId("stop"), kind: "notice" as const, text: "Stopped", status: "done" as const, meta: { tone: "info" as const } }];
+      });
+      setMessages((m) =>
+        m.map((msg) =>
+          msg.id === aid && msg.stats?.startedAt && !msg.stats.durationMs
+            ? { ...msg, stats: { ...msg.stats, durationMs: Date.now() - msg.stats.startedAt } }
+            : msg,
+        ),
+      );
+    }
     offRef.current?.();
     streamingRef.current = false;
     aidRef.current = null;
     setStatus("ready");
     setWorkingSessionId(null);
-  }, [rpc, activeSessionId, setWorkingSessionId]);
+  }, [rpc, activeSessionId, setWorkingSessionId, patchAssistant]);
 
   const clear = useCallback(() => setMessages([]), []);
 

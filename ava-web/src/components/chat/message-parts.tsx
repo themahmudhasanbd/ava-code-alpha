@@ -221,7 +221,16 @@ function NoticeStep({ part }: { part: MessagePart }) {
   const tone = part.meta?.tone ?? "info";
   const Icon = tone === "info" ? Info : AlertTriangle;
   return (
-    <p className={cn("flex items-start gap-2 rounded-lg px-2.5 py-1.5 text-xs", tone === "error" ? "bg-destructive/10 text-destructive" : "bg-muted text-muted-foreground")}>
+    <p
+      className={cn(
+        "flex items-start gap-2 rounded-lg px-2.5 py-1.5 text-xs",
+        tone === "error"
+          ? "bg-destructive/10 text-destructive"
+          : tone === "warning"
+            ? "bg-amber-500/10 text-amber-700 dark:text-amber-400"
+            : "bg-muted text-muted-foreground",
+      )}
+    >
       <Icon className="mt-0.5 size-3.5 shrink-0" />
       <span className="whitespace-pre-wrap break-words">{part.text}</span>
     </p>

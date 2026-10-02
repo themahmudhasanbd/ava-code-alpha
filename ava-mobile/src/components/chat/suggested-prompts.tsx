@@ -14,14 +14,15 @@ import {
   type LucideIcon,
 } from "lucide-react-native";
 import { AvaMascot } from "@/components/ui/ava-mascot";
-import { COLORS } from "@/theme/colors";
+import type { ColorTokens } from "@/theme/colors";
+import { useStyles, useTheme } from "@/theme/theme-context";
 import { font } from "@/theme/fonts";
 
 export interface SuggestedPromptItem {
   id: string;
   icon: LucideIcon;
-  iconColor: string;
-  iconBg: string;
+  iconColorKey: keyof ColorTokens;
+  iconBgKey: keyof ColorTokens;
   title: string;
   description: string;
   prompt: string;
@@ -32,8 +33,8 @@ export const SUGGESTED_PROMPTS: SuggestedPromptItem[] = [
   {
     id: "feature",
     icon: Code2,
-    iconColor: COLORS.primary,
-    iconBg: COLORS.accent,
+    iconColorKey: "primary",
+    iconBgKey: "accent",
     title: "Build a feature",
     description: "Create a new screen, UI component, or API flow",
     prompt: "Create a new feature in this project: ",
@@ -42,8 +43,8 @@ export const SUGGESTED_PROMPTS: SuggestedPromptItem[] = [
   {
     id: "fix",
     icon: Bug,
-    iconColor: COLORS.destructive,
-    iconBg: COLORS.muted,
+    iconColorKey: "destructive",
+    iconBgKey: "muted",
     title: "Fix an error",
     description: "Debug logs, solve runtime errors or broken UI",
     prompt: "Help me debug and fix an issue in this project: ",
@@ -52,8 +53,8 @@ export const SUGGESTED_PROMPTS: SuggestedPromptItem[] = [
   {
     id: "explain",
     icon: Compass,
-    iconColor: COLORS.primary,
-    iconBg: COLORS.accent,
+    iconColorKey: "primary",
+    iconBgKey: "accent",
     title: "Explain project",
     description: "Understand architecture, file tree, and state",
     prompt: "Analyze this workspace and give me a clear breakdown of the project architecture and main modules.",
@@ -62,8 +63,8 @@ export const SUGGESTED_PROMPTS: SuggestedPromptItem[] = [
   {
     id: "terminal",
     icon: Terminal,
-    iconColor: COLORS.success,
-    iconBg: COLORS.muted,
+    iconColorKey: "success",
+    iconBgKey: "muted",
     title: "Check health",
     description: "Verify TypeScript types and project build status",
     prompt: "Run project health checks: check TypeScript types and verify if there are any build errors.",
@@ -76,6 +77,8 @@ interface SuggestedPromptCardsProps {
 }
 
 export function SuggestedPromptCards({ onSelectPrompt }: SuggestedPromptCardsProps) {
+  const { colors } = useTheme();
+  const styles = useStyles(createStyles);
   return (
     <View style={styles.container}>
       <View style={styles.header}>
@@ -99,10 +102,10 @@ export function SuggestedPromptCards({ onSelectPrompt }: SuggestedPromptCardsPro
               activeOpacity={0.75}
             >
               <View style={styles.cardTopRow}>
-                <View style={[styles.iconContainer, { backgroundColor: item.iconBg }]}>
-                  <Icon size={16} color={item.iconColor} strokeWidth={2.2} />
+                <View style={[styles.iconContainer, { backgroundColor: colors[item.iconBgKey] }]}>
+                  <Icon size={16} color={colors[item.iconColorKey]} strokeWidth={2.2} />
                 </View>
-                <ArrowUpRight size={14} color={COLORS.mutedForeground} />
+                <ArrowUpRight size={14} color={colors.mutedForeground} />
               </View>
 
               <View style={styles.cardContent}>
@@ -121,73 +124,75 @@ export function SuggestedPromptCards({ onSelectPrompt }: SuggestedPromptCardsPro
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    paddingHorizontal: 16,
-    paddingVertical: 24,
-    alignItems: "center",
-  },
-  header: {
-    alignItems: "center",
-    marginBottom: 28,
-  },
-  mascotGlow: {
-    marginBottom: 14,
-  },
-  title: {
-    fontSize: 22,
-    color: COLORS.foreground,
-    textAlign: "center",
-    letterSpacing: -0.3,
-  },
-  subtitle: {
-    fontSize: 13,
-    color: COLORS.mutedForeground,
-    textAlign: "center",
-    marginTop: 6,
-    maxWidth: 290,
-    lineHeight: 18,
-  },
-  grid: {
-    width: "100%",
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 10,
-    justifyContent: "space-between",
-  },
-  card: {
-    width: "48%",
-    backgroundColor: COLORS.card,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    borderRadius: 8,
-    padding: 12,
-    minHeight: 108,
-    justifyContent: "space-between",
-  },
-  cardTopRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    marginBottom: 10,
-  },
-  iconContainer: {
-    width: 28,
-    height: 28,
-    borderRadius: 8,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  cardContent: {
-    gap: 4,
-  },
-  cardTitle: {
-    fontSize: 13,
-    color: COLORS.foreground,
-  },
-  cardDesc: {
-    fontSize: 12,
-    color: COLORS.mutedForeground,
-    lineHeight: 17,
-  },
-});
+function createStyles(c: ColorTokens) {
+  return StyleSheet.create({
+    container: {
+      paddingHorizontal: 16,
+      paddingVertical: 24,
+      alignItems: "center",
+    },
+    header: {
+      alignItems: "center",
+      marginBottom: 28,
+    },
+    mascotGlow: {
+      marginBottom: 14,
+    },
+    title: {
+      fontSize: 24,
+      color: c.foreground,
+      textAlign: "center",
+      letterSpacing: -0.3,
+    },
+    subtitle: {
+      fontSize: 13,
+      color: c.mutedForeground,
+      textAlign: "center",
+      marginTop: 6,
+      maxWidth: 290,
+      lineHeight: 18,
+    },
+    grid: {
+      width: "100%",
+      flexDirection: "row",
+      flexWrap: "wrap",
+      gap: 12,
+      justifyContent: "space-between",
+    },
+    card: {
+      width: "48%",
+      backgroundColor: c.card,
+      borderWidth: StyleSheet.hairlineWidth,
+      borderColor: c.border,
+      borderRadius: 16,
+      padding: 16,
+      minHeight: 112,
+      justifyContent: "space-between",
+    },
+    cardTopRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      marginBottom: 12,
+    },
+    iconContainer: {
+      width: 32,
+      height: 32,
+      borderRadius: 999,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    cardContent: {
+      gap: 4,
+    },
+    cardTitle: {
+      fontSize: 14,
+      color: c.foreground,
+    },
+    cardDesc: {
+      fontSize: 12,
+      color: c.mutedForeground,
+      lineHeight: 17,
+    },
+  });
+}

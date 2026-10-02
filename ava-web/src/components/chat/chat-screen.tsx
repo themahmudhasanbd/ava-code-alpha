@@ -82,12 +82,17 @@ export function ChatScreen() {
     >
       <div className="flex min-h-0 flex-1 flex-col">
         {messages.length === 0 && !loadingHistory ? (
-          <EmptyChat
-            onPick={(s) => {
-              setDraft(s);
-              inputRef.current?.focus();
-            }}
-          />
+          <div className="flex min-h-0 flex-1 flex-col">
+            <EmptyChat
+              onPick={(s) => {
+                setDraft(s);
+                inputRef.current?.focus();
+              }}
+            />
+            {error && (
+              <p className="mx-auto mb-3 w-full max-w-3xl px-3 py-2 text-sm text-destructive rounded-xl bg-destructive/10">{error}</p>
+            )}
+          </div>
         ) : (
           <Conversation className="min-h-0 flex-1">
             <ConversationContent className="mx-auto w-full max-w-3xl gap-6 px-4 py-6">

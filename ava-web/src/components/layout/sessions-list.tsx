@@ -1,12 +1,12 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "@tanstack/react-router";
-import { Check, ChevronDown, ChevronRight, Folder, MoreHorizontal, Pencil, Pin, PinOff, Plus, Trash2, X } from "lucide-react";
+import { Check, ChevronDown, ChevronRight, Folder, MessageSquare, MoreHorizontal, Pencil, Pin, PinOff, Plus, Trash2, X } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
-import { SkeletonRows } from "@/components/kit";
+import { EmptyState, SkeletonRows } from "@/components/kit";
 import type { Session } from "@/core/types";
 import { storage } from "@/core/storage";
 import { useAva } from "@/state/ava-provider";
@@ -122,7 +122,18 @@ export function SessionsList({ onPick }: { onPick: () => void }) {
       {status !== "online" && <p className="px-2 text-sm text-muted-foreground">Waiting for server connection…</p>}
       {isLoading && <SkeletonRows />}
       {error && <p className="px-2 text-sm text-destructive">Could not load sessions.</p>}
-      {data && data.length === 0 && <p className="px-2 text-sm text-muted-foreground">No sessions yet.</p>}
+      {data && data.length === 0 && status === "online" && (
+        <EmptyState
+          icon={MessageSquare}
+          title="No sessions yet"
+          description="Start your first session to chat with AvA."
+          action={
+            <Button size="sm" onClick={() => void pick(null)}>
+              <Plus /> New session
+            </Button>
+          }
+        />
+      )}
 
       <div className="space-y-2">
         {groups.map(([dir, sessions]) => {

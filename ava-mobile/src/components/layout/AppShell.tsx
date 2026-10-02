@@ -60,6 +60,7 @@ export function AppShell({
               onOpenDrawer={onOpenDrawer}
               onCompactSession={onCompactSession}
               onNewSession={onNewSession}
+              actions={actions}
             />
           ))}
 

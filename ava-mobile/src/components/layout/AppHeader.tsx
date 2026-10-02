@@ -1,7 +1,6 @@
-import React, { useState } from "react";
+import React, { type ReactNode, useState } from "react";
 import {
   ActivityIndicator,
-  Platform,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -15,7 +14,8 @@ import { ContextWindowModal } from "@/components/modals/ContextWindowModal";
 import { useAva } from "@/state/ava-provider";
 import { useSessions } from "@/state/queries";
 import type { ChatMessage } from "@/core/types";
-import { COLORS } from "@/theme/colors";
+import type { ColorTokens } from "@/theme/colors";
+import { useStyles, useTheme } from "@/theme/theme-context";
 import { font, FONTS } from "@/theme/fonts";
 
 interface Props {
@@ -27,6 +27,7 @@ interface Props {
   onCompactSession?: () => Promise<void>;
   onNewSession?: () => void;
   onOpenDrawer?: () => void;
+  actions?: ReactNode;
 }
 
 export function AppHeader({
@@ -38,8 +39,11 @@ export function AppHeader({
   onCompactSession,
   onNewSession,
   onOpenDrawer,
+  actions,
 }: Props) {
   const navigation = useNavigation<any>();
+  const { colors } = useTheme();
+  const styles = useStyles(createStyles);
   const { status, activeSessionId: contextSessionId, setActiveSessionId } = useAva();
   const { data: sessions = [] } = useSessions();
 
@@ -99,20 +103,20 @@ export function AppHeader({
       <View style={styles.headerContainer}>
         {/* ── Left Circle Action Button (Back or Drawer Toggle) ── */}
         <TouchableOpacity
-          style={styles.glossyCircleBtn}
+          style={styles.circleBtn}
           onPress={handleLeftAction}
           activeOpacity={0.75}
         >
           {showBack ? (
-            <ChevronLeft size={21} color={COLORS.foreground} />
+            <ChevronLeft size={21} color={colors.foreground} />
           ) : (
-            <Menu size={19} color={COLORS.foreground} />
+            <Menu size={19} color={colors.foreground} />
           )}
         </TouchableOpacity>
 
         {/* ── Center Pill Button (Session Title + Chevron Down for Workspace Preference Modal) ── */}
         <TouchableOpacity
-          style={styles.glossyCenterPill}
+          style={styles.centerPill}
           onPress={() => setWorkspacePrefModalOpen(true)}
           activeOpacity={0.75}
         >
@@ -122,26 +126,29 @@ export function AppHeader({
           >
             {displayTitle}
           </Text>
-          <ChevronDown size={14} color={COLORS.mutedForeground} />
+          <ChevronDown size={14} color={colors.mutedForeground} />
         </TouchableOpacity>
+
+        {/* ── Screen-specific action slot (e.g. new task, refresh, new chat) ── */}
+        {actions ? <View style={styles.actionsRow}>{actions}</View> : null}
 
         {/* ── Right Circle Action Button (Context Window & Core Diagnostics) ── */}
         <TouchableOpacity
-          style={styles.glossyCircleBtn}
+          style={styles.circleBtn}
           onPress={() => setContextModalOpen(true)}
           activeOpacity={0.75}
         >
           {isConnecting ? (
-            <ActivityIndicator size="small" color={COLORS.primary} />
+            <ActivityIndicator size="small" color={colors.primary} />
           ) : (
-            <Zap size={18} color={isOnline ? COLORS.success : COLORS.destructive} />
+            <Zap size={18} color={isOnline ? colors.success : colors.destructive} />
           )}
 
           {/* Core Online / Offline Status Dot */}
           <View
             style={[
               styles.headerStatusDot,
-              { backgroundColor: isOnline ? COLORS.success : COLORS.destructive },
+              { backgroundColor: isOnline ? colors.success : colors.destructive },
             ]}
           />
         </TouchableOpacity>
@@ -172,74 +179,61 @@ export function AppHeader({
   );
 }
 
-const styles = StyleSheet.create({
-  headerContainer: {
-    height: 62,
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-  },
-  glossyCircleBtn: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: COLORS.card,
-    borderWidth: 1,
-    borderColor: COLORS.glassBorder,
-    alignItems: "center",
-    justifyContent: "center",
-    position: "relative",
-    ...Platform.select({
-      ios: {
-        shadowColor: "#000",
-        shadowOffset: { width: 0, height: 3 },
-        shadowOpacity: 0.10,
-        shadowRadius: 8,
-      },
-      android: {
-        elevation: 3,
-      },
-    }),
-  },
-  glossyCenterPill: {
-    height: 44,
-    maxWidth: 240,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    paddingHorizontal: 16,
-    borderRadius: 22,
-    backgroundColor: COLORS.card,
-    borderWidth: 1,
-    borderColor: COLORS.glassBorder,
-    gap: 6,
-    ...Platform.select({
-      ios: {
-        shadowColor: "#000",
-        shadowOffset: { width: 0, height: 3 },
-        shadowOpacity: 0.10,
-        shadowRadius: 8,
-      },
-      android: {
-        elevation: 3,
-      },
-    }),
-  },
-  sessionTitleText: {
-    fontSize: 14,
-    color: COLORS.foreground,
-    maxWidth: 170,
-  },
-  headerStatusDot: {
-    position: "absolute",
-    bottom: 9,
-    right: 9,
-    width: 7,
-    height: 7,
-    borderRadius: 3.5,
-    borderWidth: 1.5,
-    borderColor: COLORS.card,
-  },
-});
+function createStyles(c: ColorTokens) {
+  return StyleSheet.create({
+    headerContainer: {
+      height: 62,
+      paddingHorizontal: 16,
+      paddingVertical: 8,
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      gap: 8,
+    },
+    circleBtn: {
+      width: 44,
+      height: 44,
+      borderRadius: 22,
+      backgroundColor: c.card,
+      borderWidth: StyleSheet.hairlineWidth,
+      borderColor: c.border,
+      alignItems: "center",
+      justifyContent: "center",
+      position: "relative",
+    },
+    centerPill: {
+      height: 44,
+      flexShrink: 1,
+      maxWidth: 240,
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "center",
+      paddingHorizontal: 16,
+      borderRadius: 22,
+      backgroundColor: c.card,
+      borderWidth: StyleSheet.hairlineWidth,
+      borderColor: c.border,
+      gap: 6,
+    },
+    actionsRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 8,
+    },
+    sessionTitleText: {
+      fontSize: 14,
+      color: c.foreground,
+      maxWidth: 170,
+    },
+    headerStatusDot: {
+      position: "absolute",
+      bottom: 9,
+      right: 9,
+      width: 7,
+      height: 7,
+      borderRadius: 3.5,
+      borderWidth: 1.5,
+      borderColor: c.card,
+    },
+  });
+}

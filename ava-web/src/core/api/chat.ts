@@ -47,11 +47,15 @@ export function approvalDetail(method: string, params: Raw): string | undefined 
   if (typeof params.reason === "string" && params.reason.trim()) {
     parts.push(params.reason.trim().slice(0, 300));
   }
-  if (typeof params.server_name === "string" && params.server_name.trim()) {
-    parts.push(`MCP server: ${params.server_name.trim()}`);
+  // Wire format is camelCase (server serializes with serde rename_all) —
+  // accept snake_case too in case an older server sends it.
+  const serverName = params.serverName ?? params.server_name;
+  if (typeof serverName === "string" && serverName.trim()) {
+    parts.push(`MCP server: ${serverName.trim()}`);
   }
-  if (typeof params.grant_root === "string" && params.grant_root.trim()) {
-    parts.push(`Grant root: ${params.grant_root.trim()}`);
+  const grantRoot = params.grantRoot ?? params.grant_root;
+  if (typeof grantRoot === "string" && grantRoot.trim()) {
+    parts.push(`Grant root: ${grantRoot.trim()}`);
   }
   if (typeof params.cwd === "string" && params.cwd.trim()) {
     parts.push(`cwd: ${params.cwd.trim()}`);

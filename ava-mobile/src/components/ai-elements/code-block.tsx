@@ -9,7 +9,8 @@ import {
 } from "react-native";
 import * as Clipboard from "expo-clipboard";
 import { Check, Copy } from "lucide-react-native";
-import { COLORS } from "@/theme/colors";
+import { type ColorTokens } from "@/theme/colors";
+import { useStyles, useTheme } from "@/theme/theme-context";
 import { font, mono } from "@/theme/fonts";
 
 interface CodeBlockProps {
@@ -119,6 +120,8 @@ export function CodeBlock({
   language,
   showLineNumbers = true,
 }: CodeBlockProps) {
+  const { colors } = useTheme();
+  const styles = useStyles(createStyles);
   const [copied, setCopied] = useState(false);
 
   const handleCopy = async () => {
@@ -147,9 +150,9 @@ export function CodeBlock({
           activeOpacity={0.7}
         >
           {copied ? (
-            <Check size={13} color={COLORS.success} />
+            <Check size={13} color={colors.success} />
           ) : (
-            <Copy size={13} color={COLORS.mutedForeground} />
+            <Copy size={13} color={colors.codeMuted} />
           )}
           <Text
             style={[
@@ -233,12 +236,13 @@ export function CodeBlock({
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (c: ColorTokens) =>
+  StyleSheet.create({
   container: {
-    backgroundColor: "#0d1117",
-    borderRadius: 14,
+    backgroundColor: c.codeBg,
+    borderRadius: 16,
     borderWidth: 1,
-    borderColor: "rgba(255, 255, 255, 0.12)",
+    borderColor: c.codeBorder,
     marginVertical: 8,
     overflow: "hidden",
   },
@@ -248,9 +252,9 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     paddingHorizontal: 12,
     paddingVertical: 8,
-    backgroundColor: "rgba(255, 255, 255, 0.04)",
+    backgroundColor: c.codeActive,
     borderBottomWidth: 1,
-    borderBottomColor: "rgba(255, 255, 255, 0.08)",
+    borderBottomColor: c.codeBorder,
   },
   langBadge: {
     backgroundColor: "rgba(255, 255, 255, 0.08)",
@@ -261,7 +265,7 @@ const styles = StyleSheet.create({
   languageText: {
     fontSize: 11,
     fontWeight: "700",
-    color: COLORS.mutedForeground,
+    color: c.codeMuted,
     textTransform: "lowercase",
   },
   copyBtn: {
@@ -276,10 +280,10 @@ const styles = StyleSheet.create({
   copyText: {
     fontSize: 11,
     fontWeight: "500",
-    color: COLORS.mutedForeground,
+    color: c.codeMuted,
   },
   copyTextSuccess: {
-    color: COLORS.success,
+    color: c.success,
   },
   scrollContent: {
     paddingVertical: 10,
@@ -303,7 +307,7 @@ const styles = StyleSheet.create({
   },
   lineNumber: {
     fontSize: 11.5,
-    color: "rgba(255, 255, 255, 0.25)",
+    color: c.codeMuted,
     textAlign: "right",
   },
   gutterAdd: {
@@ -334,7 +338,7 @@ const styles = StyleSheet.create({
   codeText: {
     fontSize: 12.5,
     lineHeight: 20,
-    color: "#c9d1d9",
+    color: c.codeForeground,
   },
   textAdd: {
     color: "#4ade80",

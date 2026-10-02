@@ -39,7 +39,8 @@ import { useAva } from "@/state/ava-provider";
 import { useDeleteSession, useRenameSession, useSessions, useUserProfile } from "@/state/queries";
 import type { Session } from "@/core/types";
 import { SCHEDULED_THREAD_SOURCE } from "@/core/api/schedule";
-import { COLORS } from "@/theme/colors";
+import type { ColorTokens } from "@/theme/colors";
+import { useStyles, useTheme } from "@/theme/theme-context";
 import { font, mono } from "@/theme/fonts";
 
 const PIN_KEY = "ava.workspace.pins";
@@ -59,6 +60,8 @@ function groupByProject(sessions: Session[]) {
 export function AppDrawer(props: DrawerContentComponentProps) {
   const { navigation, state } = props;
   const insets = useSafeAreaInsets();
+  const { colors } = useTheme();
+  const styles = useStyles(createStyles);
   const {
     auth,
     status,
@@ -284,7 +287,7 @@ export function AppDrawer(props: DrawerContentComponentProps) {
               hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
               activeOpacity={0.7}
             >
-              <X size={18} color={COLORS.mutedForeground} />
+              <X size={18} color={colors.mutedForeground} />
             </TouchableOpacity>
           </View>
 
@@ -362,7 +365,7 @@ export function AppDrawer(props: DrawerContentComponentProps) {
                         >
                           <Icon
                             size={18}
-                            color={isActive ? COLORS.primary : COLORS.mutedForeground}
+                            color={isActive ? colors.primary : colors.mutedForeground}
                           />
                           <Text
                             style={[
@@ -399,8 +402,8 @@ export function AppDrawer(props: DrawerContentComponentProps) {
                     size={16}
                     color={
                       currentRouteName === "Chat" || !currentSessionId
-                        ? COLORS.primary
-                        : COLORS.foreground
+                        ? colors.primary
+                        : colors.foreground
                     }
                   />
                   <Text
@@ -451,18 +454,18 @@ export function AppDrawer(props: DrawerContentComponentProps) {
                           {isOpen ? (
                             <ChevronDown
                               size={14}
-                              color={isActiveWorkspace ? COLORS.primary : COLORS.mutedForeground}
+                              color={isActiveWorkspace ? colors.primary : colors.mutedForeground}
                             />
                           ) : (
                             <ChevronRight
                               size={14}
-                              color={isActiveWorkspace ? COLORS.primary : COLORS.mutedForeground}
+                              color={isActiveWorkspace ? colors.primary : colors.mutedForeground}
                             />
                           )}
 
                           <Folder
                             size={15}
-                            color={isActiveWorkspace ? COLORS.primary : COLORS.mutedForeground}
+                            color={isActiveWorkspace ? colors.primary : colors.mutedForeground}
                           />
 
                           <View style={styles.groupInfoCol}>
@@ -490,7 +493,7 @@ export function AppDrawer(props: DrawerContentComponentProps) {
                               {/* Pinned Pill Tag */}
                               {isPinned && !isActiveWorkspace && (
                                 <View style={styles.pinnedBadge}>
-                                  <Pin size={9.5} color={COLORS.primary} />
+                                  <Pin size={9.5} color={colors.primary} />
                                   <Text style={[styles.pinnedBadgeText, font("semibold")]}>
                                     Pinned
                                   </Text>
@@ -517,9 +520,9 @@ export function AppDrawer(props: DrawerContentComponentProps) {
                               accessibilityLabel={isPinned ? "Unpin workspace" : "Pin workspace"}
                             >
                               {isPinned ? (
-                                <PinOff size={13} color={COLORS.primary} />
+                                <PinOff size={13} color={colors.primary} />
                               ) : (
-                                <Pin size={13} color={COLORS.mutedForeground} />
+                                <Pin size={13} color={colors.mutedForeground} />
                               )}
                             </TouchableOpacity>
                           </View>
@@ -554,7 +557,7 @@ export function AppDrawer(props: DrawerContentComponentProps) {
                                     {isRunning ? (
                                       <ActivityIndicator
                                         size="small"
-                                        color={COLORS.primary}
+                                        color={colors.primary}
                                         style={{ transform: [{ scale: 0.7 }] }}
                                       />
                                     ) : (
@@ -577,7 +580,7 @@ export function AppDrawer(props: DrawerContentComponentProps) {
                                     </Text>
                                     {s.source === SCHEDULED_THREAD_SOURCE && (
                                       <View style={styles.scheduledPill}>
-                                        <Clock size={10} color={COLORS.primary} />
+                                        <Clock size={10} color={colors.primary} />
                                       </View>
                                     )}
                                     {isRunning && (
@@ -598,7 +601,7 @@ export function AppDrawer(props: DrawerContentComponentProps) {
                                       activeOpacity={0.7}
                                       accessibilityLabel="Rename session"
                                     >
-                                      <Edit2 size={12} color={COLORS.mutedForeground} />
+                                      <Edit2 size={12} color={colors.mutedForeground} />
                                     </TouchableOpacity>
 
                                     {/* Delete Session with Confirmation */}
@@ -609,7 +612,7 @@ export function AppDrawer(props: DrawerContentComponentProps) {
                                       activeOpacity={0.7}
                                       accessibilityLabel="Delete session"
                                     >
-                                      <Trash2 size={12.5} color={COLORS.mutedForeground} />
+                                      <Trash2 size={12.5} color={colors.mutedForeground} />
                                     </TouchableOpacity>
                                   </View>
                                 </View>
@@ -658,7 +661,7 @@ export function AppDrawer(props: DrawerContentComponentProps) {
               activeOpacity={0.7}
               accessibilityLabel="Sign out"
             >
-              <LogOut size={16} color={COLORS.foreground} />
+              <LogOut size={16} color={colors.foreground} />
             </TouchableOpacity>
           </View>
         </View>
@@ -693,7 +696,7 @@ export function AppDrawer(props: DrawerContentComponentProps) {
                   value={newTitle}
                   onChangeText={setNewTitle}
                   placeholder="Session Title…"
-                  placeholderTextColor={COLORS.mutedForeground}
+                  placeholderTextColor={colors.mutedForeground}
                   autoFocus
                   selectTextOnFocus
                   returnKeyType="done"
@@ -726,19 +729,19 @@ export function AppDrawer(props: DrawerContentComponentProps) {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (c: ColorTokens) => StyleSheet.create({
   outerContainer: {
     flex: 1,
-    backgroundColor: COLORS.sidebar,
+    backgroundColor: c.sidebar,
     paddingLeft: 0,
     paddingRight: 0,
   },
   glassModal: {
     flex: 1,
-    backgroundColor: COLORS.sidebar,
+    backgroundColor: c.sidebar,
     borderRadius: 0,
-    borderRightWidth: 1,
-    borderRightColor: COLORS.glassBorder,
+    borderRightWidth: StyleSheet.hairlineWidth,
+    borderRightColor: c.glassBorder,
     overflow: "hidden",
   },
   header: {
@@ -748,8 +751,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingTop: 16,
     paddingBottom: 14,
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.sidebarBorder,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: c.sidebarBorder,
   },
   headerTitleGroup: {
     flex: 1,
@@ -757,23 +760,23 @@ const styles = StyleSheet.create({
   brandTitle: {
     fontSize: 15,
     fontWeight: "700",
-    color: COLORS.foreground,
+    color: c.foreground,
     letterSpacing: -0.2,
   },
   brandSubtitle: {
     fontSize: 12,
-    color: COLORS.mutedForeground,
+    color: c.mutedForeground,
     marginTop: 2,
   },
   closeBtn: {
     width: 32,
     height: 32,
-    borderRadius: 10,
+    borderRadius: 999,
     alignItems: "center",
     justifyContent: "center",
     backgroundColor: "transparent",
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: COLORS.border,
+    borderColor: c.border,
   },
   tabsContainer: {
     paddingHorizontal: 12,
@@ -783,8 +786,8 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     position: "relative",
     height: 38,
-    backgroundColor: COLORS.secondary,
-    borderRadius: 12,
+    backgroundColor: c.secondary,
+    borderRadius: 999,
     padding: 3,
   },
   tabIndicator: {
@@ -792,8 +795,8 @@ const styles = StyleSheet.create({
     top: 3,
     left: 3,
     bottom: 3,
-    backgroundColor: COLORS.card,
-    borderRadius: 9,
+    backgroundColor: c.card,
+    borderRadius: 999,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.08,
@@ -804,16 +807,16 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: "center",
     justifyContent: "center",
-    borderRadius: 9,
+    borderRadius: 999,
     zIndex: 2,
   },
   tabText: {
     fontSize: 13,
     fontWeight: "500",
-    color: COLORS.mutedForeground,
+    color: c.mutedForeground,
   },
   tabTextActive: {
-    color: COLORS.foreground,
+    color: c.foreground,
     fontWeight: "600",
   },
   tabContentWrapper: {
@@ -833,7 +836,7 @@ const styles = StyleSheet.create({
     fontSize: 10.5,
     fontWeight: "600",
     textTransform: "uppercase",
-    color: COLORS.mutedForeground,
+    color: c.mutedForeground,
     letterSpacing: 0.5,
     paddingHorizontal: 10,
     marginBottom: 6,
@@ -844,19 +847,19 @@ const styles = StyleSheet.create({
     gap: 12,
     height: 42,
     paddingHorizontal: 12,
-    borderRadius: 12,
+    borderRadius: 999,
   },
   menuItemActive: {
-    backgroundColor: COLORS.sidebarAccent,
+    backgroundColor: c.sidebarAccent,
   },
   menuItemText: {
     fontSize: 14,
     fontWeight: "500",
-    color: COLORS.foreground,
+    color: c.foreground,
   },
   menuItemTextActive: {
     fontWeight: "600",
-    color: COLORS.primary,
+    color: c.primary,
   },
   newSessionBtn: {
     flexDirection: "row",
@@ -864,28 +867,28 @@ const styles = StyleSheet.create({
     gap: 8,
     height: 40,
     paddingHorizontal: 14,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: COLORS.glassBorder,
-    backgroundColor: COLORS.glassBg,
+    borderRadius: 999,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: c.glassBorder,
+    backgroundColor: c.glassBg,
     marginBottom: 14,
   },
   newSessionBtnActive: {
-    borderColor: COLORS.primary,
-    backgroundColor: COLORS.sidebarAccent,
+    borderColor: c.primary,
+    backgroundColor: c.sidebarAccent,
   },
   newSessionText: {
     fontSize: 14,
     fontWeight: "500",
-    color: COLORS.foreground,
+    color: c.foreground,
   },
   newSessionTextActive: {
-    color: COLORS.primary,
+    color: c.primary,
     fontWeight: "600",
   },
   hintText: {
     fontSize: 13,
-    color: COLORS.mutedForeground,
+    color: c.mutedForeground,
     paddingHorizontal: 8,
     marginVertical: 6,
   },
@@ -893,15 +896,15 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   groupContainer: {
-    borderRadius: 14,
-    backgroundColor: COLORS.card,
+    borderRadius: 16,
+    backgroundColor: c.card,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: COLORS.border,
+    borderColor: c.border,
     overflow: "hidden",
   },
   activeWorkspaceContainer: {
-    backgroundColor: COLORS.primary + "0D",
-    borderColor: COLORS.primary + "38",
+    backgroundColor: c.primary + "0D",
+    borderColor: c.primary + "38",
   },
   groupHeader: {
     flexDirection: "row",
@@ -912,7 +915,7 @@ const styles = StyleSheet.create({
     borderRadius: 10,
   },
   activeWorkspaceHeader: {
-    backgroundColor: COLORS.primary + "14",
+    backgroundColor: c.primary + "14",
   },
   groupInfoCol: {
     flex: 1,
@@ -927,23 +930,23 @@ const styles = StyleSheet.create({
   groupTitle: {
     fontSize: 13,
     fontWeight: "600",
-    color: COLORS.foreground,
+    color: c.foreground,
     flexShrink: 1,
   },
   activeGroupTitle: {
-    color: COLORS.primary,
+    color: c.primary,
     fontWeight: "700",
   },
   activeWorkspaceBadge: {
     paddingHorizontal: 5,
     paddingVertical: 1,
-    borderRadius: 6,
-    backgroundColor: COLORS.primary + "24",
+    borderRadius: 999,
+    backgroundColor: c.primary + "24",
   },
   activeWorkspaceBadgeText: {
     fontSize: 9,
     fontWeight: "700",
-    color: COLORS.primary,
+    color: c.primary,
     textTransform: "uppercase",
     letterSpacing: 0.3,
   },
@@ -953,17 +956,17 @@ const styles = StyleSheet.create({
     gap: 2.5,
     paddingHorizontal: 5,
     paddingVertical: 1,
-    borderRadius: 5,
-    backgroundColor: COLORS.secondary,
+    borderRadius: 999,
+    backgroundColor: c.secondary,
   },
   pinnedBadgeText: {
     fontSize: 9,
     fontWeight: "600",
-    color: COLORS.primary,
+    color: c.primary,
   },
   pathTag: {
     fontSize: 10.5,
-    color: COLORS.mutedForeground,
+    color: c.mutedForeground,
     marginTop: 2,
     opacity: 0.8,
     letterSpacing: 0.2,
@@ -976,23 +979,23 @@ const styles = StyleSheet.create({
   countBadge: {
     paddingHorizontal: 5,
     paddingVertical: 1,
-    borderRadius: 8,
-    backgroundColor: COLORS.secondary,
+    borderRadius: 999,
+    backgroundColor: c.secondary,
   },
   groupCount: {
     fontSize: 10.5,
     fontWeight: "600",
-    color: COLORS.mutedForeground,
+    color: c.mutedForeground,
   },
   pinBtn: {
     padding: 3,
-    borderRadius: 6,
+    borderRadius: 999,
   },
   groupSessionList: {
     marginLeft: 14,
     marginRight: 6,
     borderLeftWidth: StyleSheet.hairlineWidth,
-    borderLeftColor: COLORS.primary + "33",
+    borderLeftColor: c.primary + "33",
     paddingLeft: 8,
     gap: 3,
     paddingTop: 6,
@@ -1002,12 +1005,12 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    borderRadius: 10,
+    borderRadius: 999,
     paddingHorizontal: 4,
     minHeight: 36,
   },
   sessionRowSelected: {
-    backgroundColor: COLORS.sidebarAccent,
+    backgroundColor: c.sidebarAccent,
   },
   sessionBtn: {
     flex: 1,
@@ -1024,30 +1027,30 @@ const styles = StyleSheet.create({
     paddingHorizontal: 6,
     paddingVertical: 3,
     borderRadius: 999,
-    backgroundColor: COLORS.primary + "1A",
+    backgroundColor: c.primary + "1A",
     marginLeft: 6,
   },
   sessionDot: {
     width: 4,
     height: 4,
     borderRadius: 2,
-    backgroundColor: COLORS.mutedForeground,
+    backgroundColor: c.mutedForeground,
     opacity: 0.4,
   },
   sessionDotSelected: {
     width: 5,
     height: 5,
     borderRadius: 2.5,
-    backgroundColor: COLORS.primary,
+    backgroundColor: c.primary,
     opacity: 1,
   },
   sessionBtnText: {
     fontSize: 13,
-    color: COLORS.mutedForeground,
+    color: c.mutedForeground,
     flex: 1,
   },
   sessionBtnTextActive: {
-    color: COLORS.foreground,
+    color: c.foreground,
     fontWeight: "600",
   },
   sessionActions: {
@@ -1057,20 +1060,20 @@ const styles = StyleSheet.create({
   },
   actionBtn: {
     padding: 5,
-    borderRadius: 5,
+    borderRadius: 999,
     opacity: 0.65,
   },
   runningBadge: {
     paddingHorizontal: 5,
     paddingVertical: 1,
-    borderRadius: 6,
-    backgroundColor: COLORS.primary + "1F",
+    borderRadius: 999,
+    backgroundColor: c.primary + "1F",
     marginLeft: 4,
   },
   runningBadgeText: {
     fontSize: 9,
     fontWeight: "700",
-    color: COLORS.primary,
+    color: c.primary,
   },
   footer: {
     flexDirection: "row",
@@ -1078,9 +1081,9 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     paddingHorizontal: 14,
     paddingVertical: 12,
-    borderTopWidth: 1,
-    borderTopColor: COLORS.sidebarBorder,
-    backgroundColor: COLORS.sidebar,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: c.sidebarBorder,
+    backgroundColor: c.sidebar,
   },
   profileClickArea: {
     flex: 1,
@@ -1092,7 +1095,7 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: COLORS.primary,
+    backgroundColor: c.primary,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -1101,12 +1104,12 @@ const styles = StyleSheet.create({
     height: 36,
     borderRadius: 18,
     borderWidth: 1.5,
-    borderColor: COLORS.primary,
+    borderColor: c.primary,
   },
   avatarText: {
     fontSize: 13,
     fontWeight: "700",
-    color: COLORS.primaryForeground,
+    color: c.primaryForeground,
   },
   userMetaCol: {
     flex: 1,
@@ -1114,7 +1117,7 @@ const styles = StyleSheet.create({
   usernameText: {
     fontSize: 13,
     fontWeight: "600",
-    color: COLORS.foreground,
+    color: c.foreground,
   },
   serverRow: {
     flexDirection: "row",
@@ -1124,7 +1127,7 @@ const styles = StyleSheet.create({
   },
   serverHostText: {
     fontSize: 11,
-    color: COLORS.mutedForeground,
+    color: c.mutedForeground,
     flex: 1,
   },
   logoutBtn: {
@@ -1132,10 +1135,10 @@ const styles = StyleSheet.create({
     height: 34,
     alignItems: "center",
     justifyContent: "center",
-    borderRadius: 9,
+    borderRadius: 999,
     backgroundColor: "transparent",
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: COLORS.border,
+    borderColor: c.border,
   },
   modalBackdrop: {
     flex: 1,
@@ -1147,11 +1150,11 @@ const styles = StyleSheet.create({
   renameModalCard: {
     width: "100%",
     maxWidth: 380,
-    backgroundColor: COLORS.card,
-    borderRadius: 18,
+    backgroundColor: c.card,
+    borderRadius: 16,
     padding: 18,
-    borderWidth: 1,
-    borderColor: COLORS.border,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: c.border,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.25,
@@ -1160,23 +1163,23 @@ const styles = StyleSheet.create({
   },
   renameModalTitle: {
     fontSize: 16,
-    color: COLORS.foreground,
+    color: c.foreground,
     marginBottom: 4,
   },
   renameModalSubtitle: {
     fontSize: 12.5,
-    color: COLORS.mutedForeground,
+    color: c.mutedForeground,
     marginBottom: 14,
   },
   renameInput: {
     height: 42,
-    backgroundColor: COLORS.secondary,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    borderRadius: 10,
+    backgroundColor: c.secondary,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: c.border,
+    borderRadius: 12,
     paddingHorizontal: 12,
     fontSize: 13.5,
-    color: COLORS.foreground,
+    color: c.foreground,
     marginBottom: 16,
   },
   renameActionsRow: {
@@ -1187,21 +1190,21 @@ const styles = StyleSheet.create({
   renameCancelBtn: {
     paddingVertical: 8,
     paddingHorizontal: 14,
-    borderRadius: 8,
-    backgroundColor: COLORS.secondary,
+    borderRadius: 999,
+    backgroundColor: c.secondary,
   },
   renameCancelText: {
     fontSize: 13,
-    color: COLORS.mutedForeground,
+    color: c.mutedForeground,
   },
   renameSaveBtn: {
     paddingVertical: 8,
     paddingHorizontal: 16,
-    borderRadius: 8,
-    backgroundColor: COLORS.primary,
+    borderRadius: 999,
+    backgroundColor: c.primary,
   },
   renameSaveText: {
     fontSize: 13,
-    color: COLORS.primaryForeground,
+    color: c.primaryForeground,
   },
 });

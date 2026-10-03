@@ -45,7 +45,8 @@ import type { FileEntry } from "@/core/types";
 import { parentPath, pathCrumbs, joinPath, writeTextFile, createDirectory, deletePath } from "@/core/api/files";
 import { useDirectory, useFileContent } from "@/state/queries";
 import { useAva } from "@/state/ava-provider";
-import { COLORS } from "@/theme/colors";
+import type { ColorTokens } from "@/theme/colors";
+import { useStyles, useTheme } from "@/theme/theme-context";
 import { font, mono } from "@/theme/fonts";
 
 // ── Tree Branch ───────────────────────────────────────────────────────────
@@ -65,6 +66,8 @@ function TreeBranch({
   onOpen: (entry: FileEntry) => void;
   onDelete: (entry: FileEntry) => void;
 }) {
+  const { colors } = useTheme();
+  const styles = useStyles(createStyles);
   const { data = [], isLoading, refetch } = useDirectory(path);
   const [expanded, setExpanded] = useState<string[]>(depth === 0 ? [path] : []);
 
@@ -116,14 +119,14 @@ function TreeBranch({
               activeOpacity={0.7}
             >
               {entry.isDirectory ? (
-                isOpen ? <ChevronDown size={15} color={COLORS.mutedForeground} /> : <ChevronRight size={15} color={COLORS.mutedForeground} />
+                isOpen ? <ChevronDown size={15} color={colors.codeMuted} /> : <ChevronRight size={15} color={colors.codeMuted} />
               ) : (
                 <View style={{ width: 15 }} />
               )}
               {entry.isDirectory ? (
-                isOpen ? <FolderOpen size={16} color={COLORS.primary} /> : <Folder size={16} color={COLORS.primary} />
+                isOpen ? <FolderOpen size={16} color={colors.primary} /> : <Folder size={16} color={colors.primary} />
               ) : (
-                <FileCode2 size={16} color={COLORS.mutedForeground} />
+                <FileCode2 size={16} color={colors.codeMuted} />
               )}
               <Text style={[styles.treeEntryName, isActive && styles.treeEntryNameActive]} numberOfLines={1}>
                 {entry.name}
@@ -142,6 +145,8 @@ function TreeBranch({
 // ── File Editor ───────────────────────────────────────────────────────────
 
 function FileEditor({ path, onBack }: { path: string; onBack: () => void }) {
+  const { colors } = useTheme();
+  const styles = useStyles(createStyles);
   const { rpc } = useAva();
   const { data, isLoading, error, refetch } = useFileContent(path);
   const [editText, setEditText] = useState<string | null>(null);
@@ -207,7 +212,7 @@ function FileEditor({ path, onBack }: { path: string; onBack: () => void }) {
       {/* Editor Toolbar */}
       <View style={styles.editorSubHeader}>
         <View style={styles.editorTab}>
-          <FileIcon size={14} color={COLORS.primary} />
+          <FileIcon size={14} color={colors.primary} />
           <Text style={styles.editorTabText} numberOfLines={1}>{name}</Text>
           {dirty && <View style={styles.dirtyDot} />}
         </View>
@@ -215,7 +220,7 @@ function FileEditor({ path, onBack }: { path: string; onBack: () => void }) {
           {isEditing ? (
             <>
               <TouchableOpacity onPress={handleCancelEdit} style={styles.editorActionBtn} activeOpacity={0.7}>
-                <X size={13} color={COLORS.mutedForeground} />
+                <X size={13} color={colors.codeMuted} />
                 <Text style={styles.editorActionBtnText}>Cancel</Text>
               </TouchableOpacity>
               <TouchableOpacity onPress={handleSave} style={[styles.editorActionBtn, styles.saveBtn]} disabled={saving} activeOpacity={0.7}>
@@ -226,15 +231,15 @@ function FileEditor({ path, onBack }: { path: string; onBack: () => void }) {
           ) : (
             <>
               <TouchableOpacity onPress={handleStartEdit} style={styles.editorActionBtn} activeOpacity={0.7}>
-                <Pencil size={13} color={COLORS.mutedForeground} />
+                <Pencil size={13} color={colors.codeMuted} />
                 <Text style={styles.editorActionBtnText}>Edit</Text>
               </TouchableOpacity>
               <TouchableOpacity onPress={handleCopy} style={styles.editorActionBtn} activeOpacity={0.7}>
-                {copied ? <Check size={13} color={COLORS.success} /> : <Copy size={13} color={COLORS.mutedForeground} />}
+                {copied ? <Check size={13} color={colors.success} /> : <Copy size={13} color={colors.codeMuted} />}
                 <Text style={styles.editorActionBtnText}>{copied ? "Copied" : "Copy"}</Text>
               </TouchableOpacity>
               <TouchableOpacity onPress={handleShare} style={styles.editorActionBtn} activeOpacity={0.7}>
-                <Share2 size={13} color={COLORS.mutedForeground} />
+                <Share2 size={13} color={colors.codeMuted} />
                 <Text style={styles.editorActionBtnText}>Share</Text>
               </TouchableOpacity>
             </>
@@ -246,7 +251,7 @@ function FileEditor({ path, onBack }: { path: string; onBack: () => void }) {
       <View style={styles.editorContentArea}>
         {isLoading ? (
           <View style={styles.loadingBox}>
-            <ActivityIndicator size="small" color={COLORS.primary} />
+            <ActivityIndicator size="small" color={colors.primary} />
             <Text style={styles.loadingText}>Opening file…</Text>
           </View>
         ) : error ? (
@@ -274,6 +279,8 @@ function FileEditor({ path, onBack }: { path: string; onBack: () => void }) {
 // ── Main Screen ───────────────────────────────────────────────────────────
 
 export function FilesScreen({ route }: { route?: { params?: { initialPath?: string; openFile?: string } } } = {}) {
+  const { colors } = useTheme();
+  const styles = useStyles(createStyles);
   const navigation = useNavigation<any>();
   const { rpc } = useAva();
   const initialPath = route?.params?.initialPath;
@@ -383,7 +390,7 @@ export function FilesScreen({ route }: { route?: { params?: { initialPath?: stri
             </View>
           </View>
           <View style={styles.hRight}>
-            <GlassIconButton icon={Trash2} size={16} color={COLORS.destructive} onPress={() => handleDelete({ name: openFile.split("/").pop() || "", path: openFile, isDirectory: false })} />
+            <GlassIconButton icon={Trash2} size={16} color={colors.destructive} onPress={() => handleDelete({ name: openFile.split("/").pop() || "", path: openFile, isDirectory: false })} />
             <GlassIconButton icon={X} size={16} onPress={() => setOpenFile(null)} />
           </View>
         </>
@@ -392,7 +399,7 @@ export function FilesScreen({ route }: { route?: { params?: { initialPath?: stri
           <View style={styles.hLeft}>
             {navigation.canGoBack() && <GlassIconButton icon={ChevronLeft} size={18} onPress={() => navigation.goBack()} />}
             <GlassIconButton icon={Menu} size={18} onPress={() => openAppDrawer(navigation)} />
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.crumbScroll}>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.crumbWrap} contentContainerStyle={styles.crumbScroll}>
               <TouchableOpacity onPress={() => setRoot("/")} style={styles.crumbBtn}>
                 <Text style={[styles.crumbRoot, mono("bold")]}>/</Text>
               </TouchableOpacity>
@@ -431,19 +438,19 @@ export function FilesScreen({ route }: { route?: { params?: { initialPath?: stri
               {showSearch && (
                 <View style={styles.searchBar}>
                   <View style={styles.searchBox}>
-                    <Search size={16} color={COLORS.mutedForeground} />
+                    <Search size={16} color={colors.codeMuted} />
                     <TextInput
                       value={query}
                       onChangeText={setQuery}
                       placeholder="Filter files…"
-                      placeholderTextColor={COLORS.mutedForeground}
+                      placeholderTextColor={colors.codeMuted}
                       style={styles.searchInput}
                       autoCapitalize="none"
                       autoCorrect={false}
                     />
                     {query && (
                       <TouchableOpacity onPress={() => setQuery("")}>
-                        <X size={14} color={COLORS.mutedForeground} />
+                        <X size={14} color={colors.codeMuted} />
                       </TouchableOpacity>
                     )}
                   </View>
@@ -466,46 +473,49 @@ export function FilesScreen({ route }: { route?: { params?: { initialPath?: stri
 
 // ── Styles ────────────────────────────────────────────────────────────────
 
-const styles = StyleSheet.create({
-  container: { flex: 1, padding: 12 },
-  header: { marginHorizontal: 12, marginTop: Platform.OS === "android" ? 8 : 4, marginBottom: 8, paddingHorizontal: 12, paddingVertical: 8, flexDirection: "row", alignItems: "center", justifyContent: "space-between", borderRadius: 18, height: 56 },
-  hLeft: { flexDirection: "row", alignItems: "center", gap: 8, flex: 1, overflow: "hidden" },
-  hRight: { flexDirection: "row", alignItems: "center", gap: 6 },
-  hTitle: { fontSize: 14, fontWeight: "700", color: COLORS.foreground },
-  hSub: { fontSize: 10.5, color: COLORS.mutedForeground, marginTop: 1 },
-  crumbScroll: { flexDirection: "row", alignItems: "center", gap: 2, paddingRight: 8 },
-  crumbItem: { flexDirection: "row", alignItems: "center", gap: 2 },
-  crumbBtn: { paddingHorizontal: 4, paddingVertical: 2, borderRadius: 4 },
-  crumbRoot: { fontSize: 13, color: COLORS.primary },
-  crumbSlash: { fontSize: 12, color: COLORS.mutedForeground },
-  crumbText: { fontSize: 12.5, color: COLORS.foreground },
-  crumbActive: { color: COLORS.primary, fontWeight: "700" },
+function createStyles(c: ColorTokens) {
+  return StyleSheet.create({
+    container: { flex: 1, padding: 12 },
+    header: { marginHorizontal: 12, marginTop: Platform.OS === "android" ? 8 : 4, marginBottom: 8, paddingHorizontal: 12, paddingVertical: 8, flexDirection: "row", alignItems: "center", justifyContent: "space-between", borderRadius: 18, height: 56 },
+    hLeft: { flexDirection: "row", alignItems: "center", gap: 8, flex: 1, overflow: "hidden" },
+    hRight: { flexDirection: "row", alignItems: "center", gap: 6 },
+    hTitle: { fontSize: 14, fontWeight: "700", color: c.foreground },
+    hSub: { fontSize: 10.5, color: c.mutedForeground, marginTop: 1 },
+    crumbScroll: { flexDirection: "row", alignItems: "center", gap: 2, paddingRight: 8 },
+    crumbWrap: { flex: 1, minWidth: 0 },
+    crumbItem: { flexDirection: "row", alignItems: "center", gap: 2 },
+    crumbBtn: { paddingHorizontal: 4, paddingVertical: 2, borderRadius: 4 },
+    crumbRoot: { fontSize: 13, color: c.primary },
+    crumbSlash: { fontSize: 12, color: c.mutedForeground },
+    crumbText: { fontSize: 12.5, color: c.foreground },
+    crumbActive: { color: c.primary, fontWeight: "700" },
 
-  codeCard: { flex: 1, backgroundColor: COLORS.codeBg, borderRadius: 18, borderWidth: 1, borderColor: "rgba(255, 255, 255, 0.1)", overflow: "hidden" },
-  searchBar: { padding: 12, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: "rgba(255, 255, 255, 0.08)" },
-  searchBox: { flexDirection: "row", alignItems: "center", backgroundColor: "rgba(255, 255, 255, 0.05)", borderWidth: StyleSheet.hairlineWidth, borderColor: "rgba(255, 255, 255, 0.1)", borderRadius: 12, paddingHorizontal: 12, height: 40, gap: 10 },
-  searchInput: { flex: 1, fontSize: 13.5, lineHeight: 20, color: COLORS.codeForeground, paddingVertical: 0 },
-  treeScroll: { flex: 1, paddingTop: 8 },
-  treeRow: { flexDirection: "row", alignItems: "center", gap: 10, height: 42, marginHorizontal: 6, borderRadius: 10, paddingRight: 12 },
-  treeRowActive: { backgroundColor: "rgba(255, 255, 255, 0.08)" },
-  treeEntryName: { fontSize: 13.5, lineHeight: 20, color: COLORS.codeForeground, flex: 1 },
-  treeEntryNameActive: { color: COLORS.primary, fontWeight: "600" },
-  emptyWrap: { padding: 16, paddingTop: 24 },
-  nestedEmpty: { fontSize: 11.5, letterSpacing: 0.2, color: COLORS.mutedForeground, paddingVertical: 10, paddingRight: 12 },
+    codeCard: { flex: 1, backgroundColor: c.codeBg, borderRadius: 16, borderWidth: StyleSheet.hairlineWidth, borderColor: c.codeBorder, overflow: "hidden" },
+    searchBar: { padding: 12, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: c.codeBorder },
+    searchBox: { flexDirection: "row", alignItems: "center", backgroundColor: c.codeActive, borderWidth: StyleSheet.hairlineWidth, borderColor: c.codeBorder, borderRadius: 999, paddingHorizontal: 12, height: 40, gap: 10 },
+    searchInput: { flex: 1, fontSize: 13.5, lineHeight: 20, color: c.codeForeground, paddingVertical: 0 },
+    treeScroll: { flex: 1, paddingTop: 8 },
+    treeRow: { flexDirection: "row", alignItems: "center", gap: 10, height: 42, marginHorizontal: 6, borderRadius: 12, paddingRight: 12 },
+    treeRowActive: { backgroundColor: c.codeActive },
+    treeEntryName: { fontSize: 13.5, lineHeight: 20, color: c.codeForeground, flex: 1 },
+    treeEntryNameActive: { color: c.primary, fontWeight: "600" },
+    emptyWrap: { padding: 16, paddingTop: 24 },
+    nestedEmpty: { fontSize: 11.5, letterSpacing: 0.2, color: c.mutedForeground, paddingVertical: 10, paddingRight: 12 },
 
-  editorContainer: { flex: 1 },
-  editorSubHeader: { height: 46, flexDirection: "row", alignItems: "center", justifyContent: "space-between", borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: "rgba(255, 255, 255, 0.08)", paddingHorizontal: 14, backgroundColor: "rgba(255, 255, 255, 0.03)" },
-  editorTab: { flexDirection: "row", alignItems: "center", gap: 6, maxWidth: "50%" },
-  editorTabText: { fontSize: 12.5, color: COLORS.codeForeground, fontWeight: "600" },
-  dirtyDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: COLORS.warning },
-  editorActions: { flexDirection: "row", alignItems: "center", gap: 6 },
-  editorActionBtn: { flexDirection: "row", alignItems: "center", gap: 5, paddingVertical: 6, paddingHorizontal: 10, borderRadius: 8, backgroundColor: "rgba(255, 255, 255, 0.06)" },
-  editorActionBtnText: { fontSize: 11.5, letterSpacing: 0.2, color: COLORS.mutedForeground },
-  saveBtn: { backgroundColor: COLORS.primary },
-  editorContentArea: { flex: 1 },
-  editInput: { flex: 1, fontSize: 13, lineHeight: 19, color: COLORS.codeForeground, backgroundColor: COLORS.codeBg, padding: 12, fontFamily: Platform.OS === "ios" ? "Menlo" : "monospace" },
-  codeScroll: { flex: 1, padding: 8 },
-  loadingBox: { flex: 1, alignItems: "center", justifyContent: "center", gap: 8, paddingTop: 40 },
-  loadingText: { fontSize: 13, color: COLORS.mutedForeground },
-  errorText: { fontSize: 13, color: COLORS.destructive, padding: 16 },
-});
+    editorContainer: { flex: 1 },
+    editorSubHeader: { height: 46, flexDirection: "row", alignItems: "center", justifyContent: "space-between", borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: c.codeBorder, paddingHorizontal: 14, backgroundColor: "transparent" },
+    editorTab: { flexDirection: "row", alignItems: "center", gap: 6, maxWidth: "50%" },
+    editorTabText: { fontSize: 12.5, color: c.codeForeground, fontWeight: "600" },
+    dirtyDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: c.warning },
+    editorActions: { flexDirection: "row", alignItems: "center", gap: 6 },
+    editorActionBtn: { flexDirection: "row", alignItems: "center", gap: 5, paddingVertical: 7, paddingHorizontal: 12, borderRadius: 999, backgroundColor: c.codeActive, borderWidth: StyleSheet.hairlineWidth, borderColor: c.codeBorder },
+    editorActionBtnText: { fontSize: 11.5, letterSpacing: 0.2, color: c.codeMuted },
+    saveBtn: { backgroundColor: c.primary, borderColor: "transparent" },
+    editorContentArea: { flex: 1 },
+    editInput: { flex: 1, fontSize: 13, lineHeight: 19, color: c.codeForeground, backgroundColor: c.codeBg, padding: 12, fontFamily: Platform.OS === "ios" ? "Menlo" : "monospace" },
+    codeScroll: { flex: 1, padding: 8 },
+    loadingBox: { flex: 1, alignItems: "center", justifyContent: "center", gap: 8, paddingTop: 40 },
+    loadingText: { fontSize: 13, color: c.codeMuted },
+    errorText: { fontSize: 13, color: c.destructive, padding: 16 },
+  });
+}

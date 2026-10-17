@@ -368,13 +368,7 @@ pub(crate) fn finalize_tool_router(
         }
     }
     let tool_search_name = ToolName::plain(TOOL_SEARCH_TOOL_NAME);
-    if search_tool_enabled(turn_context, model_info)
-        && registry.entries().any(|tool| {
-            tool.runtime.tool_name() != tool_search_name
-                && tool.exposure.is_deferred()
-                && tool.runtime.search_info().is_some()
-        })
-    {
+    if search_tool_enabled(turn_context, model_info) {
         if registry.remove(&tool_search_name).is_some() {
             registry.record_collision(tool_search_name.clone());
         }

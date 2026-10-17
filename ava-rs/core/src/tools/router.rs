@@ -276,10 +276,9 @@ impl ToolRouter {
             }
             ResponseItem::ToolSearchCall {
                 call_id: Some(call_id),
-                execution,
                 arguments,
                 ..
-            } if execution == "client" => {
+            } => {
                 let arguments: SearchToolCallParams =
                     serde_json::from_value(arguments).map_err(|err| {
                         FunctionCallError::RespondToModel(format!(
@@ -293,7 +292,13 @@ impl ToolRouter {
                     encrypted_function_args: None,
                 }))
             }
-            ResponseItem::ToolSearchCall { .. } => Ok(None),
+            // Never silently drop a ToolSearchCall: returning Ok(None) leaves
+            // the model with no tool output, which it perceives as "aborted".
+            ResponseItem::ToolSearchCall { .. } => Err(
+                FunctionCallError::RespondToModel(
+                    "tool_search call missing call_id".to_string(),
+                ),
+            ),
             ResponseItem::CustomToolCall {
                 name,
                 namespace,

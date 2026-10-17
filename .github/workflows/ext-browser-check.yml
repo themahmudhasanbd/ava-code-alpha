@@ -7,11 +7,12 @@ on:
       - browser-fix-*
     paths:
       - 'ava-rs/ext/browser/**'
+      - 'ava-rs/core/src/tools/**'
       - '.github/workflows/ext-browser-check.yml'
 
 jobs:
   check:
-    name: cargo check ava-browser-extension
+    name: cargo check changed crates
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -20,5 +21,8 @@ jobs:
       - name: Setup Rust
         uses: dtolnay/rust-toolchain@stable
 
-      - name: Check browser extension crate only
+      - name: Check browser extension crate
         run: cd ava-rs && cargo check -p ava-browser-extension
+
+      - name: Check core crate (tool router fix)
+        run: cd ava-rs && cargo check -p ava-core

@@ -63,7 +63,7 @@ jobs:
           find ava-mobile/android/app/build/outputs/apk/ -name "*.apk" -ls
 
       - name: Upload Android APK
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: ava-code-mobile-android-apk
           path: |

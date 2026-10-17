@@ -197,10 +197,7 @@ fn day_matches(schedule: &CronSchedule, datetime: &chrono::DateTime<Utc>) -> boo
     // chrono: Monday = 0 .. Sunday = 6; cron: Sunday = 0 .. Saturday = 6.
     let dow = (datetime.weekday().num_days_from_monday() + 1) % 7;
     let dow_match = schedule.days_of_week.contains(&dow);
-    match (
-        schedule.day_of_month_is_star,
-        schedule.day_of_week_is_star,
-    ) {
+    match (schedule.day_of_month_is_star, schedule.day_of_week_is_star) {
         (true, true) => true,
         (true, false) => dow_match,
         (false, true) => dom_match,

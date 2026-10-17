@@ -1119,7 +1119,6 @@ mod tests {
         );
     }
 
-
     #[test]
     fn test_transform_with_explicit_project() {
         let input = json!({

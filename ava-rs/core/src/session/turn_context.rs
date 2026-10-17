@@ -1295,13 +1295,6 @@ impl Session {
     }
 
     pub(crate) async fn maybe_emit_model_warnings_for_turn(&self, tc: &TurnContext) {
-        if tc.model_info().used_fallback_model_metadata {
-            tracing::debug!(
-                "Model metadata for `{}` not found. Defaulting to fallback metadata",
-                tc.model_info().slug
-            );
-        }
-
         if !tc.code_mode_available
             && matches!(
                 crate::tools::requested_tool_mode(tc, tc.model_info()),

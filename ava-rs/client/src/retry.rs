@@ -130,8 +130,8 @@ where
 mod tests {
     use super::*;
     use http::StatusCode;
-    use std::sync::atomic::{AtomicUsize, Ordering};
     use std::sync::Arc;
+    use std::sync::atomic::{AtomicUsize, Ordering};
 
     #[test]
     fn retry_on_should_retry_auth_errors_when_enabled() {

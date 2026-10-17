@@ -8,8 +8,9 @@ import {
   FolderOpen,
   Loader2,
   Mic,
-  Paperclip,
+  MonitorSmartphone,
   Plug,
+  Server,
   Plus,
   Settings2,
   ShieldCheck,
@@ -34,6 +35,7 @@ import { cn } from "@/lib/utils";
 import { useAva } from "@/state/ava-provider";
 import { useModels } from "@/state/queries";
 import type { ChatStatus } from "@/state/use-chat";
+import { ServerMediaPicker, type ServerSelectedMedia } from "@/components/chat/server-media-picker";
 
 interface Props {
   value: string;
@@ -223,6 +225,8 @@ export const Composer = forwardRef<HTMLTextAreaElement, Props>(({ value, onChang
   const [attachments, setAttachments] = useState<Attachment[]>([]);
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [attachMenuOpen, setAttachMenuOpen] = useState(false);
+  const [serverPickerOpen, setServerPickerOpen] = useState(false);
 
   const handleFiles = async (files: FileList | null) => {
     if (!files || files.length === 0) return;
@@ -261,6 +265,24 @@ export const Composer = forwardRef<HTMLTextAreaElement, Props>(({ value, onChang
       if (a?.previewUrl) URL.revokeObjectURL(a.previewUrl);
       return prev.filter((x) => x.id !== id);
     });
+  };
+
+  const addLocalFiles = (files: FileList | null) => {
+    setAttachMenuOpen(false);
+    void handleFiles(files);
+  };
+
+  const addServerFile = (media: ServerSelectedMedia) => {
+    const isImage = media.kind === "image";
+    setAttachments((prev) => [
+      ...prev,
+      {
+        id: `${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
+        name: media.name,
+        remotePath: media.remotePath,
+        kind: isImage ? "image" : "file",
+      },
+    ]);
   };
 
   const submitWithAttachments = (text: string) => {
@@ -305,7 +327,7 @@ export const Composer = forwardRef<HTMLTextAreaElement, Props>(({ value, onChang
             }
             submitWithAttachments(m.text);
           }}
-          className="glass rounded-[1.75rem] [&>[data-slot=input-group]]:rounded-[1.75rem] [&>[data-slot=input-group]]:border-0 [&>[data-slot=input-group]]:bg-transparent [&>[data-slot=input-group]]:shadow-none"
+          className="glass rounded-[1.75rem] [&>[data-slot=input-group]]:rounded-[1.75rem] [&>[data-slot=input-group]]:border-0 [&>[data-slot=input-group]]:bg-transparent [&>[data-slot=input-group]]:shadow-none [&>[data-slot=input-group]]:ring-0 [&>[data-slot=input-group]]:focus-within:ring-0 [&>[data-slot=input-group]]:has-[[data-slot=input-group-control]:focus-visible]:ring-0"
         >
           {(attachments.length > 0 || uploading) && (
             <div className="flex flex-wrap gap-1.5 px-4 pt-3">
@@ -356,17 +378,10 @@ export const Composer = forwardRef<HTMLTextAreaElement, Props>(({ value, onChang
             <PromptInputTools className="min-w-0 gap-1.5 overflow-x-auto">
               <PromptInputButton
                 aria-label="Add"
-                onClick={() => setPanel("actions")}
+                onClick={() => setAttachMenuOpen((v) => !v)}
                 className="size-8 shrink-0 rounded-full bg-muted"
               >
                 <Plus />
-              </PromptInputButton>
-              <PromptInputButton
-                aria-label="Attach file"
-                onClick={() => fileInputRef.current?.click()}
-                className="size-8 shrink-0 rounded-full bg-muted"
-              >
-                <Paperclip />
               </PromptInputButton>
               <input
                 ref={fileInputRef}
@@ -377,6 +392,37 @@ export const Composer = forwardRef<HTMLTextAreaElement, Props>(({ value, onChang
                 tabIndex={-1}
                 onChange={(e) => void handleFiles(e.target.files)}
               />
+              {attachMenuOpen && (
+                <>
+                  <button
+                    type="button"
+                    aria-label="Close attach menu"
+                    onClick={() => setAttachMenuOpen(false)}
+                    className="fixed inset-0 z-[90] cursor-default"
+                    tabIndex={-1}
+                  />
+                  <div className="fixed bottom-24 left-4 z-[95] w-72 rounded-2xl border border-border bg-card p-1.5 shadow-2xl">
+                    <OptionRow
+                      icon={MonitorSmartphone}
+                      title="Upload from your device"
+                      subtitle="Upload images or documents to the server media library"
+                      onClick={() => {
+                        setAttachMenuOpen(false);
+                        fileInputRef.current?.click();
+                      }}
+                    />
+                    <OptionRow
+                      icon={Server}
+                      title="Select from server"
+                      subtitle="Browse the server media library (/root/shared-media)"
+                      onClick={() => {
+                        setAttachMenuOpen(false);
+                        setServerPickerOpen(true);
+                      }}
+                    />
+                  </div>
+                </>
+              )}
               <Pill icon={Settings2} onClick={() => setPanel("actions")}>Tools</Pill>
               <Pill icon={ShieldCheck} onClick={() => setPanel("sandbox")} chevron>
                 {sandboxOpt.label}
@@ -453,6 +499,8 @@ export const Composer = forwardRef<HTMLTextAreaElement, Props>(({ value, onChang
         ))}
         <p className="px-3 pt-2 text-xs text-muted-foreground">Applies to new sessions.</p>
       </Panel>
+
+      <ServerMediaPicker open={serverPickerOpen && !!rpc} onClose={() => setServerPickerOpen(false)} onSelect={addServerFile} initialDirectory="/root/shared-media" />
     </>
   );
 });

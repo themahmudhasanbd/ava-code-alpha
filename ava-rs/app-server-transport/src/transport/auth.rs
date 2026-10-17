@@ -3,6 +3,7 @@ use ava_utils_absolute_path::AbsolutePathBuf;
 use axum::http::HeaderMap;
 use axum::http::StatusCode;
 use axum::http::header::AUTHORIZATION;
+use base64::Engine;
 use clap::Args;
 use clap::ValueEnum;
 use constant_time_eq::constant_time_eq_32;
@@ -11,6 +12,7 @@ use jsonwebtoken::DecodingKey;
 use jsonwebtoken::Validation;
 use jsonwebtoken::decode;
 use serde::Deserialize;
+use serde::Serialize;
 use sha2::Digest;
 use sha2::Sha256;
 use std::io;
@@ -263,44 +265,243 @@ pub fn policy_from_settings(
     Ok(WebsocketAuthPolicy { mode })
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ServerUser {
+    pub username: String,
+    #[serde(default)]
+    pub email: String,
+    #[serde(default)]
+    pub token: String,
+    #[serde(default)]
+    pub role: Option<String>,
+    #[serde(default)]
+    pub password_hash: Option<String>,
+    #[serde(default)]
+    pub created_at: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ServerAuthConfig {
+    #[serde(default = "default_true")]
+    pub auth_enabled: bool,
+    #[serde(default)]
+    pub users: Vec<ServerUser>,
+}
+
+fn default_true() -> bool {
+    true
+}
+
+pub(crate) fn load_server_auth() -> Option<ServerAuthConfig> {
+    let candidate_paths = [
+        std::env::var("AVA_SERVER_AUTH_FILE")
+            .ok()
+            .map(PathBuf::from),
+        std::env::var("HOME")
+            .ok()
+            .map(|h| PathBuf::from(h).join(".ava-code/server-auth.json")),
+        Some(PathBuf::from("/root/.ava-code/server-auth.json")),
+        Some(PathBuf::from("/etc/ava/server-auth.json")),
+        Some(PathBuf::from(".ava-code/server-auth.json")),
+    ];
+
+    for path in candidate_paths.into_iter().flatten() {
+        if path.exists() {
+            if let Ok(content) = std::fs::read_to_string(&path) {
+                if let Ok(config) = serde_json::from_str::<ServerAuthConfig>(&content) {
+                    return Some(config);
+                }
+            }
+        }
+    }
+    None
+}
+
+fn extract_credentials_from_request(
+    headers: &HeaderMap,
+    query: Option<&str>,
+) -> (Option<String>, Option<(String, String)>) {
+    let mut candidate_token = None;
+    let mut candidate_user_pass = None;
+
+    if let Some(q) = query {
+        for (k, v) in url::form_urlencoded::parse(q.as_bytes()) {
+            if (k == "token" || k == "auth") && !v.is_empty() {
+                candidate_token = Some(v.into_owned());
+                break;
+            }
+        }
+    }
+
+    if let Some(raw_header) = headers.get(AUTHORIZATION) {
+        if let Ok(header) = raw_header.to_str() {
+            if let Some((scheme, val)) = header.split_once(' ') {
+                let trimmed_val = val.trim();
+                if scheme.eq_ignore_ascii_case("Bearer") {
+                    if candidate_token.is_none() && !trimmed_val.is_empty() {
+                        candidate_token = Some(trimmed_val.to_string());
+                    }
+                } else if scheme.eq_ignore_ascii_case("Basic") {
+                    if let Ok(decoded_bytes) =
+                        base64::engine::general_purpose::STANDARD.decode(trimmed_val)
+                    {
+                        if let Ok(decoded_str) = String::from_utf8(decoded_bytes) {
+                            if let Some((u, p)) = decoded_str.split_once(':') {
+                                candidate_user_pass = Some((u.to_string(), p.to_string()));
+                            }
+                        }
+                    }
+                    if candidate_token.is_none() && !trimmed_val.is_empty() {
+                        candidate_token = Some(trimmed_val.to_string());
+                    }
+                }
+            }
+        }
+    }
+
+    if candidate_user_pass.is_none() {
+        if let Some(ref tok) = candidate_token {
+            if let Ok(decoded_bytes) = base64::engine::general_purpose::STANDARD.decode(tok) {
+                if let Ok(decoded_str) = String::from_utf8(decoded_bytes) {
+                    if let Some((u, p)) = decoded_str.split_once(':') {
+                        candidate_user_pass = Some((u.to_string(), p.to_string()));
+                    }
+                }
+            }
+        }
+    }
+
+    (candidate_token, candidate_user_pass)
+}
+
+fn verify_against_server_users(
+    users: &[ServerUser],
+    candidate_token: Option<&str>,
+    candidate_user_pass: Option<(&str, &str)>,
+) -> bool {
+    for user in users {
+        if let Some(token) = candidate_token {
+            if !user.token.is_empty() && token == user.token {
+                return true;
+            }
+            let user_token_b64 = base64::engine::general_purpose::STANDARD
+                .encode(format!("{}:{}", user.username, user.token));
+            if token == user_token_b64 {
+                return true;
+            }
+            if !user.email.is_empty() {
+                let email_token_b64 = base64::engine::general_purpose::STANDARD
+                    .encode(format!("{}:{}", user.email, user.token));
+                if token == email_token_b64 {
+                    return true;
+                }
+            }
+        }
+
+        if let Some((u, p)) = candidate_user_pass {
+            let user_matches = u == user.username || (!user.email.is_empty() && u == user.email);
+            if user_matches {
+                if !user.token.is_empty() && p == user.token {
+                    return true;
+                }
+                if let Some(ref hash) = user.password_hash {
+                    if !hash.is_empty() {
+                        let actual_hash = format!("{:x}", Sha256::digest(p.as_bytes()));
+                        if actual_hash == *hash {
+                            return true;
+                        }
+                    }
+                }
+            }
+        }
+    }
+    false
+}
+
 pub(crate) fn is_unauthenticated_non_loopback_listener(
     bind_address: SocketAddr,
     policy: &WebsocketAuthPolicy,
 ) -> bool {
-    !bind_address.ip().is_loopback() && policy.mode.is_none()
+    if bind_address.ip().is_loopback() {
+        return false;
+    }
+    if policy.mode.is_some() {
+        return false;
+    }
+    if let Some(cfg) = load_server_auth() {
+        if cfg.auth_enabled && !cfg.users.is_empty() {
+            return false;
+        }
+    }
+    true
 }
 
 pub(crate) fn authorize_upgrade(
     headers: &HeaderMap,
     policy: &WebsocketAuthPolicy,
 ) -> Result<(), WebsocketAuthError> {
-    let Some(mode) = policy.mode.as_ref() else {
-        return Ok(());
-    };
+    authorize_upgrade_with_query(headers, None, policy)
+}
 
-    let token = bearer_token_from_headers(headers)?;
-    match mode {
-        WebsocketAuthMode::CapabilityToken { token_sha256 } => {
-            let actual_sha256 = sha256_digest(token.as_bytes());
-            if constant_time_eq_32(token_sha256, &actual_sha256) {
-                Ok(())
-            } else {
-                Err(unauthorized("invalid websocket bearer token"))
+pub(crate) fn authorize_upgrade_with_query(
+    headers: &HeaderMap,
+    query: Option<&str>,
+    policy: &WebsocketAuthPolicy,
+) -> Result<(), WebsocketAuthError> {
+    let server_auth = load_server_auth();
+    let server_auth_active = server_auth
+        .as_ref()
+        .is_some_and(|cfg| cfg.auth_enabled && !cfg.users.is_empty());
+
+    if !server_auth_active && policy.mode.is_none() {
+        return Ok(());
+    }
+
+    let (candidate_token, candidate_user_pass) = extract_credentials_from_request(headers, query);
+    let user_pass_ref = candidate_user_pass
+        .as_ref()
+        .map(|(u, p)| (u.as_str(), p.as_str()));
+
+    if server_auth_active {
+        if let Some(ref cfg) = server_auth {
+            if verify_against_server_users(&cfg.users, candidate_token.as_deref(), user_pass_ref) {
+                return Ok(());
             }
         }
-        WebsocketAuthMode::SignedBearerToken {
-            shared_secret,
-            issuer,
-            audience,
-            max_clock_skew_seconds,
-        } => verify_signed_bearer_token(
-            token,
-            shared_secret,
-            issuer.as_deref(),
-            audience.as_deref(),
-            *max_clock_skew_seconds,
-        ),
     }
+
+    if let Some(mode) = policy.mode.as_ref() {
+        if let Some(token) = candidate_token.as_deref() {
+            match mode {
+                WebsocketAuthMode::CapabilityToken { token_sha256 } => {
+                    let actual_sha256 = sha256_digest(token.as_bytes());
+                    if constant_time_eq_32(token_sha256, &actual_sha256) {
+                        return Ok(());
+                    }
+                }
+                WebsocketAuthMode::SignedBearerToken {
+                    shared_secret,
+                    issuer,
+                    audience,
+                    max_clock_skew_seconds,
+                } => {
+                    if verify_signed_bearer_token(
+                        token,
+                        shared_secret,
+                        issuer.as_deref(),
+                        audience.as_deref(),
+                        *max_clock_skew_seconds,
+                    )
+                    .is_ok()
+                    {
+                        return Ok(());
+                    }
+                }
+            }
+        }
+    }
+
+    Err(unauthorized("invalid server credentials or token"))
 }
 
 fn verify_signed_bearer_token(

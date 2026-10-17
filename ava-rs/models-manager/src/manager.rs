@@ -342,6 +342,9 @@ impl StaticModelsManager {
     }
 }
 
+/// Ava native models manager alias for OpenAiModelsManager.
+pub type AvaModelsManager = OpenAiModelsManager;
+
 impl ModelsManager for OpenAiModelsManager {
     fn set_api_key_model_discovery_enabled(&self, enabled: bool) {
         self.api_key_model_discovery_enabled

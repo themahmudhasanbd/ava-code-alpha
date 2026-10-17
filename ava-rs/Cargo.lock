@@ -1392,6 +1392,7 @@ dependencies = [
 name = "ava-browser-extension"
 version = "0.0.0"
 dependencies = [
+ "aes-gcm",
  "ava-config",
  "ava-core",
  "ava-extension-api",
@@ -1403,11 +1404,13 @@ dependencies = [
  "chrono",
  "futures",
  "http 1.4.0",
+ "image",
  "pretty_assertions",
  "reqwest 0.12.28",
  "schemars 0.8.22",
  "serde",
  "serde_json",
+ "sqlx",
  "tokio",
  "tokio-tungstenite",
  "tracing",

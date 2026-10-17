@@ -36,7 +36,8 @@ const OVERSIZED_ENTRY_WARNING: &str =
 #[derive(Deserialize, JsonSchema)]
 #[serde(deny_unknown_fields)]
 struct ListArgs {
-    authority: SkillToolAuthoritySelector,
+    #[serde(default)]
+    authority: Option<SkillToolAuthoritySelector>,
     cursor: Option<String>,
 }
 
@@ -71,7 +72,7 @@ impl<'call> ToolExecutor<ToolCall<'call>> for ListTool {
     fn spec(&self) -> ToolSpec {
         skill_function_tool::<ListArgs, ListResponse>(
             TOOL_NAME,
-            "List skills owned by the requested authority. Returns each skill's authority, package, and main_resource. Pass the package to skills.read, and pass next_cursor back as cursor to continue.",
+            "List skills owned by the requested authority (defaults to host). Returns each skill's authority, package, and main_resource. Pass the package to skills.read, and pass next_cursor back as cursor to continue.",
         )
     }
 
@@ -81,14 +82,15 @@ impl<'call> ToolExecutor<ToolCall<'call>> for ListTool {
     {
         Box::pin(async move {
             let args: ListArgs = parse_args(&call)?;
+            let authority = args.authority.unwrap_or(SkillToolAuthoritySelector::Host);
             let response_byte_budget = call.response_byte_budget(MAX_SKILL_RESPONSE_BYTES);
-            let catalog = self.context.catalog(&call.turn_id, args.authority).await;
+            let catalog = self.context.catalog(&call.turn_id, authority).await;
             let mut omitted_oversized_entry = false;
             let canonical_skills = catalog
                 .entries
                 .into_iter()
                 .filter(|entry| {
-                    entry.is_model_visible() && args.authority.matches(&entry.authority)
+                    entry.is_model_visible() && authority.matches(&entry.authority)
                 })
                 .filter_map(|entry| {
                     let listed = listed_skill(entry);
@@ -160,7 +162,7 @@ impl<'call> ToolExecutor<ToolCall<'call>> for ListTool {
                         .then(|| cursor_at(skills[end.saturating_sub(1)].0.saturating_add(1))),
                 };
                 if serialized_len(&response)? <= response_byte_budget {
-                    return skill_json_output(&response, args.authority);
+                    return skill_json_output(&response, authority);
                 }
                 if end > 1 {
                     end = end.saturating_sub(1);
@@ -172,7 +174,7 @@ impl<'call> ToolExecutor<ToolCall<'call>> for ListTool {
                     // the next call resumes at the same canonical skill offset.
                     response.next_cursor = Some(cursor_at(start));
                     if serialized_len(&response)? <= response_byte_budget {
-                        return skill_json_output(&response, args.authority);
+                        return skill_json_output(&response, authority);
                     }
                     if omission_warning.is_some() && !provider_warnings.is_empty() {
                         response.warnings = provider_warnings;
@@ -180,7 +182,7 @@ impl<'call> ToolExecutor<ToolCall<'call>> for ListTool {
                         // Reusing this offset lets the next call report it before advancing.
                         response.next_cursor = Some(format!("{cursor_fingerprint:016x}:{start}"));
                         if serialized_len(&response)? <= response_byte_budget {
-                            return skill_json_output(&response, args.authority);
+                            return skill_json_output(&response, authority);
                         }
                     }
                     // FunctionCallError cannot carry external-context metadata, so do not

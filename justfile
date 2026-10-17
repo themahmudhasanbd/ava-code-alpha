@@ -1,7 +1,6 @@
 set working-directory := "ava-rs"
 set positional-arguments
 export AVA_REPO_ROOT := justfile_directory()
-export AVA_REPO_ROOT := justfile_directory()
 export JUST_SHELL := justfile_directory() / "scripts/just-shell.py"
 set shell := ["python3", "-c", 'import os, runpy; runpy.run_path(os.environ["JUST_SHELL"], run_name="__main__")']
 set windows-shell := ["python", "-c", 'import os, runpy; runpy.run_path(os.environ["JUST_SHELL"], run_name="__main__")']
@@ -42,9 +41,9 @@ code-mode-host *args:
 assemble-ava-package *args:
     {{ python }} {{ justfile_directory() }}/scripts/build_ava_package.py {args}
 
-# Assemble a local Ava package (backwards compatibility).
+# Assemble a local AvA package (backwards compatibility).
 [no-cd]
-assemble-ava-package *args:
+assemble-codex-package *args:
     {{ python }} {{ justfile_directory() }}/scripts/build_ava_package.py {args}
 
 # Build the CLI and run the app-server test client

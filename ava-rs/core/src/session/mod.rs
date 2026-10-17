@@ -2655,8 +2655,7 @@ impl Session {
         if let TurnItem::AgentMessage(ref mut msg) = item {
             let pending = self.take_attached_media(&turn_context.sub_id).await;
             if !pending.is_empty() {
-                let media: Vec<serde_json::Value> =
-                    pending.iter().map(|m| m.to_json()).collect();
+                let media: Vec<serde_json::Value> = pending.iter().map(|m| m.to_json()).collect();
                 // Merge into existing meta instead of clobbering unrelated keys.
                 let mut meta_obj = match msg.meta.take() {
                     Some(serde_json::Value::Object(map)) => map,
@@ -3814,12 +3813,11 @@ impl Session {
             .await?;
         self.emit_instruction_warnings(warnings).await;
         let loaded_agents_md = loaded_agents_md?;
-        let loaded_project_context = crate::project_context::load_project_context(
-            &turn_context.config,
-            &environments,
-        )
-        .or_cancel(cancellation_token)
-        .await?;
+        let loaded_project_context =
+            crate::project_context::load_project_context(&turn_context.config, &environments)
+                .or_cancel(cancellation_token)
+                .await?;
+        let loaded_project_context = loaded_project_context?;
         let selected_capability_roots = self
             .resolve_selected_capability_roots_for_step(&environments)
             .await;

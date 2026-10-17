@@ -36,9 +36,13 @@ impl ActionDispatcher {
                 let viewport = params.get("viewport").and_then(Value::as_str);
                 let wait_for = params.get("wait_for").and_then(Value::as_str);
                 let task_intent = params.get("task_intent").and_then(Value::as_str);
+                let clean_session = params
+                    .get("clean_session")
+                    .and_then(Value::as_bool)
+                    .unwrap_or(false);
 
                 coordinator
-                    .open_url(url, viewport, wait_for, task_intent)
+                    .open_url_with_session(url, viewport, wait_for, task_intent, clean_session)
                     .await
             }
 
@@ -610,9 +614,128 @@ impl ActionDispatcher {
             }
 
             "live_frame" => coordinator.live_frame().await,
+            "devtools_metrics" => coordinator.devtools_metrics().await,
+            "console_logs" => coordinator.console_logs().await,
+
+            "vault_save" => {
+                let site_url = params
+                    .get("site_url")
+                    .and_then(Value::as_str)
+                    .ok_or_else(|| "Missing required parameter 'site_url'".to_string())?;
+                let username = params
+                    .get("username")
+                    .and_then(Value::as_str)
+                    .ok_or_else(|| "Missing required parameter 'username'".to_string())?;
+                let secret = params
+                    .get("secret")
+                    .or_else(|| params.get("password"))
+                    .and_then(Value::as_str)
+                    .ok_or_else(|| "Missing required parameter 'secret' or 'password'".to_string())?;
+                let auth_type = params
+                    .get("auth_type")
+                    .and_then(Value::as_str)
+                    .unwrap_or("password");
+                let domain = params.get("domain").and_then(Value::as_str);
+                let notes = params.get("notes").and_then(Value::as_str);
+
+                let saved = coordinator
+                    .vault_save(site_url, username, secret, auth_type, domain, notes)
+                    .await?;
+
+                Ok(ActionResult {
+                    success: true,
+                    title: "Credential Saved to Vault".to_string(),
+                    output: format!(
+                        "Credential saved for domain '{}' (username: '{}', id: '{}')",
+                        saved.domain, saved.username, saved.id
+                    ),
+                    url: Some(saved.site_url.clone()),
+                    metadata: Some(json!({
+                        "id": saved.id,
+                        "domain": saved.domain,
+                        "username": saved.username,
+                        "auth_type": saved.auth_type,
+                        "created_at": saved.created_at,
+                    })),
+                })
+            }
+
+            "vault_lookup" => {
+                let target = params
+                    .get("target")
+                    .or_else(|| params.get("domain"))
+                    .or_else(|| params.get("url"))
+                    .and_then(Value::as_str)
+                    .ok_or_else(|| "Missing required parameter 'domain', 'target', or 'url'".to_string())?;
+
+                let res = coordinator.vault_lookup(target).await?;
+                match res {
+                    Some(cred) => Ok(ActionResult {
+                        success: true,
+                        title: "Credential Found in Vault".to_string(),
+                        output: format!(
+                            "Found credentials for domain '{}' (username: '{}')",
+                            cred.domain, cred.username
+                        ),
+                        url: Some(cred.site_url.clone()),
+                        metadata: Some(json!({
+                            "id": cred.id,
+                            "domain": cred.domain,
+                            "username": cred.username,
+                            "auth_type": cred.auth_type,
+                            "secret": cred.secret,
+                            "notes": cred.notes,
+                        })),
+                    }),
+                    None => Ok(ActionResult {
+                        success: false,
+                        title: "Credential Not Found".to_string(),
+                        output: format!("No credentials saved for domain or url '{target}'."),
+                        url: None,
+                        metadata: None,
+                    }),
+                }
+            }
+
+            "vault_list" => {
+                let list = coordinator.vault_list().await?;
+                let count = list.len();
+                let output = serde_json::to_string_pretty(&list).unwrap_or_default();
+                Ok(ActionResult {
+                    success: true,
+                    title: format!("Vault Credentials ({count})"),
+                    output,
+                    url: None,
+                    metadata: Some(json!(list)),
+                })
+            }
+
+            "vault_delete" => {
+                let id = params
+                    .get("id")
+                    .and_then(Value::as_str)
+                    .ok_or_else(|| "Missing required parameter 'id'".to_string())?;
+
+                let deleted = coordinator.vault_delete(id).await?;
+                Ok(ActionResult {
+                    success: deleted,
+                    title: if deleted {
+                        "Credential Deleted".to_string()
+                    } else {
+                        "Credential Not Found".to_string()
+                    },
+                    output: if deleted {
+                        format!("Deleted credential with id '{id}' from vault.")
+                    } else {
+                        format!("No credential with id '{id}' was found.")
+                    },
+                    url: None,
+                    metadata: Some(json!({ "id": id, "deleted": deleted })),
+                })
+            }
 
             _ => Err(format!(
-                "Unknown browser action: '{action}'. Valid actions: open, login, observe, click, fill, fill_form, scroll, wait, viewport, screenshot, responsive_audit, scrape_data, scrape_source, scrape_content, scrape_links, scrape_images, evaluate_js, console_errors, state, clear_session, close, hover, press_key, drag, tab_list, tab_new, tab_switch, tab_close, live_frame."
+                "Unknown browser action: '{action}'. Valid actions: open, login, observe, click, fill, fill_form, scroll, wait, viewport, screenshot, responsive_audit, scrape_data, scrape_source, scrape_content, scrape_links, scrape_images, evaluate_js, console_errors, console_logs, devtools_metrics, state, clear_session, close, hover, press_key, drag, tab_list, tab_new, tab_switch, tab_close, live_frame, vault_save, vault_lookup, vault_list, vault_delete."
             )),
         }
     }

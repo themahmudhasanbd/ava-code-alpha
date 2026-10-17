@@ -122,7 +122,9 @@ impl<'de> Deserialize<'de> for WireApi {
         let value = String::deserialize(deserializer)?;
         match value.to_lowercase().as_str() {
             "responses" | "openai" => Ok(Self::Responses),
-            "chat" | "chat_completions" => Err(serde::de::Error::custom(CHAT_WIRE_API_REMOVED_ERROR)),
+            "chat" | "chat_completions" => {
+                Err(serde::de::Error::custom(CHAT_WIRE_API_REMOVED_ERROR))
+            }
             other => Err(serde::de::Error::custom(format!(
                 "unsupported wire_api: \"{other}\". Supported value is \"responses\" (OpenAI Responses API)"
             ))),
@@ -769,10 +771,10 @@ other non-default provider fields are not supported"
 
     pub fn supports_ava_backend_routes(&self) -> bool {
         self.is_openai()
-            && self
-                .base_url
-                .as_deref()
-                .is_none_or(|base_url| { let u = base_url.trim_end_matches('/'); u.ends_with("/backend-api/ava") || u.ends_with("/backend-api/codex") })
+            && self.base_url.as_deref().is_none_or(|base_url| {
+                let u = base_url.trim_end_matches('/');
+                u.ends_with("/backend-api/ava") || u.ends_with("/backend-api/codex")
+            })
     }
 
     pub fn uses_openai_actor_authorization(&self) -> bool {

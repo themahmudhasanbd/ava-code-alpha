@@ -174,10 +174,20 @@ impl CatalogRequestProcessor {
         &self,
         params: ModelListParams,
     ) -> Result<Option<ClientResponsePayload>, JSONRPCErrorError> {
+        let effective_config = self
+            .config_manager
+            .load_latest_config(/*fallback_cwd*/ None)
+            .await
+            .unwrap_or_else(|_| (*self.config).clone());
+        let configured_model = effective_config
+            .model
+            .as_deref()
+            .or(self.config.model.as_deref());
         Self::list_models(
             self.thread_manager.clone(),
-            self.config.http_client_factory(),
+            effective_config.http_client_factory(),
             params,
+            configured_model,
         )
         .await
         .map(|response| Some(response.into()))
@@ -248,6 +258,7 @@ impl CatalogRequestProcessor {
         thread_manager: Arc<ThreadManager>,
         http_client_factory: ava_http_client::HttpClientFactory,
         params: ModelListParams,
+        configured_model: Option<&str>,
     ) -> Result<ModelListResponse, JSONRPCErrorError> {
         let ModelListParams {
             limit,
@@ -258,6 +269,7 @@ impl CatalogRequestProcessor {
             thread_manager,
             include_hidden.unwrap_or(false),
             http_client_factory,
+            configured_model,
         )
         .await;
         let total = models.len();

@@ -279,8 +279,13 @@ export function SessionScreen({
         setDraft(fullPrompt);
         return;
       }
-      if (newThreadId !== sessionId && navigation?.setParams) {
-        navigation.setParams({ sessionId: newThreadId });
+      if (newThreadId && newThreadId !== sessionId) {
+        if (navigation?.setParams) {
+          navigation.setParams({ sessionId: newThreadId });
+        }
+        if (navigation?.navigate) {
+          navigation.navigate('Session', { sessionId: newThreadId });
+        }
       }
     });
     requestAnimationFrame(() => {

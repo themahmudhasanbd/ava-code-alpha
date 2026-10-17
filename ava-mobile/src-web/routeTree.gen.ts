@@ -22,6 +22,7 @@ import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as SystemRouteImport } from './routes/system'
 import { Route as TasksRouteImport } from './routes/tasks'
 import { Route as TerminalRouteImport } from './routes/terminal'
+import { Route as SessionSessionIdRouteImport } from './routes/session.$sessionId'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -88,6 +89,11 @@ const TerminalRoute = TerminalRouteImport.update({
   path: '/terminal',
   getParentRoute: () => rootRouteImport,
 } as any)
+const SessionSessionIdRoute = SessionSessionIdRouteImport.update({
+  id: '/session/$sessionId',
+  path: '/session/$sessionId',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -103,6 +109,7 @@ export interface FileRoutesByFullPath {
   '/system': typeof SystemRoute
   '/tasks': typeof TasksRoute
   '/terminal': typeof TerminalRoute
+  '/session/$sessionId': typeof SessionSessionIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -118,6 +125,7 @@ export interface FileRoutesByTo {
   '/system': typeof SystemRoute
   '/tasks': typeof TasksRoute
   '/terminal': typeof TerminalRoute
+  '/session/$sessionId': typeof SessionSessionIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -134,6 +142,7 @@ export interface FileRoutesById {
   '/system': typeof SystemRoute
   '/tasks': typeof TasksRoute
   '/terminal': typeof TerminalRoute
+  '/session/$sessionId': typeof SessionSessionIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -151,6 +160,7 @@ export interface FileRouteTypes {
     | '/system'
     | '/tasks'
     | '/terminal'
+    | '/session/$sessionId'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -166,6 +176,7 @@ export interface FileRouteTypes {
     | '/system'
     | '/tasks'
     | '/terminal'
+    | '/session/$sessionId'
   id:
     | '__root__'
     | '/'
@@ -181,6 +192,7 @@ export interface FileRouteTypes {
     | '/system'
     | '/tasks'
     | '/terminal'
+    | '/session/$sessionId'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -197,6 +209,7 @@ export interface RootRouteChildren {
   SystemRoute: typeof SystemRoute
   TasksRoute: typeof TasksRoute
   TerminalRoute: typeof TerminalRoute
+  SessionSessionIdRoute: typeof SessionSessionIdRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -292,6 +305,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof TerminalRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/session/$sessionId': {
+      id: '/session/$sessionId'
+      path: '/session/$sessionId'
+      fullPath: '/session/$sessionId'
+      preLoaderRoute: typeof SessionSessionIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -309,6 +329,7 @@ const rootRouteChildren: RootRouteChildren = {
   SystemRoute: SystemRoute,
   TasksRoute: TasksRoute,
   TerminalRoute: TerminalRoute,
+  SessionSessionIdRoute: SessionSessionIdRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

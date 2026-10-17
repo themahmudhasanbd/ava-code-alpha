@@ -14,7 +14,10 @@ pub use persistent_store::PersistentMemoryStore;
 pub use session_store::SessionMemoryStore;
 
 pub fn resolve_project_memory_db(workspace_dir: &Path) -> PathBuf {
-    workspace_dir.join(".ava-code").join("memory").join("memory.db")
+    workspace_dir
+        .join(".ava-code")
+        .join("memory")
+        .join("memory.db")
 }
 
 pub fn resolve_project_session_memory_db(workspace_dir: &Path) -> PathBuf {
@@ -40,7 +43,9 @@ pub fn resolve_global_memory_db() -> PathBuf {
 
 pub fn resolve_global_session_memory_db() -> PathBuf {
     if let Ok(xdg) = std::env::var("XDG_DATA_HOME") {
-        PathBuf::from(xdg).join("ava-code").join("session-memory-global.db")
+        PathBuf::from(xdg)
+            .join("ava-code")
+            .join("session-memory-global.db")
     } else if let Ok(home) = std::env::var("HOME") {
         PathBuf::from(home)
             .join(".local")

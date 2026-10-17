@@ -6,6 +6,9 @@ export interface Session {
   directory: string;
   model?: string | undefined;
   updatedAt?: number | undefined;
+  source?: string | undefined;
+  status?: string | undefined;
+  active?: boolean | undefined;
 }
 
 export type PartKind = "text" | "reasoning" | "tool" | "plan" | "notice" | "question";

@@ -19,7 +19,7 @@ use ava_otel::MetricsClient;
 
 use crate::coordinator::BrowserCoordinator;
 use crate::prompts::build_browser_developer_instructions;
-use crate::tools::BrowserTool;
+use crate::tools::{BrowserSubagentTool, BrowserTool};
 
 #[derive(Clone, Default)]
 pub(crate) struct BrowserExtension {
@@ -114,10 +114,16 @@ impl ToolContributor for BrowserExtension {
         }
 
         let coordinator = Arc::new(BrowserCoordinator::new(config.browser.clone()));
-        vec![Arc::new(BrowserTool::new(
-            coordinator,
-            self.metrics_client.clone(),
-        ))]
+        vec![
+            Arc::new(BrowserTool::new(
+                coordinator.clone(),
+                self.metrics_client.clone(),
+            )),
+            Arc::new(BrowserSubagentTool::new(
+                coordinator,
+                self.metrics_client.clone(),
+            )),
+        ]
     }
 }
 

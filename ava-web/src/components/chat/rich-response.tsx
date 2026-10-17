@@ -19,14 +19,12 @@ import {
 
 import { MessageResponse } from "@/components/ai-elements/message";
 import { AttachmentCard, splitAttachmentSegments } from "./attachment-card";
+import { SaveCredentialWidget, CredentialSpec } from "./save-credential-widget";
 
 /**
  * Agent markdown renderer: markdown, GFM tables, code (syntax + diff), mermaid,
- * math (KaTeX) via MessageResponse, plus ```chart JSON blocks rendered as graphs.
- *
- * Chart block shape:
- * { "type": "bar"|"line"|"area"|"pie", "title"?: string,
- *   "data": [{...}], "xKey"?: string, "yKeys"?: string[] }
+ * math (KaTeX) via MessageResponse, plus ```chart JSON blocks rendered as graphs,
+ * and ```save-credential JSON blocks rendered as interactive vault saving widgets.
  */
 
 interface ChartSpec {
@@ -39,31 +37,59 @@ interface ChartSpec {
 
 const COLORS = ["var(--chart-1)", "var(--chart-2)", "var(--chart-3)", "var(--chart-4)", "var(--chart-5)"];
 const CHART_RE = /```(?:chart|graph|recharts)\s*\n([\s\S]*?)```/g;
+const CRED_RE = /```(?:save-credential|save_credential|credential-widget|save-credentials)\s*\n([\s\S]*?)```/g;
 
 type Segment =
   | { kind: "md"; text: string }
   | { kind: "chart"; spec: ChartSpec }
+  | { kind: "credential"; spec: CredentialSpec }
   | { kind: "attachment"; name: string; path: string };
 
 function split(text: string): Segment[] {
-  const raw: Segment[] = [];
+  // 1. Extract credential blocks
+  const credSplit: Segment[] = [];
   let last = 0;
-  for (const m of text.matchAll(CHART_RE)) {
+  for (const m of text.matchAll(CRED_RE)) {
     const idx = m.index ?? 0;
     try {
-      const spec = JSON.parse(m[1]!) as ChartSpec;
-      if (!Array.isArray(spec.data) || !spec.data.length) continue;
-      if (idx > last) raw.push({ kind: "md", text: text.slice(last, idx) });
-      raw.push({ kind: "chart", spec });
-      last = idx + m[0].length;
+      const spec = JSON.parse(m[1]!) as CredentialSpec;
+      if (spec.site_url || spec.username) {
+        if (idx > last) credSplit.push({ kind: "md", text: text.slice(last, idx) });
+        credSplit.push({ kind: "credential", spec });
+        last = idx + m[0].length;
+      }
     } catch {
-      /* incomplete while streaming — leave as code */
+      /* incomplete json while streaming */
     }
   }
-  if (last < text.length) raw.push({ kind: "md", text: text.slice(last) });
-  // Expand `[Attachment: name (path)]` refs and local-path markdown images into media cards.
+  if (last < text.length) credSplit.push({ kind: "md", text: text.slice(last) });
+
+  // 2. Extract chart blocks from md segments
+  const chartSplit: Segment[] = [];
+  for (const s of credSplit) {
+    if (s.kind !== "md") {
+      chartSplit.push(s);
+      continue;
+    }
+    let chartLast = 0;
+    for (const m of s.text.matchAll(CHART_RE)) {
+      const idx = m.index ?? 0;
+      try {
+        const spec = JSON.parse(m[1]!) as ChartSpec;
+        if (!Array.isArray(spec.data) || !spec.data.length) continue;
+        if (idx > chartLast) chartSplit.push({ kind: "md", text: s.text.slice(chartLast, idx) });
+        chartSplit.push({ kind: "chart", spec });
+        chartLast = idx + m[0].length;
+      } catch {
+        /* streaming */
+      }
+    }
+    if (chartLast < s.text.length) chartSplit.push({ kind: "md", text: s.text.slice(chartLast) });
+  }
+
+  // 3. Expand `[Attachment: name (path)]` refs and local-path markdown images into media cards.
   const out: Segment[] = [];
-  for (const s of raw) {
+  for (const s of chartSplit) {
     if (s.kind !== "md") {
       out.push(s);
       continue;
@@ -135,6 +161,8 @@ export const RichResponse = memo(({ text }: { text: string }) => {
       {segments.map((s, i) =>
         s.kind === "chart" ? (
           <ChartBlock key={i} spec={s.spec} />
+        ) : s.kind === "credential" ? (
+          <SaveCredentialWidget key={i} spec={s.spec} />
         ) : s.kind === "attachment" ? (
           <AttachmentCard key={i} name={s.name} path={s.path} />
         ) : (

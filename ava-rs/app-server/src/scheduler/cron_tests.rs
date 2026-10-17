@@ -16,7 +16,10 @@ fn parses_every_minute() {
     let schedule = parse_cron("* * * * *").expect("valid cron");
     // 2026-09-30 12:00:30 -> next run 12:01:00.
     let after = unix(2026, 9, 30, 12, 0) + 30;
-    assert_eq!(next_run_after(&schedule, after), Some(unix(2026, 9, 30, 12, 1)));
+    assert_eq!(
+        next_run_after(&schedule, after),
+        Some(unix(2026, 9, 30, 12, 1))
+    );
 }
 
 #[test]

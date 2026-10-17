@@ -57,7 +57,7 @@ export function useChat() {
         } catch (e) {
           setStatus("error");
           setError(formatCoreError(e));
-          return;
+          return null;
         }
       }
       setWorkingSessionId(threadId);
@@ -135,6 +135,7 @@ export function useChat() {
           if (threadId) qc.invalidateQueries({ queryKey: keys.session(threadId) });
         },
       });
+      return threadId ?? null;
     },
     [rpc, activeSessionId, modelId, effort, sandbox, setActiveSessionId, setWorkingSessionId, patchAssistant, qc],
   );

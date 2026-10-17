@@ -7,21 +7,63 @@ use ava_app_server_protocol::ReasoningEffortOption;
 use ava_core::ThreadManager;
 use ava_http_client::HttpClientFactory;
 use ava_models_manager::manager::RefreshStrategy;
-use ava_protocol::openai_models::ModelPreset;
-use ava_protocol::openai_models::ReasoningEffortPreset;
+use ava_protocol::ava_models::ModelPreset;
+use ava_protocol::ava_models::ReasoningEffortPreset;
 
 pub async fn supported_models(
     thread_manager: Arc<ThreadManager>,
     include_hidden: bool,
     http_client_factory: HttpClientFactory,
+    configured_model: Option<&str>,
 ) -> Vec<Model> {
-    thread_manager
+    let mut models: Vec<Model> = thread_manager
         .list_models(RefreshStrategy::OnlineIfUncached, http_client_factory)
         .await
         .into_iter()
         .filter(|preset| include_hidden || preset.show_in_picker)
         .map(model_from_preset)
-        .collect()
+        .collect();
+
+    if let Some(configured) = configured_model.filter(|s| !s.trim().is_empty()) {
+        let configured = configured.trim();
+        let mut found = false;
+        for m in &mut models {
+            if m.model == configured || m.id == configured {
+                m.is_default = true;
+                found = true;
+            } else {
+                m.is_default = false;
+            }
+        }
+        if !found {
+            // User configured a model during setup that is not in the remote catalog.
+            // Insert it as index 0 and mark it as the default model!
+            let configured_entry = Model {
+                id: configured.to_string(),
+                model: configured.to_string(),
+                upgrade: None,
+                upgrade_info: None,
+                availability_nux: None,
+                display_name: configured.to_string(),
+                description: format!("Configured Ava model: {configured}"),
+                model_specialty: None,
+                hidden: false,
+                supported_reasoning_efforts: Vec::new(),
+                default_reasoning_effort: ava_protocol::ava_models::ReasoningEffort::None,
+                input_modalities: ava_protocol::ava_models::default_input_modalities(),
+                supports_personality: true,
+                multi_agent_version: None,
+                additional_speed_tiers: Vec::new(),
+                service_tiers: Vec::new(),
+                default_service_tier: None,
+                available_access_programs: None,
+                is_default: true,
+            };
+            models.insert(0, configured_entry);
+        }
+    }
+
+    models
 }
 
 fn model_from_preset(preset: ModelPreset) -> Model {

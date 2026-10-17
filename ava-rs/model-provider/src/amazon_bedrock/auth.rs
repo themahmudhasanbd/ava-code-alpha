@@ -194,7 +194,9 @@ pub(super) async fn resolve_provider_auth(
 ) -> Result<SharedAuthProvider> {
     match resolve_auth_method(source, managed_auth, aws, endpoint).await? {
         BedrockAuthMethod::ManagedBearerToken { token, .. }
-        | BedrockAuthMethod::EnvBearerToken { token, .. } => Ok(Arc::new(BearerAuthProvider::new(token))),
+        | BedrockAuthMethod::EnvBearerToken { token, .. } => {
+            Ok(Arc::new(BearerAuthProvider::new(token)))
+        }
         BedrockAuthMethod::AwsSdkAuth { context } => {
             Ok(Arc::new(BedrockSigV4AuthProvider::new(context, endpoint)))
         }

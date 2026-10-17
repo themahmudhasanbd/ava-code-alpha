@@ -14,8 +14,9 @@ use crate::catalog_prompt::render_available_skills_body;
 use crate::fragments::AvailableSkillsInstructions;
 use crate::host_aliases::shared_host_alias_roots;
 
-const DEFAULT_SKILL_METADATA_CHAR_BUDGET: usize = 8_000;
-const MAX_CONFIGURED_SKILL_METADATA_TOKEN_BUDGET: usize = 10_000;
+const DEFAULT_SKILL_METADATA_TOKEN_BUDGET: usize = 600;
+const DEFAULT_SKILL_METADATA_CHAR_BUDGET: usize = 2_400;
+const MAX_CONFIGURED_SKILL_METADATA_TOKEN_BUDGET: usize = 2_000;
 const MAX_SKILL_PROMPT_BYTES: usize = 8_000;
 const SKILL_METADATA_CONTEXT_WINDOW_PERCENT: usize = 2;
 const MAX_CATALOG_SKILL_DESCRIPTION_CHARS: usize = 1_024;
@@ -136,12 +137,11 @@ pub(crate) fn skill_metadata_budget(
         .and_then(|window| usize::try_from(window).ok())
         .filter(|window| *window > 0)
         .map(|window| {
-            SkillMetadataBudget::Tokens(
-                window
-                    .saturating_mul(SKILL_METADATA_CONTEXT_WINDOW_PERCENT)
-                    .saturating_div(100)
-                    .max(1),
-            )
+            let tokens = window
+                .saturating_mul(SKILL_METADATA_CONTEXT_WINDOW_PERCENT)
+                .saturating_div(100)
+                .clamp(100, DEFAULT_SKILL_METADATA_TOKEN_BUDGET);
+            SkillMetadataBudget::Tokens(tokens)
         })
         .unwrap_or(SkillMetadataBudget::Characters(
             DEFAULT_SKILL_METADATA_CHAR_BUDGET,

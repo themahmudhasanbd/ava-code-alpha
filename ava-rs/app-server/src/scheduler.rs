@@ -40,11 +40,11 @@ use tokio::sync::RwLock;
 use tokio_util::sync::CancellationToken;
 
 use crate::config_manager::ConfigManager;
-use ava_app_server_protocol::JSONRPCErrorError;
 use crate::error_code::internal_error;
 use crate::error_code::invalid_request;
 use crate::outgoing_message::ConnectionRequestId;
 use crate::request_processors::turn_processor::TurnRequestProcessor;
+use ava_app_server_protocol::JSONRPCErrorError;
 
 use self::cron::next_run_after;
 use self::cron::parse_cron;
@@ -394,7 +394,12 @@ impl SchedulerService {
             )
             .await
             .map(|_| thread_id.to_string())
-            .map_err(|err| format!("failed to submit turn for scheduled task {id}: {}", err.message))
+            .map_err(|err| {
+                format!(
+                    "failed to submit turn for scheduled task {id}: {}",
+                    err.message
+                )
+            })
     }
 
     async fn persist(&self) -> Result<(), JSONRPCErrorError> {

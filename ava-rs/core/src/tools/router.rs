@@ -22,6 +22,7 @@ use ava_protocol::openai_models::ModelInfo;
 use ava_protocol::openai_models::ToolMode;
 use ava_tools::DiscoverableTool;
 use ava_tools::ResponsesApiNamespaceTool;
+use ava_tools::TOOL_SEARCH_TOOL_NAME;
 use ava_tools::ToolName;
 use ava_tools::ToolSpec;
 use std::borrow::Cow;
@@ -252,10 +253,24 @@ impl ToolRouter {
                 ..
             } => {
                 let tool_name = ToolName::new(namespace, name).with_default_namespace();
+                // Route the model-visible `tool_search` function to the ToolSearch
+                // payload; the ToolSearchHandler rejects a plain Function payload,
+                // which previously made every tool_search call fail without output.
+                let payload = if tool_name == ToolName::plain(TOOL_SEARCH_TOOL_NAME).with_default_namespace() {
+                    let arguments: SearchToolCallParams =
+                        serde_json::from_str(&arguments).map_err(|err| {
+                            FunctionCallError::RespondToModel(format!(
+                                "failed to parse tool_search arguments: {err}"
+                            ))
+                        })?;
+                    ToolPayload::ToolSearch { arguments }
+                } else {
+                    ToolPayload::Function { arguments }
+                };
                 Ok(Some(ToolCall {
                     tool_name,
                     call_id,
-                    payload: ToolPayload::Function { arguments },
+                    payload,
                     encrypted_function_args,
                 }))
             }
@@ -272,7 +287,7 @@ impl ToolRouter {
                         ))
                     })?;
                 Ok(Some(ToolCall {
-                    tool_name: ToolName::plain("tool_search"),
+                    tool_name: ToolName::plain(TOOL_SEARCH_TOOL_NAME),
                     call_id,
                     payload: ToolPayload::ToolSearch { arguments },
                     encrypted_function_args: None,

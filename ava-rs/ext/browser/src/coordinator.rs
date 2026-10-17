@@ -4,13 +4,13 @@ use std::time::Duration;
 use ava_config::types::BrowserConfig;
 use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
-use tokio::sync::{Mutex, RwLock};
+use tokio::sync::{Mutex, OnceCell, RwLock};
 use tokio::time::sleep;
 
 use crate::engine::{BrowserEngine, ViewportProfile};
 use crate::observer::{ObservationResult, Observer};
 
-pub use crate::engine::PageIndicators;
+pub use crate::engine::{PageIndicators, PageObstacle};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[allow(dead_code)]
@@ -52,6 +52,7 @@ pub struct BrowserCoordinator {
     config: BrowserConfig,
     dom_stale: RwLock<bool>,
     action_mutex: Mutex<()>,
+    vault: OnceCell<Arc<crate::vault::BrowserCredentialVault>>,
 }
 
 impl BrowserCoordinator {
@@ -64,7 +65,51 @@ impl BrowserCoordinator {
             config,
             dom_stale: RwLock::new(false),
             action_mutex: Mutex::new(()),
+            vault: OnceCell::new(),
         }
+    }
+
+    pub async fn vault(&self) -> Result<Arc<crate::vault::BrowserCredentialVault>, String> {
+        let v = self
+            .vault
+            .get_or_try_init(|| async {
+                crate::vault::BrowserCredentialVault::open_default()
+                    .await
+                    .map(Arc::new)
+            })
+            .await?;
+        Ok(v.clone())
+    }
+
+    pub async fn vault_save(
+        &self,
+        site_url: &str,
+        username: &str,
+        secret: &str,
+        auth_type: &str,
+        domain: Option<&str>,
+        notes: Option<&str>,
+    ) -> Result<crate::vault::DecryptedCredential, String> {
+        let v = self.vault().await?;
+        v.save(site_url, username, secret, auth_type, domain, notes).await
+    }
+
+    pub async fn vault_lookup(
+        &self,
+        target: &str,
+    ) -> Result<Option<crate::vault::DecryptedCredential>, String> {
+        let v = self.vault().await?;
+        v.lookup(target).await
+    }
+
+    pub async fn vault_list(&self) -> Result<Vec<crate::vault::MaskedCredential>, String> {
+        let v = self.vault().await?;
+        v.list().await
+    }
+
+    pub async fn vault_delete(&self, id: &str) -> Result<bool, String> {
+        let v = self.vault().await?;
+        v.delete(id).await
     }
 
     pub fn engine(&self) -> &Arc<BrowserEngine> {
@@ -133,13 +178,24 @@ impl BrowserCoordinator {
         wait_for: Option<&str>,
         task_intent: Option<&str>,
     ) -> Result<crate::actions::ActionResult, String> {
+        self.open_url_with_session(url, viewport, wait_for, task_intent, false).await
+    }
+
+    pub async fn open_url_with_session(
+        &self,
+        url: &str,
+        viewport: Option<&str>,
+        wait_for: Option<&str>,
+        task_intent: Option<&str>,
+        clean_session: bool,
+    ) -> Result<crate::actions::ActionResult, String> {
         let _guard = self.action_mutex.lock().await;
 
         if let Some(vp_str) = viewport {
             self.engine.set_viewport(vp_str).await?;
         }
 
-        self.engine.goto(url, None).await?;
+        self.engine.goto_with_options(url, None, clean_session).await?;
 
         if let Some(sel) = wait_for {
             self.engine.wait_for_selector(sel, 15).await?;
@@ -562,11 +618,7 @@ impl BrowserCoordinator {
         })
     }
 
-    pub async fn drag(
-        &self,
-        from: &str,
-        to: &str,
-    ) -> Result<crate::actions::ActionResult, String> {
+    pub async fn drag(&self, from: &str, to: &str) -> Result<crate::actions::ActionResult, String> {
         let _guard = self.action_mutex.lock().await;
         let msg = self.engine.drag(from, to).await?;
         let reminder = self.mark_dom_mutated().await;
@@ -616,10 +668,7 @@ impl BrowserCoordinator {
         })
     }
 
-    pub async fn tab_new(
-        &self,
-        url: Option<&str>,
-    ) -> Result<crate::actions::ActionResult, String> {
+    pub async fn tab_new(&self, url: Option<&str>) -> Result<crate::actions::ActionResult, String> {
         let _guard = self.action_mutex.lock().await;
         let target_id = self.engine.tab_new(url).await?;
         Ok(crate::actions::ActionResult {
@@ -631,7 +680,10 @@ impl BrowserCoordinator {
         })
     }
 
-    pub async fn tab_switch(&self, target_id: &str) -> Result<crate::actions::ActionResult, String> {
+    pub async fn tab_switch(
+        &self,
+        target_id: &str,
+    ) -> Result<crate::actions::ActionResult, String> {
         let _guard = self.action_mutex.lock().await;
         let msg = self.engine.tab_switch(target_id).await?;
         Ok(crate::actions::ActionResult {
@@ -655,7 +707,6 @@ impl BrowserCoordinator {
         })
     }
 
-
     pub async fn live_frame(&self) -> Result<crate::actions::ActionResult, String> {
         let (data, w, h) = self.engine.live_frame().await?;
         Ok(crate::actions::ActionResult {
@@ -672,4 +723,33 @@ impl BrowserCoordinator {
         })
     }
 
+    pub async fn inspect_obstacles(&self) -> PageObstacle {
+        self.engine.inspect_obstacles().await
+    }
+
+    pub async fn devtools_metrics(&self) -> Result<crate::actions::ActionResult, String> {
+        let metrics = self.engine.get_devtools_metrics().await?;
+        Ok(crate::actions::ActionResult {
+            success: true,
+            title: "DevTools Metrics".to_string(),
+            output: serde_json::to_string_pretty(&metrics).unwrap_or_default(),
+            url: self.engine.get_current_url().await.ok(),
+            metadata: Some(metrics),
+        })
+    }
+
+    pub async fn console_logs(&self) -> Result<crate::actions::ActionResult, String> {
+        let logs = self.engine.get_console_logs().await;
+        Ok(crate::actions::ActionResult {
+            success: true,
+            title: "Console Logs".to_string(),
+            output: if logs.is_empty() {
+                "No console logs recorded.".to_string()
+            } else {
+                logs.join("\n")
+            },
+            url: self.engine.get_current_url().await.ok(),
+            metadata: None,
+        })
+    }
 }

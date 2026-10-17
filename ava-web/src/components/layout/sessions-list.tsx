@@ -82,7 +82,11 @@ export function SessionsList({ onPick }: { onPick: () => void }) {
   const pick = async (id: string | null) => {
     setActiveSessionId(id);
     onPick();
-    await navigate({ to: "/" });
+    if (id) {
+      await navigate({ to: "/session/$sessionId", params: { sessionId: id } });
+    } else {
+      await navigate({ to: "/" });
+    }
   };
 
   const togglePin = (dir: string) => {
@@ -203,7 +207,7 @@ export function SessionsList({ onPick }: { onPick: () => void }) {
                   ) : (
                     <span className="truncate">{names[dir] || projectName(dir)}</span>
                   )}
-                  {workingSessionId && sessions.some((session) => session.id === workingSessionId) ? (
+                  {((workingSessionId && sessions.some((session) => session.id === workingSessionId)) || sessions.some((session) => session.active)) ? (
                     <span className="ml-auto size-3.5 animate-spin rounded-full border-2 border-primary/30 border-t-primary" aria-label="Agent working" />
                   ) : (
                     <span className="ml-auto text-xs">{sessions.length}</span>
@@ -257,7 +261,7 @@ export function SessionsList({ onPick }: { onPick: () => void }) {
                             )}
                           >
                             <span className="truncate">{session.title}</span>
-                            {workingSessionId === session.id && <span className="ml-auto size-3 animate-spin rounded-full border-2 border-primary/30 border-t-primary" />}
+                            {(workingSessionId === session.id || session.active) && <span className="ml-auto size-3 animate-spin rounded-full border-2 border-primary/30 border-t-primary" />}
                           </Button>
                           <Button
                             variant="ghost"

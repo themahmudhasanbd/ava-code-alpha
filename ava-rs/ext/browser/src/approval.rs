@@ -38,6 +38,12 @@ const READ_ONLY_ACTIONS: &[&str] = &[
     "scroll",
     "tab_list",
     "live_frame",
+    "devtools_metrics",
+    "console_logs",
+    "vault_save",
+    "vault_lookup",
+    "vault_list",
+    "vault_delete",
 ];
 
 /// Tier 1 — navigation. Per-origin approval, cached per session.
@@ -416,7 +422,10 @@ mod tests {
             ApprovalOutcome::Allowed
         );
         // Session cache covers further mutating actions.
-        assert_eq!(gate.check("fill", None, None, false), ApprovalOutcome::Allowed);
+        assert_eq!(
+            gate.check("fill", None, None, false),
+            ApprovalOutcome::Allowed
+        );
     }
 
     #[test]
@@ -448,7 +457,10 @@ mod tests {
     #[test]
     fn approval_mode_never_disables_gating() {
         let gate = ApprovalGate::new(ApprovalMode::Never, true, vec![]);
-        assert_eq!(gate.check("click", None, None, false), ApprovalOutcome::Allowed);
+        assert_eq!(
+            gate.check("click", None, None, false),
+            ApprovalOutcome::Allowed
+        );
         assert_eq!(
             gate.check("open", Some("https://x.com/"), None, false),
             ApprovalOutcome::Allowed

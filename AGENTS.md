@@ -1,3 +1,13 @@
+# Project Context & Architecture Standards
+
+This repository maintains persistent architectural context under `.ava-code/`:
+- **Rules**: Follow project rules in `.ava-code/rules/index.md` and `.ava-code/rules/*.md`.
+- **Design System & Tokens**: All UI, styling, HTML, and CSS work MUST strictly apply the design tokens defined in `.ava-code/design/tokens.json` and `.ava-code/design/system-tokens.md` (e.g. semantic primary, accent, surfaces, typography, radius). Never use arbitrary hardcoded hex colors or unstyled AI slop.
+- **Plans**: For any non-trivial or multi-step feature, maintain persistent plans under `.ava-code/plans/` and register them in `.ava-code/plans/index.md`.
+- **Workflows**: Follow and update repeatable procedures in `.ava-code/workflows/index.md`.
+
+---
+
 # Rust/ava-rs
 
 In the ava-rs folder where the rust code lives:

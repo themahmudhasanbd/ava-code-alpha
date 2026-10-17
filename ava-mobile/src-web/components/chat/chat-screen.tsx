@@ -8,6 +8,7 @@ import { AppShell } from "@/components/layout/app-shell";
 import { Button } from "@/components/ui/button";
 import { AvaMascot } from "@/components/ui/ava-mascot";
 import { APP } from "@/config/app";
+import { useNavigate } from "@tanstack/react-router";
 import { useAva } from "@/state/ava-provider";
 import { useSessions } from "@/state/queries";
 import { useChat } from "@/state/use-chat";
@@ -44,11 +45,15 @@ export function ChatScreen() {
   const { messages, status, error, send, stop, clear, loadingHistory, hasOlder, loadOlder } = useChat();
   const [draft, setDraft] = useState("");
   const inputRef = useRef<HTMLTextAreaElement>(null);
+  const navigate = useNavigate();
   const title = sessions?.find((s) => s.id === activeSessionId)?.title ?? "New session";
 
-  const submit = (text: string) => {
+  const submit = async (text: string) => {
     setDraft("");
-    send(text);
+    const threadId = await send(text);
+    if (threadId && !activeSessionId) {
+      void navigate({ to: "/session/$sessionId", params: { sessionId: threadId } });
+    }
   };
 
   return (

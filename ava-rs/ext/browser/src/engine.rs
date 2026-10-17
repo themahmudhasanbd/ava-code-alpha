@@ -110,6 +110,16 @@ pub struct PageIndicators {
     pub validation_texts: Vec<String>,
 }
 
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+pub struct PageObstacle {
+    pub detected: bool,
+    pub obstacle_type: Option<String>,
+    pub title: String,
+    pub description: String,
+    pub selector: Option<String>,
+    pub suggestion: String,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CredentialFillResult {
     pub username_found: bool,
@@ -223,6 +233,15 @@ impl BrowserEngine {
     }
 
     pub async fn goto(&self, url: &str, timeout_ms: Option<u64>) -> Result<String, String> {
+        self.goto_with_options(url, timeout_ms, false).await
+    }
+
+    pub async fn goto_with_options(
+        &self,
+        url: &str,
+        timeout_ms: Option<u64>,
+        clean_session: bool,
+    ) -> Result<String, String> {
         let client = self.ensure_client().await?;
         let target_url = if url.starts_with("http://")
             || url.starts_with("https://")
@@ -233,6 +252,17 @@ impl BrowserEngine {
         } else {
             format!("http://{url}")
         };
+
+        let domain = url::Url::parse(&target_url)
+            .ok()
+            .and_then(|u| u.host_str().map(|h| h.trim_start_matches("www.").to_string()))
+            .unwrap_or_default();
+
+        if clean_session {
+            let _ = self.clear_session().await;
+        } else if !domain.is_empty() {
+            let _ = self.restore_domain_session(&domain).await;
+        }
 
         client
             .call("Page.navigate", Some(json!({ "url": target_url })))
@@ -267,7 +297,11 @@ impl BrowserEngine {
             }
         }
 
-        let _ = self.persist_storage_state().await;
+        if !domain.is_empty() {
+            let _ = self.persist_domain_session(&domain).await;
+        } else {
+            let _ = self.persist_storage_state().await;
+        }
         Ok(current_url)
     }
 
@@ -501,6 +535,88 @@ impl BrowserEngine {
                 error_texts: errorTexts.slice(0, 5),
                 success_texts: successTexts.slice(0, 5),
                 validation_texts: validationTexts.slice(0, 5)
+            };
+        })()
+        "#;
+
+        let res = self.evaluate_raw(script).await.unwrap_or(Value::Null);
+        serde_json::from_value(res).unwrap_or_default()
+    }
+
+    pub async fn inspect_obstacles(&self) -> PageObstacle {
+        let script = r#"
+        (() => {
+            const title = document.title || '';
+            const bodyText = (document.body ? document.body.innerText : '') || '';
+
+            // 1. Cloudflare Turnstile / Bot Verification Challenge
+            const isCfTitle = title.includes('Just a moment...') || title.includes('Attention Required!') || title.includes('Checking your browser');
+            const cfEl = document.querySelector('#challenge-running, #cf-challenge-running, .cf-turnstile, iframe[src*="challenges.cloudflare.com"], iframe[src*="turnstile"], #turnstile-wrapper');
+            const isCfText = bodyText.includes('Verify you are human') || bodyText.includes('Checking if the site connection is secure') || (bodyText.includes('Cloudflare') && bodyText.includes('Ray ID'));
+
+            if (isCfTitle || cfEl || isCfText) {
+                return {
+                    detected: true,
+                    obstacle_type: 'cloudflare_challenge',
+                    title: 'Cloudflare Challenge / Turnstile Detected',
+                    description: 'Cloudflare bot verification challenge is blocking access on this page.',
+                    selector: cfEl ? (cfEl.id ? '#' + cfEl.id : cfEl.className) : null,
+                    suggestion: 'Human takeover or interactive verification required to pass Cloudflare.'
+                };
+            }
+
+            // 2. Google reCAPTCHA / hCaptcha
+            const recaptcha = document.querySelector('iframe[src*="recaptcha"], .g-recaptcha, iframe[title*="reCAPTCHA"]');
+            const hcaptcha = document.querySelector('iframe[src*="hcaptcha"], .h-captcha');
+            if (recaptcha || hcaptcha) {
+                return {
+                    detected: true,
+                    obstacle_type: 'captcha',
+                    title: recaptcha ? 'Google reCAPTCHA Detected' : 'hCaptcha Detected',
+                    description: 'A visual CAPTCHA challenge is active on the page.',
+                    selector: recaptcha ? 'iframe[src*="recaptcha"]' : 'iframe[src*="hcaptcha"]',
+                    suggestion: 'Human takeover required to solve the CAPTCHA.'
+                };
+            }
+
+            // 3. Two-Factor Authentication / OTP
+            const otpInput = document.querySelector('input[autocomplete="one-time-code"], input[name*="otp" i], input[name*="totp" i], input[name*="2fa" i], input[name*="code" i][maxlength="6"], input[name="verification_code" i]');
+            const is2faText = bodyText.includes('Two-Factor') || bodyText.includes('2-Step Verification') || bodyText.includes('verification code') || bodyText.includes('authenticator app');
+            if (otpInput || (is2faText && document.querySelector('input[type="text"], input[type="number"]'))) {
+                return {
+                    detected: true,
+                    obstacle_type: 'two_factor_auth',
+                    title: 'Two-Factor Authentication (2FA/OTP) Required',
+                    description: 'The site requires a two-factor verification or OTP code to complete authentication.',
+                    selector: otpInput ? (otpInput.name || otpInput.id || 'input') : null,
+                    suggestion: 'Provide the 2FA / OTP code to the subagent to continue login.'
+                };
+            }
+
+            // 4. Authentication error banner
+            const errorBanner = document.querySelector('.alert-danger, .error-message, .error-banner, [role="alert"], .text-danger, .invalid-feedback');
+            if (errorBanner) {
+                const errText = (errorBanner.innerText || '').trim();
+                const authKeywords = ['password', 'credential', 'email', 'user not found', 'invalid', 'incorrect', 'unauthorized', 'access denied'];
+                if (errText && authKeywords.some(k => errText.toLowerCase().includes(k))) {
+                    return {
+                        detected: true,
+                        obstacle_type: 'auth_failure',
+                        title: 'Authentication Failed',
+                        description: errText,
+                        selector: errorBanner.className || null,
+                        suggestion: 'Verify the login email and password, or reset credentials.'
+                    };
+                }
+            }
+
+            return {
+                detected: false,
+                obstacle_type: null,
+                title: '',
+                description: '',
+                selector: null,
+                suggestion: ''
             };
         })()
         "#;
@@ -853,32 +969,89 @@ impl BrowserEngine {
             None
         };
 
-        let mut params = json!({
-            "format": "png",
-            "captureBeyondViewport": screenshot_type == "full_page",
-        });
+        // Ensure the page is frontmost so the compositor produces frames;
+        // a backgrounded page captures as blank white.
+        let _ = client.call("Page.bringToFront", None).await;
 
-        if let Some(clip) = clip_param {
-            params["clip"] = clip;
+        let base_params = {
+            let mut params = json!({
+                "format": "png",
+                "captureBeyondViewport": screenshot_type == "full_page",
+            });
+            if let Some(clip) = clip_param {
+                params["clip"] = clip;
+            }
+            params
+        };
+
+        // Capture with blank detection + retry: an all-white PNG means the
+        // compositor had no frame ready; wait briefly and retry.
+        let mut last_problem = String::from("unknown error");
+        for attempt in 0..3u32 {
+            if attempt > 0 {
+                sleep(Duration::from_millis(900)).await;
+                let _ = client.call("Page.bringToFront", None).await;
+            }
+            let res = client
+                .call("Page.captureScreenshot", Some(base_params.clone()))
+                .await?;
+            let base64_data = res
+                .get("data")
+                .and_then(Value::as_str)
+                .ok_or_else(|| "No base64 data in captureScreenshot response".to_string())?;
+
+            use base64::Engine;
+            let bytes = base64::engine::general_purpose::STANDARD
+                .decode(base64_data)
+                .map_err(|e| format!("Base64 decode error: {e}"))?;
+
+            if Self::is_blank_png(&bytes) {
+                last_problem = format!(
+                    "capture #{} returned a blank page (compositor had no frame)",
+                    attempt + 1
+                );
+                continue;
+            }
+
+            tokio::fs::write(&output_path, &bytes)
+                .await
+                .map_err(|e| format!("Failed to write screenshot file ({output_path:?}): {e}"))?;
+
+            return Ok(output_path.display().to_string());
         }
-
-        let res = client.call("Page.captureScreenshot", Some(params)).await?;
-        let base64_data = res
-            .get("data")
-            .and_then(Value::as_str)
-            .ok_or_else(|| "No base64 data in captureScreenshot response".to_string())?;
-
-        use base64::Engine;
-        let bytes = base64::engine::general_purpose::STANDARD
-            .decode(base64_data)
-            .map_err(|e| format!("Base64 decode error: {e}"))?;
-
-        tokio::fs::write(&output_path, &bytes)
-            .await
-            .map_err(|e| format!("Failed to write screenshot file ({output_path:?}): {e}"))?;
-
-        Ok(output_path.display().to_string())
+        Err(format!(
+            "Screenshot failed after 3 attempts (blank captures): {last_problem}"
+        ))
     }
+
+/// Returns true if the PNG decodes to an (almost) entirely white image.
+/// Used to detect blank captures when the compositor had no frame ready.
+fn is_blank_png(bytes: &[u8]) -> bool {
+    let img = match image::load_from_memory(bytes) {
+        Ok(img) => img.to_rgb8(),
+        Err(_) => return false,
+    };
+    let (w, h) = (img.width(), img.height());
+    if w == 0 || h == 0 {
+        return true;
+    }
+    // Sample a grid; any real page has non-white pixels.
+    let step_x = (w / 24).max(1);
+    let step_y = (h / 24).max(1);
+    let mut non_white = 0u32;
+    for y in (0..h).step_by(step_y as usize) {
+        for x in (0..w).step_by(step_x as usize) {
+            let p = img.get_pixel(x, y);
+            if p[0] < 250 || p[1] < 250 || p[2] < 250 {
+                non_white += 1;
+                if non_white > 8 {
+                    return false;
+                }
+            }
+        }
+    }
+    true
+}
 
     pub async fn get_outer_html(&self, selector: Option<&str>) -> Result<String, String> {
         let script = if let Some(sel) = selector {
@@ -1002,6 +1175,89 @@ impl BrowserEngine {
         Ok(())
     }
 
+    fn domain_session_path(domain: &str) -> PathBuf {
+        let dir = PathBuf::from("/root/.config/ava/browser_sessions");
+        let safe_name = domain.replace(['/', ':', '\\', ' '], "_");
+        dir.join(format!("{safe_name}.json"))
+    }
+
+    pub async fn persist_domain_session(&self, domain: &str) -> Result<(), String> {
+        let client = match self.ensure_client().await {
+            Ok(c) => c,
+            Err(_) => return Ok(()),
+        };
+
+        let cookies_res = client
+            .call("Network.getCookies", None)
+            .await
+            .unwrap_or_else(|_| json!({}));
+        let cookies = cookies_res
+            .get("cookies")
+            .cloned()
+            .unwrap_or_else(|| json!([]));
+
+        let local_storage = self
+            .evaluate_raw(
+                r#"(() => {
+                    const data = {};
+                    for (let i = 0; i < localStorage.length; i++) {
+                        const k = localStorage.key(i);
+                        data[k] = localStorage.getItem(k);
+                    }
+                    return data;
+                })()"#,
+            )
+            .await
+            .unwrap_or_else(|_| json!({}));
+
+        let state = json!({
+            "domain": domain,
+            "cookies": cookies,
+            "localStorage": local_storage,
+            "saved_at": chrono::Utc::now().to_rfc3339(),
+        });
+
+        let path = Self::domain_session_path(domain);
+        if let Some(parent) = path.parent() {
+            let _ = tokio::fs::create_dir_all(parent).await;
+        }
+
+        let serialized = serde_json::to_string_pretty(&state).unwrap_or_default();
+        let _ = tokio::fs::write(&path, &serialized).await;
+        let _ = tokio::fs::write(&self.state_file_path, &serialized).await;
+        Ok(())
+    }
+
+    pub async fn restore_domain_session(&self, domain: &str) -> bool {
+        let path = Self::domain_session_path(domain);
+        let path_to_read = if path.exists() {
+            path
+        } else if self.state_file_path.exists() {
+            self.state_file_path.clone()
+        } else {
+            return false;
+        };
+
+        if let Ok(content) = tokio::fs::read_to_string(&path_to_read).await {
+            if let Ok(state) = serde_json::from_str::<Value>(&content) {
+                if let Some(cookies) = state.get("cookies").and_then(Value::as_array) {
+                    if let Ok(client) = self.ensure_client().await {
+                        let _ = client
+                            .call(
+                                "Network.setCookies",
+                                Some(json!({
+                                    "cookies": cookies
+                                })),
+                            )
+                            .await;
+                        return true;
+                    }
+                }
+            }
+        }
+        false
+    }
+
     pub async fn get_console_errors(&self) -> Vec<String> {
         if let Some(client) = &*self.cdp_client.lock().await {
             let logs = client.get_console_logs().await;
@@ -1018,6 +1274,40 @@ impl BrowserEngine {
         } else {
             Vec::new()
         }
+    }
+
+    pub async fn get_console_logs(&self) -> Vec<String> {
+        if let Some(client) = &*self.cdp_client.lock().await {
+            let logs = client.get_console_logs().await;
+            logs.into_iter()
+                .map(|l| {
+                    let prefix = match l.message_type.as_str() {
+                        "error" => "[Console Error]",
+                        "warning" => "[Console Warning]",
+                        "info" => "[Console Info]",
+                        _ => "[Console Log]",
+                    };
+                    if let (Some(u), Some(line)) = (l.url, l.line) {
+                        format!("{prefix} {} ({}:{})", l.text, u, line)
+                    } else {
+                        format!("{prefix} {}", l.text)
+                    }
+                })
+                .collect()
+        } else {
+            Vec::new()
+        }
+    }
+
+    pub async fn get_devtools_metrics(&self) -> Result<Value, String> {
+        let client = self.ensure_client().await?;
+        let _ = client.call("Performance.enable", None).await;
+        let res = client
+            .call("Performance.getMetrics", None)
+            .await
+            .map_err(|e| format!("Failed to get performance metrics: {e}"))?;
+        let _ = client.call("Performance.disable", None).await;
+        Ok(res)
     }
 
     pub async fn get_page_state(&self) -> Result<PageState, String> {
@@ -1086,11 +1376,7 @@ impl BrowserEngine {
         };
         let (x, y) = match (x, y) {
             (Some(x), Some(y)) => (x, y),
-            _ => {
-                return Err(format!(
-                    "Element not found for hover [{ref_or_selector}]"
-                ))
-            }
+            _ => return Err(format!("Element not found for hover [{ref_or_selector}]")),
         };
         let client = self.ensure_client().await?;
         client
@@ -1168,10 +1454,7 @@ impl BrowserEngine {
         let res = self.evaluate_raw(&pos_script).await?;
         let get_xy = |v: &Value| -> Option<(f64, f64)> {
             let m = v.as_object()?;
-            Some((
-                m.get("x")?.as_f64()?,
-                m.get("y")?.as_f64()?,
-            ))
+            Some((m.get("x")?.as_f64()?, m.get("y")?.as_f64()?))
         };
         let (fx, fy) = get_xy(res.get("from").unwrap_or(&Value::Null))
             .ok_or_else(|| format!("Drag source not found [{from_ref}]"))?;
@@ -1282,5 +1565,4 @@ impl BrowserEngine {
         let (w, h, _) = self.current_viewport_info().await;
         Ok((data, w, h))
     }
-
 }

@@ -8,10 +8,11 @@ pub mod test_support;
 
 pub use ava_protocol::auth::AuthMode;
 pub use config::ModelsManagerConfig;
+pub use manager::AvaModelsManager;
 
 /// Load the bundled model catalog shipped with `ava-models-manager`.
 pub fn bundled_models_response()
--> std::result::Result<ava_protocol::openai_models::ModelsResponse, serde_json::Error> {
+-> std::result::Result<ava_protocol::ava_models::ModelsResponse, serde_json::Error> {
     serde_json::from_str(include_str!("../models.json"))
 }
 

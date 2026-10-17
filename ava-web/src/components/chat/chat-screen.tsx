@@ -14,6 +14,7 @@ import { useChat } from "@/state/use-chat";
 import { ApprovalCard } from "./approval-card";
 import { ChatMessageView } from "./message-parts";
 import { Composer } from "./composer";
+import { useNavigate } from "@tanstack/react-router";
 import { useStickToBottomContext } from "use-stick-to-bottom";
 
 const SUGGESTIONS = ["Create a new feature", "Fix an error", "Explain this project"];
@@ -62,12 +63,16 @@ export function ChatScreen() {
   const [draft, setDraft] = useState("");
   const [scrollSignal, setScrollSignal] = useState(0);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+  const navigate = useNavigate();
   const title = sessions?.find((s) => s.id === activeSessionId)?.title ?? "New session";
 
-  const submit = (text: string) => {
+  const submit = async (text: string) => {
     setDraft("");
     setScrollSignal((n) => n + 1);
-    send(text);
+    const threadId = await send(text);
+    if (threadId && !activeSessionId) {
+      void navigate({ to: "/session/$sessionId", params: { sessionId: threadId } });
+    }
   };
 
   return (

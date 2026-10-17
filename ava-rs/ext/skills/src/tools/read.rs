@@ -81,6 +81,7 @@ impl<'call> ToolExecutor<ToolCall<'call>> for ReadTool {
 
             let mut selected_skill = None;
             for selector in [
+                super::SkillToolAuthoritySelector::Host,
                 super::SkillToolAuthoritySelector::Orchestrator,
                 super::SkillToolAuthoritySelector::Executor,
             ] {
@@ -111,6 +112,39 @@ impl<'call> ToolExecutor<ToolCall<'call>> for ReadTool {
                     "skill package is not available".to_string(),
                 ));
             };
+            if output_authority == super::SkillToolAuthoritySelector::Host {
+                let path = std::path::Path::new(skill_entry.main_prompt.as_str());
+                let target_path = match args.resource.as_deref() {
+                    Some(res) if res != skill_entry.main_prompt.as_str() => {
+                        let res_path = std::path::Path::new(res);
+                        if res_path.is_absolute() {
+                            res_path.to_path_buf()
+                        } else if let Some(parent) = path.parent() {
+                            parent.join(res)
+                        } else {
+                            res_path.to_path_buf()
+                        }
+                    }
+                    _ => path.to_path_buf(),
+                };
+                let contents = tokio::fs::read_to_string(&target_path).await.map_err(|e| {
+                    FunctionCallError::RespondToModel(format!("failed to read host skill file: {e}"))
+                })?;
+                let skill_root = path.parent().map(|p| p.to_string_lossy().to_string());
+                let start = parse_pagination_cursor(
+                    args.cursor.as_deref(),
+                    &contents,
+                    "skills.read",
+                )?;
+                let response = page_response(
+                    target_path.to_string_lossy().as_ref(),
+                    &contents,
+                    skill_root.as_deref(),
+                    start,
+                    response_byte_budget,
+                )?;
+                return skill_json_output(&response, output_authority);
+            }
             let authority = skill_entry.authority.clone();
             let package = skill_entry.id.clone();
             let main_prompt = skill_entry.main_prompt.clone();

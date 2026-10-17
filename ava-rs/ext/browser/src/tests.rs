@@ -11,7 +11,9 @@ use crate::engine::parse_viewport_string;
 use crate::extension::{BrowserExtensionConfig, install};
 use crate::observer::Observer;
 use crate::prompts::build_browser_developer_instructions;
-use crate::tools::{BROWSER_TOOL_NAME, BrowserArgs};
+use crate::tools::{
+    BROWSER_SUBAGENT_TOOL_NAME, BROWSER_TOOL_NAME, BrowserArgs, BrowserSubagentArgs,
+};
 
 #[test]
 fn viewport_profile_parsing_works() {
@@ -100,5 +102,27 @@ fn browser_extension_installation() {
         .map(|tool| tool.tool_name())
         .collect::<Vec<_>>();
 
-    assert_eq!(tool_names, vec![ToolName::plain(BROWSER_TOOL_NAME)]);
+    assert_eq!(
+        tool_names,
+        vec![
+            ToolName::plain(BROWSER_TOOL_NAME),
+            ToolName::plain(BROWSER_SUBAGENT_TOOL_NAME),
+        ]
+    );
+}
+
+#[test]
+fn browser_subagent_args_deserialization() {
+    let raw = json!({
+        "task_name": "Logging into Veliq",
+        "task": "Open https://veliqbd.com/login and submit credentials",
+        "task_summary": "Perform login on Veliq",
+        "reused_subagent_id": "subagent-12345678",
+        "recording_name": "login_flow",
+    });
+
+    let args: BrowserSubagentArgs =
+        serde_json::from_value(raw).expect("BrowserSubagentArgs deserialize");
+    assert_eq!(args.task_name, "Logging into Veliq");
+    assert_eq!(args.reused_subagent_id.as_deref(), Some("subagent-12345678"));
 }

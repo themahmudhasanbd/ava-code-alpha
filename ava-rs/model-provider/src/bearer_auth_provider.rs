@@ -1,9 +1,9 @@
-use std::sync::Arc;
-use std::sync::atomic::AtomicUsize;
-use std::sync::atomic::Ordering;
 use ava_api::AuthProvider;
 use http::HeaderMap;
 use http::HeaderValue;
+use std::sync::Arc;
+use std::sync::atomic::AtomicUsize;
+use std::sync::atomic::Ordering;
 
 /// Bearer-token auth provider for OpenAI-compatible model-provider requests with multi-token rotation support.
 #[derive(Clone, Default)]
@@ -18,9 +18,17 @@ pub struct BearerAuthProvider {
 impl BearerAuthProvider {
     pub fn new(token: String) -> Self {
         let trimmed = token.trim().to_string();
-        let tokens = if trimmed.is_empty() { vec![] } else { vec![trimmed.clone()] };
+        let tokens = if trimmed.is_empty() {
+            vec![]
+        } else {
+            vec![trimmed.clone()]
+        };
         Self {
-            token: if trimmed.is_empty() { None } else { Some(trimmed) },
+            token: if trimmed.is_empty() {
+                None
+            } else {
+                Some(trimmed)
+            },
             tokens,
             current_index: Arc::new(AtomicUsize::new(0)),
             account_id: None,
@@ -45,9 +53,7 @@ impl BearerAuthProvider {
     }
 
     pub fn for_test(token: Option<&str>, account_id: Option<&str>) -> Self {
-        let tokens = token
-            .map(|t| vec![t.to_string()])
-            .unwrap_or_default();
+        let tokens = token.map(|t| vec![t.to_string()]).unwrap_or_default();
         Self {
             token: token.map(str::to_string),
             tokens,

@@ -425,6 +425,15 @@ where
                     entry.authority.kind != SkillSourceKind::Executor
                         && entry.authority.kind != SkillSourceKind::Orchestrator
                 });
+                if let Some(shadow_turn) = thread_state.shadow_selection_turn(&input.turn_id) {
+                    let selected = shadow_turn.selected_skill_resources(5);
+                    turn_catalog.entries.retain(|entry| {
+                        let res = crate::shadow_selection_experiment::normalize_skill_resource(
+                            entry.main_prompt.as_str(),
+                        );
+                        selected.contains(&res)
+                    });
+                }
                 let model_info = thread_store.get::<ModelInfo>();
                 let include_usage = model_info
                     .as_deref()

@@ -46,15 +46,7 @@ impl ScheduleRequestProcessor {
         self.scheduler
             .list_schedules(params.cursor, params.limit)
             .await
-            .map(|(data, next_cursor)| {
-                Some(
-                    ScheduleListResponse {
-                        data,
-                        next_cursor,
-                    }
-                    .into(),
-                )
-            })
+            .map(|(data, next_cursor)| Some(ScheduleListResponse { data, next_cursor }.into()))
     }
 
     pub(crate) async fn schedule_update(

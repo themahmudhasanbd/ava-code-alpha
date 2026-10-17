@@ -318,7 +318,10 @@ pub fn auth_provider_from_auth(auth: &AvaAuth) -> SharedAuthProvider {
         | AvaAuth::ChatgptAuthTokens(_)
         | AvaAuth::PersonalAccessToken(_) => {
             let token_opt = auth.get_token().ok();
-            let tokens = token_opt.as_deref().map(|t| vec![t.to_string()]).unwrap_or_default();
+            let tokens = token_opt
+                .as_deref()
+                .map(|t| vec![t.to_string()])
+                .unwrap_or_default();
             Arc::new(BearerAuthProvider {
                 token: token_opt,
                 tokens,

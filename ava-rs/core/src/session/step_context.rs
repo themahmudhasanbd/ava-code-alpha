@@ -3,9 +3,9 @@
 use std::sync::Arc;
 
 use crate::agents_md::LoadedAgentsMd;
-use crate::project_context::LoadedProjectContext;
 use crate::config::TokenBudgetConfig;
 use crate::environment_selection::TurnEnvironmentSnapshot;
+use crate::project_context::LoadedProjectContext;
 use crate::session::step_settings::ResolvedStepSettings;
 use crate::session::turn_context::TurnContext;
 use crate::tools::router::ToolRouter;

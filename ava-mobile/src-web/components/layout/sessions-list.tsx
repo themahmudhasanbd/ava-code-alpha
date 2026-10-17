@@ -71,7 +71,11 @@ export function SessionsList({ onPick }: { onPick: () => void }) {
   const pick = async (id: string | null) => {
     setActiveSessionId(id);
     onPick();
-    await navigate({ to: "/" });
+    if (id) {
+      await navigate({ to: "/session/$sessionId", params: { sessionId: id } });
+    } else {
+      await navigate({ to: "/" });
+    }
   };
 
   const togglePin = (dir: string) => {

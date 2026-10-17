@@ -147,7 +147,7 @@ fn provider(name: &str) -> Provider {
             retry_429: false,
             retry_5xx: false,
             retry_transport: true,
-                retry_auth: false,
+            retry_auth: false,
         },
         stream_idle_timeout: Duration::from_millis(10),
     }

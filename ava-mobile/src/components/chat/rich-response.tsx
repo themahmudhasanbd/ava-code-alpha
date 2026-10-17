@@ -50,6 +50,7 @@ import { Surface } from "@/components/kit";
 import type { ColorTokens } from "@/theme/colors";
 import { useStyles, useTheme } from "@/theme/theme-context";
 import { font, FONTS, mono } from "@/theme/fonts";
+import { MobileSaveCredentialWidget } from "./save-credential-widget";
 
 const SCREEN_WIDTH = Dimensions.get("window").width;
 
@@ -1648,7 +1649,7 @@ export const RichResponse = memo(
         continue;
       }
 
-      const codeFenceMatch = line.match(/^```(\w+)?/);
+      const codeFenceMatch = line.match(/^```([\w-]+)?/);
       if (codeFenceMatch) {
         if (!inCodeBlock) {
           inCodeBlock = true;
@@ -1657,6 +1658,28 @@ export const RichResponse = memo(
         } else {
           inCodeBlock = false;
           const codeText = codeBuffer.join("\n");
+
+          if (
+            !isUser &&
+            (codeLanguage === "save-credential" ||
+              codeLanguage === "save_credential" ||
+              codeLanguage === "credential-widget" ||
+              codeLanguage === "save-credentials")
+          ) {
+            try {
+              const spec = JSON.parse(codeText);
+              if (spec.site_url || spec.username) {
+                elements.push(
+                  <MobileSaveCredentialWidget
+                    key={`cred-${currentKey++}`}
+                    spec={spec}
+                  />
+                );
+                codeBuffer = [];
+                continue;
+              }
+            } catch {}
+          }
 
           if (
             !isUser &&

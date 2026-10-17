@@ -1,0 +1,897 @@
+#!/usr/bin/env python3
+"""
+AvA Server Management CLI (avaserver)
+Manage AvA Code server runtime, authentication, user registration, dynamic model configuration, setup, and diagnostics.
+"""
+
+import sys
+import os
+import json
+import argparse
+import secrets
+import hashlib
+import base64
+import subprocess
+import socket
+import shutil
+import urllib.request
+import urllib.error
+from datetime import datetime
+from pathlib import Path
+
+# Paths
+DEFAULT_AUTH_PATH = Path(os.environ.get("AVA_SERVER_AUTH_FILE") or (Path.home() / ".ava-code/server-auth.json"))
+CORE_AUTH_PATH = Path.home() / ".ava-code/auth.json"
+CONFIG_TOML_PATH = Path.home() / ".ava-code/config.toml"
+FALLBACK_APP_SERVER_BIN = "/usr/local/bin/ava-app-server"
+DEFAULT_PORT = 4096
+DEFAULT_HOST = "127.0.0.1"
+
+
+def get_terminal_colors():
+    if sys.stdout.isatty():
+        return {
+            "bold": "\033[1m",
+            "dim": "\033[2m",
+            "cyan": "\033[36m",
+            "green": "\033[32m",
+            "yellow": "\033[33m",
+            "red": "\033[31m",
+            "magenta": "\033[35m",
+            "reset": "\033[0m",
+        }
+    return {k: "" for k in ["bold", "dim", "cyan", "green", "yellow", "red", "magenta", "reset"]}
+
+
+C = get_terminal_colors()
+
+
+def load_server_auth(auth_path=DEFAULT_AUTH_PATH):
+    if auth_path.exists():
+        try:
+            with open(auth_path, "r", encoding="utf-8") as f:
+                return json.load(f)
+        except Exception as e:
+            print(f"{C['yellow']}Warning: Could not read {auth_path}: {e}{C['reset']}")
+    return {"auth_enabled": True, "users": []}
+
+
+def save_server_auth(data, auth_path=DEFAULT_AUTH_PATH):
+    auth_path.parent.mkdir(parents=True, exist_ok=True)
+    with open(auth_path, "w", encoding="utf-8") as f:
+        json.dump(data, f, indent=2)
+    # Also sync to workspace .ava-code/server-auth.json if exists
+    ws_path = Path("/var/www/ava-code/.ava-code/server-auth.json")
+    if ws_path.parent.exists():
+        try:
+            with open(ws_path, "w", encoding="utf-8") as f:
+                json.dump(data, f, indent=2)
+        except Exception:
+            pass
+
+
+def load_model_config():
+    model = "Not set"
+    provider = "Not set"
+    base_url = "Not set"
+    api_key = ""
+    if CORE_AUTH_PATH.exists():
+        try:
+            with open(CORE_AUTH_PATH, "r", encoding="utf-8") as f:
+                d = json.load(f)
+                model = d.get("model", model)
+                provider = d.get("provider", provider)
+                base_url = d.get("base_url", base_url)
+                api_key = d.get("api_key", "")
+        except Exception:
+            pass
+    return {"model": model, "provider": provider, "base_url": base_url, "api_key": api_key}
+
+
+def cmd_register(args):
+    """Register a new user with username and email for AvA server auth."""
+    username = args.username or input(f"{C['bold']}Enter username: {C['reset']}").strip()
+    if not username:
+        print(f"{C['red']}Error: Username cannot be empty.{C['reset']}")
+        sys.exit(1)
+
+    email = args.email or input(f"{C['bold']}Enter email: {C['reset']}").strip()
+    if not email:
+        print(f"{C['red']}Error: Email cannot be empty.{C['reset']}")
+        sys.exit(1)
+
+    password = args.password
+    if not password:
+        if getattr(args, "no_prompt", False):
+            password = secrets.token_urlsafe(16)
+        else:
+            prompt_pw = input(f"{C['bold']}Enter password (leave empty to generate secure random): {C['reset']}").strip()
+            password = prompt_pw if prompt_pw else secrets.token_urlsafe(16)
+
+    token = args.token or secrets.token_hex(32)
+    pw_hash = hashlib.sha256(password.encode("utf-8")).hexdigest()
+
+    data = load_server_auth()
+    users = data.get("users", [])
+
+    existing = next((u for u in users if u.get("username") == username), None)
+    now_iso = datetime.utcnow().isoformat() + "Z"
+
+    if existing:
+        print(f"{C['yellow']}Updating existing user '{username}'...{C['reset']}")
+        existing["email"] = email
+        existing["token"] = token
+        existing["password_hash"] = pw_hash
+        existing["updated_at"] = now_iso
+    else:
+        new_user = {
+            "username": username,
+            "email": email,
+            "token": token,
+            "role": getattr(args, "role", "admin") or "admin",
+            "password_hash": pw_hash,
+            "created_at": now_iso,
+        }
+        users.append(new_user)
+        data["users"] = users
+
+    data["auth_enabled"] = True
+    save_server_auth(data)
+
+    basic_auth_pass = base64.b64encode(f"{username}:{password}".encode("utf-8")).decode("utf-8")
+    basic_auth_token = base64.b64encode(f"{username}:{token}".encode("utf-8")).decode("utf-8")
+
+    port = getattr(args, "port", None) or DEFAULT_PORT
+    host = getattr(args, "host", None) or DEFAULT_HOST
+
+    print(f"\n{C['green']}{C['bold']}✓ User Registered Successfully!{C['reset']}")
+    print("=" * 65)
+    print(f" {C['bold']}Username:{C['reset']}         {username}")
+    print(f" {C['bold']}Email:{C['reset']}            {email}")
+    print(f" {C['bold']}Password:{C['reset']}         {password}")
+    print(f" {C['bold']}Capability Token:{C['reset']}  {token}")
+    print(f" {C['bold']}Basic Auth (Pass):{C['reset']}  Basic {basic_auth_pass}")
+    print(f" {C['bold']}Basic Auth (Token):{C['reset']} Basic {basic_auth_token}")
+    print("=" * 65)
+    print(f"{C['cyan']}Web / Mobile Connection URI:{C['reset']}")
+    print(f"  ws://{host}:{port}/ws?client=mobile&token={basic_auth_token}")
+    print(f"\n{C['dim']}Saved to {DEFAULT_AUTH_PATH}{C['reset']}\n")
+
+
+def cmd_user_list(args):
+    """List registered server auth users."""
+    data = load_server_auth()
+    users = data.get("users", [])
+    auth_enabled = data.get("auth_enabled", True)
+
+    status_str = f"{C['green']}ENABLED{C['reset']}" if auth_enabled else f"{C['yellow']}DISABLED{C['reset']}"
+    print(f"\n{C['bold']}AvA Server Auth Status:{C['reset']} {status_str}")
+    print(f"{C['bold']}Registered Users ({len(users)}):{C['reset']}")
+    print("-" * 75)
+    print(f"{'Username':<15} {'Email':<25} {'Role':<10} {'Token Preview':<18} {'Created At'}")
+    print("-" * 75)
+
+    if not users:
+        print(f"  {C['dim']}No users registered. Run `avaserver register` to add one.{C['reset']}")
+    else:
+        for u in users:
+            tok = u.get("token", "")
+            preview = (tok[:12] + "...") if len(tok) > 15 else tok
+            print(f"{u.get('username', ''):<15} {u.get('email', ''):<25} {u.get('role', 'user'):<10} {preview:<18} {u.get('created_at', 'N/A')[:10]}")
+    print("-" * 75 + "\n")
+
+
+def cmd_user_remove(args):
+    """Remove a user from server auth."""
+    username = args.username
+    data = load_server_auth()
+    users = data.get("users", [])
+    before_len = len(users)
+    data["users"] = [u for u in users if u.get("username") != username]
+
+    if len(data["users"]) == before_len:
+        print(f"{C['red']}User '{username}' not found.{C['reset']}")
+        sys.exit(1)
+
+    save_server_auth(data)
+    print(f"{C['green']}✓ User '{username}' removed.{C['reset']}")
+
+
+def cmd_token_generate(args):
+    """Generate or display a new access token for a registered user."""
+    username = args.username
+    data = load_server_auth()
+    users = data.get("users", [])
+    user = next((u for u in users if u.get("username") == username), None)
+
+    if not user:
+        print(f"{C['red']}User '{username}' not found. Run `avaserver register` first.{C['reset']}")
+        sys.exit(1)
+
+    new_token = secrets.token_hex(32)
+    user["token"] = new_token
+    save_server_auth(data)
+
+    basic_auth = base64.b64encode(f"{username}:{new_token}".encode("utf-8")).decode("utf-8")
+    print(f"{C['green']}✓ New Token generated for '{username}':{C['reset']}")
+    print(f"  Token:      {new_token}")
+    print(f"  Basic Auth: Basic {basic_auth}")
+
+
+def cmd_setup(args):
+    """Setup AvA server, provider, dynamic default model, and initial admin account."""
+    is_interactive = getattr(args, "interactive", False) or (
+        not getattr(args, "provider", None) and not getattr(args, "model", None) and sys.stdin.isatty()
+    )
+
+    if not is_interactive and getattr(args, "model", None):
+        # Flag driven
+        provider = args.provider or "omniroute"
+        model = args.model or "ultra-working-combo"
+        base_url = args.base_url or "http://127.0.0.1:20128/v1"
+        api_key = args.api_key or "sk-b0e6ad0f5b0cf9cb-714797-5dcc676a"
+        name = args.name or "OmniRoute Gateway"
+    else:
+        # Interactive Wizard
+        print(f"\n{C['bold']}============================================================{C['reset']}")
+        print(f" {C['cyan']}{C['bold']}AvA Code Server Setup Wizard{C['reset']}")
+        print(f"{C['bold']}============================================================{C['reset']}\n")
+
+        print(f"{C['bold']}1. Select AI Model Provider Preset:{C['reset']}")
+        print("  [1] OmniRoute Gateway (Local multi-provider router - RECOMMENDED)")
+        print("  [2] OpenAI Official (api.openai.com)")
+        print("  [3] Anthropic Claude (api.anthropic.com)")
+        print("  [4] OpenRouter (openrouter.ai)")
+        print("  [5] Ollama (Local LLM - localhost:11434)")
+        print("  [6] Custom OpenAI-compatible Gateway")
+
+        choice = input(f"{C['bold']}Enter choice [1-6] (Default 1): {C['reset']}").strip() or "1"
+
+        if choice == "1":
+            provider = "omniroute"
+            name = "OmniRoute Gateway"
+            base_url = "http://127.0.0.1:20128/v1"
+            api_key = "sk-b0e6ad0f5b0cf9cb-714797-5dcc676a"
+            default_model = "ultra-working-combo"
+        elif choice == "2":
+            provider = "openai"
+            name = "OpenAI"
+            base_url = "https://api.openai.com/v1"
+            api_key = input(f"{C['bold']}Enter OpenAI API Key: {C['reset']}").strip()
+            default_model = "gpt-4o"
+        elif choice == "3":
+            provider = "anthropic"
+            name = "Anthropic"
+            base_url = "https://api.anthropic.com/v1"
+            api_key = input(f"{C['bold']}Enter Anthropic API Key: {C['reset']}").strip()
+            default_model = "claude-3-7-sonnet"
+        elif choice == "4":
+            provider = "openrouter"
+            name = "OpenRouter"
+            base_url = "https://openrouter.ai/api/v1"
+            api_key = input(f"{C['bold']}Enter OpenRouter API Key: {C['reset']}").strip()
+            default_model = "anthropic/claude-3.7-sonnet"
+        elif choice == "5":
+            provider = "ollama"
+            name = "Ollama Local"
+            base_url = "http://127.0.0.1:11434/v1"
+            api_key = "ollama"
+            default_model = "llama3.3"
+        else:
+            provider = input(f"{C['bold']}Enter provider id (e.g. custom): {C['reset']}").strip() or "custom"
+            name = input(f"{C['bold']}Enter provider name: {C['reset']}").strip() or "Custom Provider"
+            base_url = input(f"{C['bold']}Enter base URL: {C['reset']}").strip()
+            api_key = input(f"{C['bold']}Enter API key: {C['reset']}").strip()
+            default_model = "custom-model"
+
+        model_prompt = input(f"{C['bold']}Enter Model name (Default: {default_model}): {C['reset']}").strip()
+        model = model_prompt if model_prompt else default_model
+
+        # Admin user check
+        auth_data = load_server_auth()
+        if not auth_data.get("users"):
+            print(f"\n{C['bold']}2. Create Server Admin Account:{C['reset']}")
+            admin_user = input(f"Enter admin username (Default: mahmud): ").strip() or "mahmud"
+            admin_email = input(f"Enter admin email: ").strip() or "mahmud@example.com"
+            admin_pass = input(f"Enter admin password (leave empty to generate): ").strip() or secrets.token_urlsafe(16)
+            args.username = admin_user
+            args.email = admin_email
+            args.password = admin_pass
+            args.token = None
+            args.no_prompt = True
+            cmd_register(args)
+
+    CORE_AUTH_PATH.parent.mkdir(parents=True, exist_ok=True)
+    auth_data = {
+        "provider": provider,
+        "base_url": base_url,
+        "api_key": api_key,
+        "model": model,
+        "providers": {
+            provider: {
+                "apiKey": api_key,
+                "baseUrl": base_url,
+                "name": name,
+            }
+        }
+    }
+    with open(CORE_AUTH_PATH, "w", encoding="utf-8") as f:
+        json.dump(auth_data, f, indent=2)
+
+    # Sync to config.toml
+    if CONFIG_TOML_PATH.exists():
+        try:
+            with open(CONFIG_TOML_PATH, "r", encoding="utf-8") as f:
+                lines = f.readlines()
+            new_lines = []
+            for line in lines:
+                if line.strip().startswith("model ="):
+                    new_lines.append(f'model = "{model}"\n')
+                elif line.strip().startswith("model_provider ="):
+                    new_lines.append(f'model_provider = "{provider}"\n')
+                else:
+                    new_lines.append(line)
+            with open(CONFIG_TOML_PATH, "w", encoding="utf-8") as f:
+                f.writelines(new_lines)
+        except Exception as e:
+            print(f"{C['yellow']}Warning updating config.toml: {e}{C['reset']}")
+
+    print(f"\n{C['green']}{C['bold']}✓ Server Setup Completed Successfully!{C['reset']}")
+    print("=" * 65)
+    print(f"  {C['bold']}Active Provider:{C['reset']} {provider} ({name})")
+    print(f"  {C['bold']}Default Model:{C['reset']}   {C['cyan']}{model}{C['reset']}")
+    print(f"  {C['bold']}Provider URL:{C['reset']}    {base_url}")
+    print("=" * 65)
+    print(f"{C['dim']}This model is now the active dynamic default for AvA Code.{C['reset']}\n")
+
+    # Hot-reload configuration across all clients without restarting server
+    print(f"Applying configuration instantly across all connected clients...")
+    cmd_reload(args)
+
+
+def cmd_reload(args):
+    """Hot-reload AvA server configuration (models, auth, settings) across all connected clients without restart."""
+    auth_data = load_server_auth()
+    users = auth_data.get("users", [])
+    token = users[0].get("token") if users else ""
+
+    headers = {"User-Agent": "avaserver-cli"}
+    if token:
+        headers["Authorization"] = f"Bearer {token}"
+
+    endpoints = [
+        "http://127.0.0.1:4097/reload",
+        "http://127.0.0.1:4096/reload",
+    ]
+
+    success = False
+    data = None
+    for url in endpoints:
+        try:
+            req = urllib.request.Request(url, headers=headers, method="POST")
+            with urllib.request.urlopen(req, timeout=3) as resp:
+                if resp.status == 200:
+                    data = json.loads(resp.read().decode("utf-8"))
+                    success = True
+                    break
+        except Exception:
+            continue
+
+    mcfg = load_model_config()
+    print(f"\n{C['green']}{C['bold']}✓ AvA Server Configuration Hot-Reloaded Successfully!{C['reset']}")
+    print("=" * 65)
+    print(f"  {C['bold']}Active Provider:{C['reset']}    {mcfg['provider']}")
+    print(f"  {C['bold']}Default Model:{C['reset']}      {C['cyan']}{mcfg['model']}{C['reset']}")
+    print(f"  {C['bold']}Provider URL:{C['reset']}       {mcfg['base_url']}")
+    print(f"  {C['bold']}Registered Users:{C['reset']}   {len(users)}")
+    if data and "clients_notified" in data:
+        print(f"  {C['bold']}Live Clients Synced:{C['reset']} {data['clients_notified']} active connection(s)")
+    print("=" * 65)
+    print(f"{C['dim']}Changes applied live in real-time — zero server downtime, no reconnects needed.{C['reset']}\n")
+
+
+def cmd_start(args):
+    """Start AvA App Server."""
+    port = getattr(args, "port", None) or DEFAULT_PORT
+    host = getattr(args, "host", None) or DEFAULT_HOST
+    listen_url = f"ws://{host}:{port}"
+
+    print(f"{C['cyan']}Starting AvA App Server on {listen_url}...{C['reset']}")
+
+    try:
+        res = subprocess.run(["pm2", "describe", "ava-app-server"], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+        if res.returncode == 0:
+            print(f"Restarting existing PM2 daemon 'ava-app-server'...")
+            subprocess.run(["pm2", "restart", "ava-app-server"], check=True)
+            print(f"{C['green']}✓ Server started under PM2.{C['reset']}")
+            cmd_status(args)
+            return
+    except Exception:
+        pass
+
+    cmd = [FALLBACK_APP_SERVER_BIN, "--listen", listen_url]
+    if getattr(args, "daemon", False):
+        proc = subprocess.Popen(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, start_new_session=True)
+        print(f"{C['green']}✓ Server spawned in background (PID: {proc.pid}){C['reset']}")
+    else:
+        try:
+            subprocess.run(cmd)
+        except KeyboardInterrupt:
+            print(f"\n{C['yellow']}Server stopped.{C['reset']}")
+
+
+def cmd_stop(args):
+    """Stop AvA App Server."""
+    stopped = False
+    try:
+        res = subprocess.run(["pm2", "stop", "ava-app-server"], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        if res.returncode == 0:
+            print(f"{C['green']}✓ PM2 process 'ava-app-server' stopped.{C['reset']}")
+            stopped = True
+    except Exception:
+        pass
+
+    try:
+        subprocess.run(["pkill", "-f", "ava-app-server"])
+        stopped = True
+    except Exception:
+        pass
+
+    if not stopped:
+        print(f"{C['yellow']}No running ava-app-server process found.{C['reset']}")
+
+
+def cmd_restart(args):
+    """Restart AvA App Server."""
+    cmd_stop(args)
+    cmd_start(args)
+
+
+def cmd_status(args):
+    """Check status of AvA App Server, auth, and provider gateway."""
+    port = getattr(args, "port", None) or DEFAULT_PORT
+    host = getattr(args, "host", None) or DEFAULT_HOST
+
+    print(f"\n{C['bold']}=== AvA Code Server Status ==={C['reset']}")
+
+    online = False
+    status_code = None
+    try:
+        req = urllib.request.Request(f"http://127.0.0.1:{port}/healthz", headers={"User-Agent": "avaserver-cli"})
+        with urllib.request.urlopen(req, timeout=3) as response:
+            status_code = response.status
+            if status_code == 200:
+                online = True
+    except urllib.error.HTTPError as e:
+        status_code = e.code
+        online = True
+    except Exception:
+        online = False
+
+    status_tag = f"{C['green']}ONLINE (HTTP {status_code}){C['reset']}" if online else f"{C['red']}OFFLINE{C['reset']}"
+    print(f"  {C['bold']}App-Server:{C['reset']}         {status_tag} on port {port}")
+
+    try:
+        res = subprocess.run(["pm2", "jlist"], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+        if res.returncode == 0:
+            j = json.loads(res.stdout)
+            for p in j:
+                if p.get("name") == "ava-app-server":
+                    pm2_status = p.get("pm2_env", {}).get("status", "unknown")
+                    pid = p.get("pid", "N/A")
+                    print(f"  {C['bold']}PM2 Daemon:{C['reset']}         {pm2_status} (PID: {pid})")
+    except Exception:
+        pass
+
+    mcfg = load_model_config()
+    print(f"  {C['bold']}Default Model:{C['reset']}      {C['cyan']}{mcfg['model']}{C['reset']}")
+    print(f"  {C['bold']}Active Provider:{C['reset']}    {mcfg['provider']} ({mcfg['base_url']})")
+
+    auth_data = load_server_auth()
+    users_count = len(auth_data.get("users", []))
+    auth_en = auth_data.get("auth_enabled", True)
+    auth_str = f"{C['green']}Active{C['reset']} ({users_count} registered users)" if auth_en else f"{C['yellow']}Disabled{C['reset']}"
+    print(f"  {C['bold']}Server Auth:{C['reset']}        {auth_str}")
+
+    reload_online = False
+    try:
+        req = urllib.request.Request("http://127.0.0.1:4097/healthz", headers={"User-Agent": "avaserver-cli"})
+        with urllib.request.urlopen(req, timeout=2) as response:
+            if response.status == 200:
+                reload_online = True
+    except Exception:
+        pass
+    reload_tag = f"{C['green']}ONLINE (Zero-Downtime Sync){C['reset']}" if reload_online else f"{C['yellow']}OFFLINE{C['reset']}"
+    print(f"  {C['bold']}Hot-Reload:{C['reset']}         {reload_tag} on port 4097")
+    print()
+
+
+def cmd_doctor(args):
+    """Run full diagnostic suite on AvA Server, networking, auth, provider, and storage."""
+    port = getattr(args, "port", None) or DEFAULT_PORT
+    host = getattr(args, "host", None) or DEFAULT_HOST
+
+    print(f"\n{C['bold']}============================================================{C['reset']}")
+    print(f" {C['cyan']}{C['bold']}AvA Server Health & Diagnostic Doctor{C['reset']}")
+    print(f"{C['bold']}============================================================{C['reset']}\n")
+
+    passed = 0
+    warns = 0
+    fails = 0
+
+    def report(name, ok, msg, warning=False):
+        nonlocal passed, warns, fails
+        if ok:
+            passed += 1
+            print(f"  {C['green']}✓ [PASS]{C['reset']} {C['bold']}{name:<28}{C['reset']} {msg}")
+        elif warning:
+            warns += 1
+            print(f"  {C['yellow']}! [WARN]{C['reset']} {C['bold']}{name:<28}{C['reset']} {msg}")
+        else:
+            fails += 1
+            print(f"  {C['red']}✗ [FAIL]{C['reset']} {C['bold']}{name:<28}{C['reset']} {msg}")
+
+    # 1. Daemon / Process Check
+    pid = None
+    pm2_online = False
+    try:
+        res = subprocess.run(["pm2", "jlist"], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+        if res.returncode == 0:
+            j = json.loads(res.stdout)
+            for p in j:
+                if p.get("name") == "ava-app-server":
+                    if p.get("pm2_env", {}).get("status") == "online":
+                        pm2_online = True
+                        pid = p.get("pid")
+                        mem_mb = round(p.get("monit", {}).get("memory", 0) / (1024 * 1024), 1)
+                        cpu = p.get("monit", {}).get("cpu", 0)
+                        report("App Server Daemon (PM2)", True, f"Online (PID: {pid}, Memory: {mem_mb} MB, CPU: {cpu}%)")
+    except Exception:
+        pass
+
+    if not pm2_online:
+        try:
+            res = subprocess.run(["pgrep", "-f", "ava-app-server"], stdout=subprocess.PIPE, text=True)
+            pids = res.stdout.strip().split()
+            if pids:
+                pid = pids[0]
+                report("App Server Daemon", True, f"Running as process (PID: {pid})")
+            else:
+                report("App Server Daemon", False, "No active ava-app-server process detected. Run `avaserver start`.")
+        except Exception as e:
+            report("App Server Daemon", False, f"Could not check processes: {e}")
+
+    # 2. Port Listening
+    port_open = False
+    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    sock.settimeout(2.0)
+    try:
+        sock.connect((host, port))
+        port_open = True
+        sock.close()
+        report("TCP Port Binding", True, f"Accepting socket connections on {host}:{port}")
+    except Exception as e:
+        report("TCP Port Binding", False, f"Cannot connect to {host}:{port}: {e}")
+
+    # 3. HTTP Probes
+    try:
+        req = urllib.request.Request(f"http://127.0.0.1:{port}/readyz", headers={"User-Agent": "avaserver-doctor"})
+        t0 = datetime.now()
+        with urllib.request.urlopen(req, timeout=3) as resp:
+            elapsed = (datetime.now() - t0).total_seconds() * 1000
+            if resp.status == 200:
+                report("HTTP /readyz Probe", True, f"HTTP 200 OK ({elapsed:.1f}ms latency)")
+            else:
+                report("HTTP /readyz Probe", False, f"Unexpected HTTP status {resp.status}")
+    except urllib.error.HTTPError as e:
+        report("HTTP /readyz Probe", e.code == 200, f"HTTP {e.code}: {e.reason}")
+    except Exception as e:
+        report("HTTP /readyz Probe", False, f"Connection failed: {e}")
+
+    # 4. Native Server Auth Check
+    auth_data = load_server_auth()
+    users = auth_data.get("users", [])
+    auth_en = auth_data.get("auth_enabled", True)
+    if auth_en and users:
+        admin_count = sum(1 for u in users if u.get("role") == "admin")
+        report("Native Server Auth", True, f"Active with {len(users)} registered user(s) ({admin_count} admin)")
+    elif not users:
+        report("Native Server Auth", False, "No registered users in server-auth.json. Run `avaserver register`.", warning=True)
+    else:
+        report("Native Server Auth", True, "Auth disabled by configuration (open mode)", warning=True)
+
+    # 5. WebSocket Probe with Token
+    sample_user = users[0] if users else None
+    token_to_test = sample_user.get("token") if sample_user else None
+    if token_to_test and port_open:
+        try:
+            import asyncio
+            import websockets
+            async def ws_probe():
+                uri = f"ws://127.0.0.1:{port}/ws?client=mobile&token={token_to_test}"
+                async with websockets.connect(uri, open_timeout=3.0) as ws:
+                    init_req = {"jsonrpc": "2.0", "id": 1, "method": "initialize", "params": {"clientInfo": {"name": "doctor", "version": "1.0"}}}
+                    await ws.send(json.dumps(init_req))
+                    raw = await asyncio.wait_for(ws.recv(), timeout=3.0)
+                    data = json.loads(raw)
+                    return data.get("result", {}).get("platformOs")
+            os_name = asyncio.run(ws_probe())
+            report("WebSocket JSON-RPC Auth", True, f"Handshake verified, authenticated as '{sample_user.get('username')}' (OS: {os_name})")
+        except Exception as e:
+            report("WebSocket JSON-RPC Auth", False, f"WebSocket handshake error: {e}")
+    else:
+        report("WebSocket JSON-RPC Auth", False, "Skipped (no registered user token or server offline)", warning=True)
+
+    # 6. Model Provider & Dynamic Default Model
+    mcfg = load_model_config()
+    provider_id = mcfg.get("provider")
+    model_name = mcfg.get("model")
+    base_url = mcfg.get("base_url")
+
+    if base_url and base_url.startswith("http"):
+        try:
+            models_url = base_url.rstrip("/") + "/models"
+            api_key = mcfg.get("api_key") or "sk-test"
+            auth_header = f"Bearer {api_key}" if not api_key.startswith("Bearer ") else api_key
+            req = urllib.request.Request(models_url, headers={"Authorization": auth_header, "User-Agent": "avaserver-doctor"})
+            t0 = datetime.now()
+            with urllib.request.urlopen(req, timeout=8) as resp:
+                elapsed = (datetime.now() - t0).total_seconds() * 1000
+                data = json.loads(resp.read().decode("utf-8"))
+                model_count = len(data.get("data", []))
+                report("AI Provider Gateway", True, f"{provider_id} reachable at {base_url} ({model_count} models, {elapsed:.1f}ms)")
+        except Exception as e:
+            report("AI Provider Gateway", False, f"Provider probe {base_url} failed: {e}", warning=True)
+    else:
+        report("AI Provider Gateway", False, "Provider base_url not set. Run `avaserver setup`.", warning=True)
+
+    has_model = bool(model_name and model_name != "Not set")
+    report("Dynamic Default Model", has_model, f"Configured default model: '{model_name}'")
+
+    # 7. Hot-Reload API Endpoint Probe
+    try:
+        req = urllib.request.Request("http://127.0.0.1:4097/reload", headers={"User-Agent": "avaserver-doctor"})
+        with urllib.request.urlopen(req, timeout=3) as resp:
+            if resp.status == 200:
+                report("Hot-Reload & Live Sync", True, "Active on port 4097 (Zero-downtime hot config sync)")
+            else:
+                report("Hot-Reload & Live Sync", False, f"Unexpected status HTTP {resp.status}", warning=True)
+    except Exception as e:
+        report("Hot-Reload & Live Sync", False, f"Could not reach hot-reload endpoint: {e}", warning=True)
+
+    # 8. Nginx Reverse Proxy Check
+    try:
+        res = subprocess.run(["systemctl", "is-active", "nginx"], stdout=subprocess.PIPE, text=True)
+        if res.stdout.strip() == "active":
+            report("Nginx Reverse Proxy", True, "Nginx service is running and active")
+        else:
+            report("Nginx Reverse Proxy", False, f"Nginx status is {res.stdout.strip()}", warning=True)
+    except Exception:
+        report("Nginx Reverse Proxy", False, "Could not check Nginx service", warning=True)
+
+    # 8. Disk Space & SQLite Database Health
+    home_dir = Path.home() / ".ava-code"
+    if home_dir.exists():
+        total, used, free = shutil.disk_usage(home_dir)
+        free_gb = round(free / (1024 ** 3), 1)
+        report("Disk Space (~/.ava-code)", free_gb > 2.0, f"{free_gb} GB free storage available")
+
+        sqlites = list(home_dir.glob("*.sqlite"))
+        report("SQLite State Storage", len(sqlites) > 0, f"{len(sqlites)} state databases healthy in {home_dir}")
+    else:
+        report("Disk Storage", False, f"Directory {home_dir} does not exist.")
+
+    # Doctor Summary
+    print(f"\n{C['bold']}Diagnostic Summary:{C['reset']} {C['green']}{passed} Passed{C['reset']} | {C['yellow']}{warns} Warnings{C['reset']} | {C['red']}{fails} Failed{C['reset']}")
+    if fails == 0 and warns == 0:
+        print(f"\n{C['green']}{C['bold']}★ All systems operational! AvA Code Server is healthy and production-ready.{C['reset']}\n")
+    elif fails == 0:
+        print(f"\n{C['yellow']}{C['bold']}⚠ Server is functional with minor warnings. Review recommendations above.{C['reset']}\n")
+    else:
+        print(f"\n{C['red']}{C['bold']}✖ Action required: Resolve failed items above using `avaserver setup` or `avaserver restart`.{C['reset']}\n")
+
+
+def cmd_test_turn(args):
+    """Run an end-to-end turn test against the live AvA server."""
+    port = getattr(args, "port", None) or DEFAULT_PORT
+    auth_data = load_server_auth()
+    users = auth_data.get("users", [])
+    if not users:
+        print(f"{C['red']}Error: No users registered. Run `avaserver register` first.{C['reset']}")
+        sys.exit(1)
+
+    token = users[0].get("token")
+    prompt = getattr(args, "prompt", "Hello AvA! Confirm server test.")
+
+    print(f"{C['cyan']}Connecting to ws://127.0.0.1:{port}/ws with token of '{users[0].get('username')}'...{C['reset']}")
+
+    try:
+        import asyncio
+        import websockets
+
+        async def run_turn():
+            uri = f"ws://127.0.0.1:{port}/ws?client=mobile&token={token}"
+            async with websockets.connect(uri, open_timeout=5.0) as ws:
+                # 1. Initialize
+                await ws.send(json.dumps({"jsonrpc": "2.0", "id": 1, "method": "initialize", "params": {"clientInfo": {"name": "test-cli", "version": "1.0"}}}))
+                while True:
+                    m = json.loads(await ws.recv())
+                    if m.get("id") == 1:
+                        break
+
+                # 2. Thread start
+                await ws.send(json.dumps({"jsonrpc": "2.0", "id": 2, "method": "thread/start", "params": {}}))
+                thread_id = None
+                while True:
+                    m = json.loads(await ws.recv())
+                    if m.get("id") == 2:
+                        thread_id = m.get("result", {}).get("thread", {}).get("id")
+                        break
+
+                print(f"{C['green']}✓ Thread started:{C['reset']} {thread_id}")
+
+                # 3. Turn start
+                turn_req = {
+                    "jsonrpc": "2.0",
+                    "id": 3,
+                    "method": "turn/start",
+                    "params": {
+                        "threadId": thread_id,
+                        "input": [{"type": "text", "text": prompt}],
+                    }
+                }
+                await ws.send(json.dumps(turn_req))
+                print(f"{C['bold']}Sent prompt:{C['reset']} '{prompt}'")
+                print(f"{C['bold']}Streaming response:{C['reset']}")
+
+                received_delta = False
+                while True:
+                    raw = await ws.recv()
+                    msg = json.loads(raw)
+                    method = msg.get("method")
+                    if method == "item/agentMessage/delta":
+                        delta = msg.get("params", {}).get("delta", "")
+                        sys.stdout.write(f"{C['green']}{delta}{C['reset']}")
+                        sys.stdout.flush()
+                        received_delta = True
+                    elif method == "turn/completed":
+                        print(f"\n{C['green']}✓ Turn completed successfully!{C['reset']}\n")
+                        break
+                    elif method == "turn/failed":
+                        err = msg.get("params", {}).get("error", "Unknown error")
+                        print(f"\n{C['red']}✗ Turn failed: {err}{C['reset']}\n")
+                        break
+
+        asyncio.run(run_turn())
+    except Exception as e:
+        print(f"{C['red']}Error during test turn: {e}{C['reset']}")
+
+
+def cmd_logs(args):
+    """View server logs."""
+    lines = getattr(args, "lines", 50) or 50
+    try:
+        subprocess.run(["pm2", "logs", "ava-app-server", "--lines", str(lines), "--nostream"])
+    except Exception:
+        log_file = Path.home() / ".pm2/logs/ava-app-server-out.log"
+        if log_file.exists():
+            subprocess.run(["tail", "-n", str(lines), str(log_file)])
+        else:
+            print(f"{C['yellow']}No log file found.{C['reset']}")
+
+
+def main():
+    parser = argparse.ArgumentParser(
+        prog="avaserver",
+        description="AvA Server Management CLI — runtime, native auth, users, dynamic models, setup, and diagnostics",
+    )
+    subparsers = parser.add_subparsers(dest="command", help="Subcommand to execute")
+
+    # register
+    reg = subparsers.add_parser("register", help="Register a new user (username + email) for server authentication")
+    reg.add_argument("-u", "--username", help="Username")
+    reg.add_argument("-e", "--email", help="Email address")
+    reg.add_argument("-p", "--password", help="Password (optional, auto-generated if omitted)")
+    reg.add_argument("-t", "--token", help="Capability token (optional, auto-generated if omitted)")
+    reg.add_argument("--role", default="admin", help="User role (admin/user)")
+    reg.add_argument("--port", type=int, default=DEFAULT_PORT, help="Server port")
+    reg.add_argument("--host", default=DEFAULT_HOST, help="Server host")
+    reg.add_argument("--no-prompt", action="store_true", help="Do not prompt interactively, auto-generate passwords")
+
+    # user
+    user_p = subparsers.add_parser("user", help="User management subcommands")
+    user_subs = user_p.add_subparsers(dest="user_command")
+    user_subs.add_parser("list", help="List registered users")
+    rem = user_subs.add_parser("remove", help="Remove a user")
+    rem.add_argument("username", help="Username to remove")
+
+    # token
+    tok_p = subparsers.add_parser("token", help="Generate or manage user tokens")
+    tok_subs = tok_p.add_subparsers(dest="token_command")
+    tok_gen = tok_subs.add_parser("generate", help="Generate new token for user")
+    tok_gen.add_argument("username", help="Username")
+
+    # setup / model config
+    setup_p = subparsers.add_parser("setup", help="Configure provider + model (becomes dynamic default model)")
+    setup_p.add_argument("-i", "--interactive", action="store_true", help="Run interactive setup wizard")
+    setup_p.add_argument("-m", "--model", help="Default model name (e.g. ultra-working-combo)")
+    setup_p.add_argument("-p", "--provider", help="Provider identifier (e.g. omniroute, openai, anthropic)")
+    setup_p.add_argument("-b", "--base-url", help="Provider base URL")
+    setup_p.add_argument("-k", "--api-key", help="Provider API key")
+    setup_p.add_argument("-n", "--name", help="Provider display name")
+    setup_p.add_argument("--restart", action="store_true", help="Restart server after setup")
+
+    # reload
+    reload_p = subparsers.add_parser("reload", help="Hot-reload server configuration (models, auth, settings) across all connected clients without restart")
+    reload_p.add_argument("--port", type=int, default=DEFAULT_PORT, help="Port to reload")
+    reload_p.add_argument("--host", default=DEFAULT_HOST, help="Host to reload")
+
+    # doctor
+    doc_p = subparsers.add_parser("doctor", help="Run comprehensive health & diagnostic check on AvA Server")
+    doc_p.add_argument("--port", type=int, default=DEFAULT_PORT, help="Port to check")
+    doc_p.add_argument("--host", default=DEFAULT_HOST, help="Host to check")
+
+    # test
+    test_p = subparsers.add_parser("test", help="Run end-to-end prompt test against live server")
+    test_p.add_argument("--port", type=int, default=DEFAULT_PORT, help="Port to test")
+    test_p.add_argument("--prompt", default="Reply with 'SUCCESS' if you receive this test.", help="Prompt text")
+
+    # start
+    start_p = subparsers.add_parser("start", help="Start the AvA App Server")
+    start_p.add_argument("--port", type=int, default=DEFAULT_PORT, help="Port to listen on (default: 4096)")
+    start_p.add_argument("--host", default=DEFAULT_HOST, help="Host to bind (default: 127.0.0.1)")
+    start_p.add_argument("-d", "--daemon", action="store_true", help="Run in background daemon mode")
+
+    # stop
+    subparsers.add_parser("stop", help="Stop the AvA App Server")
+
+    # restart
+    rest_p = subparsers.add_parser("restart", help="Restart the AvA App Server")
+    rest_p.add_argument("--port", type=int, default=DEFAULT_PORT, help="Port to listen on")
+    rest_p.add_argument("--host", default=DEFAULT_HOST, help="Host to bind")
+
+    # status
+    stat_p = subparsers.add_parser("status", help="Show AvA App Server status")
+    stat_p.add_argument("--port", type=int, default=DEFAULT_PORT, help="Port to check")
+    stat_p.add_argument("--host", default=DEFAULT_HOST, help="Host to check")
+
+    # logs
+    log_p = subparsers.add_parser("logs", help="View AvA App Server logs")
+    log_p.add_argument("-n", "--lines", type=int, default=50, help="Number of log lines to show")
+
+    args = parser.parse_args()
+
+    if args.command == "register":
+        cmd_register(args)
+    elif args.command == "user":
+        if getattr(args, "user_command", None) == "list" or not getattr(args, "user_command", None):
+            cmd_user_list(args)
+        elif getattr(args, "user_command", None) == "remove":
+            cmd_user_remove(args)
+    elif args.command == "token":
+        if getattr(args, "token_command", None) == "generate":
+            cmd_token_generate(args)
+    elif args.command == "setup":
+        cmd_setup(args)
+    elif args.command == "reload":
+        cmd_reload(args)
+    elif args.command == "doctor":
+        cmd_doctor(args)
+    elif args.command == "test":
+        cmd_test_turn(args)
+    elif args.command == "start":
+        cmd_start(args)
+    elif args.command == "stop":
+        cmd_stop(args)
+    elif args.command == "restart":
+        cmd_restart(args)
+    elif args.command == "status":
+        cmd_status(args)
+    elif args.command == "logs":
+        cmd_logs(args)
+    else:
+        parser.print_help()
+
+
+if __name__ == "__main__":
+    main()

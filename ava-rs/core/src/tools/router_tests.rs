@@ -649,3 +649,41 @@ fn namespace_function_names(specs: &[ToolSpec], namespace_name: &str) -> Vec<Str
         })
         .unwrap_or_default()
 }
+
+#[tokio::test]
+async fn build_tool_call_routes_tool_search_function_to_search_payload() -> anyhow::Result<()> {
+    let call = ToolRouter::build_tool_call(ResponseItem::FunctionCall {
+        id: None,
+        name: "tool_search".to_string(),
+        namespace: None,
+        arguments: r#"{"query": "cloudflare zone", "limit": 5}"#.to_string(),
+        encrypted_function_args: None,
+        call_id: "call-search".to_string(),
+        internal_chat_message_metadata_passthrough: None,
+    })?
+    .expect("function_call should produce a tool call");
+
+    assert_eq!(call.call_id, "call-search");
+    match call.payload {
+        ToolPayload::ToolSearch { arguments } => {
+            assert_eq!(arguments.query, "cloudflare zone");
+            assert_eq!(arguments.limit, Some(5));
+        }
+        other => panic!("expected tool_search payload, got {other:?}"),
+    }
+
+    // A regular function call must keep the Function payload.
+    let call = ToolRouter::build_tool_call(ResponseItem::FunctionCall {
+        id: None,
+        name: "other_tool".to_string(),
+        namespace: None,
+        arguments: "{}".to_string(),
+        encrypted_function_args: None,
+        call_id: "call-other".to_string(),
+        internal_chat_message_metadata_passthrough: None,
+    })?
+    .expect("function_call should produce a tool call");
+    assert!(matches!(call.payload, ToolPayload::Function { .. }));
+
+    Ok(())
+}

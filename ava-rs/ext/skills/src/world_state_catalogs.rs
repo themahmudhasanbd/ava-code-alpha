@@ -246,11 +246,23 @@ impl<'a> CatalogContext<'a> {
         &self,
         catalogs: CatalogContributions,
     ) -> [RenderedCatalogContribution; 3] {
+        let mut host_catalog = catalogs.host.catalog.clone();
+        if self.config.include_instructions {
+            if let Some(shadow_turn) = self.thread_state.shadow_selection_turn(self.input.turn_id) {
+                let selected = shadow_turn.selected_skill_resources(5);
+                host_catalog.entries.retain(|entry| {
+                    let res = crate::shadow_selection_experiment::normalize_skill_resource(
+                        entry.main_prompt.as_str(),
+                    );
+                    selected.contains(&res)
+                });
+            }
+        }
         let rendered = if self.config.include_instructions {
             render_combined_available_skills(
                 &catalogs.executor.catalog,
                 &catalogs.orchestrator.catalog,
-                &catalogs.host.catalog,
+                &host_catalog,
                 self.metadata_budget,
                 self.include_usage,
             )

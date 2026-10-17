@@ -1653,7 +1653,14 @@ async fn run_sampling_request(
     let mut executed_tool_calls_by_output = HashMap::new();
     let mut tried_models = HashSet::new();
     tried_models.insert(current_step_context.settings.model_info.slug.clone());
-    tried_models.insert(current_step_context.settings.selected().collaboration_mode.model().to_string());
+    tried_models.insert(
+        current_step_context
+            .settings
+            .selected()
+            .collaboration_mode
+            .model()
+            .to_string(),
+    );
 
     loop {
         // Running code-mode cells can request review while this response is in flight.
@@ -1731,22 +1738,30 @@ async fn run_sampling_request(
         .await
         {
             // Check fallback chain
-            let fallback_target = turn_context.config.model_fallback_chain.iter().find(|m| {
-                let m_str = m.trim();
-                !m_str.is_empty()
-                    && !tried_models.contains(m_str)
-                    && m_str != current_step_context.settings.model_info.slug.as_str()
-            }).cloned();
+            let fallback_target = turn_context
+                .config
+                .model_fallback_chain
+                .iter()
+                .find(|m| {
+                    let m_str = m.trim();
+                    !m_str.is_empty()
+                        && !tried_models.contains(m_str)
+                        && m_str != current_step_context.settings.model_info.slug.as_str()
+                })
+                .cloned();
 
             if let Some(next_model) = fallback_target {
                 let from_model = current_step_context.settings.model_info.slug.clone();
                 let to_model = next_model.clone();
 
                 let reason = match stream_err.details() {
-                    AvaErrorDetails::RateLimitExceeded(_) | AvaErrorDetails::UsageLimitReached(_) => {
+                    AvaErrorDetails::RateLimitExceeded(_)
+                    | AvaErrorDetails::UsageLimitReached(_) => {
                         ava_protocol::protocol::ModelRerouteReason::RateLimitFallback
                     }
-                    AvaErrorDetails::UnexpectedStatus(resp) if resp.status.as_u16() == 401 || resp.status.as_u16() == 403 => {
+                    AvaErrorDetails::UnexpectedStatus(resp)
+                        if resp.status.as_u16() == 401 || resp.status.as_u16() == 403 =>
+                    {
                         ava_protocol::protocol::ModelRerouteReason::AuthFailureFallback
                     }
                     AvaErrorDetails::UnexpectedStatus(resp) if resp.status.is_server_error() => {
@@ -1768,11 +1783,13 @@ async fn run_sampling_request(
 
                 sess.send_event(
                     &turn_context,
-                    ava_protocol::protocol::EventMsg::ModelReroute(ava_protocol::protocol::ModelRerouteEvent {
-                        from_model: from_model.clone(),
-                        to_model: to_model.clone(),
-                        reason,
-                    }),
+                    ava_protocol::protocol::EventMsg::ModelReroute(
+                        ava_protocol::protocol::ModelRerouteEvent {
+                            from_model: from_model.clone(),
+                            to_model: to_model.clone(),
+                            reason,
+                        },
+                    ),
                 )
                 .await;
 
@@ -1785,20 +1802,30 @@ async fn run_sampling_request(
                 .await;
 
                 let mut selected = current_step_context.settings.selected().clone();
-                selected.collaboration_mode = selected.collaboration_mode.with_updates(
-                    Some(to_model.clone()),
-                    None,
-                    None,
+                selected.collaboration_mode =
+                    selected
+                        .collaboration_mode
+                        .with_updates(Some(to_model.clone()), None, None);
+                let overrides = crate::session::step_settings::ModelInfoOverrides::from(
+                    turn_context.config.to_models_manager_config(),
                 );
-                let overrides = crate::session::step_settings::ModelInfoOverrides::from(turn_context.config.to_models_manager_config());
-                let new_model_info = Arc::new(selected.resolve_model_info(sess.services.models_manager.as_ref(), &overrides).await);
-                let new_resolved_settings = Arc::new(crate::session::step_settings::ResolvedStepSettings::new(
-                    Arc::new(selected),
-                    new_model_info,
-                    sess.features.enabled(ava_features::Feature::FastMode),
-                ));
-                let new_session_telemetry = new_resolved_settings.telemetry(&turn_context.session_telemetry);
-                let prepared_recommendations = PreparedToolRecommendations { auth: None, endpoint_candidates: None };
+                let new_model_info = Arc::new(
+                    selected
+                        .resolve_model_info(sess.services.models_manager.as_ref(), &overrides)
+                        .await,
+                );
+                let new_resolved_settings =
+                    Arc::new(crate::session::step_settings::ResolvedStepSettings::new(
+                        Arc::new(selected),
+                        new_model_info,
+                        sess.features.enabled(ava_features::Feature::FastMode),
+                    ));
+                let new_session_telemetry =
+                    new_resolved_settings.telemetry(&turn_context.session_telemetry);
+                let prepared_recommendations = PreparedToolRecommendations {
+                    auth: None,
+                    endpoint_candidates: None,
+                };
                 let new_tool_router = match built_tools(
                     sess.as_ref(),
                     turn_context.as_ref(),
@@ -1820,8 +1847,12 @@ async fn run_sampling_request(
                     token_budget: current_step_context.token_budget.clone(),
                     session_telemetry: new_session_telemetry,
                     environments: current_step_context.environments.clone(),
-                    selected_capability_roots: current_step_context.selected_capability_roots.clone(),
-                    executor_capability_discovery: current_step_context.executor_capability_discovery.clone(),
+                    selected_capability_roots: current_step_context
+                        .selected_capability_roots
+                        .clone(),
+                    executor_capability_discovery: current_step_context
+                        .executor_capability_discovery
+                        .clone(),
                     mcp: Arc::clone(&current_step_context.mcp),
                     tool_router: new_tool_router,
                     loaded_agents_md: current_step_context.loaded_agents_md.clone(),

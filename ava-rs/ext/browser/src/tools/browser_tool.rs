@@ -93,6 +93,20 @@ pub struct BrowserArgs {
     pub to_selector: Option<String>,
     /// Target ID for action=tab_switch and tab_close (from tab_list).
     pub target_id: Option<String>,
+    /// Clean session flag for action='open' (if true, bypasses saved cookies).
+    pub clean_session: Option<bool>,
+    /// Site URL for vault actions (vault_save).
+    pub site_url: Option<String>,
+    /// Target domain for vault actions (vault_save, vault_lookup).
+    pub domain: Option<String>,
+    /// Secret / password / bearer token for vault_save.
+    pub secret: Option<String>,
+    /// Auth type for vault_save ('password', 'bearer', 'cookie', etc.).
+    pub auth_type: Option<String>,
+    /// Notes / description for vault_save.
+    pub notes: Option<String>,
+    /// Credential ID for vault_delete.
+    pub id: Option<String>,
 }
 
 #[derive(Debug, Clone, Deserialize, JsonSchema)]

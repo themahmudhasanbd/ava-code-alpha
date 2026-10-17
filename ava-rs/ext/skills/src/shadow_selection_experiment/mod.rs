@@ -220,6 +220,7 @@ impl ShadowSelectionExperiment {
 
         ShadowSelectionTurnState {
             ranked_selections,
+            explicitly_selected_resources: explicitly_selected_skill_resources,
             turn_id: input.turn_id.clone(),
             query_script,
             eligible_skill_resources,
@@ -318,12 +319,33 @@ impl ShadowSelectionExperiment {
 
 pub(crate) struct ShadowSelectionTurnState {
     ranked_selections: Vec<RankedSelection>,
+    explicitly_selected_resources: HashSet<String>,
     turn_id: String,
     query_script: &'static str,
     eligible_skill_resources: HashSet<String>,
     seen_skill_resources: Mutex<HashSet<String>>,
     recent_skill_invocations: Arc<RecentSkillInvocations>,
     task_context: Arc<ShadowTaskContext>,
+}
+
+impl ShadowSelectionTurnState {
+    pub(crate) fn selected_skill_resources(&self, max: usize) -> HashSet<String> {
+        let mut set = self.explicitly_selected_resources.clone();
+        for ranked in &self.ranked_selections {
+            if ranked.method == "fielded_bm25_v1" || ranked.method == "weighted_lexical_v1" {
+                for res in ranked.skill_resources.iter().take(max) {
+                    set.insert(res.clone());
+                }
+                return set;
+            }
+        }
+        if let Some(ranked) = self.ranked_selections.first() {
+            for res in ranked.skill_resources.iter().take(max) {
+                set.insert(res.clone());
+            }
+        }
+        set
+    }
 }
 
 #[derive(Default)]
@@ -432,7 +454,7 @@ fn rank_bucket(rank: Option<usize>) -> &'static str {
     }
 }
 
-fn normalize_skill_resource(skill_resource: &str) -> String {
+pub(crate) fn normalize_skill_resource(skill_resource: &str) -> String {
     skill_resource.replace('\\', "/")
 }
 

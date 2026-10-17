@@ -604,7 +604,7 @@ pub enum ThreadStoreConfig {
 }
 
 /// Resolved .ava-code project context index options.
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct ProjectContextConfig {
     /// Master switch for the context index injection.
     pub enabled: bool,

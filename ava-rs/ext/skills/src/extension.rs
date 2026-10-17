@@ -433,6 +433,17 @@ where
                         );
                         selected.contains(&res)
                     });
+                } else {
+                    // Fallback: the skill ranker (shadow selection) did not run
+                    // for this turn. Dumping the full catalog into the prompt
+                    // blows the skill metadata budget ("Exceeded skills context
+                    // budget" warning, all descriptions stripped). Keep a
+                    // conservative minimal set instead — the model can discover
+                    // more skills dynamically via tool_search.
+                    const FALLBACK_MAX_SKILLS: usize = 5;
+                    if turn_catalog.entries.len() > FALLBACK_MAX_SKILLS {
+                        turn_catalog.entries.truncate(FALLBACK_MAX_SKILLS);
+                    }
                 }
                 let model_info = thread_store.get::<ModelInfo>();
                 let include_usage = model_info

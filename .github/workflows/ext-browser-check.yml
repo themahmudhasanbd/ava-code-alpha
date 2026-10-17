@@ -7,6 +7,7 @@ on:
       - browser-fix-*
     paths:
       - 'ava-rs/ext/browser/**'
+      - 'ava-rs/ext/skills/**'
       - 'ava-rs/core/src/tools/**'
       - '.github/workflows/ext-browser-check.yml'
 
@@ -26,3 +27,6 @@ jobs:
 
       - name: Check core crate (tool router fix)
         run: cd ava-rs && cargo check -p ava-core
+
+      - name: Check skills extension crate (ranker fallback fix)
+        run: cd ava-rs && cargo check -p ava-skills-extension

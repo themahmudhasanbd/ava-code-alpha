@@ -235,11 +235,39 @@ impl ToolSearchHandler {
         query: &str,
         limit: usize,
     ) -> Result<Vec<LoadableToolSpec>, FunctionCallError> {
-        let results = self
+        let mut matched_ids: Vec<usize> = self
             .search_engine
             .search(query, limit)
             .into_iter()
             .map(|result| result.document.id)
+            .collect();
+
+        if matched_ids.len() < limit {
+            let q_lower = query.to_lowercase();
+            let query_tokens: Vec<&str> = q_lower
+                .split(|c: char| !c.is_alphanumeric())
+                .filter(|s| !s.is_empty())
+                .collect();
+
+            for (idx, search_info) in self.search_infos.iter().enumerate() {
+                if matched_ids.contains(&idx) {
+                    continue;
+                }
+                let text_lower = search_info.entry.search_text.to_lowercase();
+                let matches = text_lower.contains(&q_lower)
+                    || (!query_tokens.is_empty()
+                        && query_tokens.iter().any(|tok| text_lower.contains(tok)));
+                if matches {
+                    matched_ids.push(idx);
+                    if matched_ids.len() >= limit {
+                        break;
+                    }
+                }
+            }
+        }
+
+        let results = matched_ids
+            .into_iter()
             .filter_map(|id| self.search_infos.get(id))
             .map(|search_info| &search_info.entry);
         self.search_output_tools(results)

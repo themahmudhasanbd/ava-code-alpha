@@ -84,7 +84,7 @@ export interface PartMeta {
   exitCode?: number | undefined;
   durationMs?: number | undefined;
   server?: string | undefined;
-  files?: { path: string; kind: string }[] | undefined;
+  files?: { path: string; kind: string; diff?: string | undefined }[] | undefined;
   steps?: PlanStep[] | undefined;
   tone?: "info" | "warning" | "error" | undefined;
   questions?: AgentQuestion[] | undefined;

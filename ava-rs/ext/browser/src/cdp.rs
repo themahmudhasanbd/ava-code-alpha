@@ -93,7 +93,12 @@ impl ChromeProcess {
             .arg("about:blank");
 
         if headless {
-            cmd.arg("--headless=new");
+            cmd.arg("--headless=new")
+                .arg("--run-all-compositor-stages-before-draw")
+                .arg("--hide-scrollbars")
+                .arg("--mute-audio")
+                .arg("--no-first-run")
+                .arg("--no-default-browser-check");
         }
 
         cmd.stderr(std::process::Stdio::piped());

@@ -255,7 +255,10 @@ impl BrowserEngine {
 
         let domain = url::Url::parse(&target_url)
             .ok()
-            .and_then(|u| u.host_str().map(|h| h.trim_start_matches("www.").to_string()))
+            .and_then(|u| {
+                u.host_str()
+                    .map(|h| h.trim_start_matches("www.").to_string())
+            })
             .unwrap_or_default();
 
         if clean_session {
@@ -987,9 +990,10 @@ impl BrowserEngine {
         // Capture with blank detection + retry: an all-white PNG means the
         // compositor had no frame ready; wait briefly and retry.
         let mut last_problem = String::from("unknown error");
+        let mut fallback_bytes = None;
         for attempt in 0..3u32 {
             if attempt > 0 {
-                sleep(Duration::from_millis(900)).await;
+                sleep(Duration::from_millis(500)).await;
                 let _ = client.call("Page.bringToFront", None).await;
             }
             let res = client
@@ -1010,6 +1014,7 @@ impl BrowserEngine {
                     "capture #{} returned a blank page (compositor had no frame)",
                     attempt + 1
                 );
+                fallback_bytes = Some(bytes);
                 continue;
             }
 
@@ -1019,39 +1024,49 @@ impl BrowserEngine {
 
             return Ok(output_path.display().to_string());
         }
+
+        // If all retries were flagged as blank/light, still write out the fallback capture
+        // so the model/user gets the real page rendering rather than an unrecoverable crash loop.
+        if let Some(bytes) = fallback_bytes {
+            tokio::fs::write(&output_path, &bytes).await.map_err(|e| {
+                format!("Failed to write fallback screenshot file ({output_path:?}): {e}")
+            })?;
+            return Ok(output_path.display().to_string());
+        }
+
         Err(format!(
             "Screenshot failed after 3 attempts (blank captures): {last_problem}"
         ))
     }
 
-/// Returns true if the PNG decodes to an (almost) entirely white image.
-/// Used to detect blank captures when the compositor had no frame ready.
-fn is_blank_png(bytes: &[u8]) -> bool {
-    let img = match image::load_from_memory(bytes) {
-        Ok(img) => img.to_rgb8(),
-        Err(_) => return false,
-    };
-    let (w, h) = (img.width(), img.height());
-    if w == 0 || h == 0 {
-        return true;
-    }
-    // Sample a grid; any real page has non-white pixels.
-    let step_x = (w / 24).max(1);
-    let step_y = (h / 24).max(1);
-    let mut non_white = 0u32;
-    for y in (0..h).step_by(step_y as usize) {
-        for x in (0..w).step_by(step_x as usize) {
-            let p = img.get_pixel(x, y);
-            if p[0] < 250 || p[1] < 250 || p[2] < 250 {
-                non_white += 1;
-                if non_white > 8 {
-                    return false;
+    /// Returns true if the PNG decodes to an (almost) entirely white image.
+    /// Used to detect blank captures when the compositor had no frame ready.
+    fn is_blank_png(bytes: &[u8]) -> bool {
+        let img = match image::load_from_memory(bytes) {
+            Ok(img) => img.to_rgb8(),
+            Err(_) => return false,
+        };
+        let (w, h) = (img.width(), img.height());
+        if w == 0 || h == 0 {
+            return true;
+        }
+        // Sample a grid; any real page has non-white pixels.
+        let step_x = (w / 24).max(1);
+        let step_y = (h / 24).max(1);
+        let mut non_white = 0u32;
+        for y in (0..h).step_by(step_y as usize) {
+            for x in (0..w).step_by(step_x as usize) {
+                let p = img.get_pixel(x, y);
+                if p[0] < 250 || p[1] < 250 || p[2] < 250 {
+                    non_white += 1;
+                    if non_white > 8 {
+                        return false;
+                    }
                 }
             }
         }
+        true
     }
-    true
-}
 
     pub async fn get_outer_html(&self, selector: Option<&str>) -> Result<String, String> {
         let script = if let Some(sel) = selector {

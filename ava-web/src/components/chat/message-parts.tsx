@@ -7,18 +7,25 @@ import {
   Circle,
   CircleDot,
   Copy,
+  FileImage,
   FilePen,
   Globe,
+  Hourglass,
   Info,
   ListChecks,
   Loader2,
+  Moon,
   Plug,
+  Server,
+  Sparkles,
   TerminalSquare,
+  UserCog,
   Wrench,
   X,
 } from "lucide-react";
 
 import { Message, MessageAction, MessageActions, MessageContent } from "@/components/ai-elements/message";
+import { useAva } from "@/state/ava-provider";
 import { RichResponse } from "./rich-response";
 import { AttachmentCard, splitAttachmentSegments } from "./attachment-card";
 import { Shimmer } from "@/components/ai-elements/shimmer";
@@ -28,6 +35,8 @@ import { AIMascot } from "@/components/ui/ask-ai";
 import type { ChatMessage, MessagePart } from "@/core/types";
 import { isApprovalMethod } from "@/core/api/chat";
 import { cn } from "@/lib/utils";
+
+const str = (v: unknown, d = "") => (v == null ? d : String(v));
 
 // ---------- helpers -------------------------------------------------------
 
@@ -47,6 +56,13 @@ function toolIcon(part: MessagePart) {
   if (part.toolName === "Terminal") return TerminalSquare;
   if (part.toolName === "File change") return FilePen;
   if (part.toolName === "Web search") return Globe;
+  if (part.toolName === "Browser") return Globe;
+  if (part.toolName === "Generate image") return Sparkles;
+  if (part.toolName === "View image") return FileImage;
+  if (part.toolName === "Sleep") return Hourglass;
+  if (part.toolName === "Collab agent") return UserCog;
+  if (part.toolName === "Sub-agent") return Server;
+  if (part.toolName === "Memory") return Brain;
   if (part.meta?.server) return Plug;
   return Wrench;
 }
@@ -127,15 +143,115 @@ function StepShell({ part, title, subtitle, children }: { part: MessagePart; tit
 function TerminalOutput({ text, running }: { text?: string | undefined; running?: boolean }) {
   if (!text && !running) return <p className="px-3 py-2 text-xs text-muted-foreground">No output</p>;
   return (
-    <pre className="max-h-72 overflow-auto bg-foreground/[0.04] px-3 py-2 font-mono text-[11px] leading-5 whitespace-pre-wrap break-all">
-      {text}
-      {running && <span className="ml-0.5 inline-block h-3 w-1.5 animate-pulse bg-foreground/60 align-middle" />}
-    </pre>
+    <div className="max-h-72 overflow-auto bg-foreground/[0.04]">
+      <pre className="w-max min-w-full px-3 py-2 font-mono text-[11px] leading-5 whitespace-pre">
+        {text}
+        {running && <span className="ml-0.5 inline-block h-3 w-1.5 animate-pulse bg-foreground/60 align-middle" />}
+      </pre>
+    </div>
+  );
+}
+
+const DIFF_ADD_BG = "bg-success/[0.16]";
+const DIFF_DEL_BG = "bg-destructive/[0.16]";
+const DIFF_CHUNK_BG = "bg-primary/[0.14]";
+
+function DiffView({ diff }: { diff?: string | undefined }) {
+  if (!diff?.trim()) return null;
+  const lines = diff.replace(/\\\\no newline at end of file/g, "").split("\n");
+  return (
+    <div className="max-h-96 overflow-auto bg-foreground/[0.03]">
+      <div className="w-max min-w-full py-1">
+        {lines.map((line, idx) => {
+          const isAdd = line.startsWith("+");
+          const isDel = line.startsWith("-");
+          const isChunk = line.startsWith("@@");
+          return (
+            <div
+              key={idx}
+              className={cn(
+                "px-3 py-[1px] font-mono text-[11px] leading-5 whitespace-pre",
+                isAdd && DIFF_ADD_BG,
+                isDel && DIFF_DEL_BG,
+                isChunk && DIFF_CHUNK_BG,
+              )}
+            >
+              <span className={cn(
+                "mr-2 select-none",
+                isAdd && "font-bold text-success",
+                isDel && "font-bold text-destructive",
+                isChunk && "font-bold text-primary",
+              )}>
+                {isAdd ? "+" : isDel ? "-" : isChunk ? "@" : " "}
+              </span>
+              <span className={cn(
+                isAdd && "text-success",
+                isDel && "text-destructive",
+                isChunk && "text-primary",
+              )}>
+                {line}
+              </span>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+
+function ImageViewPreview({ path }: { path?: string | undefined }) {
+  const { rpc } = useAva();
+  const [uri, setUri] = useState<string | null>(null);
+  const [err, setErr] = useState(false);
+
+  useEffect(() => {
+    let alive = true;
+    if (!path || !rpc) return;
+    rpc.call<{ dataBase64?: string }>("fs/readFile", { path })
+      .then((res) => {
+        if (!alive || !res.dataBase64) return;
+        const ext = path.split(".").pop()?.toLowerCase() ?? "";
+        const mime = ext === "svg" ? "image/svg+xml" : `image/${ext === "jpg" ? "jpeg" : ext}`;
+        setUri(`data:${mime};base64,${res.dataBase64}`);
+      })
+      .catch(() => { if (alive) setErr(true); });
+    return () => { alive = false; };
+  }, [path, rpc]);
+
+  if (!path) return null;
+  if (err) return <p className="px-3 py-2 text-xs text-muted-foreground">Could not load image preview.</p>;
+  if (!uri) return (
+    <div className="flex items-center gap-2 px-3 py-3 text-xs text-muted-foreground">
+      <Loader2 className="size-3.5 animate-spin" /> Loading image…
+    </div>
+  );
+  return (
+    <div className="px-3 pb-3">
+      <img src={uri} alt={path.split("/").pop() ?? "preview"} className="max-h-72 max-w-full rounded-lg border border-border/40 object-contain" />
+      <p className="mt-1.5 truncate font-mono text-[11px] text-muted-foreground">{path}</p>
+    </div>
   );
 }
 
 function ToolStep({ part }: { part: MessagePart }) {
   const m = part.meta ?? {};
+  const genericContent = (
+    <>
+      <ToolInput input={part.input} />
+      {part.output ? (
+        <div className="space-y-1 px-4 pb-3">
+          <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{part.status === "error" ? "Error" : "Result"}</p>
+          <TerminalOutput text={part.output} />
+        </div>
+      ) : null}
+    </>
+  );
+  const simpleCard = (title: string, subtitle: string | undefined, displayName: string) => (
+    <StepShell part={part} title={title || displayName} subtitle={title === displayName ? (m.server ? `via ${m.server}` : undefined) : subtitle}>
+      {genericContent}
+    </StepShell>
+  );
   if (part.toolName === "Terminal") {
     const sub = [m.cwd, m.exitCode != null ? `exit ${m.exitCode}` : part.status === "running" ? "running…" : ""].filter(Boolean).join(" · ");
     return (
@@ -144,18 +260,44 @@ function ToolStep({ part }: { part: MessagePart }) {
       </StepShell>
     );
   }
+  if (part.toolName === "Web search") return simpleCard(m.command ?? "", "Searching the web", "Web search");
+  if (part.toolName === "Browser") return simpleCard(m.command ?? "", "Browser automation", "Browser");
+  if (part.toolName === "Generate image") return simpleCard(m.command ?? "", "Image generation", "Generate image");
+  if (part.toolName === "View image") {
+    const raw = part.input as { path?: string; filePath?: string } | string | undefined;
+    const imgPath = typeof raw === "string" ? raw : str(raw?.path ?? raw?.filePath);
+    return (
+      <StepShell part={part} title={`Viewed ${imgPath.split("/").pop() || "image"}`} subtitle={imgPath}>
+        <ImageViewPreview path={imgPath} />
+      </StepShell>
+    );
+  }
+  if (part.toolName === "Sleep") return <StepShell part={part} title={m.command || "Sleep"} subtitle="Waiting">{null}</StepShell>;
+  if (part.toolName === "Collab agent") return simpleCard(m.command ?? "", "Multi-agent coordination", "Collab agent");
+  if (part.toolName === "Sub-agent") return simpleCard(m.command ?? "", "Sub-agent activity", "Sub-agent");
+  if (part.toolName === "Memory") return simpleCard(m.command ?? "", "Memory operations", "Memory");
   if (part.toolName === "File change") {
     const files = m.files ?? [];
     return (
       <StepShell part={part} title={files.length === 1 ? `Edited ${files[0]!.path.split("/").pop()}` : `Edited ${files.length} files`} subtitle={files[0]?.path}>
-        <ul className="space-y-1 px-3 py-2">
-          {files.map((f) => (
-            <li key={f.path} className="flex items-center gap-2 font-mono text-[11px]">
-              <span className="rounded bg-secondary px-1.5 py-0.5 text-[10px] uppercase">{f.kind}</span>
-              <span className="truncate">{f.path}</span>
-            </li>
-          ))}
-        </ul>
+        {files.length === 1 && files[0]!.diff ? (
+          <DiffView diff={files[0]!.diff} />
+        ) : (
+          <ul className="space-y-1 px-3 py-2">
+            {files.map((f) => (
+              <li key={f.path} className="flex items-center gap-2 font-mono text-[11px]">
+                <span className="rounded bg-secondary px-1.5 py-0.5 text-[10px] uppercase">{f.kind}</span>
+                <span className="truncate">{f.path}</span>
+              </li>
+            ))}
+            {files.filter((f) => f.diff).map((f) => (
+              <li key={`${f.path}_diff`} className="mt-2 -mx-1">
+                <p className="mb-1 px-1 font-mono text-[10px] uppercase text-muted-foreground">{f.path.split("/").pop()}</p>
+                <DiffView diff={f.diff} />
+              </li>
+            ))}
+          </ul>
+        )}
       </StepShell>
     );
   }

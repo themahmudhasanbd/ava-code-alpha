@@ -171,15 +171,22 @@ impl BrowserSubagentTool {
         if let Some(url) = &target_url {
             let model_approved = args.approved.unwrap_or(false);
             if let ApprovalOutcome::NeedsApproval(prompt) =
-                self.approval_gate.check("open", Some(url), None, model_approved)
+                self.approval_gate
+                    .check("open", Some(url), None, model_approved)
             {
                 return Err(FunctionCallError::RespondToModel(prompt));
             }
 
-            let cur_url = coordinator.engine().get_current_url().await.unwrap_or_default();
+            let cur_url = coordinator
+                .engine()
+                .get_current_url()
+                .await
+                .unwrap_or_default();
             if cur_url.is_empty() || cur_url == "about:blank" || !urls_share_domain(&cur_url, url) {
                 let clean = args.clean_session.unwrap_or(false);
-                let _ = coordinator.open_url_with_session(url, None, None, Some(&args.task_name), clean).await;
+                let _ = coordinator
+                    .open_url_with_session(url, None, None, Some(&args.task_name), clean)
+                    .await;
                 sleep(Duration::from_millis(600)).await;
             }
         }
@@ -217,7 +224,9 @@ impl BrowserSubagentTool {
         let mut from_vault = false;
         if (username_opt.is_none() || password_opt.is_none()) && target_url.is_some() {
             if let Some(domain) = target_url.as_ref().and_then(|u| extract_domain_from_url(u)) {
-                if let Some((vault_user, vault_pass)) = lookup_vault_credential(&coordinator, &domain).await {
+                if let Some((vault_user, vault_pass)) =
+                    lookup_vault_credential(&coordinator, &domain).await
+                {
                     if username_opt.is_none() {
                         username_opt = Some(vault_user);
                     }
@@ -276,11 +285,13 @@ impl BrowserSubagentTool {
 
             match login_res {
                 Ok(res) => {
-                    let screenshot_path = capture_subagent_screenshot(&coordinator, &subagent_id).await;
+                    let screenshot_path =
+                        capture_subagent_screenshot(&coordinator, &subagent_id).await;
                     let page_state = coordinator.engine().get_page_state().await.ok();
                     let suggested_widget = if !from_vault {
                         target_url.as_ref().map(|url| {
-                            let domain = extract_domain_from_url(url).unwrap_or_else(|| url.clone());
+                            let domain =
+                                extract_domain_from_url(url).unwrap_or_else(|| url.clone());
                             json!({
                                 "widget": "save_credentials",
                                 "site_url": url,
@@ -311,7 +322,8 @@ impl BrowserSubagentTool {
                     return Ok(Box::new(JsonToolOutput::new(json!(resp))));
                 }
                 Err(err) => {
-                    let screenshot_path = capture_subagent_screenshot(&coordinator, &subagent_id).await;
+                    let screenshot_path =
+                        capture_subagent_screenshot(&coordinator, &subagent_id).await;
                     let page_state = coordinator.engine().get_page_state().await.ok();
                     let resp = BrowserSubagentResponse {
                         success: false,
@@ -324,7 +336,9 @@ impl BrowserSubagentTool {
                         screenshot_path,
                         live_stream_ws: Some("ws://127.0.0.1:40061".to_string()),
                         obstacle: None,
-                        prompt_for_supervisor: Some(format!("Login failed: {err}. User can adjust credentials and retry.")),
+                        prompt_for_supervisor: Some(format!(
+                            "Login failed: {err}. User can adjust credentials and retry."
+                        )),
                         suggested_widget: None,
                     };
                     return Ok(Box::new(JsonToolOutput::new(json!(resp))));
@@ -337,7 +351,10 @@ impl BrowserSubagentTool {
             let otp_selector = "input[autocomplete='one-time-code'], input[name*='otp' i], input[name*='code' i], input[name*='token' i], input[type='text'], input[type='number']";
             let _ = coordinator.engine().fill(otp_selector, &code).await;
             sleep(Duration::from_millis(300)).await;
-            let _ = coordinator.engine().click("button[type='submit'], input[type='submit'], button").await;
+            let _ = coordinator
+                .engine()
+                .click("button[type='submit'], input[type='submit'], button")
+                .await;
             sleep(Duration::from_secs(2)).await;
 
             let post_obs = coordinator.inspect_obstacles().await;
@@ -356,7 +373,10 @@ impl BrowserSubagentTool {
                     screenshot_path,
                     live_stream_ws: Some("ws://127.0.0.1:40061".to_string()),
                     obstacle: Some(json!(post_obs)),
-                    prompt_for_supervisor: Some(format!("After entering verification code, obstacle was detected: {}. Resume with reused_subagent_id='{subagent_id}'.", post_obs.title)),
+                    prompt_for_supervisor: Some(format!(
+                        "After entering verification code, obstacle was detected: {}. Resume with reused_subagent_id='{subagent_id}'.",
+                        post_obs.title
+                    )),
                     suggested_widget: None,
                 };
                 return Ok(Box::new(JsonToolOutput::new(json!(resp))));
@@ -380,14 +400,21 @@ impl BrowserSubagentTool {
         }
 
         // 6. Default: Observe & Capture State
-        let obs = coordinator.observe(false, false).await.map_err(FunctionCallError::RespondToModel)?;
+        let obs = coordinator
+            .observe(false, false)
+            .await
+            .map_err(FunctionCallError::RespondToModel)?;
         let screenshot_path = capture_subagent_screenshot(&coordinator, &subagent_id).await;
         let resp = BrowserSubagentResponse {
             success: true,
             subagent_id,
             status: "completed".to_string(),
             task_name: args.task_name,
-            summary: format!("Subagent active on '{}'. Found {} interactive elements.", obs.title, obs.elements.len()),
+            summary: format!(
+                "Subagent active on '{}'. Found {} interactive elements.",
+                obs.title,
+                obs.elements.len()
+            ),
             url: Some(obs.url),
             title: Some(obs.title),
             screenshot_path,
@@ -400,9 +427,16 @@ impl BrowserSubagentTool {
     }
 }
 
-async fn capture_subagent_screenshot(coordinator: &Arc<BrowserCoordinator>, subagent_id: &str) -> Option<String> {
+async fn capture_subagent_screenshot(
+    coordinator: &Arc<BrowserCoordinator>,
+    subagent_id: &str,
+) -> Option<String> {
     let out_path = format!("/tmp/ava-{subagent_id}-screenshot.png");
-    match coordinator.engine().screenshot("viewport", None, Some(&out_path)).await {
+    match coordinator
+        .engine()
+        .screenshot("viewport", None, Some(&out_path))
+        .await
+    {
         Ok(_) => Some(out_path),
         Err(_) => None,
     }
@@ -427,23 +461,59 @@ fn extract_credentials_from_text(text: &str) -> (Option<String>, Option<String>)
 
     // Search for email
     for word in text.split_whitespace() {
-        let clean = word.trim_matches(|c: char| c == '"' || c == '\'' || c == ',' || c == ';');
-        if clean.contains('@') && clean.contains('.') {
+        let clean = word.trim_matches(|c: char| {
+            c == '"' || c == '\'' || c == ',' || c == ';' || c == '(' || c == ')' || c == '`'
+        });
+        if clean.contains('@') && clean.contains('.') && !clean.starts_with("http") {
             username = Some(clean.to_string());
             break;
         }
     }
 
-    // Search for password after "password" keyword or known pattern
+    // Search for password after "password" keyword
     let lower = text.to_lowercase();
     if let Some(idx) = lower.find("password") {
         let rem = &text[idx + 8..];
         for word in rem.split_whitespace() {
-            let clean = word.trim_matches(|c: char| c == ':' || c == '=' || c == '"' || c == '\'' || c == ',' || c == ';');
-            if !clean.is_empty() && clean != "is" && clean != "to" {
-                password = Some(clean.to_string());
-                break;
+            let clean = word.trim_matches(|c: char| {
+                c == ':'
+                    || c == '='
+                    || c == '"'
+                    || c == '\''
+                    || c == ','
+                    || c == ';'
+                    || c == '-'
+                    || c == '*'
+                    || c == '`'
+                    || c == '('
+                    || c == ')'
+            });
+            if clean.is_empty() {
+                continue;
             }
+            let lower_clean = clean.to_lowercase();
+            if matches!(
+                lower_clean.as_str(),
+                "is" | "to"
+                    | "field"
+                    | "input"
+                    | "value"
+                    | "val"
+                    | "for"
+                    | "as"
+                    | "credential"
+                    | "credentials"
+                    | "in"
+                    | "the"
+                    | "key"
+                    | "secret"
+                    | "box"
+                    | "text"
+            ) {
+                continue;
+            }
+            password = Some(clean.to_string());
+            break;
         }
     }
 
@@ -462,7 +532,9 @@ fn extract_otp_code(text: &str) -> Option<String> {
 
 fn urls_share_domain(url_a: &str, url_b: &str) -> bool {
     fn host(u: &str) -> Option<&str> {
-        let s = u.trim_start_matches("https://").trim_start_matches("http://");
+        let s = u
+            .trim_start_matches("https://")
+            .trim_start_matches("http://");
         s.split('/').next()
     }
     match (host(url_a), host(url_b)) {
@@ -472,7 +544,9 @@ fn urls_share_domain(url_a: &str, url_b: &str) -> bool {
 }
 
 fn extract_domain_from_url(url: &str) -> Option<String> {
-    let s = url.trim_start_matches("https://").trim_start_matches("http://");
+    let s = url
+        .trim_start_matches("https://")
+        .trim_start_matches("http://");
     let host = s.split('/').next()?.split(':').next()?;
     if host.is_empty() {
         None
@@ -489,4 +563,24 @@ async fn lookup_vault_credential(
         return Some((cred.username, cred.secret));
     }
     None
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_extract_credentials_formats() {
+        let (u, p) = extract_credentials_from_text(
+            "Log in to https://veliqbd.com/admin with Email: themahmudhasanbd@gmail.com and Password field: veliq@095",
+        );
+        assert_eq!(u.as_deref(), Some("themahmudhasanbd@gmail.com"));
+        assert_eq!(p.as_deref(), Some("veliq@095"));
+
+        let (_, p2) = extract_credentials_from_text("- Password input: secret!123");
+        assert_eq!(p2.as_deref(), Some("secret!123"));
+
+        let (_, p3) = extract_credentials_from_text("Password: secret");
+        assert_eq!(p3.as_deref(), Some("secret"));
+    }
 }

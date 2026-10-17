@@ -160,7 +160,13 @@ impl BrowserEngine {
     pub async fn ensure_client(&self) -> Result<Arc<CdpClient>, String> {
         let mut client_guard = self.cdp_client.lock().await;
         if let Some(client) = &*client_guard {
-            return Ok(Arc::clone(client));
+            // The attached target may have been destroyed since (renderer
+            // crash, tab closed). Re-attach if needed instead of using a
+            // stale session; relaunch Chrome if recovery fails.
+            if client.ensure_live_session().await.is_ok() {
+                return Ok(Arc::clone(client));
+            }
+            *client_guard = None;
         }
 
         let mut process_guard = self.chrome_process.lock().await;
@@ -1526,6 +1532,12 @@ impl BrowserEngine {
             .and_then(Value::as_str)
             .unwrap_or_default()
             .to_string();
+        // Move the CDP session to the new tab; otherwise all subsequent
+        // calls would keep operating on the previous tab.
+        client
+            .attach_to_target(&target_id)
+            .await
+            .map_err(|e| format!("tab_new: session attach failed: {e}"))?;
         Ok(target_id)
     }
 
@@ -1539,6 +1551,12 @@ impl BrowserEngine {
             )
             .await
             .map_err(|e| format!("tab_switch failed: {e}"))?;
+        // ActivateTarget only changes visual focus; move the CDP session too,
+        // otherwise subsequent calls still hit the previous tab.
+        client
+            .attach_to_target(target_id)
+            .await
+            .map_err(|e| format!("tab_switch: session attach failed: {e}"))?;
         // Re-resolve refs for the newly active page.
         let _ = self.scan_dom().await;
         Ok(format!("Switched to tab {target_id}"))

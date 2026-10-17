@@ -1,0 +1,32 @@
+name: Browser Extension Quick Check
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - browser-fix-*
+    paths:
+      - 'ava-rs/ext/browser/**'
+      - 'ava-rs/ext/skills/**'
+      - 'ava-rs/core/src/tools/**'
+      - '.github/workflows/ext-browser-check.yml'
+
+jobs:
+  check:
+    name: cargo check changed crates
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Check browser extension crate
+        run: cd ava-rs && cargo check -p ava-browser-extension
+
+      - name: Check core crate (tool router fix)
+        run: cd ava-rs && cargo check -p ava-core
+
+      - name: Check skills extension crate (ranker fallback fix)
+        run: cd ava-rs && cargo check -p ava-skills-extension

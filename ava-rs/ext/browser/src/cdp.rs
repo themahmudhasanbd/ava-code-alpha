@@ -140,6 +140,7 @@ pub struct CdpClient {
     sink: Mutex<WsSink>,
     pending: Mutex<HashMap<u64, oneshot::Sender<Result<Value, String>>>>,
     session_id: RwLock<Option<String>>,
+    target_id: RwLock<Option<String>>,
     console_logs: Arc<Mutex<Vec<ConsoleLog>>>,
 }
 
@@ -158,6 +159,7 @@ impl CdpClient {
             sink: Mutex::new(sink),
             pending,
             session_id: RwLock::new(None),
+            target_id: RwLock::new(None),
             console_logs: console_logs.clone(),
         });
 
@@ -251,22 +253,49 @@ impl CdpClient {
     }
 
     async fn init_target_page(&self) -> Result<(), String> {
+        let target_id = self.pick_page_target().await?;
+        self.attach_to_target(&target_id).await
+    }
+
+    /// Pick the best page target: prefer one with a real http(s) URL over
+    /// about:blank, otherwise fall back to the first page target.
+    async fn pick_page_target(&self) -> Result<String, String> {
         let targets_val = self.call_browser("Target.getTargets", None).await?;
         let targets = targets_val
             .get("targetInfos")
             .and_then(Value::as_array)
             .ok_or_else(|| "No targetInfos found".to_string())?;
 
-        let page_target = targets
+        let pages: Vec<&Value> = targets
             .iter()
-            .find(|t| t.get("type").and_then(Value::as_str) == Some("page"))
-            .ok_or_else(|| "No page target available in Chrome".to_string())?;
+            .filter(|t| t.get("type").and_then(Value::as_str) == Some("page"))
+            .collect();
+        if pages.is_empty() {
+            return Err("No page target available in Chrome".to_string());
+        }
 
-        let target_id = page_target
+        let chosen = pages
+            .iter()
+            .find(|t| {
+                t.get("url")
+                    .and_then(Value::as_str)
+                    .map(|u| u.starts_with("http"))
+                    .unwrap_or(false)
+            })
+            .or(pages.first())
+            .unwrap();
+
+        chosen
             .get("targetId")
             .and_then(Value::as_str)
-            .ok_or_else(|| "Missing targetId".to_string())?;
+            .map(|s| s.to_string())
+            .ok_or_else(|| "Missing targetId".to_string())
+    }
 
+    /// Attach the CDP session to the given page target and re-enable the
+    /// domains we rely on. Must be called after tab creation/switch so that
+    /// subsequent calls operate on the intended page instead of a stale tab.
+    pub async fn attach_to_target(&self, target_id: &str) -> Result<(), String> {
         let attach_res = self
             .call_browser(
                 "Target.attachToTarget",
@@ -285,6 +314,10 @@ impl CdpClient {
             let mut s = self.session_id.write().await;
             *s = Some(session_id.to_string());
         }
+        {
+            let mut t = self.target_id.write().await;
+            *t = Some(target_id.to_string());
+        }
 
         self.call("Page.enable", None).await?;
         self.call("Runtime.enable", None).await?;
@@ -292,6 +325,31 @@ impl CdpClient {
         self.call("CSS.enable", None).await?;
         self.call("Network.enable", None).await?;
 
+        Ok(())
+    }
+
+    /// Verify the attached target still exists; re-attach to the best page
+    /// target if it was destroyed (renderer crash, tab closed, etc.).
+    pub async fn ensure_live_session(&self) -> Result<(), String> {
+        let current_target = { self.target_id.read().await.clone() };
+        let targets_val = self.call_browser("Target.getTargets", None).await?;
+        let alive = targets_val
+            .get("targetInfos")
+            .and_then(Value::as_array)
+            .map(|infos| {
+                infos.iter().any(|t| {
+                    t.get("type").and_then(Value::as_str) == Some("page")
+                        && current_target.as_ref().map(|ct| {
+                            t.get("targetId").and_then(Value::as_str) == Some(ct.as_str())
+                        })
+                        .unwrap_or(false)
+                })
+            })
+            .unwrap_or(false);
+        if !alive {
+            let target_id = self.pick_page_target().await?;
+            self.attach_to_target(&target_id).await?;
+        }
         Ok(())
     }
 

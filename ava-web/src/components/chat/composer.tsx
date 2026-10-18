@@ -3,7 +3,9 @@ import { useNavigate } from "@tanstack/react-router";
 import {
   Check,
   ChevronDown,
+  Cpu,
   Eraser,
+  Gauge,
   FileText,
   FolderOpen,
   Loader2,
@@ -35,6 +37,7 @@ import { cn } from "@/lib/utils";
 import { useAva } from "@/state/ava-provider";
 import { useModels } from "@/state/queries";
 import type { ChatStatus } from "@/state/use-chat";
+import { AnimatePresence, motion } from "motion/react";
 import { ServerMediaPicker, type ServerSelectedMedia } from "@/components/chat/server-media-picker";
 
 interface Props {
@@ -459,32 +462,13 @@ export const Composer = forwardRef<HTMLTextAreaElement, Props>(({ value, onChang
       </Panel>
 
       <Panel open={panel === "model"} title="Model & reasoning" onClose={close}>
-        <p className="px-3 pt-1 text-xs font-medium uppercase tracking-wide text-muted-foreground">Thinking depth</p>
-        <div className="flex flex-wrap gap-1.5 px-3 pb-3 pt-2">
-          {REASONING_EFFORTS.map((e) => (
-            <button
-              key={e}
-              type="button"
-              onClick={() => setEffort(e)}
-              className={cn(
-                "h-8 rounded-full border px-3 text-xs font-medium capitalize transition",
-                effort === e ? "border-primary bg-primary text-primary-foreground" : "border-border/60 hover:bg-accent",
-              )}
-            >
-              {e}
-            </button>
-          ))}
-        </div>
-        <p className="px-3 text-xs font-medium uppercase tracking-wide text-muted-foreground">Models ({models?.length ?? 0})</p>
-        {(models ?? []).map((m) => (
-          <OptionRow
-            key={m.id}
-            title={m.name + (m.isDefault ? " (server default)" : "")}
-            subtitle={m.description ?? m.id}
-            active={model?.id === m.id}
-            onClick={() => { setModelId(m.id); close(); }}
-          />
-        ))}
+        <ModelEffortTabs
+          models={models ?? []}
+          selectedModelId={model?.id}
+          effort={effort}
+          onSelectModel={(id) => { setModelId(id); close(); }}
+          onSelectEffort={setEffort}
+        />
       </Panel>
 
       <Panel open={panel === "sandbox"} title="Sandbox permission" onClose={close}>
@@ -505,3 +489,114 @@ export const Composer = forwardRef<HTMLTextAreaElement, Props>(({ value, onChang
   );
 });
 Composer.displayName = "Composer";
+
+const EFFORT_HINTS: Record<string, string> = {
+  low: "Fast replies, minimal thinking",
+  medium: "Balanced speed and depth",
+  max: "Deep multi-step reasoning",
+  ultra: "Hardest problems, longest deliberation",
+};
+
+/** Tabbed model + effort selector with an animated segmented switcher. */
+function ModelEffortTabs({
+  models,
+  selectedModelId,
+  effort,
+  onSelectModel,
+  onSelectEffort,
+}: {
+  models: NonNullable<Awaited<ReturnType<typeof useModels>>["data"]> | undefined;
+  selectedModelId?: string | undefined;
+  effort: string;
+  onSelectModel: (id: string) => void;
+  onSelectEffort: (effort: string) => void;
+}) {
+  const [tab, setTab] = useState<"model" | "effort">("model");
+  const tabs = [
+    { id: "model" as const, label: "Model", icon: Cpu },
+    { id: "effort" as const, label: "Effort", icon: Gauge },
+  ];
+
+  return (
+    <div className="pb-2">
+      <div className="relative mx-1 mb-3 grid grid-cols-2 gap-1 rounded-2xl bg-muted p-1">
+        {tabs.map(({ id, label, icon: Icon }) => {
+          const active = tab === id;
+          return (
+            <button
+              key={id}
+              type="button"
+              onClick={() => setTab(id)}
+              className={cn(
+                "relative z-10 flex h-9 items-center justify-center gap-2 rounded-xl text-sm font-medium transition-colors",
+                active ? "text-primary-foreground" : "text-muted-foreground hover:text-foreground",
+              )}
+            >
+              {active && (
+                <motion.span
+                  layoutId="model-effort-tab-pill"
+                  className="absolute inset-0 -z-10 rounded-xl bg-primary shadow-sm"
+                  transition={{ type: "spring", stiffness: 400, damping: 34 }}
+                />
+              )}
+              <Icon className="size-4" />
+              {label}
+            </button>
+          );
+        })}
+      </div>
+
+      <AnimatePresence mode="wait" initial={false}>
+        {tab === "model" ? (
+          <motion.div
+            key="model"
+            initial={{ opacity: 0, x: -14 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -14 }}
+            transition={{ duration: 0.18, ease: "easeOut" }}
+            className="space-y-1"
+          >
+            {(models ?? []).map((m) => (
+              <OptionRow
+                key={m.id}
+                title={m.name + (m.isDefault ? " (server default)" : "")}
+                subtitle={m.description ?? m.id}
+                active={selectedModelId === m.id}
+                onClick={() => onSelectModel(m.id)}
+              />
+            ))}
+          </motion.div>
+        ) : (
+          <motion.div
+            key="effort"
+            initial={{ opacity: 0, x: 14 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: 14 }}
+            transition={{ duration: 0.18, ease: "easeOut" }}
+            className="space-y-1.5 px-1"
+          >
+            {REASONING_EFFORTS.map((e) => (
+              <button
+                key={e}
+                type="button"
+                onClick={() => onSelectEffort(e)}
+                className={cn(
+                  "flex w-full items-center justify-between gap-3 rounded-2xl border px-4 py-3 text-left transition",
+                  effort === e
+                    ? "border-primary bg-primary/10 shadow-[0_0_0_1px_var(--primary)]"
+                    : "border-border/60 hover:bg-accent",
+                )}
+              >
+                <span>
+                  <span className="block text-sm font-medium capitalize">{e}</span>
+                  <span className="block text-xs text-muted-foreground">{EFFORT_HINTS[e] ?? ""}</span>
+                </span>
+                {effort === e && <Check className="size-4 shrink-0 text-primary" />}
+              </button>
+            ))}
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}

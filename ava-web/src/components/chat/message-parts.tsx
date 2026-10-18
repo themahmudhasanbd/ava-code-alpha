@@ -324,7 +324,11 @@ function ReasoningStep({ part }: { part: MessagePart }) {
         {running ? <Shimmer>Thinking…</Shimmer> : <span>Thought process</span>}
         <ChevronRight className="size-3.5 transition-transform group-open:rotate-90" />
       </summary>
-      {part.text && <p className="mt-2 whitespace-pre-wrap border-l-2 border-border pl-3 text-[13px] leading-6">{part.text.trim()}</p>}
+      {part.text && (
+        <div className="mt-2 border-l-2 border-border pl-3 text-[13px] leading-6 [&_ol]:my-1.5 [&_ol]:pl-4 [&_p]:my-1 [&_pre]:my-2 [&_ul]:my-1.5 [&_ul]:pl-4">
+          <RichResponse text={part.text.trim()} />
+        </div>
+      )}
     </details>
   );
 }

@@ -422,7 +422,7 @@ export function useChat() {
           setMessages(mergeWithLocalMessages([], historyMessages, true, 30, aid));
 
           try {
-            offRef.current?.();
+            (offRef.current as (() => void) | null)?.();
           } catch {}
           offRef.current = attachToRunningTurn(
             rpc,
@@ -610,6 +610,7 @@ export function useChat() {
           const qp = await addPromptToQueue(rpc, threadId, text.trim());
           if (qp) {
             await refreshQueue(threadId);
+            setStatus("streaming");
           } else {
             setError("Failed to queue prompt.");
           }
@@ -633,7 +634,18 @@ export function useChat() {
         { id: `u_${Date.now()}`, role: "user", parts: [{ id: "u", kind: "text", text, status: "done" }] },
         { id: aid, role: "assistant", parts: [], stats: { startedAt: Date.now() } },
       ]);
-      offRef.current = await runTurn(rpc, threadId, text, { ...(modelId ? { model: modelId } : {}), effort }, createHandlers(aid, threadId));
+      try {
+        offRef.current = await runTurn(rpc, threadId, text, { ...(modelId ? { model: modelId } : {}), effort }, createHandlers(aid, threadId));
+      } catch (e) {
+        streamingRef.current = false;
+        runningThreadIdRef.current = null;
+        aidRef.current = null;
+        turnIdRef.current = null;
+        setWorkingSessionId(null);
+        setStatus("error");
+        setError(formatCoreError(e, "Failed to start turn"));
+        setMessages((m) => m.filter((msg) => msg.id !== aid));
+      }
       return threadId;
     },
     [rpc, activeSessionId, modelId, effort, sandbox, setActiveSessionId, setWorkingSessionId, qc, refreshQueue, createHandlers]

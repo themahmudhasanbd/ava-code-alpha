@@ -70,6 +70,7 @@ export function ChatScreen() {
     setDraft("");
     setScrollSignal((n) => n + 1);
     const threadId = await send(text);
+    if (!threadId) setDraft(text); // restore the prompt if sending failed
     if (threadId && !activeSessionId) {
       void navigate({ to: "/session/$sessionId", params: { sessionId: threadId } });
     }

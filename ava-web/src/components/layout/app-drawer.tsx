@@ -16,6 +16,7 @@ import { SessionsList } from "./sessions-list";
 export function AppDrawer({ open, onOpenChange }: { open: boolean; onOpenChange: (o: boolean) => void }) {
   const { auth, status, signOut } = useAva();
   const close = () => onOpenChange(false);
+  const [tab, setTab] = useState<"menu" | "sessions">("sessions");
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
@@ -34,16 +35,11 @@ export function AppDrawer({ open, onOpenChange }: { open: boolean; onOpenChange:
           </div>
         </SheetHeader>
 
-        <Tabs defaultValue="sessions" className="flex min-h-0 flex-1 flex-col">
+        <Tabs value={tab} onValueChange={(v) => setTab(v as "menu" | "sessions")} className="flex min-h-0 flex-1 flex-col">
           <div className="px-3 pt-3">
             <TabsList className="grid h-10 w-full grid-cols-2 gap-1 rounded-2xl bg-muted p-1">
-              {(
-                [
-                  { value: "menu", label: "Menu" },
-                  { value: "sessions", label: "Sessions" },
-                ] as const
-              ).map(({ value, label }) => (
-                <DrawerTabTrigger key={value} value={value} label={label} />
+              {(["menu", "sessions"] as const).map((value) => (
+                <DrawerTabTrigger key={value} value={value} label={LABELS[value]} active={tab === value} />
               ))}
             </TabsList>
           </div>
@@ -94,41 +90,23 @@ export function AppDrawer({ open, onOpenChange }: { open: boolean; onOpenChange:
   );
 }
 
-/** Animated sliding pill matching the composer's model/effort tab switcher. */
-function DrawerTabTrigger({ value, label }: { value: "menu" | "sessions"; label: string }) {
+/** Drawer tab trigger with the animated sliding pill used in the composer. */
+function DrawerTabTrigger({ value, label, active }: { value: "menu" | "sessions"; label: string; active: boolean }) {
   return (
     <TabsTrigger
       value={value}
-      className="relative z-10 rounded-xl data-[state=active]:text-primary-foreground"
+      className="relative z-10 rounded-xl data-[state=active]:bg-transparent data-[state=active]:text-primary-foreground data-[state=active]:shadow-none"
     >
-      <DrawerTabPill tabValue={value} />
+      {active && (
+        <motion.span
+          layoutId="drawer-tab-pill"
+          className="absolute inset-0 -z-10 rounded-xl bg-primary shadow-sm"
+          transition={{ type: "spring", stiffness: 400, damping: 34 }}
+        />
+      )}
       {label}
     </TabsTrigger>
   );
 }
 
-function DrawerTabPill({ tabValue }: { tabValue: "menu" | "sessions" }) {
-  // Radix exposes active state via data-state on the parent trigger; re-render
-  // on click is ensured because Tabs value changes re-render children.
-  const [active, setActive] = useState(false);
-  useEffect(() => {
-    const check = () => {
-      const el = document.querySelector(`[role="tab"][data-state="active"]`) as HTMLElement | null;
-      setActive(!!el && !!el.closest("[data-slot='tabs']") && el.getAttribute("aria-selected") === "true" && el.textContent?.trim() === LABELS[tabValue]);
-    };
-    check();
-    const observer = new MutationObserver(check);
-    observer.observe(document.body, { attributes: true, subtree: true, attributeFilter: ["data-state", "aria-selected"] });
-    return () => observer.disconnect();
-  }, [tabValue]);
-  if (!active) return null;
-  return (
-    <motion.span
-      layoutId="drawer-tab-pill"
-      className="absolute inset-0 -z-10 rounded-xl bg-primary shadow-sm"
-      transition={{ type: "spring", stiffness: 400, damping: 34 }}
-    />
-  );
-}
-
-const LABELS: Record<string, string> = { menu: "Menu", sessions: "Sessions" };
+const LABELS = { menu: "Menu", sessions: "Sessions" } as const;

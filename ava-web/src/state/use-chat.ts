@@ -84,18 +84,24 @@ function mergeWithLocalMessages(
         (m) =>
           m.role === "assistant" &&
           ((activeAid && m.id === activeAid) ||
-            m.parts?.some((p) => p.status === "running"))
+            (!m.id.startsWith("live_") && m.parts?.some((p) => p.status === "running")))
       )
     : [];
 
-  // 2b. Preserve completed-turn workflow steps
+  // 2b. Preserve completed-turn workflow steps — but never carry workflow parts
+  // from a local LIVE bubble (live_* id) whose turn has since completed: they
+  // belong to a different turn and would graft onto the previous assistant
+  // message, duplicating another turn's reasoning/tools at its tail.
   let mostRecentLocalWorkflowIdx = -1;
   for (let i = 0; i < localMsgs.length; i++) {
     if (hasWorkflowSteps(localMsgs[i]!)) mostRecentLocalWorkflowIdx = i;
   }
+  const isLiveBubble = (m: ChatMessage) => m.role === "assistant" && m.id.startsWith("live_");
   const finishedWorkflowMsgs =
     !isTurnRunning && mostRecentLocalWorkflowIdx !== -1
-      ? localMsgs.filter(hasWorkflowSteps)
+      ? localMsgs.filter(
+          (m) => hasWorkflowSteps(m) && !isLiveBubble(m)
+        )
       : [];
 
   // 3. Filter server messages to avoid duplicating any active live assistant message
@@ -108,6 +114,10 @@ function mergeWithLocalMessages(
   const grafted = new Map<string, ChatMessage>();
   const keptLocal: ChatMessage[] = [];
   for (const lm of finishedWorkflowMsgs) {
+    if (lm.id.startsWith("live_")) {
+      keptLocal.push(lm);
+      continue;
+    }
     let target = serverById.get(lm.id);
     if (!target && localMsgs.indexOf(lm) === mostRecentLocalWorkflowIdx) {
       for (let i = serverFiltered.length - 1; i >= 0; i--) {

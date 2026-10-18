@@ -29,6 +29,18 @@ function mcpResultText(result: Raw): string {
   return JSON.stringify(result, null, 2);
 }
 
+/** Parses a JSON object embedded at the start of a tool output string. */
+function leadingJsonObject(text: string): Raw | undefined {
+  const trimmed = text.trimStart();
+  if (!trimmed.startsWith("{")) return undefined;
+  try {
+    const parsed = JSON.parse(trimmed);
+    return parsed && typeof parsed === "object" ? parsed : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
 function parseDomain(url: string): string {
   try {
     return new URL(url).hostname;
@@ -129,12 +141,73 @@ export function itemToPart(item: Raw, fallback: MessagePart["status"] = "done"):
       }));
       return { id, kind: "tool", text: "", toolName: "File change", input: item.changes, status, meta: { files } };
     }
-    case "mcpToolCall":
+    case "functionCallOutput": {
+      // Inbuilt extension tools (browser, view_image, tool_search, ...) arrive
+      // as FunctionCallOutput items — distinct from MCP tool calls.
+      const outputBody = item.output;
+      const outText = typeof outputBody === "string"
+        ? outputBody
+        : Array.isArray(outputBody?.contentItems ?? outputBody)
+          ? (outputBody.contentItems ?? outputBody)
+              .map((c: Raw) => str(c?.text ?? "")).filter(Boolean).join("\n")
+          : str(outputBody?.body ?? outputBody?.text ?? "");
+      const ok = outputBody?.success !== false;
+      const toolRaw = str(item.name, "Tool");
+      const toolLower = toolRaw.toLowerCase();
+      const args = item.arguments ?? {};
+      const outputObj = leadingJsonObject(outText);
+      let toolName = toolRaw.replace(/_/g, " ").replace(/\b\w/g, (ch: string) => ch.toUpperCase());
+      let metaCommand: string | undefined = undefined;
+      let input: Raw = args;
+      if (toolLower === "browser" || toolLower === "browser_subagent") {
+        toolName = "Browser";
+        const action = str(args?.action ?? outputObj?.action, "open");
+        const url = str(args?.url ?? outputObj?.url);
+        metaCommand = [action, url ? parseDomain(url) : str(outputObj?.title, "").slice(0, 50)].filter(Boolean).join(" ");
+        input = url || outputObj?.url || args;
+      } else if (toolLower === "view_image") {
+        toolName = "View image";
+        const path = str(args?.path ?? args?.filePath);
+        metaCommand = path.split("/").pop() || path;
+        input = path || args;
+      } else if (toolLower === "tool_search" || toolLower === "tool_search_tool") {
+        toolName = "Tool search";
+        metaCommand = str(args?.query ?? args?.pattern) || undefined;
+      } else if (toolLower === "attach_media") {
+        toolName = "Attach media";
+        const p = str(args?.path);
+        metaCommand = p.split("/").pop() || p;
+      }
       return {
-        id, kind: "tool", text: "", toolName: str(item.tool, "MCP tool"), input: item.arguments, status,
-        output: item.error ? str(item.error?.message ?? item.error) : mcpResultText(item.result),
-        meta: { server: str(item.server) || undefined, durationMs: num(item.durationMs) },
+        id, kind: "tool", text: "", toolName, input, status: ok ? status : "error",
+        output: outText,
+        meta: {
+          server: str(item.namespace) || undefined,
+          command: metaCommand,
+          durationMs: num(item.durationMs),
+        },
       };
+    }
+    case "mcpToolCall": {
+      const mcpToolRaw = str(item.tool, "MCP tool");
+      const server = str(item.server) || undefined;
+      // Normalize MCP tools that semantically belong to a richer card.
+      const toolLower = mcpToolRaw.toLowerCase();
+      const serverLower = (server ?? "").toLowerCase();
+      let toolName = mcpToolRaw;
+      let toolMetaCommand: string | undefined = undefined;
+      if (toolLower.includes("browser") || toolLower.includes("navigate") || serverLower.includes("puppeteer")) {
+        toolName = "Browser";
+        const args = item.arguments ?? {};
+        const url = str(args?.url ?? args?.href ?? "");
+        if (url) toolMetaCommand = `navigate ${parseDomain(url)}`.trim();
+      }
+      return {
+        id, kind: "tool", text: "", toolName, input: item.arguments, status,
+        output: item.error ? str(item.error?.message ?? item.error) : mcpResultText(item.result),
+        meta: { server, durationMs: num(item.durationMs), command: toolMetaCommand },
+      };
+    }
     case "webSearch": {
       const action = item.action ?? {};
       const q = str(item.query) || str(action.query) || (Array.isArray(action.queries) ? action.queries.join(", ") : "");

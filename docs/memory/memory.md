@@ -67,3 +67,8 @@
   1. Replaced fragile compound prompt key with `handledInitialPromptRef` to guarantee single-execution dispatch on mount and immediately cleared route params via `navigation.setParams({ initialPrompt: undefined })`.
   2. Protected active turn streams in `use-chat.ts` during new session ID assignment (`if (!isTurnCurrentlyStreaming)`) so listeners are preserved and live delta streaming continues unbroken.
   3. Re-exported and deployed updated web bundle to `/var/www/ava.mahmudhasan.pro/`.
+
+### test.thundernexus.com 502 Fix (2026-10-17)
+- Root cause: `ava-web` was rebuilt using bare `npm run build`, which uses the default Cloudflare worker Nitro preset. PM2 then ran the Cloudflare module as a Node process, so no HTTP listener started on `127.0.0.1:3102`.
+- Fix: Run `./build-node.sh` (sets `NITRO_PRESET=node-server`), rebuild, then restart `pm2 ava-web-test`.
+- Validation: `127.0.0.1:3102` and `https://test.thundernexus.com` both return HTTP 200.

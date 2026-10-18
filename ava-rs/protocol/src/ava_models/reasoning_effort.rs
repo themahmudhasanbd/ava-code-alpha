@@ -11,6 +11,11 @@ impl ModelInfo {
     /// Provides resilient cascading fallback across the 4 primary tiers: `low`, `medium`, `max`, `ultra`.
     /// If a custom endpoint or model does not support high-effort reasoning, it cascades
     /// downwards to the highest supported effort level without failing.
+    /// Resolves a selected effort to the value sent in an ordinary inference request.
+    ///
+    /// Only the 4 primary tiers exist: `low`, `medium`, `max`, `ultra`. If a model
+    /// does not support the requested tier it falls back to the nearest primary
+    /// tier instead of an unrelated legacy alias.
     pub fn resolve_reasoning_effort(&self, effort: ReasoningEffort) -> ReasoningEffort {
         if matches!(effort, ReasoningEffort::Persistent) {
             return ReasoningEffort::Custom("disabled".to_string());
@@ -28,125 +33,38 @@ impl ModelInfo {
             return effort;
         }
 
-        match effort {
-            ReasoningEffort::Ultra => self
-                .multi_agent_reasoning_effort
-                .as_ref()
-                .filter(|e| {
-                    *e != &ReasoningEffort::Ultra
-                        && self
-                            .supported_reasoning_levels
-                            .iter()
-                            .any(|preset| &preset.effort == *e)
-                })
-                .cloned()
-                .or_else(|| {
-                    self.supported_reasoning_levels
-                        .iter()
-                        .find(|preset| preset.effort == ReasoningEffort::Max)
-                        .or_else(|| {
-                            self.supported_reasoning_levels
-                                .iter()
-                                .find(|preset| preset.effort == ReasoningEffort::XHigh)
-                        })
-                        .or_else(|| {
-                            self.supported_reasoning_levels
-                                .iter()
-                                .find(|preset| preset.effort == ReasoningEffort::High)
-                        })
-                        .or_else(|| {
-                            self.supported_reasoning_levels
-                                .iter()
-                                .find(|preset| preset.effort == ReasoningEffort::Medium)
-                        })
-                        .or_else(|| {
-                            self.supported_reasoning_levels
-                                .iter()
-                                .find(|preset| preset.effort == ReasoningEffort::Low)
-                        })
-                        .or_else(|| {
-                            self.supported_reasoning_levels
-                                .iter()
-                                .find(|preset| preset.effort == ReasoningEffort::Minimal)
-                        })
-                        .or_else(|| {
-                            self.supported_reasoning_levels
-                                .iter()
-                                .rev()
-                                .find(|preset| preset.effort != ReasoningEffort::Ultra)
-                        })
-                        .map(|preset| preset.effort.clone())
-                })
-                .unwrap_or(ReasoningEffort::Medium),
-            ReasoningEffort::Max => self
-                .supported_reasoning_levels
+        // Wire compatibility: legacy alias `minimal` maps onto `low`.
+        let effort = match effort {
+            ReasoningEffort::Minimal => ReasoningEffort::Low,
+            other => other,
+        };
+        let ladder: &[ReasoningEffort] = &[
+            ReasoningEffort::Ultra,
+            ReasoningEffort::Max,
+            ReasoningEffort::Medium,
+            ReasoningEffort::Low,
+        ];
+        let requested_pos = |target: &ReasoningEffort| -> Option<usize> {
+            ladder.iter().position(|candidate| candidate == target)
+        };
+        let supported_pos: Vec<usize> = self
+            .supported_reasoning_levels
+            .iter()
+            .filter_map(|preset| requested_pos(&preset.effort))
+            .collect();
+        let nearest = requested_pos(&effort).and_then(|from| {
+            supported_pos
                 .iter()
-                .find(|preset| preset.effort == ReasoningEffort::XHigh)
-                .or_else(|| {
-                    self.supported_reasoning_levels
-                        .iter()
-                        .find(|preset| preset.effort == ReasoningEffort::High)
-                })
-                .or_else(|| {
-                    self.supported_reasoning_levels
-                        .iter()
-                        .find(|preset| preset.effort == ReasoningEffort::Medium)
-                })
-                .or_else(|| {
-                    self.supported_reasoning_levels
-                        .iter()
-                        .find(|preset| preset.effort == ReasoningEffort::Low)
-                })
-                .or_else(|| {
-                    self.supported_reasoning_levels
-                        .iter()
-                        .find(|preset| preset.effort == ReasoningEffort::Minimal)
-                })
-                .or_else(|| self.supported_reasoning_levels.first())
-                .map(|preset| preset.effort.clone())
-                .unwrap_or(ReasoningEffort::Medium),
-            ReasoningEffort::High | ReasoningEffort::XHigh => self
-                .supported_reasoning_levels
-                .iter()
-                .find(|preset| preset.effort == ReasoningEffort::Medium)
-                .or_else(|| {
-                    self.supported_reasoning_levels
-                        .iter()
-                        .find(|preset| preset.effort == ReasoningEffort::Low)
-                })
-                .or_else(|| {
-                    self.supported_reasoning_levels
-                        .iter()
-                        .find(|preset| preset.effort == ReasoningEffort::Minimal)
-                })
-                .or_else(|| self.supported_reasoning_levels.first())
-                .map(|preset| preset.effort.clone())
-                .unwrap_or(ReasoningEffort::Medium),
-            ReasoningEffort::Medium => self
-                .supported_reasoning_levels
-                .iter()
-                .find(|preset| preset.effort == ReasoningEffort::Low)
-                .or_else(|| {
-                    self.supported_reasoning_levels
-                        .iter()
-                        .find(|preset| preset.effort == ReasoningEffort::Minimal)
-                })
-                .or_else(|| self.supported_reasoning_levels.first())
-                .map(|preset| preset.effort.clone())
-                .unwrap_or(ReasoningEffort::Medium),
-            ReasoningEffort::Low | ReasoningEffort::Minimal => self
-                .supported_reasoning_levels
-                .iter()
-                .find(|preset| preset.effort == ReasoningEffort::Low)
-                .or_else(|| {
-                    self.supported_reasoning_levels
-                        .iter()
-                        .find(|preset| preset.effort == ReasoningEffort::Minimal)
-                })
-                .or_else(|| self.supported_reasoning_levels.first())
-                .map(|preset| preset.effort.clone())
-                .unwrap_or(ReasoningEffort::Low),
-            _ => self.default_reasoning_level.clone().unwrap_or(effort),
+                .copied()
+                .min_by_key(|pos| pos.abs_diff(from))
+        });
+        match nearest.map(|pos| ladder[pos].clone()) {
+            Some(resolved) => resolved,
+            None => self
+                .default_reasoning_level
+                .clone()
+                .or_else(|| self.supported_reasoning_levels.first().map(|preset| preset.effort.clone()))
+                .unwrap_or(effort),
         }
     }
 }

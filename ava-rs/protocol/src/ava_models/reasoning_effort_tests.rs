@@ -10,14 +10,14 @@ fn resolves_ultra_using_model_override_and_supported_fallbacks() {
     use ReasoningEffort::Max;
     use ReasoningEffort::Medium;
     use ReasoningEffort::Ultra;
-    use ReasoningEffort::XHigh;
 
+    // 4-tier ladder only: ultra -> max -> medium -> low. Legacy levels
+    // (high, xhigh) are no longer valid fallback targets.
     for (supported, multi_agent_effort, expected) in [
-        (vec![High, Max, Ultra], Some(High), High),
+        (vec![High, Max, Ultra], Some(High), Ultra),
         (vec![High, Max, Ultra], None, Ultra),
         (vec![High, Max], None, Max),
-        (vec![High, XHigh], None, XHigh),
-        (vec![High, XHigh], Some(Low), XHigh),
+        (vec![Max, Medium], None, Max),
         (vec![Low, Medium], None, Medium),
         (vec![Low], None, Low),
         (vec![], None, Ultra),
@@ -58,8 +58,9 @@ fn resolves_max_and_medium_and_low_fallbacks() {
         },
     ];
 
-    // Model only has Low, Medium, High. User selects Max -> falls back to High.
-    assert_eq!(model.resolve_reasoning_effort(Max), High);
+    // Model only has Low, Medium, High. Max is an unsupported primary tier,
+    // so it falls back to the nearest supported primary tier: Medium.
+    assert_eq!(model.resolve_reasoning_effort(Max), Medium);
     // User selects Medium -> uses Medium.
     assert_eq!(model.resolve_reasoning_effort(Medium), Medium);
     // User selects Low -> uses Low.

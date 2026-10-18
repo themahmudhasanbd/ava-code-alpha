@@ -1,7 +1,7 @@
 import type { ModelInfo } from "@/core/types";
 
-/** Reasoning levels the agent server accepts (parity with ava-rs ReasoningEffort enum). */
-export const REASONING_EFFORTS = ["none", "minimal", "low", "medium", "high", "xhigh", "max", "ultra", "persistent"] as const;
+/** Primary reasoning tiers (parity with ava-rs 4-tier ladder: ultra -> max -> medium -> low). */
+export const REASONING_EFFORTS = ["low", "medium", "max", "ultra"] as const;
 
 /** Sandbox modes the agent server understands. */
 export const SANDBOX_MODES = [

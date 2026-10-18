@@ -136,3 +136,4 @@ verify_live_browser.py
 **/.wrangler/
 **/.tanstack/
 .output/
+test-temp/

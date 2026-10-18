@@ -331,19 +331,55 @@ pub(crate) struct ShadowSelectionTurnState {
 impl ShadowSelectionTurnState {
     pub(crate) fn selected_skill_resources(&self, max: usize) -> HashSet<String> {
         let mut set = self.explicitly_selected_resources.clone();
-        for ranked in &self.ranked_selections {
-            if ranked.method == "fielded_bm25_v1" || ranked.method == "weighted_lexical_v1" {
-                for res in ranked.skill_resources.iter().take(max) {
+
+        // 1. Prioritize primary lexical and fusion selectors
+        let preferred_methods = [
+            "fielded_bm25_v1",
+            "weighted_lexical_v1",
+            "rrf_lexical_char_v1",
+            "character_routing_card_v1",
+            "multi_query_lexical_v1",
+            "character_ngram_v1",
+            "task_context_fusion_v1",
+        ];
+
+        for method in preferred_methods {
+            if set.len() >= max {
+                break;
+            }
+            if let Some(ranked) = self.ranked_selections.iter().find(|r| r.method == method) {
+                for res in &ranked.skill_resources {
+                    if set.len() >= max {
+                        break;
+                    }
                     set.insert(res.clone());
                 }
-                return set;
             }
         }
-        if let Some(ranked) = self.ranked_selections.first() {
-            for res in ranked.skill_resources.iter().take(max) {
+
+        // 2. If still below max, pull from any remaining ranked selector results
+        if set.len() < max {
+            for ranked in &self.ranked_selections {
+                for res in &ranked.skill_resources {
+                    if set.len() >= max {
+                        break;
+                    }
+                    set.insert(res.clone());
+                }
+                if set.len() >= max {
+                    break;
+                }
+            }
+        }
+
+        // 3. Graceful fallback: when no lexical matches occur (e.g. multilingual or Bengali queries),
+        // include top eligible skills so model context is never stripped of skills.
+        if set.is_empty() {
+            for res in self.eligible_skill_resources.iter().take(max) {
                 set.insert(res.clone());
             }
         }
+
         set
     }
 }

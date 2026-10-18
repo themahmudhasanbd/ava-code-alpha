@@ -126,3 +126,41 @@ fn browser_subagent_args_deserialization() {
     assert_eq!(args.task_name, "Logging into Veliq");
     assert_eq!(args.reused_subagent_id.as_deref(), Some("subagent-12345678"));
 }
+
+#[test]
+fn browser_args_tolerant_deserialization_with_aliases_and_unknown_fields() {
+    let raw = json!({
+        "type": "open",
+        "uri": "https://example.com",
+        "css_selector": "#submit",
+        "input": "test-value",
+        "toolAction": "Opening page",
+        "toolSummary": "Page open",
+        "notes": "extra metadata"
+    });
+    let args: BrowserArgs =
+        serde_json::from_value(raw).expect("BrowserArgs deserialize with aliases and extra fields");
+    assert_eq!(args.action, "open");
+    assert_eq!(args.url.as_deref(), Some("https://example.com"));
+    assert_eq!(args.selector.as_deref(), Some("#submit"));
+    assert_eq!(args.value.as_deref(), Some("test-value"));
+}
+
+#[test]
+fn browser_subagent_args_tolerant_deserialization_with_aliases_and_unknown_fields() {
+    let raw = json!({
+        "taskName": "Logging into Veliq",
+        "prompt": "Open https://veliqbd.com/login and submit credentials",
+        "summary": "Perform login on Veliq",
+        "reusedSubagentId": "subagent-12345678",
+        "toolAction": "Executing subagent",
+        "toolSummary": "Veliq login"
+    });
+    let args: BrowserSubagentArgs =
+        serde_json::from_value(raw).expect("BrowserSubagentArgs deserialize with aliases and extra fields");
+    assert_eq!(args.task_name, "Logging into Veliq");
+    assert_eq!(args.task, "Open https://veliqbd.com/login and submit credentials");
+    assert_eq!(args.task_summary, "Perform login on Veliq");
+    assert_eq!(args.reused_subagent_id.as_deref(), Some("subagent-12345678"));
+}
+

@@ -250,12 +250,14 @@ impl<'a> CatalogContext<'a> {
         if self.config.include_instructions {
             if let Some(shadow_turn) = self.thread_state.shadow_selection_turn(self.input.turn_id) {
                 let selected = shadow_turn.selected_skill_resources(5);
-                host_catalog.entries.retain(|entry| {
-                    let res = crate::shadow_selection_experiment::normalize_skill_resource(
-                        entry.main_prompt.as_str(),
-                    );
-                    selected.contains(&res)
-                });
+                if !selected.is_empty() {
+                    host_catalog.entries.retain(|entry| {
+                        let res = crate::shadow_selection_experiment::normalize_skill_resource(
+                            entry.main_prompt.as_str(),
+                        );
+                        selected.contains(&res)
+                    });
+                }
             }
         }
         let rendered = if self.config.include_instructions {

@@ -27,28 +27,34 @@ static SUBAGENT_REGISTRY: LazyLock<RwLock<HashMap<String, Arc<BrowserCoordinator
     LazyLock::new(|| RwLock::new(HashMap::new()));
 
 #[derive(Debug, Clone, Deserialize, JsonSchema)]
-#[serde(deny_unknown_fields)]
 pub struct BrowserSubagentArgs {
     /// Human-readable title of the task that the browser subagent is executing (e.g. 'Logging into Veliq', 'Searching Catalog').
+    #[serde(alias = "taskName", alias = "title")]
     pub task_name: String,
     /// A clear, actionable prompt sent to the browser subagent containing comprehensive task descriptions, credentials, target URLs, actions to take, and when to stop.
+    #[serde(alias = "prompt", alias = "instruction")]
     pub task: String,
     /// A short, user-friendly summary of the task (1-2 sentences max).
+    #[serde(alias = "taskSummary", alias = "summary")]
     pub task_summary: String,
     /// ID of a previous subagent session to resume from. If provided, the subagent continues with preserved browser/page/session state.
+    #[serde(alias = "reusedSubagentId", alias = "subagent_id", alias = "sessionId")]
     pub reused_subagent_id: Option<String>,
     /// Name of the browser recording or session.
+    #[serde(alias = "recordingName")]
     pub recording_name: Option<String>,
     /// Optional paths to media files to provide as context.
+    #[serde(alias = "mediaPaths")]
     pub media_paths: Option<Vec<String>>,
     /// Set to true if the user explicitly approved mutating actions in chat.
+    #[serde(alias = "is_approved")]
     pub approved: Option<bool>,
     /// Optional clean session flag. If true, starts fresh without existing saved cookies. Defaults to false.
+    #[serde(alias = "cleanSession")]
     pub clean_session: Option<bool>,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, JsonSchema)]
-#[schemars(deny_unknown_fields)]
 pub struct BrowserSubagentResponse {
     pub success: bool,
     pub subagent_id: String,

@@ -427,12 +427,19 @@ where
                 });
                 if let Some(shadow_turn) = thread_state.shadow_selection_turn(&input.turn_id) {
                     let selected = shadow_turn.selected_skill_resources(5);
-                    turn_catalog.entries.retain(|entry| {
-                        let res = crate::shadow_selection_experiment::normalize_skill_resource(
-                            entry.main_prompt.as_str(),
-                        );
-                        selected.contains(&res)
-                    });
+                    if !selected.is_empty() {
+                        turn_catalog.entries.retain(|entry| {
+                            let res = crate::shadow_selection_experiment::normalize_skill_resource(
+                                entry.main_prompt.as_str(),
+                            );
+                            selected.contains(&res)
+                        });
+                    } else {
+                        const FALLBACK_MAX_SKILLS: usize = 5;
+                        if turn_catalog.entries.len() > FALLBACK_MAX_SKILLS {
+                            turn_catalog.entries.truncate(FALLBACK_MAX_SKILLS);
+                        }
+                    }
                 } else {
                     // Fallback: the skill ranker (shadow selection) did not run
                     // for this turn. Dumping the full catalog into the prompt

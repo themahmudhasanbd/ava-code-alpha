@@ -21,15 +21,18 @@ use crate::schema;
 pub const BROWSER_TOOL_NAME: &str = "browser";
 
 #[derive(Debug, Clone, Deserialize, JsonSchema)]
-#[serde(deny_unknown_fields)]
 pub struct BrowserArgs {
     /// Action to perform: 'open', 'login', 'observe', 'click', 'fill', 'fill_form', 'scroll', 'wait', 'viewport', 'screenshot', 'responsive_audit', 'scrape_data', 'scrape_source', 'scrape_content', 'scrape_links', 'scrape_images', 'evaluate_js', 'console_errors', 'state', 'clear_session', 'close'.
+    #[serde(alias = "type")]
     pub action: String,
     /// Target URL to navigate to (for 'open' and 'login').
+    #[serde(alias = "uri", alias = "target_url")]
     pub url: Option<String>,
     /// Username or email credential (for action='login').
+    #[serde(alias = "email", alias = "user")]
     pub username: Option<String>,
     /// Password credential (for action='login').
+    #[serde(alias = "pass")]
     pub password: Option<String>,
     /// Optional custom CSS selector for the login submit button.
     pub submit_selector: Option<String>,
@@ -38,8 +41,10 @@ pub struct BrowserArgs {
     /// Semantic element ref (e.g. 'e1', 'e2') or CSS selector to click or fill.
     pub r#ref: Option<String>,
     /// Direct CSS selector to target (alternative to 'ref').
+    #[serde(alias = "css_selector", alias = "css")]
     pub selector: Option<String>,
     /// Value to fill or type into an input element.
+    #[serde(alias = "text", alias = "input")]
     pub value: Option<String>,
     /// Batch form fields array of {ref, value} for action='fill_form'.
     pub fields: Option<Vec<FormFieldArg>>,
@@ -110,7 +115,6 @@ pub struct BrowserArgs {
 }
 
 #[derive(Debug, Clone, Deserialize, JsonSchema)]
-#[serde(deny_unknown_fields)]
 pub struct FormFieldArg {
     pub r#ref: Option<String>,
     pub selector: Option<String>,
@@ -118,7 +122,6 @@ pub struct FormFieldArg {
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, JsonSchema)]
-#[schemars(deny_unknown_fields)]
 pub struct BrowserResponse {
     pub success: bool,
     pub title: String,

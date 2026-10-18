@@ -464,20 +464,6 @@ export function useChat() {
         return;
       }
 
-      // Streaming reconciliation: while a turn is live, patch any parts the
-      // client missed (e.g. tab backgrounded and events dropped) from server
-      // history into the active bubble — without disturbing streamed text.
-      if (isTurnRunning && streamingRef.current && serverActiveTurnId) {
-        const serverMsg = historyMessages.find((m) => m.id === `a_${serverActiveTurnId}`);
-        if (serverMsg) {
-          patchAssistant(`a_${serverActiveTurnId}`, (parts) => {
-            const existing = new Set(parts.map((pt) => pt.id));
-            const missing = (serverMsg.parts ?? []).filter((pt) => !existing.has(pt.id));
-            return missing.length ? [...parts, ...missing] : parts;
-          });
-        }
-      }
-
       // If server history says turn IS running, but client is NOT streaming:
       if (isTurnRunning && !streamingRef.current && rpc) {
         streamingRef.current = true;
@@ -614,7 +600,7 @@ export function useChat() {
       offRef.current = await runTurn(rpc, threadId, text, { ...(modelId ? { model: modelId } : {}), effort }, createHandlers(aid, threadId));
       return threadId;
     },
-    [rpc, activeSessionId, modelId, effort, sandbox, setActiveSessionId, setWorkingSessionId, patchAssistant, qc, refreshQueue, createHandlers]
+    [rpc, activeSessionId, modelId, effort, sandbox, setActiveSessionId, setWorkingSessionId, qc, refreshQueue, createHandlers]
   );
 
   /** Re-attaches to a stopped/interrupted turn (or starts the next queued prompt). */

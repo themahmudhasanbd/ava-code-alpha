@@ -314,6 +314,21 @@ function ToolStep({ part }: { part: MessagePart }) {
   );
 }
 
+/** Animated breadcrumb cursor shown at the end of a live streaming response. */
+function StreamingCursor() {
+  return (
+    <div className="flex items-center gap-1.5 pl-1" aria-label="Agent is responding">
+      {[0, 1, 2].map((i) => (
+        <span
+          key={i}
+          className="ava-streaming-dot size-1.5 rounded-full bg-primary"
+          style={{ animationDelay: `${i * 0.18}s` }}
+        />
+      ))}
+    </div>
+  );
+}
+
 function ReasoningStep({ part }: { part: MessagePart }) {
   const running = part.status === "running";
   if (!part.text && !running) return null;
@@ -476,6 +491,7 @@ function AssistantTurn({ message, live, onAnswerQuestion }: { message: ChatMessa
             <RichResponse key={p.id} text={p.text} />
           ) : null,
         )}
+        {live && <StreamingCursor />}
         </div>
       </MessageContent>
       {!live && (text || duration) && (

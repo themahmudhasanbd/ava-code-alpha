@@ -349,3 +349,14 @@
   0%, 42%, 46%, 100% { transform: scaleY(1); }
   44% { transform: scaleY(.12); }
 }
+
+/* Live streaming dots shown while an agent turn is responding */
+.ava-streaming-dot {
+  opacity: 0.35;
+  animation: ava-streaming-dot 1.1s ease-in-out infinite;
+}
+
+@keyframes ava-streaming-dot {
+  0%, 100% { opacity: 0.3; transform: translateY(0) scale(0.9); }
+  50% { opacity: 1; transform: translateY(-2px) scale(1.05); }
+}

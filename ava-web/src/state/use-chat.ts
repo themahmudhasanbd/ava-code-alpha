@@ -174,6 +174,7 @@ export function useChat() {
   const [visibleCount, setVisibleCount] = useState(30);
 
   const allHistoryRef = useRef<ChatMessage[]>([]);
+  const messagesRef = useRef<ChatMessage[]>([]);
   const offRef = useRef<(() => void) | null>(null);
   const turnIdRef = useRef<string | null>(null);
   const aidRef = useRef<string | null>(null);
@@ -203,7 +204,10 @@ export function useChat() {
   }, []);
 
   const patchAssistant = useCallback((id: string, fn: (parts: MessagePart[]) => MessagePart[]) => {
-    setMessages((m) => m.map((msg) => (msg.id === id ? { ...msg, parts: fn(msg.parts) } : msg)));
+    setMessages((m) => {
+      messagesRef.current = m;
+      return m.map((msg) => (msg.id === id ? { ...msg, parts: fn(msg.parts) } : msg));
+    });
   }, []);
 
   const renameAssistant = useCallback((from: string, to: string) => {
@@ -464,23 +468,55 @@ export function useChat() {
         return;
       }
 
-      // If server history says turn IS running, but client is NOT streaming:
+      // SERVER-AS-SOURCE-OF-TRUTH: while a turn is live the transcript renders
+      // from server history (authoritative), with the local live bubble merged
+      // only for not-yet-acknowledged parts and stats. Keeps the UI consistent
+      // after backgrounding, missed events, or reloads.
+      if (isTurnRunning && serverActiveTurnId) {
+        const canonicalId = `a_${serverActiveTurnId}`;
+        const liveAid = aidRef.current;
+        const liveBubble = streamingRef.current
+          ? (messagesRef.current.find((m) => m.id === liveAid) ?? allHistoryRef.current.find((m) => m.id === liveAid))
+          : undefined;
+        const serverMsg = historyMessages.find((m) => m.id === canonicalId);
+        const canonical: ChatMessage = serverMsg ?? { id: canonicalId, role: "assistant", parts: [] };
+
+        let parts = canonical.parts ?? [];
+        if (liveBubble) {
+          const existingIds = new Set(parts.map((pt) => pt.id));
+          const missingLocal = (liveBubble.parts ?? []).filter((pt) => !existingIds.has(pt.id));
+          if (missingLocal.length) parts = [...parts, ...missingLocal];
+        }
+
+        const mergedMsg: ChatMessage = { ...canonical, parts, stats: liveBubble?.stats ?? canonical.stats };
+        allHistoryRef.current = [...historyMessages.filter((m) => m.id !== canonicalId), mergedMsg];
+        setMessages(allHistoryRef.current.slice(-Math.max(visibleCount, 30)));
+
+        if (!streamingRef.current && rpc) {
+          streamingRef.current = true;
+          setStatus("streaming");
+          runningThreadIdRef.current = activeSessionId;
+          setWorkingSessionId(activeSessionId);
+          aidRef.current = canonicalId;
+          turnIdRef.current = serverActiveTurnId;
+          try { offRef.current?.(); } catch {}
+          offRef.current = attachToRunningTurn(
+            rpc,
+            activeSessionId,
+            createHandlersRef.current(canonicalId, activeSessionId)
+          );
+        }
+        return;
+      }
+
+      // Turn running but server hasn't exposed an active turn id yet:
       if (isTurnRunning && !streamingRef.current && rpc) {
-        streamingRef.current = true;
-        setStatus("streaming");
-        runningThreadIdRef.current = activeSessionId;
-        setWorkingSessionId(activeSessionId);
-
         const lastAssMsg = [...historyMessages].reverse().find((m) => m.role === "assistant");
-        const aid = serverActiveTurnId
-          ? `a_${serverActiveTurnId}`
-          : lastAssMsg?.id ?? makeId("live");
+        const aid = lastAssMsg?.id ?? makeId("live");
         aidRef.current = aid;
-        turnIdRef.current = serverActiveTurnId || null;
+        turnIdRef.current = null;
         allHistoryRef.current = historyMessages;
-
         setMessages((prev) => mergeWithLocalMessages(prev, historyMessages, true, visibleCount, aid));
-
         try {
           offRef.current?.();
         } catch {}

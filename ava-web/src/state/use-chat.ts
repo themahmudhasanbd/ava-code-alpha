@@ -567,6 +567,9 @@ export function useChat() {
       aidRef.current = aid;
       turnIdRef.current = null;
       streamingRef.current = true;
+      try {
+        offRef.current?.();
+      } catch {}
       setMessages((m) => [
         ...m,
         { id: `u_${Date.now()}`, role: "user", parts: [{ id: "u", kind: "text", text, status: "done" }] },
@@ -596,6 +599,9 @@ export function useChat() {
         if (m.some((msg) => msg.id === aid)) return m;
         return [...m, { id: aid, role: "assistant", parts: [], stats: { startedAt: Date.now() } }];
       });
+      try {
+        offRef.current?.();
+      } catch {}
       offRef.current = attachToRunningTurn(rpc, threadId, createHandlersRef.current(aid, threadId));
     } catch (e) {
       const errStr = formatCoreError(e, "Failed to resume turn");

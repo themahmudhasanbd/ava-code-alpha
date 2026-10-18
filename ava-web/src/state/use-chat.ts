@@ -196,6 +196,10 @@ export function useChat() {
     setMessages((m) => m.map((msg) => (msg.id === id ? { ...msg, parts: fn(msg.parts) } : msg)));
   }, []);
 
+  const renameAssistant = useCallback((from: string, to: string) => {
+    setMessages((m) => (m.some((msg) => msg.id === from) ? m.map((msg) => (msg.id === from ? { ...msg, id: to } : msg)) : m));
+  }, []);
+
   const refreshQueue = useCallback(
     async (threadId: string) => {
       if (!rpc || !threadId) return [] as QueuedPrompt[];
@@ -218,6 +222,9 @@ export function useChat() {
   /** Builds the per-turn event handlers for a live assistant message. */
   const createHandlers = useCallback(
     (aid: string, threadId: string): TurnHandlers => {
+      // Live mutable bubble id: canonicalized to `a_<turnId>` on turn start so
+      // subsequent patches target the renamed bubble.
+      let currentAid = aid;
       const scheduleDrain = () => {
         if (drainTimerRef.current) clearTimeout(drainTimerRef.current);
         drainTimerRef.current = setTimeout(() => {
@@ -228,7 +235,7 @@ export function useChat() {
       return {
         onPart: (p) => {
           setStatus("streaming");
-          patchAssistant(aid, (parts) => {
+          patchAssistant(currentAid, (parts) => {
             const i = parts.findIndex((x) => x.id === p.id);
             if (i === -1) return [...parts, p];
             const next = [...parts];
@@ -238,7 +245,7 @@ export function useChat() {
         },
         onDelta: (itemId, delta, kind) => {
           setStatus("streaming");
-          patchAssistant(aid, (parts) => {
+          patchAssistant(currentAid, (parts) => {
             const i = parts.findIndex((x) => x.id === itemId);
             if (kind === "output") {
               if (i === -1) return parts;
@@ -254,7 +261,7 @@ export function useChat() {
         },
         onPlan: (steps, title) => {
           const pid = title === "Goal" ? "goal" : "plan";
-          patchAssistant(aid, (parts) => {
+          patchAssistant(currentAid, (parts) => {
             const part: MessagePart = { id: pid, kind: "plan", text: title ?? "Plan", status: "running", meta: { steps } };
             const i = parts.findIndex((x) => x.id === pid);
             if (i === -1) return [...parts, part];
@@ -264,17 +271,25 @@ export function useChat() {
           });
         },
         onNotice: (text, tone) => {
-          patchAssistant(aid, (parts) =>
+          patchAssistant(currentAid, (parts) =>
             parts.some((p) => p.kind === "notice" && p.text === text)
               ? parts
               : [...parts, { id: makeId("n"), kind: "notice", text, status: "done", meta: { tone } }],
           );
         },
         onStats: (stats) => {
-          setMessages((m) => m.map((msg) => (msg.id === aid ? { ...msg, stats: { ...msg.stats, ...stats } } : msg)));
+          setMessages((m) => m.map((msg) => (msg.id === currentAid ? { ...msg, stats: { ...msg.stats, ...stats } } : msg)));
         },
         onTurnStarted: (turnId) => {
           turnIdRef.current = turnId;
+          // Canonicalize the live bubble id so history merges match this turn
+          // instead of duplicating reasoning/steps into a phantom new bubble.
+          const canonicalAid = `a_${turnId}`;
+          if (currentAid !== canonicalAid) {
+            renameAssistant(currentAid, canonicalAid);
+            aidRef.current = canonicalAid;
+            currentAid = canonicalAid;
+          }
         },
         onQueueChanged: () => {
           void refreshQueue(threadId);
@@ -304,7 +319,7 @@ export function useChat() {
                   ]
             );
           }
-          patchAssistant(aid, (parts) => {
+          patchAssistant(currentAid, (parts) => {
             if (parts.some((p) => p.kind === "question" && p.text === question.title)) return parts;
             return [
               ...parts,
@@ -319,7 +334,7 @@ export function useChat() {
           });
         },
         onDone: (err, info) => {
-          patchAssistant(aid, (parts) => {
+          patchAssistant(currentAid, (parts) => {
             const next = parts.map((p) => (p.status === "running" ? { ...p, status: err ? ("error" as const) : ("done" as const) } : p));
             const note = err ?? info;
             if (!note) return next;
@@ -327,7 +342,7 @@ export function useChat() {
           });
           setMessages((m) =>
             m.map((msg) =>
-              msg.id === aid && msg.stats?.startedAt && !msg.stats.durationMs
+              msg.id === currentAid && msg.stats?.startedAt && !msg.stats.durationMs
                 ? { ...msg, stats: { ...msg.stats, durationMs: Date.now() - msg.stats.startedAt } }
                 : msg,
             ),

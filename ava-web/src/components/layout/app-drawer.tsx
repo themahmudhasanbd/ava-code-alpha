@@ -1,5 +1,7 @@
+import { useEffect, useState } from "react";
 import { Link } from "@tanstack/react-router";
 import { LogOut, Menu } from "lucide-react";
+import { motion } from "motion/react";
 
 import { GlassIconButton, StatusDot } from "@/components/kit";
 import { Badge } from "@/components/ui/badge";
@@ -34,9 +36,15 @@ export function AppDrawer({ open, onOpenChange }: { open: boolean; onOpenChange:
 
         <Tabs defaultValue="sessions" className="flex min-h-0 flex-1 flex-col">
           <div className="px-3 pt-3">
-            <TabsList className="grid h-10 w-full grid-cols-2 rounded-xl bg-sidebar-accent/70 p-1">
-              <TabsTrigger value="menu" className="rounded-lg">Menu</TabsTrigger>
-              <TabsTrigger value="sessions" className="rounded-lg">Sessions</TabsTrigger>
+            <TabsList className="grid h-10 w-full grid-cols-2 gap-1 rounded-2xl bg-muted p-1">
+              {(
+                [
+                  { value: "menu", label: "Menu" },
+                  { value: "sessions", label: "Sessions" },
+                ] as const
+              ).map(({ value, label }) => (
+                <DrawerTabTrigger key={value} value={value} label={label} />
+              ))}
             </TabsList>
           </div>
 
@@ -85,3 +93,42 @@ export function AppDrawer({ open, onOpenChange }: { open: boolean; onOpenChange:
     </Sheet>
   );
 }
+
+/** Animated sliding pill matching the composer's model/effort tab switcher. */
+function DrawerTabTrigger({ value, label }: { value: "menu" | "sessions"; label: string }) {
+  return (
+    <TabsTrigger
+      value={value}
+      className="relative z-10 rounded-xl data-[state=active]:text-primary-foreground"
+    >
+      <DrawerTabPill tabValue={value} />
+      {label}
+    </TabsTrigger>
+  );
+}
+
+function DrawerTabPill({ tabValue }: { tabValue: "menu" | "sessions" }) {
+  // Radix exposes active state via data-state on the parent trigger; re-render
+  // on click is ensured because Tabs value changes re-render children.
+  const [active, setActive] = useState(false);
+  useEffect(() => {
+    const check = () => {
+      const el = document.querySelector(`[role="tab"][data-state="active"]`) as HTMLElement | null;
+      setActive(!!el && !!el.closest("[data-slot='tabs']") && el.getAttribute("aria-selected") === "true" && el.textContent?.trim() === LABELS[tabValue]);
+    };
+    check();
+    const observer = new MutationObserver(check);
+    observer.observe(document.body, { attributes: true, subtree: true, attributeFilter: ["data-state", "aria-selected"] });
+    return () => observer.disconnect();
+  }, [tabValue]);
+  if (!active) return null;
+  return (
+    <motion.span
+      layoutId="drawer-tab-pill"
+      className="absolute inset-0 -z-10 rounded-xl bg-primary shadow-sm"
+      transition={{ type: "spring", stiffness: 400, damping: 34 }}
+    />
+  );
+}
+
+const LABELS: Record<string, string> = { menu: "Menu", sessions: "Sessions" };

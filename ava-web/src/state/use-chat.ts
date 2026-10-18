@@ -556,7 +556,7 @@ export function useChat() {
         void history.refetch();
         void refreshQueue(activeSessionId);
       }
-    }, 6000);
+    }, 2000);
     return () => clearInterval(interval);
   }, [activeSessionId, status, history, refreshQueue]);
 

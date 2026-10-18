@@ -464,6 +464,20 @@ export function useChat() {
         return;
       }
 
+      // Streaming reconciliation: while a turn is live, patch any parts the
+      // client missed (e.g. tab backgrounded and events dropped) from server
+      // history into the active bubble — without disturbing streamed text.
+      if (isTurnRunning && streamingRef.current && serverActiveTurnId) {
+        const serverMsg = historyMessages.find((m) => m.id === `a_${serverActiveTurnId}`);
+        if (serverMsg) {
+          patchAssistant(`a_${serverActiveTurnId}`, (parts) => {
+            const existing = new Set(parts.map((pt) => pt.id));
+            const missing = (serverMsg.parts ?? []).filter((pt) => !existing.has(pt.id));
+            return missing.length ? [...parts, ...missing] : parts;
+          });
+        }
+      }
+
       // If server history says turn IS running, but client is NOT streaming:
       if (isTurnRunning && !streamingRef.current && rpc) {
         streamingRef.current = true;
@@ -499,6 +513,18 @@ export function useChat() {
       }
     }
   }, [history.data, activeSessionId, visibleCount, rpc, setWorkingSessionId, status]);
+
+  // Instant resync when the tab returns to the foreground after backgrounding.
+  useEffect(() => {
+    const onVisible = () => {
+      if (document.visibilityState === "visible" && activeSessionId) {
+        void history.refetch();
+        if (activeSessionId) void refreshQueue(activeSessionId);
+      }
+    };
+    document.addEventListener("visibilitychange", onVisible);
+    return () => document.removeEventListener("visibilitychange", onVisible);
+  }, [activeSessionId, history, refreshQueue]);
 
   // Fast Stream Synchronizer: Reconciles server turns and transcript state
   useEffect(() => {

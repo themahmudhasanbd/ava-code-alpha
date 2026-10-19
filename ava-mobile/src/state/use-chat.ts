@@ -172,22 +172,9 @@ function mergeWithLocalMessages(
   const grafted = new Map<string, ChatMessage>(); // server id -> grafted copy
   const keptLocal: ChatMessage[] = [];
   for (const lm of finishedWorkflowMsgs) {
-    let target = serverById.get(lm.id);
-    if (!target && localMsgs.indexOf(lm) === mostRecentLocalWorkflowIdx) {
-      // Live-generated id (e.g. makeUniqueId("live")): the just-finished turn
-      // is the last assistant message in server history. Only the most recent
-      // local turn may use the positional fallback, so an older turn never
-      // grafts its steps onto the wrong message.
-      for (let i = serverFiltered.length - 1; i >= 0; i--) {
-        if (serverFiltered[i]!.role === "assistant") {
-          target = serverFiltered[i];
-          break;
-        }
-      }
-    }
+    const target = serverById.get(lm.id);
+    // CRITICAL: NEVER graft onto a previous assistant message with a different ID!
     if (!target) {
-      // Server has no record of this turn yet — keep the local message so the
-      // step overview card (and the turn itself) stays visible.
       keptLocal.push(lm);
       continue;
     }
@@ -706,10 +693,9 @@ export function useChat(explicitSessionId?: string | null, opts: { passive?: boo
           runningThreadIdRef.current = currentSessionId;
           setSessionRunning(currentSessionId, true);
 
-          const lastAssMsg = [...historyMessages].reverse().find((m) => m.role === "assistant");
           const aid = serverActiveTurnId
             ? `a_${serverActiveTurnId}`
-            : lastAssMsg?.id ?? makeUniqueId("live");
+            : makeUniqueId("live");
           activeAidRef.current = aid;
           chatStore.setState(currentSessionId, (prev) => ({
             ...prev,
@@ -783,10 +769,9 @@ export function useChat(explicitSessionId?: string | null, opts: { passive?: boo
         statusRef.current = "streaming";
         setSessionRunning(currentSessionId, true);
 
-        const lastAssMsg = [...historyMessages].reverse().find((m) => m.role === "assistant");
         const aid = serverActiveTurnId
           ? `a_${serverActiveTurnId}`
-          : lastAssMsg?.id ?? makeUniqueId("live");
+          : makeUniqueId("live");
         activeAidRef.current = aid;
         allHistoryRef.current = historyMessages;
 
@@ -898,15 +883,44 @@ export function useChat(explicitSessionId?: string | null, opts: { passive?: boo
         // prompt directly. The live turn's onDone auto-drain will start it.
         // Do NOT detach offRef and do NOT call runTurn here.
         if (isStreamingRef.current && threadId) {
+          // FIX: Show the queued prompt immediately as an optimistic message
+          // so the user sees it without waiting for the queue to drain.
+          const queuedUserMsgId = makeUniqueId("u");
+          const queuedUserMsg: ChatMessage = {
+            id: queuedUserMsgId,
+            role: "user",
+            parts: [{ id: makeUniqueId("u_part"), kind: "text", text: trimmed, status: "done" }],
+          };
+          setMessages((prev) =>
+            prev.some((m) => m.id === queuedUserMsgId) ? prev : [...prev, queuedUserMsg]
+          );
+          chatStore.setState(threadId, (prev) => ({
+            ...prev,
+            messages: prev.messages.some((m) => m.id === queuedUserMsgId)
+              ? prev.messages
+              : [...prev.messages, queuedUserMsg],
+          }));
           try {
             const qp = await addPromptToQueue(rpc, threadId, trimmed);
             if (qp) {
               await refreshQueue(threadId);
             } else {
               setError("Failed to queue prompt.");
+              // Remove the optimistic message on failure
+              chatStore.setState(threadId, (prev) => ({
+                ...prev,
+                messages: prev.messages.filter((m) => m.id !== queuedUserMsgId),
+              }));
+              setMessages((prev) => prev.filter((m) => m.id !== queuedUserMsgId));
             }
           } catch (e) {
             setError(formatCoreError(e, "Failed to queue prompt"));
+            // Remove the optimistic message on failure
+            chatStore.setState(threadId, (prev) => ({
+              ...prev,
+              messages: prev.messages.filter((m) => m.id !== queuedUserMsgId),
+            }));
+            setMessages((prev) => prev.filter((m) => m.id !== queuedUserMsgId));
           }
           return threadId;
         }
@@ -1230,5 +1244,6 @@ export function useChat(explicitSessionId?: string | null, opts: { passive?: boo
     loadingHistory: history.isLoading,
     hasOlder: allHistoryRef.current.length > visibleCount,
     loadOlder,
+    refetchHistory,
   };
 }

@@ -2,7 +2,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { listMcpServers, listModels, reloadMcpServers, mcpOAuthLogin, addMcpServer, type McpServerAddParams } from "@/core/api/catalog";
 import { getMetadata, readDirectory, readTextFile } from "@/core/api/files";
-import { deleteSession, listSessions, readSession, renameSession, startSession } from "@/core/api/sessions";
+import { deleteSession, listSessions, readSession, renameSession, startSession, type SessionHistoryResult } from "@/core/api/sessions";
 import { readDiagnostics, readServerConfig, writeServerConfig } from "@/core/api/system";
 import { runCommand } from "@/core/api/terminal";
 import { readUserProfile, writeUserProfile, type UserProfile } from "@/core/api/profile";
@@ -84,12 +84,18 @@ export function useSessions() {
 
 export function useSessionHistory(id: string | null) {
   const { rpc, status } = useAva();
-  return useQuery({
+  const query = useQuery({
     queryKey: keys.session(id ?? ""),
     queryFn: () => readSession(rpc!, id!),
     enabled: !!rpc && !!id,
-    refetchInterval: status === "online" ? 15000 : false,
+    // FIX: Poll faster (3s) when a turn is running so the running turn
+    // and its prompt appear quickly; 15s otherwise to save battery.
+    refetchInterval: (data: SessionHistoryResult | undefined) => {
+      if (status !== "online") return false;
+      return data?.isTurnRunning ? 3000 : 15000;
+    },
   });
+  return query;
 }
 
 export function useModels() {

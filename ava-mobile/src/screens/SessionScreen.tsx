@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useFocusEffect } from "@react-navigation/native";
 import {
   ActivityIndicator,
   BackHandler,
@@ -97,6 +98,7 @@ export function SessionScreen({
     loadingHistory,
     hasOlder,
     loadOlder,
+    refetchHistory,
   } = useChat(sessionId);
 
   const [draft, setDraft] = useState("");
@@ -125,6 +127,17 @@ export function SessionScreen({
     );
     return () => showSub.remove();
   }, []);
+
+  // FIX: Immediately refresh session history when screen gains focus.
+  // This ensures running turns and their prompts load without waiting
+  // for the background poll interval.
+  useFocusEffect(
+    useCallback(() => {
+      if (sessionId) {
+        void refetchHistory();
+      }
+    }, [sessionId, refetchHistory])
+  );
 
   // Hardware back button handler for Android
   useEffect(() => {

@@ -84,15 +84,17 @@ export function useSessions() {
 
 export function useSessionHistory(id: string | null) {
   const { rpc, status } = useAva();
-  const query = useQuery({
+  const query = useQuery<SessionHistoryResult>({
     queryKey: keys.session(id ?? ""),
     queryFn: () => readSession(rpc!, id!),
     enabled: !!rpc && !!id,
     // FIX: Poll faster (3s) when a turn is running so the running turn
     // and its prompt appear quickly; 15s otherwise to save battery.
-    refetchInterval: (data: SessionHistoryResult | undefined) => {
+    // React Query v5: refetchInterval fn receives the Query; read latest
+    // data via query.state.data.
+    refetchInterval: (query) => {
       if (status !== "online") return false;
-      return data?.isTurnRunning ? 3000 : 15000;
+      return query.state.data?.isTurnRunning ? 3000 : 15000;
     },
   });
   return query;

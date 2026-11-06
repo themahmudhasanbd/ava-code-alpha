@@ -179,6 +179,7 @@ pub(crate) fn remove_orphan_outputs(items: &mut Vec<ResponseItemEnvelope>) {
     }
 
     let mut orphan_positions = Vec::new();
+   let mut synthetic_calls_to_insert: Vec<(usize, ResponseItemEnvelope)> = Vec::new();
     for (position, envelope) in items.iter().enumerate() {
         match &envelope.item {
             ResponseItem::FunctionCallOutput {
@@ -203,11 +204,25 @@ pub(crate) fn remove_orphan_outputs(items: &mut Vec<ResponseItemEnvelope>) {
                 execution,
                 ..
             } if execution != "server" && !tool_search_call_ids.contains(call_id.as_str()) => {
-                error_or_panic(format!("Orphan tool search output for call id: {call_id}"));
-                orphan_positions.push(position);
+                info!("Repaired orphan tool search output with synthetic call for id: {call_id}");
+                synthetic_calls_to_insert.push((
+                    position,
+                    ResponseItemEnvelope::new(ResponseItem::ToolSearchCall {
+                        id: synthetic_output_id("tsc", Some(call_id)),
+                        call_id: Some(call_id.clone()),
+                        status: Some("completed".to_string()),
+                        execution: "client".to_string(),
+                        arguments: serde_json::json!({ "query": "tool_search" }),
+                        internal_chat_message_metadata_passthrough: None,
+                    }),
+                ));
             }
             _ => {}
         }
+    }
+
+    for (idx, call_item) in synthetic_calls_to_insert.into_iter().rev() {
+        items.insert(idx, call_item);
     }
 
     if !orphan_positions.is_empty() {

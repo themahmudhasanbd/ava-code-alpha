@@ -28,6 +28,7 @@ import { Message, MessageAction, MessageActions, MessageContent } from "@/compon
 import { useAva } from "@/state/ava-provider";
 import { RichResponse } from "./rich-response";
 import { AttachmentCard, splitAttachmentSegments } from "./attachment-card";
+import { BrowserToolCard, LiveBrowserDock } from "./browser-card";
 import { Shimmer } from "@/components/ai-elements/shimmer";
 import { Tool, ToolContent, ToolInput } from "@/components/ai-elements/tool";
 import { CollapsibleTrigger } from "@/components/ui/collapsible";
@@ -56,7 +57,7 @@ function toolIcon(part: MessagePart) {
   if (part.toolName === "Terminal") return TerminalSquare;
   if (part.toolName === "File change") return FilePen;
   if (part.toolName === "Web search") return Globe;
-  if (part.toolName === "Browser") return Globe;
+  if (part.toolName === "Browser" || part.meta?.isBrowser) return Globe;
   if (part.toolName === "Generate image") return Sparkles;
   if (part.toolName === "View image") return FileImage;
   if (part.toolName === "Sleep") return Hourglass;
@@ -261,7 +262,9 @@ function ToolStep({ part }: { part: MessagePart }) {
     );
   }
   if (part.toolName === "Web search") return simpleCard(m.command ?? "", "Searching the web", "Web search");
-  if (part.toolName === "Browser") return simpleCard(m.command ?? "", "Browser automation", "Browser");
+  if (part.toolName === "Browser" || part.meta?.isBrowser || part.toolName?.toLowerCase() === "browser") {
+    return <BrowserToolCard part={part} />;
+  }
   if (part.toolName === "Generate image") return simpleCard(m.command ?? "", "Image generation", "Generate image");
   if (part.toolName === "View image") {
     const raw = part.input as { path?: string; filePath?: string } | string | undefined;
@@ -491,6 +494,7 @@ function AssistantTurn({ message, live, onAnswerQuestion }: { message: ChatMessa
             <RichResponse key={p.id} text={p.text} />
           ) : null,
         )}
+        <LiveBrowserDock parts={message.parts} live={live} />
         {live && <StreamingCursor />}
         </div>
       </MessageContent>

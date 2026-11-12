@@ -179,7 +179,7 @@ pub(crate) fn remove_orphan_outputs(items: &mut Vec<ResponseItemEnvelope>) {
     }
 
     let mut orphan_positions = Vec::new();
-   let mut synthetic_calls_to_insert: Vec<(usize, ResponseItemEnvelope)> = Vec::new();
+    let mut synthetic_calls_to_insert: Vec<(usize, ResponseItemEnvelope)> = Vec::new();
     for (position, envelope) in items.iter().enumerate() {
         match &envelope.item {
             ResponseItem::FunctionCallOutput {

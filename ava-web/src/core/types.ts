@@ -88,6 +88,17 @@ export interface PartMeta {
   steps?: PlanStep[] | undefined;
   tone?: "info" | "warning" | "error" | undefined;
   questions?: AgentQuestion[] | undefined;
+  // Browser action & session metadata
+  action?: string | undefined;
+  url?: string | undefined;
+  viewport?: string | undefined;
+  screenshotPath?: string | undefined;
+  pageTitle?: string | undefined;
+  ref?: string | undefined;
+  selector?: string | undefined;
+  code?: string | undefined;
+  elementsCount?: number | undefined;
+  isBrowser?: boolean | undefined;
 }
 
 export interface MessagePart {

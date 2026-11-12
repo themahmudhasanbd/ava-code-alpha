@@ -72,3 +72,11 @@
 - Root cause: `ava-web` was rebuilt using bare `npm run build`, which uses the default Cloudflare worker Nitro preset. PM2 then ran the Cloudflare module as a Node process, so no HTTP listener started on `127.0.0.1:3102`.
 - Fix: Run `./build-node.sh` (sets `NITRO_PRESET=node-server`), rebuild, then restart `pm2 ava-web-test`.
 - Validation: `127.0.0.1:3102` and `https://test.thundernexus.com` both return HTTP 200.
+
+### Web Client Chat State & Send Error Handling Fix (2026-10-18)
+- **Problem**: When prompt sending failed or encountered network/session errors, draft text disappeared from the input box, leaving the UI stuck in "submitted" without visible error banners or recoverable drafts.
+- **Fix**:
+  1. Updated `src/state/use-chat.ts` to properly handle and bubble send rejections, ensuring errors surface directly in `errorBanner` and queue status recovers gracefully.
+  2. Preserved composer drafts in `src/components/chat/chat-screen.tsx` until successful turn dispatch confirmation, preventing prompt disappearance.
+  3. Rebuilt using `./build-node.sh` (`NITRO_PRESET=node-server`) and reloaded `ava-web-test` via PM2.
+  4. Verified live frontend deployment at `https://test.thundernexus.com` via Playwright with clean 200 response and 0 runtime errors.

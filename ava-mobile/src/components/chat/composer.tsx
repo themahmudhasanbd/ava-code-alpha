@@ -67,17 +67,7 @@ import { SlashCommandPopup } from "./SlashCommandPopup";
 import { MentionPopup } from "./MentionPopup";
 
 function getAudioModule(): any {
-  try {
-    const { NativeModules } = require("react-native");
-    const hasNative =
-      Boolean(NativeModules?.ExponentAV) ||
-      Boolean((globalThis as any)?.expo?.modules?.ExponentAV);
-    if (!hasNative) return null;
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    return require("expo-av")?.Audio ?? null;
-  } catch {
-    return null;
-  }
+  return null;
 }
 
 interface Props {

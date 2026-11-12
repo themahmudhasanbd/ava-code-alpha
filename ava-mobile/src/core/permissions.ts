@@ -1,5 +1,4 @@
 import { Alert, Linking, PermissionsAndroid, Platform } from "react-native";
-import { Audio } from "expo-av";
 import * as ImagePicker from "expo-image-picker";
 
 export type PermissionType = "microphone" | "camera" | "photos" | "notifications";
@@ -18,12 +17,17 @@ export async function checkPermission(type: PermissionType): Promise<PermissionS
   try {
     switch (type) {
       case "microphone": {
-        const res = await Audio.getPermissionsAsync();
-        return {
-          granted: res.granted,
-          canAskAgain: res.canAskAgain,
-          status: res.granted ? "granted" : res.canAskAgain ? "undetermined" : "denied",
-        };
+        if (Platform.OS === "android") {
+          const granted = await PermissionsAndroid.check(
+            PermissionsAndroid.PERMISSIONS.RECORD_AUDIO
+          );
+          return {
+            granted,
+            canAskAgain: true,
+            status: granted ? "granted" : "undetermined",
+          };
+        }
+        return { granted: true, canAskAgain: true, status: "granted" };
       }
       case "camera": {
         const res = await ImagePicker.getCameraPermissionsAsync();
@@ -74,9 +78,16 @@ export async function requestPermission(
 
     switch (type) {
       case "microphone": {
-        const res = await Audio.requestPermissionsAsync();
-        granted = res.granted;
-        canAskAgain = res.canAskAgain;
+        if (Platform.OS === "android") {
+          const res = await PermissionsAndroid.request(
+            PermissionsAndroid.PERMISSIONS.RECORD_AUDIO
+          );
+          granted = res === PermissionsAndroid.RESULTS.GRANTED;
+          canAskAgain = res !== PermissionsAndroid.RESULTS.NEVER_ASK_AGAIN;
+        } else {
+          granted = true;
+          canAskAgain = true;
+        }
         break;
       }
       case "camera": {

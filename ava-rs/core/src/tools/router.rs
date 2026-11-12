@@ -256,9 +256,11 @@ impl ToolRouter {
                 // Route the model-visible `tool_search` function to the ToolSearch
                 // payload; the ToolSearchHandler rejects a plain Function payload,
                 // which previously made every tool_search call fail without output.
-                let payload = if tool_name == ToolName::plain(TOOL_SEARCH_TOOL_NAME).with_default_namespace() {
-                    let arguments: SearchToolCallParams =
-                        serde_json::from_str(&arguments).map_err(|err| {
+                let payload = if tool_name
+                    == ToolName::plain(TOOL_SEARCH_TOOL_NAME).with_default_namespace()
+                {
+                    let arguments: SearchToolCallParams = serde_json::from_str(&arguments)
+                        .map_err(|err| {
                             FunctionCallError::RespondToModel(format!(
                                 "failed to parse tool_search arguments: {err}"
                             ))
@@ -294,11 +296,9 @@ impl ToolRouter {
             }
             // Never silently drop a ToolSearchCall: returning Ok(None) leaves
             // the model with no tool output, which it perceives as "aborted".
-            ResponseItem::ToolSearchCall { .. } => Err(
-                FunctionCallError::RespondToModel(
-                    "tool_search call missing call_id".to_string(),
-                ),
-            ),
+            ResponseItem::ToolSearchCall { .. } => Err(FunctionCallError::RespondToModel(
+                "tool_search call missing call_id".to_string(),
+            )),
             ResponseItem::CustomToolCall {
                 name,
                 namespace,

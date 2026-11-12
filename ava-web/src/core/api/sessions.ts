@@ -18,6 +18,8 @@ export interface SessionHistoryResult {
   messages: ChatMessage[];
   isTurnRunning: boolean;
   activeTurnId?: string | undefined;
+  latestTurnId?: string | undefined;
+  latestTurnStatus?: string | undefined;
 }
 
 export async function listSessions(rpc: RpcClient, limit = 50): Promise<Session[]> {
@@ -88,7 +90,7 @@ export async function readSession(rpc: RpcClient, id: string): Promise<SessionHi
       res = await rpc.call<Raw>("thread/resume", { threadId: id });
     } catch (e) {
       console.warn("[readSession] read error:", e);
-      res = null;
+      throw e;
     }
   }
   const out: ChatMessage[] = [];
@@ -189,5 +191,7 @@ export async function readSession(rpc: RpcClient, id: string): Promise<SessionHi
     messages: out,
     isTurnRunning,
     activeTurnId,
+    latestTurnId: turns.at(-1)?.id ? str(turns.at(-1)?.id) : undefined,
+    latestTurnStatus: turns.at(-1)?.status ? str(turns.at(-1)?.status) : undefined,
   };
 }

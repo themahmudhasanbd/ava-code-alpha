@@ -1,3 +1,4 @@
+import { historyPollInterval } from "@/core/api/turn-sync";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { listMcpServers, listModels, reloadMcpServers } from "@/core/api/catalog";
@@ -54,15 +55,25 @@ export function useServerConfig() {
 
 export function useSessions() {
   const { rpc, status } = useAva();
-  return useQuery({ queryKey: keys.sessions, queryFn: () => listSessions(rpc!), enabled: !!rpc && status === "online" });
+  return useQuery({ queryKey: keys.sessions, queryFn: () => {
+    if (!rpc) throw new Error("Session is not connected");
+    return listSessions(rpc);
+  }, enabled: !!rpc && status === "online", refetchInterval: 5000, refetchIntervalInBackground: true });
 }
 
 export function useSessionHistory(id: string | null) {
   const { rpc, status } = useAva();
   return useQuery({
     queryKey: keys.session(id ?? ""),
-    queryFn: () => readSession(rpc!, id!),
+    queryFn: () => {
+      if (!rpc || !id) throw new Error("Session is not connected");
+      return readSession(rpc, id);
+    },
     enabled: !!rpc && !!id && status === "online",
+    refetchInterval: (query) => historyPollInterval(Boolean(query.state.data?.isTurnRunning)),
+    refetchIntervalInBackground: true,
+    refetchOnWindowFocus: "always",
+    refetchOnReconnect: "always",
   });
 }
 

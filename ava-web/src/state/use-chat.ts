@@ -1,3 +1,4 @@
+import { canFinishFromSnapshot, mergeLiveParts } from "@/core/api/turn-sync";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 
@@ -78,31 +79,20 @@ function mergeWithLocalMessages(
   // 1. Keep unconfirmed pending local user messages
   const pendingLocalUserMsgs = getPendingLocalUserMessages(localMsgs, serverMsgs, isTurnRunning);
 
-  // 2. Keep live assistant messages ONLY if currently streaming and matching activeAid or running parts
-  const liveAssistantMsgs = isTurnRunning
-    ? localMsgs.filter(
-        (m) =>
-          m.role === "assistant" &&
-          ((activeAid && m.id === activeAid) ||
-            (!m.id.startsWith("live_") && m.parts?.some((p) => p.status === "running")))
-      )
-    : [];
+  // 2. Keep live assistant messages (running parts, matching activeAid, or active turn bubble)
+  const isLiveAssistant = (m: ChatMessage) =>
+    m.role === "assistant" &&
+    ((activeAid && m.id === activeAid) ||
+      m.parts?.some((p) => p.status === "running") ||
+      (isTurnRunning && (m.id.startsWith("live_") || (activeAid != null && m.id === activeAid))));
 
-  // 2b. Preserve completed-turn workflow steps — but never carry workflow parts
-  // from a local LIVE bubble (live_* id) whose turn has since completed: they
-  // belong to a different turn and would graft onto the previous assistant
-  // message, duplicating another turn's reasoning/tools at its tail.
-  let mostRecentLocalWorkflowIdx = -1;
-  for (let i = 0; i < localMsgs.length; i++) {
-    if (hasWorkflowSteps(localMsgs[i]!)) mostRecentLocalWorkflowIdx = i;
-  }
-  const isLiveBubble = (m: ChatMessage) => m.role === "assistant" && m.id.startsWith("live_");
-  const finishedWorkflowMsgs =
-    !isTurnRunning && mostRecentLocalWorkflowIdx !== -1
-      ? localMsgs.filter(
-          (m) => hasWorkflowSteps(m) && !isLiveBubble(m)
-        )
-      : [];
+  const liveAssistantMsgs = localMsgs.filter(isLiveAssistant);
+
+  // 2b. Finished workflow messages: assistant messages that have workflow steps
+  // but are NOT currently live and are NOT optimistic live bubbles.
+  const finishedWorkflowMsgs = localMsgs.filter(
+    (m) => hasWorkflowSteps(m) && !isLiveAssistant(m) && !m.id.startsWith("live_")
+  );
 
   // 3. Filter server messages to avoid duplicating any active live assistant message
   const serverFiltered = serverMsgs.filter(
@@ -118,15 +108,10 @@ function mergeWithLocalMessages(
       keptLocal.push(lm);
       continue;
     }
-    let target = serverById.get(lm.id);
-    if (!target && localMsgs.indexOf(lm) === mostRecentLocalWorkflowIdx) {
-      for (let i = serverFiltered.length - 1; i >= 0; i--) {
-        if (serverFiltered[i]!.role === "assistant") {
-          target = serverFiltered[i];
-          break;
-        }
-      }
-    }
+    const target = serverById.get(lm.id);
+    // CRITICAL: NEVER graft onto a previous assistant message with a different ID!
+    // Each turn assistant message belongs to its own turn. If the server does not
+    // have this turn yet, keep it as its own local message so it stays in its proper place.
     if (!target) {
       keptLocal.push(lm);
       continue;
@@ -191,6 +176,8 @@ export function useChat() {
   useEffect(
     () => () => {
       if (drainTimerRef.current) clearTimeout(drainTimerRef.current);
+      offRef.current?.();
+      offRef.current = null;
     },
     []
   );
@@ -206,12 +193,34 @@ export function useChat() {
   const patchAssistant = useCallback((id: string, fn: (parts: MessagePart[]) => MessagePart[]) => {
     setMessages((m) => {
       messagesRef.current = m;
+      const found = m.some((msg) => msg.id === id);
+      if (!found) {
+        const newMsg: ChatMessage = {
+          id,
+          role: "assistant",
+          parts: fn([]),
+          stats: { startedAt: Date.now() },
+        };
+        return [...m, newMsg];
+      }
       return m.map((msg) => (msg.id === id ? { ...msg, parts: fn(msg.parts) } : msg));
     });
   }, []);
 
   const renameAssistant = useCallback((from: string, to: string) => {
-    setMessages((m) => (m.some((msg) => msg.id === from) ? m.map((msg) => (msg.id === from ? { ...msg, id: to } : msg)) : m));
+    setMessages((m) => {
+      if (!m.some((msg) => msg.id === from)) return m;
+      const existingTo = m.find((msg) => msg.id === to);
+      if (existingTo) {
+        const fromMsg = m.find((msg) => msg.id === from);
+        const existingPartIds = new Set((existingTo.parts ?? []).map((p) => p.id));
+        const extraParts = (fromMsg?.parts ?? []).filter((p) => !existingPartIds.has(p.id));
+        return m
+          .filter((msg) => msg.id !== from)
+          .map((msg) => (msg.id === to ? { ...msg, parts: [...(msg.parts ?? []), ...extraParts] } : msg));
+      }
+      return m.map((msg) => (msg.id === from ? { ...msg, id: to } : msg));
+    });
   }, []);
 
   const refreshQueue = useCallback(
@@ -412,10 +421,9 @@ export function useChat() {
           runningThreadIdRef.current = activeSessionId;
           setWorkingSessionId(activeSessionId);
 
-          const lastAssMsg = [...historyMessages].reverse().find((m) => m.role === "assistant");
           const aid = serverActiveTurnId
             ? `a_${serverActiveTurnId}`
-            : lastAssMsg?.id ?? makeId("live");
+            : makeId("live");
           aidRef.current = aid;
           turnIdRef.current = serverActiveTurnId || null;
 
@@ -447,7 +455,7 @@ export function useChat() {
 
       // STUCK-STATE RECOVERY: If server says turn is NOT running, and client is streaming, but not recently started locally
       if (
-        !isTurnRunning &&
+        canFinishFromSnapshot(historyData, turnIdRef.current, history.dataUpdatedAt, turnStartedAtRef.current) &&
         streamingRef.current &&
         !isRecentlySubmitted &&
         (offRef.current == null || Date.now() - turnStartedAtRef.current > 8000)
@@ -457,11 +465,14 @@ export function useChat() {
         } catch {}
         offRef.current = null;
         streamingRef.current = false;
-        setStatus("ready");
+        setStatus(historyData?.latestTurnStatus === "failed" ? "error" : "ready");
         aidRef.current = null;
         turnIdRef.current = null;
         runningThreadIdRef.current = null;
         setWorkingSessionId(null);
+        setPendingApprovals([]);
+        qc.invalidateQueries({ queryKey: keys.sessions });
+        void refreshQueue(activeSessionId);
 
         allHistoryRef.current = historyMessages;
         setMessages((prev) => mergeWithLocalMessages(prev, historyMessages, false, visibleCount, null));
@@ -481,18 +492,20 @@ export function useChat() {
         const serverMsg = historyMessages.find((m) => m.id === canonicalId);
         const canonical: ChatMessage = serverMsg ?? { id: canonicalId, role: "assistant", parts: [] };
 
-        let parts = canonical.parts ?? [];
-        if (liveBubble) {
-          const existingIds = new Set(parts.map((pt) => pt.id));
-          const missingLocal = (liveBubble.parts ?? []).filter((pt) => !existingIds.has(pt.id));
-          if (missingLocal.length) parts = [...parts, ...missingLocal];
-        }
+        const parts = liveBubble
+          ? mergeLiveParts(canonical.parts ?? [], liveBubble.parts ?? [])
+          : canonical.parts ?? [];
 
+        const pendingUserMsgs = getPendingLocalUserMessages(messagesRef.current, historyMessages, true);
         const mergedMsg: ChatMessage = { ...canonical, parts, stats: liveBubble?.stats ?? canonical.stats };
-        allHistoryRef.current = [...historyMessages.filter((m) => m.id !== canonicalId), mergedMsg];
+        allHistoryRef.current = [
+          ...historyMessages.filter((m) => m.id !== canonicalId),
+          ...pendingUserMsgs,
+          mergedMsg,
+        ];
         setMessages(allHistoryRef.current.slice(-Math.max(visibleCount, 30)));
 
-        if (!streamingRef.current && rpc) {
+        if (rpc && (!streamingRef.current || aidRef.current !== canonicalId || turnIdRef.current !== serverActiveTurnId)) {
           streamingRef.current = true;
           setStatus("streaming");
           runningThreadIdRef.current = activeSessionId;
@@ -511,8 +524,11 @@ export function useChat() {
 
       // Turn running but server hasn't exposed an active turn id yet:
       if (isTurnRunning && !streamingRef.current && rpc) {
-        const lastAssMsg = [...historyMessages].reverse().find((m) => m.role === "assistant");
-        const aid = lastAssMsg?.id ?? makeId("live");
+        streamingRef.current = true;
+        setStatus("streaming");
+        runningThreadIdRef.current = activeSessionId;
+        setWorkingSessionId(activeSessionId);
+        const aid = makeId("live");
         aidRef.current = aid;
         turnIdRef.current = null;
         allHistoryRef.current = historyMessages;
@@ -534,31 +550,34 @@ export function useChat() {
         setMessages((prev) => mergeWithLocalMessages(prev, historyMessages, false, visibleCount, null));
       }
     }
-  }, [history.data, activeSessionId, visibleCount, rpc, setWorkingSessionId, status]);
+  }, [history.data, history.dataUpdatedAt, activeSessionId, visibleCount, rpc, setWorkingSessionId, status]);
 
-  // Instant resync when the tab returns to the foreground after backgrounding.
+  // Rebind server subscriptions after a transport reconnect, without replaying prompts.
+  const { refetch: refetchHistory } = history;
+  useEffect(() => {
+    if (!rpc || !activeSessionId) return;
+    const recover = () => {
+      void refetchHistory();
+      void refreshQueue(activeSessionId);
+      if (runningThreadIdRef.current === activeSessionId && streamingRef.current && aidRef.current) {
+        offRef.current?.();
+        offRef.current = attachToRunningTurn(rpc, activeSessionId, createHandlersRef.current(aidRef.current, activeSessionId));
+      }
+    };
+    return rpc.onStatus((connection) => { if (connection === "online") recover(); });
+  }, [rpc, activeSessionId, refetchHistory, refreshQueue]);
+
+  // A stable callback prevents transcript renders from resetting foreground recovery.
   useEffect(() => {
     const onVisible = () => {
       if (document.visibilityState === "visible" && activeSessionId) {
-        void history.refetch();
-        if (activeSessionId) void refreshQueue(activeSessionId);
+        void refetchHistory();
+        void refreshQueue(activeSessionId);
       }
     };
     document.addEventListener("visibilitychange", onVisible);
     return () => document.removeEventListener("visibilitychange", onVisible);
-  }, [activeSessionId, history, refreshQueue]);
-
-  // Fast Stream Synchronizer: Reconciles server turns and transcript state
-  useEffect(() => {
-    if (!activeSessionId || (status !== "streaming" && status !== "submitted")) return;
-    const interval = setInterval(() => {
-      if (streamingRef.current) {
-        void history.refetch();
-        void refreshQueue(activeSessionId);
-      }
-    }, 2000);
-    return () => clearInterval(interval);
-  }, [activeSessionId, status, history, refreshQueue]);
+  }, [activeSessionId, refetchHistory, refreshQueue]);
 
   /** Starts the next queued prompt on the thread, attaching to the running turn. */
   const drainQueue = useCallback(
@@ -797,6 +816,7 @@ export function useChat() {
       );
     }
     offRef.current?.();
+    offRef.current = null;
     streamingRef.current = false;
     aidRef.current = null;
     turnIdRef.current = null;

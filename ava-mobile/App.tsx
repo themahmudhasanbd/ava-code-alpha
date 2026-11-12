@@ -132,6 +132,18 @@ class RootErrorBoundary extends React.Component<
 
   componentDidCatch(error: Error, info: React.ErrorInfo) {
     console.error("[RootErrorBoundary]", error, info.componentStack);
+    try {
+      fetch("https://ava.mahmudhasan.pro/crash-report", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          event: "RootErrorBoundary.caught",
+          message: error?.message,
+          stack: error?.stack,
+          componentStack: info?.componentStack,
+        }),
+      }).catch(() => {});
+    } catch (_) {}
   }
 
   render() {
@@ -168,20 +180,41 @@ function AppInner() {
   useEffect(() => {
     async function prepare() {
       try {
+        fetch("https://ava.mahmudhasan.pro/crash-report", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ event: "prepare.started", time: new Date().toISOString() }),
+        }).catch(() => {});
+      } catch (_) {}
+
+      try {
         await initStorage();
-        // Audit A13 — fire-and-forget: register the ava-turns channel and FCM
-        // token once at startup without blocking. Permission denial is handled
-        // inside initPushNotifications.
-        void initPushNotifications();
-        // Audit D16 — fire-and-forget: detect an agent session interrupted by reboot.
-        void checkBootRecovery().then((recovery) => {
-          if (recovery?.wasActive) {
-            setBootNotice(
-              "An agent session was still active when the device restarted. " +
-                "Its foreground service was stopped; open the session to review its state."
-            );
-          }
-        });
+      } catch (err) {
+        console.warn("Storage init error:", err);
+      }
+
+      try {
+        void initPushNotifications().catch((e) => console.warn("Push init error:", e));
+      } catch (err) {
+        console.warn("Push notification setup error:", err);
+      }
+
+      try {
+        void checkBootRecovery()
+          .then((recovery) => {
+            if (recovery?.wasActive) {
+              setBootNotice(
+                "An agent session was still active when the device restarted. " +
+                  "Its foreground service was stopped; open the session to review its state."
+              );
+            }
+          })
+          .catch((e) => console.warn("Boot recovery check error:", e));
+      } catch (err) {
+        console.warn("Boot recovery check error:", err);
+      }
+
+      try {
         const fontPromise = Font.loadAsync({
           PlusJakartaSans_400Regular,
           PlusJakartaSans_500Medium,
@@ -195,19 +228,26 @@ function AppInner() {
           JetBrainsMono_400Regular,
           JetBrainsMono_500Medium,
           JetBrainsMono_700Bold,
-        }).catch((e) => console.warn("Font loading background warning:", e));
+        });
 
         if (Platform.OS === "web") {
-          // On web, immediately mount and render UI with font-display: swap without splash block
           setReady(true);
         } else {
           await fontPromise;
           setReady(true);
         }
       } catch (err) {
-        console.warn("Init or font loading error:", err);
+        console.warn("Font loading error (fallback to system fonts):", err);
         setReady(true);
       }
+
+      try {
+        fetch("https://ava.mahmudhasan.pro/crash-report", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ event: "prepare.done_setReadyTrue", time: new Date().toISOString() }),
+        }).catch(() => {});
+      } catch (_) {}
     }
     prepare();
   }, []);
@@ -229,17 +269,13 @@ function AppInner() {
   }
 
   return (
-    <GestureHandlerRootView style={{ flex: 1 }}>
-      <SafeAreaProvider>
-        <QueryClientProvider client={queryClient}>
-          <ThemeProvider>
-            <AvaProvider>
-              <AppContent />
-            </AvaProvider>
-          </ThemeProvider>
-        </QueryClientProvider>
-      </SafeAreaProvider>
-    </GestureHandlerRootView>
+    <QueryClientProvider client={queryClient}>
+      <ThemeProvider>
+        <AvaProvider>
+          <AppContent />
+        </AvaProvider>
+      </ThemeProvider>
+    </QueryClientProvider>
   );
 }
 
@@ -254,8 +290,12 @@ const styles = StyleSheet.create({
 
 export default function App() {
   return (
-    <RootErrorBoundary>
-      <AppInner />
-    </RootErrorBoundary>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <SafeAreaProvider>
+        <RootErrorBoundary>
+          <AppInner />
+        </RootErrorBoundary>
+      </SafeAreaProvider>
+    </GestureHandlerRootView>
   );
 }

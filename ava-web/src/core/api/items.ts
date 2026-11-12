@@ -1,4 +1,4 @@
-import type { AgentQuestion, MessagePart, PlanStep } from "../types";
+import type { AgentQuestion, MessagePart, PartMeta, PlanStep } from "../types";
 import { URL } from "url";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -45,8 +45,102 @@ function parseDomain(url: string): string {
   try {
     return new URL(url).hostname;
   } catch {
-    return url.split("/")[0] ?? url;
+    return url.replace(/^https?:\/\//i, "").split("/")[0] ?? url;
   }
+}
+
+export function isBrowserToolName(name: string): boolean {
+  const n = (name || "").toLowerCase().trim();
+  return (
+    n === "browser" ||
+    n === "browser_subagent" ||
+    n === "browsersubagent" ||
+    n === "agent-browser" ||
+    n === "agent_browser" ||
+    n.startsWith("puppeteer_") ||
+    n.startsWith("playwright_") ||
+    n.includes("browser")
+  );
+}
+
+export function parseBrowserMeta(
+  args: Raw,
+  outText = "",
+  outputObj?: Raw
+): { command: string; meta: Partial<PartMeta> } {
+  const action = str(args?.action ?? outputObj?.action ?? (args?.task ? "subagent" : "open")).toLowerCase();
+
+  let url = str(args?.url ?? args?.target_url ?? args?.uri ?? outputObj?.url ?? outputObj?.currentUrl);
+  if (!url && typeof args === "string" && args.startsWith("http")) {
+    url = args;
+  }
+  if (!url && outText) {
+    const urlMatch = outText.match(/https?:\/\/[^\s"'<>\)]+/i);
+    if (urlMatch) url = urlMatch[0];
+  }
+
+  let viewport = str(args?.viewport ?? args?.profile ?? outputObj?.viewport);
+  if (!viewport && args?.width && args?.height) {
+    viewport = `${args.width}x${args.height}`;
+  }
+
+  let screenshotPath = str(
+    args?.screenshot_path ??
+    args?.screenshotPath ??
+    outputObj?.screenshotPath ??
+    outputObj?.screenshot_path ??
+    outputObj?.path ??
+    outputObj?.image_path
+  );
+  if (!screenshotPath && outText) {
+    const shotMatch = outText.match(/(?:\/[\w.-]+)+\.(?:png|jpg|jpeg|webp)/i);
+    if (shotMatch) screenshotPath = shotMatch[0];
+  }
+
+  const pageTitle = str(outputObj?.title ?? outputObj?.pageTitle ?? outputObj?.page_title);
+  const ref = str(args?.ref ?? args?.submit_ref);
+  const selector = str(args?.selector ?? args?.css_selector ?? args?.submit_selector);
+  const code = str(args?.code ?? args?.script);
+
+  const elementsCount =
+    typeof outputObj?.elementsCount === "number"
+      ? outputObj.elementsCount
+      : Array.isArray(outputObj?.elements)
+        ? outputObj.elements.length
+        : undefined;
+
+  let command = action.toUpperCase();
+  if (url) {
+    command += ` ${parseDomain(url)}`;
+  } else if (action === "viewport" && viewport) {
+    command += ` ${viewport}`;
+  } else if (action === "click" && (ref || selector)) {
+    command += ` ${ref ? `@${ref}` : selector}`;
+  } else if (action === "fill" && (ref || selector)) {
+    command += ` ${ref ? `@${ref}` : selector}`;
+  } else if (action === "screenshot" && screenshotPath) {
+    command += ` ${screenshotPath.split("/").pop()}`;
+  } else if (args?.task_name) {
+    command += ` ${str(args.task_name)}`;
+  } else if (pageTitle) {
+    command += ` "${pageTitle.slice(0, 40)}"`;
+  }
+
+  return {
+    command,
+    meta: {
+      isBrowser: true,
+      action,
+      url: url || undefined,
+      viewport: viewport || undefined,
+      screenshotPath: screenshotPath || undefined,
+      pageTitle: pageTitle || undefined,
+      ref: ref || undefined,
+      selector: selector || undefined,
+      code: code || undefined,
+      elementsCount,
+    },
+  };
 }
 
 /** Extracts a human-readable summary from any structured tool input object. */
@@ -125,9 +219,65 @@ export function itemToPart(item: Raw, fallback: MessagePart["status"] = "done"):
     }
     case "commandExecution": {
       const command = prettyCommand(item.command);
+      const outText = str(item.aggregatedOutput ?? "");
+      const isBrowserCmd =
+        command.startsWith("agent-browser") ||
+        command.includes(" agent-browser") ||
+        command.startsWith("npx agent-browser") ||
+        command.startsWith("browser ") ||
+        command.includes("browser_screenshot") ||
+        (command.includes(".ava-media") && /\.(?:png|jpg|jpeg|webp)/i.test(command));
+
+      if (isBrowserCmd) {
+        let action = "open";
+        if (/\bopen\b/i.test(command)) action = "open";
+        else if (/\bscreenshot\b/i.test(command) || command.includes("browser_screenshot") || /\.(?:png|jpg|jpeg|webp)/i.test(command)) action = "screenshot";
+        else if (/\bclick\b/i.test(command)) action = "click";
+        else if (/\bfill\b/i.test(command)) action = "fill";
+        else if (/\beval\b/i.test(command)) action = "eval";
+        else if (/\bscroll\b/i.test(command)) action = "scroll";
+        else if (/\bwait\b/i.test(command)) action = "wait";
+
+        const urlMatch = command.match(/https?:\/\/[^\s"'<>\)]+/i) || outText.match(/https?:\/\/[^\s"'<>\)]+/i);
+        const vpMatch = command.match(/--viewport\s+([^\s]+)/i);
+        const allPngMatches = [...command.matchAll(/(?:\/[\w.-]+)+\.(?:png|jpg|jpeg|webp)/gi)];
+        const lastShot = allPngMatches.length > 0 ? allPngMatches[allPngMatches.length - 1]![0] : undefined;
+        const shotMatch =
+          lastShot ||
+          command.match(/screenshot(?:\s+([^\s'"]+\.(?:png|jpg|jpeg|webp)))?/i)?.[1] ||
+          outText.match(/(?:\/[\w.-]+)+\.(?:png|jpg|jpeg|webp)/i)?.[0];
+
+        const screenshotPath = shotMatch;
+        const url = urlMatch ? urlMatch[0] : undefined;
+        const viewport = vpMatch ? vpMatch[1] : undefined;
+
+        const { command: browserCmd, meta: bMeta } = parseBrowserMeta(
+          { action, url, viewport, screenshot_path: screenshotPath },
+          outText,
+          leadingJsonObject(outText)
+        );
+
+        return {
+          id,
+          kind: "tool",
+          text: "",
+          toolName: "Browser",
+          input: url || command,
+          status,
+          output: outText,
+          meta: {
+            ...bMeta,
+            command: browserCmd || command,
+            cwd: str(item.cwd) || undefined,
+            exitCode: num(item.exitCode),
+            durationMs: num(item.durationMs),
+          },
+        };
+      }
+
       return {
         id, kind: "tool", text: "", toolName: "Terminal", input: command, status,
-        output: str(item.aggregatedOutput ?? ""),
+        output: outText,
         meta: { command, cwd: str(item.cwd) || undefined, exitCode: num(item.exitCode), durationMs: num(item.durationMs) },
       };
     }
@@ -141,6 +291,47 @@ export function itemToPart(item: Raw, fallback: MessagePart["status"] = "done"):
       }));
       return { id, kind: "tool", text: "", toolName: "File change", input: item.changes, status, meta: { files } };
     }
+    case "functionCall":
+    case "function_call":
+    case "toolCall":
+    case "customToolCall":
+    case "custom_tool_call": {
+      const toolRaw = str(item.name ?? item.tool ?? item.call?.name, "Tool");
+      const args = item.arguments ?? item.args ?? item.call?.arguments ?? {};
+      if (isBrowserToolName(toolRaw)) {
+        const { command, meta: bMeta } = parseBrowserMeta(args, "");
+        return {
+          id,
+          kind: "tool",
+          text: "",
+          toolName: "Browser",
+          input: bMeta.url || args,
+          status,
+          output: "",
+          meta: {
+            ...bMeta,
+            command,
+            server: str(item.namespace) || undefined,
+            durationMs: num(item.durationMs),
+          },
+        };
+      }
+      const summary = summaryFromObject(args);
+      return {
+        id,
+        kind: "tool",
+        text: "",
+        toolName: toolRaw.replace(/_/g, " ").replace(/\b\w/g, (ch) => ch.toUpperCase()),
+        input: args,
+        status,
+        output: "",
+        meta: {
+          server: str(item.namespace) || undefined,
+          command: summary || undefined,
+          durationMs: num(item.durationMs),
+        },
+      };
+    }
     case "functionCallOutput": {
       // Inbuilt extension tools (browser, view_image, tool_search, ...) arrive
       // as FunctionCallOutput items — distinct from MCP tool calls.
@@ -152,20 +343,34 @@ export function itemToPart(item: Raw, fallback: MessagePart["status"] = "done"):
               .map((c: Raw) => str(c?.text ?? "")).filter(Boolean).join("\n")
           : str(outputBody?.body ?? outputBody?.text ?? "");
       const ok = outputBody?.success !== false;
-      const toolRaw = str(item.name, "Tool");
-      const toolLower = toolRaw.toLowerCase();
+      const toolRaw = str(item.name ?? item.tool, "Tool");
       const args = item.arguments ?? {};
       const outputObj = leadingJsonObject(outText);
+
+      if (isBrowserToolName(toolRaw)) {
+        const { command, meta: bMeta } = parseBrowserMeta(args, outText, outputObj);
+        return {
+          id,
+          kind: "tool",
+          text: "",
+          toolName: "Browser",
+          input: bMeta.url || args,
+          status: ok ? status : "error",
+          output: outText,
+          meta: {
+            ...bMeta,
+            command,
+            server: str(item.namespace) || undefined,
+            durationMs: num(item.durationMs),
+          },
+        };
+      }
+
+      const toolLower = toolRaw.toLowerCase();
       let toolName = toolRaw.replace(/_/g, " ").replace(/\b\w/g, (ch: string) => ch.toUpperCase());
       let metaCommand: string | undefined = undefined;
       let input: Raw = args;
-      if (toolLower === "browser" || toolLower === "browser_subagent") {
-        toolName = "Browser";
-        const action = str(args?.action ?? outputObj?.action, "open");
-        const url = str(args?.url ?? outputObj?.url);
-        metaCommand = [action, url ? parseDomain(url) : str(outputObj?.title, "").slice(0, 50)].filter(Boolean).join(" ");
-        input = url || outputObj?.url || args;
-      } else if (toolLower === "view_image") {
+      if (toolLower === "view_image") {
         toolName = "View image";
         const path = str(args?.path ?? args?.filePath);
         metaCommand = path.split("/").pop() || path;
@@ -177,6 +382,8 @@ export function itemToPart(item: Raw, fallback: MessagePart["status"] = "done"):
         toolName = "Attach media";
         const p = str(args?.path);
         metaCommand = p.split("/").pop() || p;
+      } else {
+        metaCommand = summaryFromObject(args);
       }
       return {
         id, kind: "tool", text: "", toolName, input, status: ok ? status : "error",
@@ -195,17 +402,20 @@ export function itemToPart(item: Raw, fallback: MessagePart["status"] = "done"):
       const toolLower = mcpToolRaw.toLowerCase();
       const serverLower = (server ?? "").toLowerCase();
       let toolName = mcpToolRaw;
-      let toolMetaCommand: string | undefined = undefined;
-      if (toolLower.includes("browser") || toolLower.includes("navigate") || serverLower.includes("puppeteer")) {
-        toolName = "Browser";
-        const args = item.arguments ?? {};
-        const url = str(args?.url ?? args?.href ?? "");
-        if (url) toolMetaCommand = `navigate ${parseDomain(url)}`.trim();
+      const out = item.error ? str(item.error?.message ?? item.error) : mcpResultText(item.result);
+      const args = item.arguments ?? {};
+      if (isBrowserToolName(mcpToolRaw) || toolLower.includes("navigate") || serverLower.includes("puppeteer")) {
+        const { command, meta: bMeta } = parseBrowserMeta(args, out, leadingJsonObject(out));
+        return {
+          id, kind: "tool", text: "", toolName: "Browser", input: bMeta.url || args, status,
+          output: out,
+          meta: { ...bMeta, server, durationMs: num(item.durationMs), command },
+        };
       }
       return {
         id, kind: "tool", text: "", toolName, input: item.arguments, status,
-        output: item.error ? str(item.error?.message ?? item.error) : mcpResultText(item.result),
-        meta: { server, durationMs: num(item.durationMs), command: toolMetaCommand },
+        output: out,
+        meta: { server, durationMs: num(item.durationMs), command: summaryFromObject(args) || undefined },
       };
     }
     case "webSearch": {
@@ -222,10 +432,10 @@ export function itemToPart(item: Raw, fallback: MessagePart["status"] = "done"):
     case "webView":
     case "webViewToolCall":
     case "browserUse": {
-      const url = str(item.url ?? item.arguments?.url ?? "");
-      const domain = parseDomain(url) || str(item.domain);
-      const action = str(item.action ?? item.tool ?? "navigate");
-      return { id, kind: "tool", text: "", toolName: "Browser", input: url || domain, status, output: str(item.output ?? item.result ?? ""), meta: { command: `${action} ${domain}`.trim() } };
+      const args = item.arguments ?? item;
+      const out = str(item.output ?? item.result ?? "");
+      const { command, meta: bMeta } = parseBrowserMeta(args, out, leadingJsonObject(out));
+      return { id, kind: "tool", text: "", toolName: "Browser", input: bMeta.url || args, status, output: out, meta: { ...bMeta, command } };
     }
     case "imageGeneration": {
       const revised = str(item.revised_prompt ?? item.revisedPrompt);
@@ -264,11 +474,21 @@ export function itemToPart(item: Raw, fallback: MessagePart["status"] = "done"):
       const tool = str(item.tool, "Tool");
       const ns = str(item.namespace);
       const args = item.arguments ?? {};
+      const out = str(item.output ?? "");
+      if (isBrowserToolName(tool)) {
+        const { command, meta: bMeta } = parseBrowserMeta(args, out, leadingJsonObject(out));
+        return {
+          id, kind: "tool", text: "", toolName: "Browser",
+          input: bMeta.url || args, status,
+          output: out,
+          meta: { ...bMeta, command, durationMs: num(item.durationMs) },
+        };
+      }
       const summary = summaryFromObject(args);
       return {
         id, kind: "tool", text: "", toolName: ns ? `${ns} · ${tool}` : tool,
         input: args, status,
-        output: str(item.output ?? ""),
+        output: out,
         meta: { command: summary || undefined, durationMs: num(item.durationMs) },
       };
     }
@@ -305,10 +525,9 @@ export function itemToPart(item: Raw, fallback: MessagePart["status"] = "done"):
     }
     case "enteredReviewMode":
     case "enteredReview":
-      return { id, kind: "notice", text: `Review mode started — ${str(item.review ?? item.text ?? "reviewing changes")}`, status, meta: { tone: "info" } };
     case "exitedReviewMode":
     case "exitedReview":
-      return { id, kind: "notice", text: `Review complete — ${str(item.review ?? item.text ?? "changes applied")}`, status, meta: { tone: "info" } };
+      return { id, kind: "notice", text: `Review mode — ${str(item.review ?? item.text ?? "reviewing changes")}`, status, meta: { tone: "info" } };
     case "todoList":
     case "plan":
       return { id, kind: "plan", text: str(item.explanation ?? item.title ?? item.text), status, meta: { steps: toPlanSteps(item.items ?? item.plan ?? []) } };
@@ -316,10 +535,27 @@ export function itemToPart(item: Raw, fallback: MessagePart["status"] = "done"):
       return { id, kind: "notice", text: "Context compacted to keep the conversation going", status, meta: { tone: "info" } };
     case "error":
       return { id, kind: "notice", text: str(item.message, "Error"), status: "error", meta: { tone: "error" } };
-    default:
+    default: {
+      const rawName = str(item.tool || item.name || type);
+      const args = item.arguments ?? item;
+      const out = str(item.output ?? item.result ?? "");
+      if (isBrowserToolName(rawName)) {
+        const { command, meta: bMeta } = parseBrowserMeta(args, out, leadingJsonObject(out));
+        return {
+          id,
+          kind: "tool",
+          text: "",
+          toolName: "Browser",
+          input: bMeta.url || args,
+          output: out,
+          status,
+          meta: { ...bMeta, command },
+        };
+      }
       return {
-        id, kind: "tool", text: "", toolName: str(item.tool) || str(item.name) || type || "Step",
-        input: item.arguments ?? item, output: str(item.output ?? item.result ?? ""), status,
+        id, kind: "tool", text: "", toolName: rawName || "Step",
+        input: args, output: out, status,
       };
+    }
   }
 }
